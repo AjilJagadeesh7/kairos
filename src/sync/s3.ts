@@ -1,0 +1,219 @@
+/**
+ * S3-compatible sync provider.
+ * Works with Cloudflare R2, AWS S3, MinIO, Backblaze B2, Wasabi, etc.
+ * Uses AWS Signature V4 built entirely from the Web Crypto API — no SDK required.
+ */
+import type { RemoteEncryptedNote } from './types'
+
+// ---------------------------------------------------------------------------
+// Config
+// ---------------------------------------------------------------------------
+
+export type S3Config = {
+  /** Base endpoint URL, no trailing slash. e.g. https://xxxx.r2.cloudflarestorage.com */
+  endpoint: string
+  bucket: string
+  accessKey: string
+  secretKey: string
+  /** "auto" for R2, "us-east-1" for AWS, etc. */
+  region: string
+}
+
+let _config: S3Config | null = null
+
+export function setS3Config(cfg: S3Config | null): void {
+  _config = cfg
+}
+
+export function getS3Config(): S3Config | null {
+  return _config
+}
+
+export function isS3Connected(): boolean {
+  return (
+    _config !== null &&
+    Boolean(_config.endpoint && _config.bucket && _config.accessKey && _config.secretKey)
+  )
+}
+
+const KEY_PREFIX = 'mindvault/'
+
+// ---------------------------------------------------------------------------
+// AWS Signature V4 — pure Web Crypto
+// ---------------------------------------------------------------------------
+
+function toHex(buf: ArrayBuffer): string {
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+async function sha256Hex(data: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(data))
+  return toHex(buf)
+}
+
+async function hmac(keyBuf: ArrayBuffer, data: string): Promise<ArrayBuffer> {
+  const key = await crypto.subtle.importKey(
+    'raw', keyBuf, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
+  )
+  return crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data))
+}
+
+async function deriveSigKey(secretKey: string, dateStamp: string, region: string): Promise<ArrayBuffer> {
+  const k1 = await hmac(new TextEncoder().encode('AWS4' + secretKey), dateStamp)
+  const k2 = await hmac(k1, region)
+  const k3 = await hmac(k2, 's3')
+  return hmac(k3, 'aws4_request')
+}
+
+async function buildAuthHeaders(
+  method: string,
+  url: URL,
+  bodyStr: string,
+  cfg: S3Config,
+  extraSignedHeaders: Record<string, string> = {},
+): Promise<Record<string, string>> {
+  const now      = new Date()
+  const amzDate  = now.toISOString().replace(/[:\-]|\.\d{3}/g, '').slice(0, 15) + 'Z'
+  const dateStamp = amzDate.slice(0, 8)
+  const bodyHash  = await sha256Hex(bodyStr)
+
+  const headers: Record<string, string> = {
+    host:                  url.host,
+    'x-amz-content-sha256': bodyHash,
+    'x-amz-date':          amzDate,
+    ...extraSignedHeaders,
+  }
+
+  const sortedKeys      = Object.keys(headers).sort()
+  const signedHeadersStr = sortedKeys.join(';')
+  const canonicalHeaders = sortedKeys.map((k) => `${k}:${headers[k]}\n`).join('')
+
+  // Query params must be sorted and each key/value individually URI-encoded.
+  const canonicalQueryStr = [...url.searchParams.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join('&')
+
+  const canonicalRequest = [
+    method,
+    url.pathname,
+    canonicalQueryStr,
+    canonicalHeaders,
+    signedHeadersStr,
+    bodyHash,
+  ].join('\n')
+
+  const credScope   = `${dateStamp}/${cfg.region}/s3/aws4_request`
+  const stringToSign = `AWS4-HMAC-SHA256\n${amzDate}\n${credScope}\n${await sha256Hex(canonicalRequest)}`
+
+  const sigKey   = await deriveSigKey(cfg.secretKey, dateStamp, cfg.region)
+  const sigBuf   = await hmac(sigKey, stringToSign)
+  const signature = toHex(sigBuf)
+
+  return {
+    ...headers,
+    Authorization: `AWS4-HMAC-SHA256 Credential=${cfg.accessKey}/${credScope}, SignedHeaders=${signedHeadersStr}, Signature=${signature}`,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Low-level fetch
+// ---------------------------------------------------------------------------
+
+async function s3Fetch(
+  method: string,
+  url: URL,
+  body: string | null,
+  cfg: S3Config,
+  extraSignedHeaders: Record<string, string> = {},
+): Promise<Response> {
+  const authHeaders = await buildAuthHeaders(method, url, body ?? '', cfg, extraSignedHeaders)
+  const res = await fetch(url.toString(), {
+    method,
+    headers: authHeaders,
+    body: body !== null ? body : undefined,
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`S3 ${method} ${url.pathname} → ${res.status}: ${text.slice(0, 300)}`)
+  }
+  return res
+}
+
+// ---------------------------------------------------------------------------
+// URL helpers
+// ---------------------------------------------------------------------------
+
+function objectUrl(cfg: S3Config, key: string): URL {
+  return new URL(`${cfg.endpoint.replace(/\/$/, '')}/${cfg.bucket}/${key}`)
+}
+
+function listUrl(cfg: S3Config, maxKeys?: number): URL {
+  const url = new URL(`${cfg.endpoint.replace(/\/$/, '')}/${cfg.bucket}`)
+  url.searchParams.set('list-type', '2')
+  url.searchParams.set('prefix', KEY_PREFIX)
+  if (maxKeys !== undefined) url.searchParams.set('max-keys', String(maxKeys))
+  return url
+}
+
+// ---------------------------------------------------------------------------
+// XML list response parser
+// ---------------------------------------------------------------------------
+
+function parseListXml(xml: string): Array<{ key: string }> {
+  const doc = new DOMParser().parseFromString(xml, 'text/xml')
+  return Array.from(doc.querySelectorAll('Contents')).map((el) => ({
+    key: el.querySelector('Key')?.textContent ?? '',
+  }))
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+export async function listS3Notes(): Promise<RemoteEncryptedNote[]> {
+  const cfg = _config
+  if (!cfg) throw new Error('S3 not configured')
+
+  const res  = await s3Fetch('GET', listUrl(cfg), null, cfg)
+  const xml  = await res.text()
+  const objects = parseListXml(xml)
+
+  const notes: RemoteEncryptedNote[] = []
+  for (const obj of objects) {
+    if (!obj.key.endsWith('.json')) continue
+    try {
+      const getRes = await s3Fetch('GET', objectUrl(cfg, obj.key), null, cfg)
+      const note   = (await getRes.json()) as RemoteEncryptedNote
+      note.fileId  = obj.key
+      notes.push(note)
+    } catch (err) {
+      console.warn('S3: skipping', obj.key, err)
+    }
+  }
+  return notes
+}
+
+export async function upsertS3Note(note: RemoteEncryptedNote, existingKey?: string): Promise<string> {
+  const cfg = _config
+  if (!cfg) throw new Error('S3 not configured')
+
+  const key  = existingKey ?? `${KEY_PREFIX}${note.noteId}.json`
+  const body = JSON.stringify(note)
+  await s3Fetch('PUT', objectUrl(cfg, key), body, cfg, { 'content-type': 'application/json' })
+  return key
+}
+
+/** Verify credentials and bucket access. Throws a descriptive error on failure. */
+export async function testS3Connection(cfg: S3Config): Promise<void> {
+  const url = listUrl(cfg, 1)
+  const res = await fetch(url.toString(), {
+    method: 'GET',
+    headers: await buildAuthHeaders('GET', url, '', cfg),
+  })
+  if (res.status === 403) throw new Error('Access denied — check your access key and secret')
+  if (res.status === 404) throw new Error('Bucket not found — check bucket name and endpoint')
+  if (!res.ok)            throw new Error(`S3 error ${res.status}`)
+}

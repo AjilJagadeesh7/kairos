@@ -1,0 +1,402 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Manrope:wght@400;500;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── WIKILINK TOKENS ─────────────────────────────────────────────────────── */
+.wikilink-token {
+  color: rgb(var(--accent));
+  background-color: rgb(var(--accent) / 0.1);
+  border-radius: 4px;
+  padding: 0 3px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.15s;
+}
+.wikilink-token:hover {
+  background-color: rgb(var(--accent) / 0.2);
+}
+
+/* ─── LOADER BAR ──────────────────────────────────────────────────────────── */
+@keyframes loader-sweep {
+  0%   { transform: translateX(-100%) scaleX(0.3); }
+  40%  { transform: translateX(-20%)  scaleX(0.6); }
+  100% { transform: translateX(100%)  scaleX(0.3); }
+}
+.loader-bar-fill {
+  transform-origin: left center;
+  animation: loader-sweep 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  width: 60%;
+}
+
+/* ─── CONFIRM DIALOG ANIMATION ────────────────────────────────────────────── */
+@keyframes confirm-in {
+  from { opacity: 0; transform: scale(0.95) translateY(6px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+
+/* ─── LIGHT THEME ─────────────────────────────────────────────────────────── */
+:root {
+  --bg:          248 246 242;   /* app background    #F8F6F2  */
+  --surface:     255 255 255;   /* cards / editor    #FFFFFF  */
+  --surface-2:   242 240 236;   /* sidebar / panels  #F2F0EC  */
+  --surface-3:   232 229 224;   /* hover             #E8E5E0  */
+  --border:      214 210 202;   /* borders           #D6D2CA  */
+  --text:         34  30  24;   /* primary text      #221E18  */
+  --text-2:      110 103  91;   /* secondary text    #6E6758  */
+  --text-3:      168 160 148;   /* placeholder       #A8A094  */
+  --accent:       34  30  24;   /* button bg in light #221E18 */
+  --accent-fg:   248 246 242;   /* button text        #F8F6F2 */
+  --accent-hover: 56  50  42;   /* button hover       #38322A */
+}
+
+/* ─── DARK THEME ──────────────────────────────────────────────────────────── */
+:root.dark,
+:root[data-theme='dark'] {
+  --bg:           10  10  10;   /* app background    #0A0A0A  */
+  --surface:      18  18  18;   /* cards / editor    #121212  */
+  --surface-2:    24  24  24;   /* sidebar / panels  #181818  */
+  --surface-3:    34  34  34;   /* hover             #222222  */
+  --border:       44  44  44;   /* borders           #2C2C2C  */
+  --text:        230 230 230;   /* primary text      #E6E6E6  */
+  --text-2:      140 140 140;   /* secondary text    #8C8C8C  */
+  --text-3:       80  80  80;   /* placeholder       #505050  */
+  --accent:      230 230 230;   /* button bg dark    #E6E6E6  */
+  --accent-fg:    10  10  10;   /* button text       #0A0A0A  */
+  --accent-hover:200 200 200;   /* button hover      #C8C8C8  */
+}
+
+/* ─── CYBERPUNK THEME (retro-punk) ───────────────────────────────────────── */
+:root[data-theme='cyberpunk'] {
+  --bg:            2   1   8;   /* void black        #020108  */
+  --surface:       6   3  16;   /* card bg           #060310  */
+  --surface-2:    10   5  24;   /* sidebar           #0A0518  */
+  --surface-3:    22  10  50;   /* hover             #160A32  */
+  --border:       80  20 100;   /* pink-tinted dim   #501464  */
+  --text:        255 255 255;   /* white body text   #FFFFFF  */
+  --text-2:        0 230 180;   /* cyan secondary    #00E6B4  */
+  --text-3:       90  30 110;   /* dim violet        #5A1E6E  */
+  --accent:      255  20 147;   /* HOT PINK primary  #FF1493  */
+  --accent-fg:   255 255 255;   /* white on pink     #FFFFFF  */
+  --accent-hover:255  60 170;   /* lighter pink      #FF3CAA  */
+
+  --neon-yellow: 252 226  42;   /* gold accent       #FCE22A  */
+  --neon-cyan:     0 230 180;   /* teal accent       #00E6B4  */
+  --neon-pink:   255  20 147;   /* hot pink          #FF1493  */
+}
+
+/* ── Scanline grid texture on body ─────────────────────────────────────────── */
+:root[data-theme='cyberpunk'] body {
+  background-image:
+    linear-gradient(rgba(255, 20, 147, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 20, 147, 0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* ── Glowing header border ───────────────────────────────────────────────── */
+:root[data-theme='cyberpunk'] header {
+  border-bottom-color: rgba(255, 20, 147, 0.4) !important;
+  box-shadow: 0 1px 0 rgba(255, 20, 147, 0.15), 0 0 40px rgba(2, 1, 8, 0.95);
+}
+
+/* ── App title: pink glow ────────────────────────────────────────────────── */
+:root[data-theme='cyberpunk'] h1 {
+  color: #FF1493;
+  text-shadow: 0 0 20px rgba(255, 20, 147, 0.7), 0 0 40px rgba(255, 20, 147, 0.25);
+}
+
+/* ── Section headings: neon cyan ────────────────────────────────────────── */
+:root[data-theme='cyberpunk'] h2,
+:root[data-theme='cyberpunk'] h3 {
+  color: #00E6B4;
+  text-shadow: 0 0 12px rgba(0, 230, 180, 0.5);
+}
+
+/* ── Neon borders on panels / asides ─────────────────────────────────────── */
+:root[data-theme='cyberpunk'] aside,
+:root[data-theme='cyberpunk'] section {
+  border-color: rgba(80, 20, 100, 0.65) !important;
+}
+
+/* ── Input fields ────────────────────────────────────────────────────────── */
+:root[data-theme='cyberpunk'] input,
+:root[data-theme='cyberpunk'] textarea {
+  border-color: rgba(80, 20, 100, 0.8) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  caret-color: #FF1493;
+}
+
+:root[data-theme='cyberpunk'] input:focus,
+:root[data-theme='cyberpunk'] textarea:focus {
+  border-color: rgba(0, 230, 180, 0.4) !important;
+  box-shadow: 0 0 0 1px rgba(0, 230, 180, 0.15), 0 0 16px rgba(0, 230, 180, 0.05) !important;
+  outline: none !important;
+}
+
+:root[data-theme='cyberpunk'] input::placeholder,
+:root[data-theme='cyberpunk'] textarea::placeholder {
+  color: rgba(90, 30, 110, 0.85) !important;
+}
+
+/* ── Primary button: pink glow ───────────────────────────────────────────── */
+:root[data-theme='cyberpunk'] .btn-primary {
+  box-shadow: 0 0 14px rgba(255, 20, 147, 0.55), 0 0 28px rgba(255, 20, 147, 0.2);
+}
+:root[data-theme='cyberpunk'] .btn-primary:hover {
+  box-shadow: 0 0 20px rgba(255, 20, 147, 0.75), 0 0 40px rgba(255, 20, 147, 0.3);
+  opacity: 1 !important;
+}
+
+/* ── Ghost buttons: pink-tinted ──────────────────────────────────────────── */
+:root[data-theme='cyberpunk'] .btn-ghost {
+  border: 1px solid rgba(80, 20, 100, 0.7);
+}
+:root[data-theme='cyberpunk'] .btn-ghost:hover {
+  border-color: rgba(255, 20, 147, 0.4);
+}
+
+/* ── Note card: yellow selected, pink hover ──────────────────────────────── */
+:root[data-theme='cyberpunk'] li button {
+  border-color: rgba(80, 20, 100, 0.45) !important;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+:root[data-theme='cyberpunk'] li button:hover {
+  border-color: rgba(0, 230, 180, 0.4) !important;
+  box-shadow: 0 0 10px rgba(0, 230, 180, 0.08), inset 0 0 8px rgba(0, 230, 180, 0.02);
+}
+:root[data-theme='cyberpunk'] li button[class*='border-accent'] {
+  border-color: rgba(255, 20, 147, 0.65) !important;
+  box-shadow: 0 0 14px rgba(255, 20, 147, 0.18), inset 0 0 10px rgba(255, 20, 147, 0.05);
+}
+
+/* ── Active pill tags: yellow ────────────────────────────────────────────── */
+:root[data-theme='cyberpunk'] .btn-pill.active,
+:root[data-theme='cyberpunk'] .btn-pill[aria-selected='true'] {
+  background-color: #FCE22A !important;
+  color: #020108 !important;
+  box-shadow: 0 0 8px rgba(252, 226, 42, 0.4);
+}
+
+/* ── Scrollbar: pink ─────────────────────────────────────────────────────── */
+:root[data-theme='cyberpunk'] ::-webkit-scrollbar {
+  width: 4px;
+  background: rgb(2, 1, 8);
+}
+:root[data-theme='cyberpunk'] ::-webkit-scrollbar-thumb {
+  background: rgba(255, 20, 147, 0.4);
+  border-radius: 2px;
+}
+:root[data-theme='cyberpunk'] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 20, 147, 0.7);
+}
+
+/* ─── TOKEN ALIASES ───────────────────────────────────────────────────────── */
+:root {
+  --neon-yellow: 252 226  42;
+  --neon-cyan:     0 207 255;
+  --neon-pink:   255  32 121;
+}
+
+html, body, #root {
+  margin: 0;
+  min-height: 100%;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: Manrope, ui-sans-serif, system-ui, sans-serif;
+  background-color: rgb(var(--bg));
+  color: rgb(var(--text));
+}
+
+/* ─── REUSABLE BUTTON SYSTEM ──────────────────────────────────────────────── */
+/* Sizes are fixed in px so themes never stretch buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  border-radius: 0.375rem;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  white-space: nowrap;
+  transition: opacity 0.15s, box-shadow 0.15s;
+  line-height: 1;
+  /* prevent any @layer override from mutating size */
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.btn-xs { font-size: 11px; padding: 4px 8px;  height: 24px; }
+.btn-sm { font-size: 12px; padding: 5px 10px; height: 28px; }
+.btn-md { font-size: 13px; padding: 6px 14px; height: 34px; }
+
+.btn-primary {
+  background-color: rgb(var(--accent));
+  color: rgb(var(--accent-fg));
+  font-weight: 600;
+}
+.btn-primary:hover { opacity: 0.88; }
+
+.btn-ghost {
+  background-color: rgb(var(--surface-2));
+  color: rgb(var(--text));
+}
+.btn-ghost:hover { background-color: rgb(var(--surface-3)); }
+
+.btn-pill {
+  border-radius: 9999px;
+  background-color: rgb(var(--surface-3));
+  color: rgb(var(--text-2));
+  font-size: 11px;
+  padding: 3px 10px;
+  height: auto;
+}
+.btn-pill.active,
+.btn-pill[aria-selected='true'] {
+  background-color: rgb(var(--accent));
+  color: rgb(var(--accent-fg));
+}
+.btn-pill:hover { opacity: 0.85; }
+
+/* ─── MILKDOWN OVERRIDES ──────────────────────────────────────────────────── */
+
+/* Light — editor stays white, text is dark */
+.milkdown {
+  --crepe-color-background:         rgb(var(--surface));
+  --crepe-color-on-background:      rgb(var(--text));
+  --crepe-color-surface:            rgb(var(--surface-2));
+  --crepe-color-surface-low:        rgb(var(--surface-3));
+  --crepe-color-on-surface:         rgb(var(--text));
+  --crepe-color-on-surface-variant: rgb(var(--text-2));
+  --crepe-color-outline:            rgb(var(--border));
+  --crepe-color-primary:            rgb(var(--text));
+  --crepe-color-secondary:          rgb(var(--surface-3));
+  --crepe-color-on-secondary:       rgb(var(--text));
+  --crepe-color-inverse:            rgb(var(--surface-2));
+  --crepe-color-on-inverse:         rgb(var(--text));
+  --crepe-color-hover:              rgb(var(--surface-3));
+  --crepe-color-selected:           rgb(var(--border));
+  --crepe-color-inline-area:        rgb(var(--surface-3));
+  --crepe-font-default: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --crepe-font-code:    'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Dark */
+:root.dark .milkdown,
+:root[data-theme='dark'] .milkdown {
+  --crepe-color-background:         #121212;
+  --crepe-color-on-background:      #e6e6e6;
+  --crepe-color-surface:            #181818;
+  --crepe-color-surface-low:        #222222;
+  --crepe-color-on-surface:         #e6e6e6;
+  --crepe-color-on-surface-variant: #8c8c8c;
+  --crepe-color-outline:            #2c2c2c;
+  --crepe-color-primary:            #e6e6e6;
+  --crepe-color-secondary:          #222222;
+  --crepe-color-on-secondary:       #e6e6e6;
+  --crepe-color-inverse:            #181818;
+  --crepe-color-on-inverse:         #e6e6e6;
+  --crepe-color-inline-code:        #7dd3c8;
+  --crepe-color-hover:              #2a2a2a;
+  --crepe-color-selected:           #333333;
+  --crepe-color-inline-area:        #1e1e1e;
+}
+
+/* Cyberpunk */
+:root[data-theme='cyberpunk'] .milkdown {
+  --crepe-color-background:         #060410;
+  --crepe-color-on-background:      rgba(255, 255, 255, 0.92);
+  --crepe-color-surface:            #0A0718;
+  --crepe-color-surface-low:        #140E30;
+  --crepe-color-on-surface:         rgba(255, 255, 255, 0.92);
+  --crepe-color-on-surface-variant: #00E6B4;
+  --crepe-color-outline:            #2D1C5A;
+  --crepe-color-primary:            #FCE22A;
+  --crepe-color-secondary:          #140E30;
+  --crepe-color-on-secondary:       rgba(255, 255, 255, 0.92);
+  --crepe-color-inverse:            #0A0718;
+  --crepe-color-on-inverse:         rgba(255, 255, 255, 0.92);
+  --crepe-color-inline-code:        #00E6B4;
+  --crepe-color-hover:              #1A103C;
+  --crepe-color-selected:           #2D1C5A;
+  --crepe-color-inline-area:        #0E0A20;
+}
+
+.crepe { min-height: 320px; }
+
+/* ── Milkdown height chain ───────────────────────────────────────────────── */
+/* .crepe and .milkdown fill the MarkdownEditor root (h-full flex chain).     */
+/* .milkdown { position: relative } is set by Milkdown — the slash menu and  */
+/* other floating UI are position:absolute children of .milkdown. They MUST   */
+/* not be clipped here; overflow must stay visible.                            */
+.crepe,
+.milkdown {
+  height: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+/* ── Responsive ProseMirror padding ─────────────────────────────────────── */
+/* Milkdown's default reset sets .ProseMirror { padding: 60px 120px } which  */
+/* consumes 240px horizontally — completely unusable on phones.               */
+/* ProseMirror is the scroll container — keeping content bounded while        */
+/* allowing the slash menu (sibling, not inside ProseMirror) to escape.       */
+.milkdown .ProseMirror {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  padding: 40px 80px;
+}
+
+/* Thin themed scrollbar inside the editor */
+.milkdown .ProseMirror::-webkit-scrollbar { width: 5px; }
+.milkdown .ProseMirror::-webkit-scrollbar-track { background: transparent; }
+.milkdown .ProseMirror::-webkit-scrollbar-thumb {
+  background: rgb(var(--border));
+  border-radius: 3px;
+}
+
+@media (max-width: 1024px) {
+  .milkdown .ProseMirror {
+    padding: 32px 48px;
+  }
+}
+
+@media (max-width: 768px) {
+  .milkdown .ProseMirror {
+    padding: 24px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .milkdown .ProseMirror {
+    padding: 16px 12px;
+  }
+}
+
+/* Tables can overflow — contain them with scroll */
+.milkdown .ProseMirror table {
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+/* ── Images: left-aligned, not centered ──────────────────────────────────── */
+.milkdown .image-block,
+.milkdown .image-block-wrapper {
+  text-align: left !important;
+  justify-content: flex-start !important;
+  display: block !important;
+}
+.milkdown img {
+  display: inline-block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
