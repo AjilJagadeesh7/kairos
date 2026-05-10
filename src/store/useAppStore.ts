@@ -11,7 +11,6 @@ import { parseTags } from '../utils/wikilinks'
 type AppState = {
   activeNoteId?: string
   query: string
-  filterTag?: string
   searchMode: SearchMode
   syncStatus: SyncStatus
   syncProvider: SyncProviderType
@@ -21,7 +20,6 @@ type AppState = {
   setPasswordReady: (ready: boolean) => void
   setSearchMode: (mode: SearchMode) => void
   setQuery: (query: string) => void
-  setFilterTag: (tag?: string) => void
   setSyncStatus: (status: SyncStatus) => void
   setSyncProvider: (p: SyncProviderType) => void
   setS3Config: (cfg: S3Config | null) => void
@@ -49,7 +47,6 @@ export const useAppStore = create<AppState>()(
       setPasswordReady: (ready) => set({ passwordReady: ready }),
       setSearchMode: (searchMode) => set({ searchMode }),
       setQuery: (query) => set({ query }),
-      setFilterTag: (filterTag) => set({ filterTag }),
       setSyncStatus: (syncStatus) => set({ syncStatus }),
       setSyncProvider: (syncProvider) => set({ syncProvider }),
       setS3Config: (s3Config) => set({ s3Config }),

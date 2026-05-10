@@ -8,6 +8,12 @@ export type Note = {
   embedding?: number[]  // deprecated field - embeddings now live in db.embeddings table
 }
 
+export type TagRecord = {
+  name: string
+  color: string // hex color code
+  createdAt: string
+}
+
 export type SettingRecord = {
   key: string
   value: string

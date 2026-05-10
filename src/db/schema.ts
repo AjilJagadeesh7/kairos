@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { FileHandleRecord, Note, SettingRecord, SyncMeta } from '../types'
+import type { FileHandleRecord, Note, SettingRecord, SyncMeta, TagRecord } from '../types'
 
 type EmbeddingRecord = {
   noteId: string
@@ -13,6 +13,7 @@ export class MindVaultDB extends Dexie {
   syncMeta!: EntityTable<SyncMeta, 'noteId'>
   embeddings!: EntityTable<EmbeddingRecord, 'noteId'>
   fileHandles!: EntityTable<FileHandleRecord, 'key'>
+  tags!: EntityTable<TagRecord, 'name'>
 
   constructor() {
     super('mindvault')
@@ -49,6 +50,15 @@ export class MindVaultDB extends Dexie {
       embeddings: 'noteId',
       fileHandles: 'key',
     })
+    // Version 4: add tags table for custom user tags with colors
+    this.version(4).stores({
+      notes: 'id, title, *tags, createdAt, updatedAt',
+      settings: 'key',
+      syncMeta: 'noteId, lastSynced, driveFileId',
+      embeddings: 'noteId',
+      fileHandles: 'key',
+      tags: 'name',
+    })
   }
 }
 
@@ -84,4 +94,20 @@ export async function getSetting(key: string): Promise<string | undefined> {
 
 export async function setSetting(key: string, value: string): Promise<void> {
   await db.settings.put({ key, value })
+}
+
+export async function getAllTags(): Promise<TagRecord[]> {
+  return db.tags.toArray()
+}
+
+export async function getTag(name: string): Promise<TagRecord | undefined> {
+  return db.tags.get(name)
+}
+
+export async function upsertTag(tag: TagRecord): Promise<void> {
+  await db.tags.put(tag)
+}
+
+export async function deleteTag(name: string): Promise<void> {
+  await db.tags.delete(name)
 }

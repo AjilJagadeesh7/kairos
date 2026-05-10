@@ -170,6 +170,68 @@
   box-shadow: 0 0 14px rgba(255, 20, 147, 0.18), inset 0 0 10px rgba(255, 20, 147, 0.05);
 }
 
+:root[data-theme='cyberpunk'] .sidebar-note-card {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: rgba(252, 226, 42, 0.22);
+  color: #ffffff;
+}
+:root[data-theme='cyberpunk'] .sidebar-note-card:hover {
+  background-color: rgba(255, 20, 147, 0.12);
+  border-color: rgba(252, 226, 42, 0.4);
+}
+:root[data-theme='cyberpunk'] .sidebar-note-card .note-title {
+  color: #ffffff !important;
+}
+:root[data-theme='cyberpunk'] .sidebar-note-card .note-meta,
+:root[data-theme='cyberpunk'] .sidebar-note-card .text-text3 {
+  color: rgba(255, 255, 255, 0.76) !important;
+}
+:root[data-theme='cyberpunk'] .sidebar-header,
+:root[data-theme='cyberpunk'] .sidebar-top {
+  background-color: rgba(255, 255, 255, 0.04);
+  border-color: rgba(252, 226, 42, 0.22);
+}
+:root[data-theme='cyberpunk'] .sidebar-header .text-text3,
+:root[data-theme='cyberpunk'] .sidebar-top .text-text3 {
+  color: rgba(255, 255, 255, 0.78) !important;
+}
+:root[data-theme='cyberpunk'] .sidebar-top .sidebar-search {
+  background-color: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: rgba(255, 255, 255, 0.96) !important;
+}
+:root[data-theme='cyberpunk'] .sidebar-top .sidebar-search::placeholder {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+:root[data-theme='cyberpunk'] .sidebar-storage-grid .btn-pill {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.82) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+:root[data-theme='cyberpunk'] .sidebar-storage-grid .btn-pill:hover {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+}
+:root[data-theme='cyberpunk'] .sidebar-storage-grid .btn-pill.active,
+:root[data-theme='cyberpunk'] .sidebar-storage-grid .btn-pill[aria-selected='true'] {
+  background-color: #FCE22A !important;
+  color: #020108 !important;
+  border-color: rgba(252, 226, 42, 0.45) !important;
+  box-shadow: 0 0 10px rgba(252, 226, 42, 0.25);
+}
+:root[data-theme='cyberpunk'] .sidebar-filter-group > button {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(252, 226, 42, 0.18) !important;
+}
+:root[data-theme='cyberpunk'] .sidebar-filter-group > button:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+:root[data-theme='cyberpunk'] .sidebar-filter-group .sidebar-note-count {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  color: rgba(255, 255, 255, 0.78) !important;
+  border-color: rgba(252, 226, 42, 0.14) !important;
+}
+
 /* ── Active pill tags: yellow ────────────────────────────────────────────── */
 :root[data-theme='cyberpunk'] .btn-pill.active,
 :root[data-theme='cyberpunk'] .btn-pill[aria-selected='true'] {

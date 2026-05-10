@@ -1,14 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, FileDown, Plus, Save, Tag, Trash2, X } from 'lucide-react'
+import { Check, FileDown, Save, Trash2 } from 'lucide-react'
 import { db } from '../../db/schema'
 import { embedText } from '../../utils/embeddingClient'
 import { useAppStore } from '../../store/useAppStore'
 import { useConfirmStore } from '../../store/useConfirmStore'
 import { Button } from '../ui/Button'
+import { TagSelector } from '../Tags/TagSelector'
+import { TagBadge } from '../Tags/TagBadge'
 import { exportPDF } from './exportPDF'
 import { MarkdownEditor } from './MarkdownEditor'
 import type { EditorDraftProps } from './types'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { getAllTags } from '../../db/schema'
+import type { TagRecord } from '../../types'
 
 type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved'
 
@@ -16,11 +21,11 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
   const [title, setTitle] = useState(note.title)
   const [content, setContent] = useState(note.content)
   const [tags, setTags] = useState<string[]>(note.tags)
-  const [tagInput, setTagInput] = useState('')
-  const [showTagInput, setShowTagInput] = useState(false)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
   const deleteNoteById = useAppStore((s) => s.deleteNoteById)
   const navigate = useNavigate()
+  const allTags = useLiveQuery(() => getAllTags())
+  const tagMap = new Map((allTags ?? []).map((tag) => [tag.name, tag]))
 
   const handleWikilinkClick = useCallback(async (linkedTitle: string) => {
     const found = await db.notes
@@ -71,10 +76,13 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
     setTitle(note.title)
     setContent(note.content)
     setTags(note.tags)
-    setTagInput('')
-    setShowTagInput(false)
     setSaveStatus('idle')
   }, [note])
+
+  const saveTags = async (newTags: string[]) => {
+    setTags(newTags)
+    await db.notes.update(note.id, { tags: newTags })
+  }
 
   // Keyboard shortcut: Ctrl+S / Cmd+S
   useEffect(() => {
@@ -96,21 +104,6 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
     const handle = window.setTimeout(() => void saveNote(), 2000)
     return () => window.clearTimeout(handle)
   }, [title, content]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const saveTags = async (newTags: string[]) => {
-    setTags(newTags)
-    await db.notes.update(note.id, { tags: newTags })
-  }
-
-  const addTag = async () => {
-    const t = tagInput.trim().toLowerCase().replace(/^#/, '').replace(/\s+/g, '-')
-    if (!t || tags.includes(t)) { setTagInput(''); setShowTagInput(false); return }
-    await saveTags([...tags, t])
-    setTagInput('')
-    setShowTagInput(false)
-  }
-
-  const removeTag = (tag: string) => void saveTags(tags.filter((t) => t !== tag))
 
   return (
     <section className="flex h-full flex-col bg-bg p-4">
@@ -168,29 +161,17 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
         </button>
       </div>
 
-      <div className="mb-3 flex flex-wrap items-center gap-1.5">
-        {tags.map((tag) => (
-          <span key={tag} className="inline-flex items-center gap-1 rounded-full border border-border bg-surface2 px-2 py-0.5 text-xs text-text2">
-            <Tag size={10} />#{tag}
-            <button onClick={() => removeTag(tag)} className="ml-0.5 text-text3 hover:text-text transition"><X size={10} /></button>
-          </span>
-        ))}
-        {showTagInput ? (
-          <form onSubmit={(e) => { e.preventDefault(); void addTag() }} className="inline-flex items-center gap-1">
-            <input
-              autoFocus
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onBlur={() => { void addTag() }}
-              onKeyDown={(e) => { if (e.key === 'Escape') { setTagInput(''); setShowTagInput(false) } }}
-              placeholder="tag-name"
-              className="w-24 rounded border border-border bg-surface px-2 py-0.5 text-xs text-text outline-none focus:border-text2"
-            />
-          </form>
-        ) : (
-          <Button variant="ghost" size="xs" onClick={() => setShowTagInput(true)} className="inline-flex items-center gap-1 opacity-60 hover:opacity-100">
-            <Plus size={11} /> Tag
-          </Button>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <TagSelector selectedTags={tags} onTagsChange={saveTags} />
+        {tags.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {tags.map((tagName) => {
+              const tag = tagMap.get(tagName)
+              return tag ? (
+                <TagBadge key={tagName} tag={tag} onRemove={() => saveTags(tags.filter((t) => t !== tagName))} variant="md" />
+              ) : null
+            })}
+          </div>
         )}
       </div>
 
