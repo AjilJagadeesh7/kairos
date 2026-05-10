@@ -283,51 +283,38 @@ export function Sidebar({ onClose }: SidebarProps): JSX.Element {
                 tabIndex={0}
                 onClick={() => { navigate(`/notes/${note.id}`); onClose?.() }}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { navigate(`/notes/${note.id}`); onClose?.() } }}
-                className={`group flex cursor-pointer select-none flex-col gap-1.5 rounded-lg border px-3 py-3 transition-colors ${
+                className={`group flex cursor-pointer select-none items-center gap-2 rounded-lg border px-2 py-1.5 transition-colors ${
                   activeNoteId === note.id
                     ? 'border-accent/20 bg-surface shadow-sm'
                     : 'border-transparent hover:border-border hover:bg-surface'
                 }`}
               >
                 {/* Title */}
-                <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-text">
+                <h3 className="line-clamp-1 flex-1 text-xs font-medium text-text">
                   {note.title || 'Untitled note'}
                 </h3>
 
-                {/* Tags */}
-                {note.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {note.tags.map((tag: string) => (
-                      <span key={tag} className="rounded-full bg-surface3 px-2 py-0.5 text-[10px] font-medium text-text3">
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                {/* Date */}
+                <span className="whitespace-nowrap text-[10px] text-text3">{timeAgo(note.updatedAt)}</span>
 
-                {/* Bottom row: date + actions */}
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] text-text3">{timeAgo(note.updatedAt)}</span>
-
-                  {/* Actions: always visible on mobile (no hover), visible on hover on desktop */}
-                  <div className="flex items-center gap-0.5 opacity-100 transition-opacity duration-150 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
-                    <button
-                      type="button"
-                      title="Copy wikilink"
-                      onClick={(e) => copyLink(e, note)}
-                      className="flex h-7 w-7 items-center justify-center rounded-md text-text3 transition hover:bg-surface2 hover:text-text active:scale-95"
-                    >
-                      {copiedId === note.id ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
-                    </button>
-                    <button
-                      type="button"
-                      title="Delete note"
-                      onClick={(e) => handleDelete(e, note)}
-                      className="flex h-7 w-7 items-center justify-center rounded-md text-text3 transition hover:bg-surface2 hover:text-red-400 active:scale-95"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
+                {/* Actions: always visible */}
+                <div className="flex items-center gap-0.5">
+                  <button
+                    type="button"
+                    title="Copy wikilink"
+                    onClick={(e) => copyLink(e, note)}
+                    className="flex h-6 w-6 items-center justify-center rounded-md text-text3 transition hover:bg-surface2 hover:text-text active:scale-95"
+                  >
+                    {copiedId === note.id ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+                  </button>
+                  <button
+                    type="button"
+                    title="Delete note"
+                    onClick={(e) => handleDelete(e, note)}
+                    className="flex h-6 w-6 items-center justify-center rounded-md text-text3 transition hover:bg-surface2 hover:text-red-400 active:scale-95"
+                  >
+                    <Trash2 size={12} />
+                  </button>
                 </div>
               </div>
             </li>
