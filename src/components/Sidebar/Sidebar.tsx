@@ -8,7 +8,10 @@ import { useConfirmStore } from '../../store/useConfirmStore'
 import { cosineSimilarity } from '../../utils/similarity'
 import { embedText } from '../../utils/embeddingClient'
 import { Button } from '../ui/Button'
+import { isLocalFolderConnected } from '../../sync/localFolder'
 import type { Note } from '../../types'
+
+type StorageCategory = 'all' | 'memory' | 'local' | 'synced'
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
@@ -28,6 +31,7 @@ export function Sidebar({ onClose }: SidebarProps): JSX.Element {
   const rawNotes = useLiveQuery(() => db.notes.orderBy('updatedAt').reverse().toArray())
   const notes = rawNotes ?? []
   const isLoading = rawNotes === undefined
+  const syncMetaData = useLiveQuery(() => db.syncMeta.toArray())
   const navigate = useNavigate()
   const {
     activeNoteId,
@@ -38,9 +42,11 @@ export function Sidebar({ onClose }: SidebarProps): JSX.Element {
     filterTag,
     setFilterTag,
     searchMode,
+    syncProvider,
   } = useAppStore()
   const [semanticResults, setSemanticResults] = useState<Note[] | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [storageCategory, setStorageCategory] = useState<StorageCategory>('all')
 
   const handleDelete = (e: React.MouseEvent, note: Note) => {
     e.stopPropagation()
@@ -52,6 +58,18 @@ export function Sidebar({ onClose }: SidebarProps): JSX.Element {
         danger: true,
       })
       .then((ok) => { if (ok) void deleteNoteById(note.id) })
+  }
+
+  // Determine storage location for a note
+  const getStorageLocation = (noteId: string): 'memory' | 'local' | 'synced' => {
+    const syncMeta = syncMetaData?.find((m) => m.noteId === noteId)
+    if (!syncMeta) return 'memory'
+    
+    if (syncProvider === 'localFolder' || isLocalFolderConnected()) {
+      return 'local'
+    }
+    
+    return 'synced'
   }
 
   const copyLink = (e: React.MouseEvent, note: Note) => {
@@ -72,6 +90,12 @@ export function Sidebar({ onClose }: SidebarProps): JSX.Element {
   const filtered = useMemo(() => {
     let list = notes
     if (filterTag) list = list.filter((n) => n.tags.includes(filterTag))
+    
+    // Filter by storage category
+    if (storageCategory !== 'all') {
+      list = list.filter((n) => getStorageLocation(n.id) === storageCategory)
+    }
+    
     if (!query.trim()) return list
 
     if (searchMode === 'fulltext') {
@@ -80,7 +104,7 @@ export function Sidebar({ onClose }: SidebarProps): JSX.Element {
     }
 
     return list
-  }, [notes, filterTag, query, searchMode])
+  }, [notes, filterTag, query, searchMode, storageCategory, syncMetaData, syncProvider])
 
   useEffect(() => {
     let mounted = true
@@ -173,6 +197,46 @@ export function Sidebar({ onClose }: SidebarProps): JSX.Element {
             aria-selected={searchMode === 'semantic'}
           >
             Semantic
+          </Button>
+        </div>
+
+        {/* Storage category tabs */}
+        <div className="mb-3 flex gap-1">
+          <Button
+            variant="pill"
+            size="xs"
+            onClick={() => setStorageCategory('all')}
+            className={storageCategory === 'all' ? 'active' : ''}
+            aria-selected={storageCategory === 'all'}
+          >
+            All
+          </Button>
+          <Button
+            variant="pill"
+            size="xs"
+            onClick={() => setStorageCategory('memory')}
+            className={storageCategory === 'memory' ? 'active' : ''}
+            aria-selected={storageCategory === 'memory'}
+          >
+            In Memory
+          </Button>
+          <Button
+            variant="pill"
+            size="xs"
+            onClick={() => setStorageCategory('local')}
+            className={storageCategory === 'local' ? 'active' : ''}
+            aria-selected={storageCategory === 'local'}
+          >
+            Local
+          </Button>
+          <Button
+            variant="pill"
+            size="xs"
+            onClick={() => setStorageCategory('synced')}
+            className={storageCategory === 'synced' ? 'active' : ''}
+            aria-selected={storageCategory === 'synced'}
+          >
+            Synced
           </Button>
         </div>
 
