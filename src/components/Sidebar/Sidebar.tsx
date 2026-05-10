@@ -1,16 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useNavigate } from 'react-router-dom'
-import { Check, Copy, Loader2, Plus, Search, Trash2, X, ChevronDown } from 'lucide-react'
+import { Check, Copy, Loader2, Plus, Search, Trash2, X } from 'lucide-react'
 import { db, getAllTags } from '../../db/schema'
 import { useAppStore } from '../../store/useAppStore'
 import { useConfirmStore } from '../../store/useConfirmStore'
 import { cosineSimilarity } from '../../utils/similarity'
 import { embedText } from '../../utils/embeddingClient'
 import { Button } from '../ui/Button'
+import { Dropdown } from '../ui/Dropdown'
 import { TagBadge } from '../Tags/TagBadge'
-import { TagChip } from '../Tags/TagChip'
 import { isLocalFolderConnected } from '../../sync/localFolder'
+import { TagFiltersDropdown } from './TagFiltersDropdown'
+import { StoragePills } from './StoragePills'
+import { SearchModePills } from './SearchModePills'
+import { SelectedFilters } from './SelectedFilters'
 import type { Note, TagRecord } from '../../types'
 
 type StorageCategory = 'all' | 'memory' | 'local' | 'synced'
@@ -49,9 +53,7 @@ export function Sidebar({ onClose }: SidebarProps): JSX.Element {
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [storageCategory, setStorageCategory] = useState<StorageCategory>('all')
   const [selectedTagFilters, setSelectedTagFilters] = useState<string[]>([])
-  const [tagSearch, setTagSearch] = useState('')
   const [tagMap, setTagMap] = useState<Map<string, TagRecord>>(new Map())
-  const [showFiltersDropdown, setShowFiltersDropdown] = useState(false)
 
   const allTags = useMemo(
     () => (allTagsData ? [...allTagsData].sort((a, b) => a.name.localeCompare(b.name)) : []),
@@ -204,149 +206,38 @@ export function Sidebar({ onClose }: SidebarProps): JSX.Element {
         </div>
 
         <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px]">
-          <div className="flex flex-wrap gap-1">
-            <Button
-              variant="pill"
-              size="xs"
-              onClick={() => useAppStore.getState().setSearchMode('fulltext')}
-              className={searchMode === 'fulltext' ? 'active' : ''}
-              aria-selected={searchMode === 'fulltext'}
-            >
-              Full text
-            </Button>
-            <Button
-              variant="pill"
-              size="xs"
-              onClick={() => useAppStore.getState().setSearchMode('semantic')}
-              className={searchMode === 'semantic' ? 'active' : ''}
-              aria-selected={searchMode === 'semantic'}
-            >
-              Semantic
-            </Button>
-          </div>
+          <SearchModePills
+            searchMode={searchMode}
+            onSearchModeChange={(mode) => useAppStore.getState().setSearchMode(mode)}
+          />
           <span className="sidebar-note-count ml-auto rounded-full bg-surface3 px-2 py-1 text-[10px] text-text3">
             {visible.length} {visible.length === 1 ? 'note' : 'notes'}
           </span>
         </div>
 
-        <div className="sidebar-storage-grid mb-4 grid grid-cols-2 gap-2 text-[10px]">
-          <Button
-            variant="pill"
-            size="xs"
-            onClick={() => setStorageCategory('all')}
-            className={storageCategory === 'all' ? 'active' : ''}
-            aria-selected={storageCategory === 'all'}
-          >
-            All · {categoryCounts.all}
-          </Button>
-          <Button
-            variant="pill"
-            size="xs"
-            onClick={() => setStorageCategory('memory')}
-            className={storageCategory === 'memory' ? 'active' : ''}
-            aria-selected={storageCategory === 'memory'}
-          >
-            Memory · {categoryCounts.memory}
-          </Button>
-          <Button
-            variant="pill"
-            size="xs"
-            onClick={() => setStorageCategory('local')}
-            className={storageCategory === 'local' ? 'active' : ''}
-            aria-selected={storageCategory === 'local'}
-          >
-            Local · {categoryCounts.local}
-          </Button>
-          <Button
-            variant="pill"
-            size="xs"
-            onClick={() => setStorageCategory('synced')}
-            className={storageCategory === 'synced' ? 'active' : ''}
-            aria-selected={storageCategory === 'synced'}
-          >
-            Synced · {categoryCounts.synced}
-          </Button>
-        </div>
+        <StoragePills
+          storageCategory={storageCategory}
+          categoryCounts={categoryCounts}
+          onStorageCategoryChange={setStorageCategory}
+        />
 
         {/* Filters dropdown */}
-        <div className="sidebar-filter-group relative">
-          <button
-            type="button"
-            onClick={() => setShowFiltersDropdown(!showFiltersDropdown)}
-            className="flex w-full items-center justify-between rounded-md border border-border bg-surface px-2 py-2 text-xs text-text outline-none hover:bg-surface2 focus:border-accent"
-          >
+        <div className="sidebar-filter-group relative mb-3">
+          <Dropdown>
             <span className="text-text3">Filters</span>
-            <ChevronDown size={12} className={`text-text3 transition-transform ${showFiltersDropdown ? 'rotate-180' : ''}`} />
-          </button>
-
-          {showFiltersDropdown && (
-            <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-md border border-border bg-surface p-3 shadow-lg">
-              <div className="space-y-3">
-                <div>
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-text3">Tag filter</p>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedTagFilters([])}
-                      className="text-[10px] font-semibold text-accent hover:text-accent/80"
-                    >
-                      Clear
-                    </button>
-                  </div>
-                  <input
-                    value={tagSearch}
-                    onChange={(e) => setTagSearch(e.target.value)}
-                    placeholder="Search tags…"
-                    className="w-full rounded-md border border-border bg-surface px-2 py-2 text-xs text-text outline-none focus:border-accent placeholder:text-text3"
-                  />
-                  <div className="mt-3 flex max-h-32 flex-wrap gap-1 overflow-y-auto pb-1">
-                    {allTags
-                      .filter((tag) => tag.name.includes(tagSearch.toLowerCase()))
-                      .slice(0, 20)
-                      .map((tag) => (
-                        <TagChip
-                          key={tag.name}
-                          tag={tag}
-                          selected={selectedTagFilters.includes(tag.name)}
-                          onClick={() => {
-                            setSelectedTagFilters(prev =>
-                              prev.includes(tag.name)
-                                ? prev.filter(t => t !== tag.name)
-                                : [...prev, tag.name]
-                            )
-                          }}
-                        />
-                      ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+            <TagFiltersDropdown
+              allTags={allTags}
+              selectedTagFilters={selectedTagFilters}
+              onTagFiltersChange={setSelectedTagFilters}
+            />
+          </Dropdown>
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-text3">
-          {selectedTagFilters.length > 0 ? (
-            selectedTagFilters.map(tagName => {
-              const tag = tagMap.get(tagName)
-              return tag ? (
-                <span
-                  key={tagName}
-                  className="rounded-full border border-border bg-surface3 px-2 py-0.5 text-[10px] text-text3"
-                  style={{ borderColor: tag.color + '40', backgroundColor: tag.color + '20' }}
-                >
-                  #{tagName}
-                </span>
-              ) : null
-            })
-          ) : (
-            <span className="rounded-full border border-border bg-surface3 px-2 py-0.5 text-[10px] text-text3">No tag filter</span>
-          )}
-          {storageCategory !== 'all' && (
-            <span className="rounded-full border border-border bg-surface3 px-2 py-0.5 text-[10px] text-text3">
-              {storageCategory === 'memory' ? 'Memory' : storageCategory === 'local' ? 'Local' : 'Synced'}
-            </span>
-          )}
-        </div>
+        <SelectedFilters
+          selectedTagFilters={selectedTagFilters}
+          storageCategory={storageCategory}
+          tagMap={tagMap}
+        />
       </div>
 
       {/* Note list */}

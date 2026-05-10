@@ -77,10 +77,6 @@ export function TagSelector({ selectedTags, onTagsChange }: TagSelectorProps): J
     }
   }
 
-  const handleRemoveTag = (tagName: string) => {
-    onTagsChange(selectedTags.filter((t) => t !== tagName))
-  }
-
   return (
     <div className="relative" ref={dropdownRef}>
       <Button
