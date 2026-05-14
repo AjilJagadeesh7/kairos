@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ArrowRight, FileText, X } from 'lucide-react'
 import { db } from '../../db/schema'
+import { stripMarkdown } from '../../utils/stripMarkdown'
 import type { Note } from '../../types'
 
 interface NotePreviewPopoverProps {
@@ -15,15 +16,6 @@ interface NotePreviewPopoverProps {
   y: number
   onNavigate: () => void
   onClose: () => void
-}
-
-function stripMarkdown(content: string): string {
-  return content
-    .replace(/^#{1,6}\s+/gm, '')
-    .replace(/[*_`~\[\]]/g, '')
-    .replace(/\[\[([^\]]+)\]\]/g, '$1')
-    .replace(/\n+/g, ' ')
-    .trim()
 }
 
 export function NotePreviewPopover({

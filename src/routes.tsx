@@ -2,7 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import { NotesPage } from './pages/NotesPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { LandingPage } from './pages/LandingPage'
-import { GraphView } from './components/Graph/GraphView'
+import { GraphView } from './components/organisms/Graph/GraphView'
 
 export function AppRoutes() {
   return (

@@ -1,0 +1,8 @@
+export { timeAgo } from './timeAgo'
+export { stripMarkdown } from './stripMarkdown'
+export { colorForIndex } from './colorForIndex'
+export { embedText, embedNote } from './embeddingClient'
+export { parseWikilinks, parseTags } from './wikilinks'
+export { cosineSimilarity, topKSimilar } from './similarity'
+export { isDesktop, isMobile, isWeb, supportsWebFS, getPlatform } from './platform'
+export type { Platform } from './platform'

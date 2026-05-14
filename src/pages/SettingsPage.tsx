@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
-import { SettingsPanel } from '../components/Settings/SettingsPanel'
-import { SettingsSidebar } from '../components/Settings/SettingsSidebar'
-import type { Section } from '../components/Settings/SettingsPanel'
+import { SettingsPanel } from '../components/organisms/Settings/SettingsPanel'
+import { SettingsSidebar } from '../components/organisms/Settings/SettingsSidebar'
+import type { Section } from '../types'
 
 export function SettingsPage() {
   const [section, setSection] = useState<Section>('general')

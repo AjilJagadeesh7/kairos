@@ -2,10 +2,10 @@ import { useEffect, useRef } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from './db/schema'
 import { useAppStore } from './store/useAppStore'
-import { Header } from './components/layout/Header'
+import { Header } from './components/organisms/Header/Header'
 import { AppRoutes } from './routes'
-import { LoaderBar } from './components/ui/LoaderBar'
-import { ConfirmDialog } from './components/ui/ConfirmDialog'
+import { LoaderBar } from './components/molecules/LoaderBar'
+import { ConfirmDialog } from './components/organisms/ConfirmDialog'
 import { initPlainFolder } from './sync/plainFolder'
 
 function App() {

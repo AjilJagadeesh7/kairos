@@ -3,8 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/schema'
 import { useAppStore } from '../store/useAppStore'
-import { Sidebar } from '../components/Sidebar/Sidebar'
-import { NoteEditor } from '../components/Editor/NoteEditor'
+import { Sidebar } from '../components/organisms/Sidebar/Sidebar'
+import { NoteEditor } from '../components/organisms/Editor/NoteEditor'
 
 export function NotesPage() {
   const { noteId } = useParams<{ noteId: string }>()

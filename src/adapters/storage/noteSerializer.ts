@@ -34,6 +34,7 @@ export function deserializeNote(raw: string): Note {
     createdAt: get('createdAt') || new Date().toISOString(),
     updatedAt: get('updatedAt') || new Date().toISOString(),
     content: body.replace(/^\n/, ''), // strip leading blank line added by serializer
+    embedding: [], // embeddings live in the db.embeddings table, not in the note record
   }
 }
 

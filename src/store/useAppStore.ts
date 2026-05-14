@@ -3,12 +3,10 @@ import { persist } from 'zustand/middleware'
 import { v4 as uuidv4 } from 'uuid'
 import { db, upsertNote, upsertEmbedding } from '../db/schema'
 import { useLoaderStore } from './useLoaderStore'
-import type { Note, SearchMode, SyncStatus, ThemeMode } from '../types'
+import type { Note, SearchMode, SyncStatus, ThemeMode, StorageTarget } from '../types'
 import type { S3Config } from '../sync/s3'
 import type { WebDAVConfig } from '../sync/webdav'
 import { parseTags } from '../utils/wikilinks'
-
-export type StorageTarget = 'indexdb' | 'local'
 
 type AppState = {
   activeNoteId?: string

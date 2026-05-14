@@ -9,8 +9,7 @@
 import { isLocalFolderConnected, writeToSyncSubdir, readFromSyncSubdir } from './localFolder'
 import type { S3Config } from './s3'
 import type { WebDAVConfig } from './webdav'
-import type { ThemeMode } from '../types'
-import type { StorageTarget } from '../store/useAppStore'
+import type { ThemeMode, StorageTarget } from '../types'
 
 export type PersistedSettings = {
   version: 1
