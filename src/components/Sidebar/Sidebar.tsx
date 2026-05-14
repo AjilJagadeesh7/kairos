@@ -10,14 +10,10 @@ import { embedText } from '../../utils/embeddingClient'
 import { Button } from '../ui/Button'
 import { Dropdown } from '../ui/Dropdown'
 import { TagBadge } from '../Tags/TagBadge'
-import { isLocalFolderConnected } from '../../sync/localFolder'
 import { TagFiltersDropdown } from './TagFiltersDropdown'
-import { StoragePills } from './StoragePills'
 import { SearchModePills } from './SearchModePills'
 import { SelectedFilters } from './SelectedFilters'
 import type { Note, TagRecord } from '../../types'
-
-type StorageCategory = 'all' | 'memory' | 'local' | 'synced'
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
@@ -37,7 +33,6 @@ export function Sidebar({ onClose }: SidebarProps): JSX.Element {
   const rawNotes = useLiveQuery(() => db.notes.orderBy('updatedAt').reverse().toArray())
   const notes = rawNotes ?? []
   const isLoading = rawNotes === undefined
-  const syncMetaData = useLiveQuery(() => db.syncMeta.toArray())
   const allTagsData = useLiveQuery(() => getAllTags())
   const navigate = useNavigate()
   const {
@@ -47,11 +42,9 @@ export function Sidebar({ onClose }: SidebarProps): JSX.Element {
     query,
     setQuery,
     searchMode,
-    syncProvider,
   } = useAppStore()
   const [semanticResults, setSemanticResults] = useState<Note[] | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
-  const [storageCategory, setStorageCategory] = useState<StorageCategory>('all')
   const [selectedTagFilters, setSelectedTagFilters] = useState<string[]>([])
   const [tagMap, setTagMap] = useState<Map<string, TagRecord>>(new Map())
 
@@ -72,18 +65,6 @@ export function Sidebar({ onClose }: SidebarProps): JSX.Element {
       .then((ok) => { if (ok) void deleteNoteById(note.id) })
   }
 
-  // Determine storage location for a note
-  const getStorageLocation = (noteId: string): 'memory' | 'local' | 'synced' => {
-    const syncMeta = syncMetaData?.find((m) => m.noteId === noteId)
-    if (!syncMeta) return 'memory'
-    
-    if (syncProvider === 'localFolder' || isLocalFolderConnected()) {
-      return 'local'
-    }
-    
-    return 'synced'
-  }
-
   const copyLink = (e: React.MouseEvent, note: Note) => {
     e.stopPropagation()
     void navigator.clipboard.writeText(`[[${note.title}]]`)
@@ -99,26 +80,11 @@ export function Sidebar({ onClose }: SidebarProps): JSX.Element {
     }
   }, [allTagsData])
 
-  const categoryCounts = useMemo(() => {
-    const counts = { all: notes.length, memory: 0, local: 0, synced: 0 }
-    for (const note of notes) {
-      const location = getStorageLocation(note.id)
-      counts[location] += 1
-    }
-    return counts
-  }, [notes, syncMetaData, syncProvider])
-
   const filtered = useMemo(() => {
     let list = notes
 
-    // Filter by tags (multiple selection)
     if (selectedTagFilters.length > 0) {
       list = list.filter((n) => selectedTagFilters.every(tag => n.tags.includes(tag)))
-    }
-
-    // Filter by storage category
-    if (storageCategory !== 'all') {
-      list = list.filter((n) => getStorageLocation(n.id) === storageCategory)
     }
 
     if (!query.trim()) return list
@@ -129,7 +95,7 @@ export function Sidebar({ onClose }: SidebarProps): JSX.Element {
     }
 
     return list
-  }, [notes, selectedTagFilters, query, searchMode, storageCategory, syncMetaData, syncProvider, getStorageLocation])
+  }, [notes, selectedTagFilters, query, searchMode])
 
   useEffect(() => {
     let mounted = true
@@ -215,12 +181,6 @@ export function Sidebar({ onClose }: SidebarProps): JSX.Element {
           </span>
         </div>
 
-        <StoragePills
-          storageCategory={storageCategory}
-          categoryCounts={categoryCounts}
-          onStorageCategoryChange={setStorageCategory}
-        />
-
         {/* Filters dropdown */}
         <div className="sidebar-filter-group relative mb-3">
           <Dropdown>
@@ -235,7 +195,6 @@ export function Sidebar({ onClose }: SidebarProps): JSX.Element {
 
         <SelectedFilters
           selectedTagFilters={selectedTagFilters}
-          storageCategory={storageCategory}
           tagMap={tagMap}
         />
       </div>

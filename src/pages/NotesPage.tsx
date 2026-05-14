@@ -20,7 +20,7 @@ export function NotesPage() {
 
   // If at /notes with no noteId, redirect to the most-recently-updated note
   const firstNote = useLiveQuery(
-    () => noteId ? null : db.notes.orderBy('updatedAt').reverse().first(),
+    () => noteId ? undefined : db.notes.orderBy('updatedAt').reverse().first(),
     [noteId],
   )
   useEffect(() => {

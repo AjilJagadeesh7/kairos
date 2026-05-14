@@ -1,15 +1,9 @@
 /**
- * WebDAV sync provider.
- * Works with Nextcloud, ownCloud, Koofr, pCloud, Box, any NAS (Synology, QNAP, TrueNAS),
- * and any self-hosted WebDAV server.
- *
- * User provides a base URL pointing to their MindVault directory, e.g.:
- *   https://cloud.example.com/remote.php/dav/files/alice/MindVault
- *
- * Auth uses HTTP Basic (username + password / app password).
- * Notes are stored as JSON files: {baseUrl}/{noteId}.json
+ * WebDAV sync provider — plain .md files, no encryption.
+ * Works with Nextcloud, ownCloud, Koofr, pCloud, Box, any NAS.
  */
-import type { RemoteEncryptedNote } from './types'
+import { serializeNote, deserializeNote, noteIdToPath } from '../adapters/storage/noteSerializer'
+import type { Note } from '../types'
 
 // ---------------------------------------------------------------------------
 // Config
@@ -24,13 +18,8 @@ export type WebDAVConfig = {
 
 let _config: WebDAVConfig | null = null
 
-export function setWebDAVConfig(cfg: WebDAVConfig | null): void {
-  _config = cfg
-}
-
-export function getWebDAVConfig(): WebDAVConfig | null {
-  return _config
-}
+export function setWebDAVConfig(cfg: WebDAVConfig | null): void { _config = cfg }
+export function getWebDAVConfig(): WebDAVConfig | null           { return _config }
 
 export function isWebDAVConnected(): boolean {
   return _config !== null && Boolean(_config.url && _config.username && _config.password)
@@ -49,24 +38,17 @@ function originOf(url: string): string {
   return `${u.protocol}//${u.host}`
 }
 
-/** Create the directory if it doesn't exist (404 → MKCOL). 405 means it already exists. */
 async function ensureDir(baseUrl: string, authHeader: string): Promise<void> {
   const url = baseUrl.replace(/\/?$/, '/')
-  const res = await fetch(url, {
-    method: 'MKCOL',
-    headers: { Authorization: authHeader },
-  })
-  // 201 = created, 405 = already exists, 301/302 = redirect (treat as ok)
-  if (!res.ok && res.status !== 405) {
-    throw new Error(`WebDAV: could not create directory (${res.status})`)
-  }
+  const res = await fetch(url, { method: 'MKCOL', headers: { Authorization: authHeader } })
+  if (!res.ok && res.status !== 405) throw new Error(`WebDAV: could not create directory (${res.status})`)
 }
 
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
-export async function listWebDAVNotes(): Promise<RemoteEncryptedNote[]> {
+export async function listWebDAVNotes(): Promise<Note[]> {
   const cfg = _config
   if (!cfg) throw new Error('WebDAV not configured')
 
@@ -75,39 +57,33 @@ export async function listWebDAVNotes(): Promise<RemoteEncryptedNote[]> {
 
   await ensureDir(baseUrl, authHeader)
 
-  const propfindRes = await fetch(baseUrl + '/', {
-    method:  'PROPFIND',
-    headers: {
-      Authorization:   authHeader,
-      Depth:           '1',
-      'Content-Type':  'application/xml',
-    },
+  const res = await fetch(baseUrl + '/', {
+    method: 'PROPFIND',
+    headers: { Authorization: authHeader, Depth: '1', 'Content-Type': 'application/xml' },
     body: `<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:displayname/></d:prop></d:propfind>`,
   })
 
-  if (!propfindRes.ok) {
-    if (propfindRes.status === 401) throw new Error('WebDAV: invalid credentials')
-    throw new Error(`WebDAV PROPFIND failed: ${propfindRes.status}`)
+  if (!res.ok) {
+    if (res.status === 401) throw new Error('WebDAV: invalid credentials')
+    throw new Error(`WebDAV PROPFIND failed: ${res.status}`)
   }
 
-  const xml  = await propfindRes.text()
-  const doc  = new DOMParser().parseFromString(xml, 'text/xml')
+  const xml    = await res.text()
+  const doc    = new DOMParser().parseFromString(xml, 'text/xml')
   const origin = originOf(baseUrl)
 
-  // getElementsByTagNameNS handles namespace-prefixed elements correctly.
   const hrefs = Array.from(doc.getElementsByTagNameNS('DAV:', 'response'))
     .map((r) => r.getElementsByTagNameNS('DAV:', 'href')[0]?.textContent ?? '')
-    .filter((href) => href.endsWith('.json'))
+    .filter((href) => href.endsWith('.md'))
 
-  const notes: RemoteEncryptedNote[] = []
+  const notes: Note[] = []
   for (const href of hrefs) {
     try {
       const fileUrl = href.startsWith('http') ? href : `${origin}${href}`
-      const res     = await fetch(fileUrl, { headers: { Authorization: authHeader } })
-      if (!res.ok) continue
-      const note       = (await res.json()) as RemoteEncryptedNote
-      note.fileId      = fileUrl
-      notes.push(note)
+      const fileRes = await fetch(fileUrl, { headers: { Authorization: authHeader } })
+      if (!fileRes.ok) continue
+      const note = deserializeNote(await fileRes.text())
+      notes.push({ ...note, embedding: note.embedding ?? [] })
     } catch (err) {
       console.warn('WebDAV: skipping', href, err)
     }
@@ -115,21 +91,18 @@ export async function listWebDAVNotes(): Promise<RemoteEncryptedNote[]> {
   return notes
 }
 
-export async function upsertWebDAVNote(
-  note: RemoteEncryptedNote,
-  _existingUrl?: string,
-): Promise<string> {
+export async function upsertWebDAVNote(note: Note): Promise<string> {
   const cfg = _config
   if (!cfg) throw new Error('WebDAV not configured')
 
   const baseUrl    = cfg.url.replace(/\/$/, '')
   const authHeader = basicAuth(cfg.username, cfg.password)
-  const fileUrl    = `${baseUrl}/${note.noteId}.json`
+  const fileUrl    = `${baseUrl}/${noteIdToPath(note.id)}`
 
   const res = await fetch(fileUrl, {
-    method:  'PUT',
-    headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
-    body:    JSON.stringify(note),
+    method: 'PUT',
+    headers: { Authorization: authHeader, 'Content-Type': 'text/markdown; charset=utf-8' },
+    body: serializeNote(note),
   })
 
   if (!res.ok && res.status !== 201 && res.status !== 204) {
@@ -138,21 +111,28 @@ export async function upsertWebDAVNote(
   return fileUrl
 }
 
-/** Verify the server URL and credentials. Throws a descriptive error on failure. */
-export async function testWebDAVConnection(cfg: WebDAVConfig): Promise<void> {
-  const url        = cfg.url.replace(/\/?$/, '/')
-  const authHeader = basicAuth(cfg.username, cfg.password)
+export async function deleteWebDAVNote(noteId: string): Promise<void> {
+  const cfg = _config
+  if (!cfg) throw new Error('WebDAV not configured')
+  const fileUrl = `${cfg.url.replace(/\/$/, '')}/${noteIdToPath(noteId)}`
+  const res     = await fetch(fileUrl, {
+    method: 'DELETE',
+    headers: { Authorization: basicAuth(cfg.username, cfg.password) },
+  })
+  if (!res.ok && res.status !== 404) throw new Error(`WebDAV DELETE failed: ${res.status}`)
+}
 
+/** Verify the server URL and credentials. */
+export async function testWebDAVConnection(cfg: WebDAVConfig): Promise<void> {
+  const url = cfg.url.replace(/\/?$/, '/')
   const res = await fetch(url, {
-    method:  'PROPFIND',
+    method: 'PROPFIND',
     headers: {
-      Authorization:  authHeader,
-      Depth:          '0',
-      'Content-Type': 'application/xml',
+      Authorization: basicAuth(cfg.username, cfg.password),
+      Depth: '0', 'Content-Type': 'application/xml',
     },
     body: `<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/></d:prop></d:propfind>`,
   })
-
   if (res.status === 401) throw new Error('Invalid username or password')
   if (res.status === 403) throw new Error('Access denied — check permissions')
   if (res.status === 404) throw new Error('Directory not found — check your WebDAV URL')

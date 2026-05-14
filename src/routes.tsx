@@ -1,8 +1,8 @@
 import { Routes, Route } from 'react-router-dom'
 import { NotesPage } from './pages/NotesPage'
+import { SettingsPage } from './pages/SettingsPage'
 import { LandingPage } from './pages/LandingPage'
 import { GraphView } from './components/Graph/GraphView'
-import { SettingsPanel } from './components/Settings/SettingsPanel'
 
 export function AppRoutes() {
   return (
@@ -11,7 +11,7 @@ export function AppRoutes() {
       <Route path="/notes" element={<NotesPage />} />
       <Route path="/notes/:noteId" element={<NotesPage />} />
       <Route path="/graph" element={<GraphView />} />
-      <Route path="/settings" element={<SettingsPanel />} />
+      <Route path="/settings" element={<SettingsPage />} />
     </Routes>
   )
 }
