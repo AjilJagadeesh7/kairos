@@ -1,38 +1,52 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
-import { useLiveQuery } from 'dexie-react-hooks'
-import { ArrowLeft, RefreshCw } from 'lucide-react'
-import { NotePreviewPopover } from '../../common/NotePreviewPopover'
-import { db } from '../../../db/schema'
-import { parseWikilinks } from '../../../utils/wikilinks'
-import { cosineSimilarity } from '../../../utils/similarity'
-import { colorForIndex } from '../../../utils/colorForIndex'
-import { Button } from '../../atoms/Button'
-import type { GNode, GLink, GraphPopover } from '../../../types'
+import { RefreshCw } from 'lucide-react'
+import type { GNode, GLink } from '../../../types'
 
-type Props = { onBack?: () => void }
+type GraphMode = 'links' | 'tags'
+
+interface GraphViewProps {
+  nodes: GNode[]
+  links: GLink[]
+  graphMode: GraphMode
+  tagColorMap: Map<string, string>
+  selectedNoteId: string | null
+  onSelectNote: (noteId: string | null) => void
+  onOpenNote: (noteId: string) => void
+  rerenderKey: number
+  onRelayout: () => void
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  if (!hex.startsWith('#') || hex.length < 7) return `rgba(251,191,36,${alpha})`
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `rgba(${r},${g},${b},${alpha})`
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type FGRef = any
 
-export function GraphView({ onBack }: Props): JSX.Element {
-  const navigate = useNavigate()
-  const notes    = useLiveQuery(() => db.notes.toArray(), [], [])
+export function GraphView({
+  nodes, links, graphMode, tagColorMap,
+  selectedNoteId, onSelectNote, onOpenNote,
+  rerenderKey, onRelayout,
+}: GraphViewProps): JSX.Element {
+  const fgRef         = useRef<FGRef>(null)
+  const canvasWrapRef = useRef<HTMLDivElement>(null)
+  const lastClickRef  = useRef<{ id: string; t: number } | null>(null)
+  const selectedIdRef = useRef<string | null>(null)
+  const hoveredIdRef  = useRef<string | null>(null)
 
-  const fgRef           = useRef<FGRef>(null)
-  const canvasWrapRef   = useRef<HTMLDivElement>(null)
-  const lastClickRef    = useRef<{ id: string; t: number } | null>(null)
-  const selectedIdRef   = useRef<string | null>(null)
-  const hoveredIdRef    = useRef<string | null>(null)
+  const [dims,      setDims]      = useState<{ w: number; h: number } | null>(null)
+  const [bgColor,   setBgColor]   = useState('rgb(10,10,10)')
+  const [textColor, setTextColor] = useState('rgba(255,255,255,0.75)')
 
-  const [rerenderKey, setRerenderKey] = useState(0)
-  const [selectedId,  setSelectedId]  = useState<string | null>(null)
-  const [popover,     setPopover]     = useState<GraphPopover | null>(null)
-  const [dims,        setDims]        = useState<{ w: number; h: number } | null>(null)
-  const [bgColor,     setBgColor]     = useState('rgb(10,10,10)')
-  const [textColor,   setTextColor]   = useState('rgba(255,255,255,0.75)')
+  // Keep ref in sync for stable callbacks
+  useEffect(() => { selectedIdRef.current = selectedNoteId }, [selectedNoteId])
 
-  // Read theme CSS vars and watch for theme changes
+  // Read theme CSS vars
   useEffect(() => {
     const readTheme = () => {
       const style = getComputedStyle(document.documentElement)
@@ -47,87 +61,29 @@ export function GraphView({ onBack }: Props): JSX.Element {
     return () => obs.disconnect()
   }, [])
 
-  // Measure the canvas container after layout so ForceGraph gets correct dimensions
+  // Measure canvas container
   useEffect(() => {
     const el = canvasWrapRef.current
     if (!el) return
     const obs = new ResizeObserver(entries => {
       const { width, height } = entries[0].contentRect
-      if (width > 0 && height > 0) {
-        setDims({ w: Math.round(width), h: Math.round(height) })
-      }
+      if (width > 0 && height > 0) setDims({ w: Math.round(width), h: Math.round(height) })
     })
     obs.observe(el)
     return () => obs.disconnect()
   }, [])
 
-  // keep ref in sync
-  useEffect(() => { selectedIdRef.current = selectedId }, [selectedId])
-
-  const { nodes, links } = useMemo(() => {
-    if (!notes?.length) return { nodes: [] as GNode[], links: [] as GLink[] }
-
-    const titleMap = new Map(notes.map(n => [n.title.trim().toLowerCase(), n.id]))
-    const degree   = new Map<string, number>()
-    const inc = (id: string) => degree.set(id, (degree.get(id) ?? 0) + 1)
-    const seen  = new Set<string>()
-    const links: GLink[] = []
-
-    for (const note of notes) {
-      for (const lnk of parseWikilinks(note.content)) {
-        const tid = titleMap.get(lnk.trim().toLowerCase())
-        if (!tid || tid === note.id) continue
-        const key = [note.id, tid].sort().join('|')
-        if (seen.has(key)) continue
-        seen.add(key)
-        links.push({ source: note.id, target: tid, kind: 'wikilink' })
-        inc(note.id); inc(tid)
-      }
-    }
-    for (let i = 0; i < notes.length; i++) {
-      for (let j = i + 1; j < notes.length; j++) {
-        const a = notes[i]; const b = notes[j]
-        if (!a.embedding?.length || !b.embedding?.length) continue
-        if (cosineSimilarity(a.embedding!, b.embedding!) > 0.75) {
-          links.push({ source: a.id, target: b.id, kind: 'semantic' })
-          inc(a.id); inc(b.id)
-        }
-      }
-    }
-    const nodes: GNode[] = notes.map((n, i) => ({
-      id: n.id,
-      label: n.title || 'Untitled',
-      color: colorForIndex(i),
-      val: Math.max(1, Math.min((degree.get(n.id) ?? 0) * 1.5 + 1, 14)),
-      tags: n.tags ?? [],
-    }))
-    return { nodes, links }
-  }, [notes, rerenderKey]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const graphData = useMemo(() => ({ nodes, links }), [nodes, links])
-
-  // Stable callback — reads selectedId from ref, never recreated
-  const handleNodeClick = useCallback((node: GNode, event: MouseEvent) => {
+  const handleNodeClick = useCallback((node: GNode) => {
     const now = Date.now()
-    // double-click → navigate
     if (lastClickRef.current?.id === node.id && now - lastClickRef.current.t < 400) {
-      navigate(`/notes/${node.id}`)
-      onBack?.()
+      onOpenNote(node.id)
       return
     }
     lastClickRef.current = { id: node.id, t: now }
-    // toggle
-    if (selectedIdRef.current === node.id) {
-      setSelectedId(null)
-      setPopover(null)
-      return
-    }
-    setSelectedId(node.id)
-    setPopover({ noteId: node.id, x: event.clientX, y: event.clientY })
-  }, [navigate, onBack]) // no selectedId dep — uses ref
+    onSelectNote(selectedIdRef.current === node.id ? null : node.id)
+  }, [onSelectNote, onOpenNote])
 
-  // Custom hit-test + hover tracking.
-  // Uses a setTimeout so ForceGraph has time to mount its canvas after key change.
+  // Custom hit-test + hover tracking
   useEffect(() => {
     if (!dims || nodes.length === 0) return
     let cleanup: (() => void) | undefined
@@ -137,31 +93,24 @@ export function GraphView({ onBack }: Props): JSX.Element {
       if (!canvas) return
 
       let startX = 0; let startY = 0
-      const downHandler = (e: PointerEvent) => { startX = e.offsetX; startY = e.offsetY }
-
+      const downHandler  = (e: PointerEvent) => { startX = e.offsetX; startY = e.offsetY }
       const clickHandler = (e: PointerEvent) => {
-        if (e.button !== 0) return // left button only
+        if (e.button !== 0) return
         if (Math.hypot(e.offsetX - startX, e.offsetY - startY) > 4) return
         const fg = fgRef.current
         if (!fg?.graph2ScreenCoords) return
         const cx = e.offsetX; const cy = e.offsetY
-        let closest: GNode | null = null
-        let minDist = Infinity
+        let closest: GNode | null = null; let minDist = Infinity
         for (const node of nodes) {
           if (node.x == null || node.y == null) continue
-          const sc = fg.graph2ScreenCoords(node.x, node.y)
+          const sc     = fg.graph2ScreenCoords(node.x, node.y)
           const radius = 5 * Math.sqrt(node.val || 1) + 6
-          const dist = Math.hypot(sc.x - cx, sc.y - cy)
+          const dist   = Math.hypot(sc.x - cx, sc.y - cy)
           if (dist <= radius && dist < minDist) { minDist = dist; closest = node }
         }
-        if (closest) {
-          handleNodeClick(closest as GNode, e)
-          e.stopPropagation()
-        } else {
-          setSelectedId(null); setPopover(null)
-        }
+        if (closest) { handleNodeClick(closest as GNode); e.stopPropagation() }
+        else onSelectNote(null)
       }
-
       const moveHandler = (e: MouseEvent) => {
         const fg = fgRef.current
         if (!fg?.graph2ScreenCoords) return
@@ -173,147 +122,115 @@ export function GraphView({ onBack }: Props): JSX.Element {
           if (Math.hypot(sc.x - cx, sc.y - cy) <= 5 * Math.sqrt(node.val || 1) + 6) { hitNode = node; break }
         }
         hoveredIdRef.current = hitNode?.id ?? null
-        canvas.style.cursor = hitNode ? 'pointer' : 'grab'
+        canvas.style.cursor  = hitNode ? 'pointer' : 'grab'
       }
-
       const leaveHandler = () => { hoveredIdRef.current = null }
 
       canvas.addEventListener('pointerdown', downHandler)
-      canvas.addEventListener('pointerup', clickHandler)
-      canvas.addEventListener('mousemove', moveHandler)
-      canvas.addEventListener('mouseleave', leaveHandler)
+      canvas.addEventListener('pointerup',   clickHandler)
+      canvas.addEventListener('mousemove',   moveHandler)
+      canvas.addEventListener('mouseleave',  leaveHandler)
       cleanup = () => {
         canvas.removeEventListener('pointerdown', downHandler)
-        canvas.removeEventListener('pointerup', clickHandler)
-        canvas.removeEventListener('mousemove', moveHandler)
-        canvas.removeEventListener('mouseleave', leaveHandler)
+        canvas.removeEventListener('pointerup',   clickHandler)
+        canvas.removeEventListener('mousemove',   moveHandler)
+        canvas.removeEventListener('mouseleave',  leaveHandler)
       }
     }
 
     const t = setTimeout(attach, 80)
     return () => { clearTimeout(t); cleanup?.() }
-  }, [dims, nodes, handleNodeClick])
+  }, [dims, nodes, handleNodeClick, onSelectNote])
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleNodeHover = useCallback((_n: GNode | null) => { /* hover handled natively */ }, [])
+  const handleNodeHover   = useCallback((_n: GNode | null) => {}, [])
+  const handleNodeDragEnd = useCallback((node: GNode) => { node.fx = node.x; node.fy = node.y }, [])
 
-  // Draw label only when this node is hovered — reads hoveredIdRef (no re-render needed)
   const nodeCanvasObject = useCallback((node: GNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
     if (hoveredIdRef.current !== node.id) return
-    const label = node.label.length > 22 ? node.label.slice(0, 20) + '…' : node.label
+    const label    = node.label.length > 22 ? node.label.slice(0, 20) + '…' : node.label
     const fontSize = Math.max(6, 8 / globalScale)
-    ctx.font = `400 ${fontSize}px Manrope, sans-serif`
-    ctx.fillStyle = textColor.replace(/,\s*[\d.]+\)$/, ', 0.55)')
-    ctx.textAlign = 'center'
+    ctx.font         = `400 ${fontSize}px Manrope, sans-serif`
+    ctx.fillStyle    = textColor.replace(/,\s*[\d.]+\)$/, ', 0.55)')
+    ctx.textAlign    = 'center'
     ctx.textBaseline = 'top'
-    const nodeRadius = 5 * Math.sqrt(node.val || 1)
-    ctx.fillText(label, node.x ?? 0, (node.y ?? 0) + nodeRadius + 2 / globalScale)
+    ctx.fillText(label, node.x ?? 0, (node.y ?? 0) + 5 * Math.sqrt(node.val || 1) + 2 / globalScale)
   }, [textColor])
 
-  const handleNodeDragEnd = useCallback((node: GNode) => {
-    node.fx = node.x; node.fy = node.y
-  }, [])
-
-  const wikilinkCount = links.filter(l => l.kind === 'wikilink').length
-  const semanticCount = links.filter(l => l.kind === 'semantic').length
+  const graphData = { nodes, links }
 
   return (
-    <div className="relative flex h-[calc(100vh-65px)] flex-col" style={{ background: bgColor }}>
+    <div className="flex h-full flex-col" style={{ background: bgColor }}>
 
-      {/* Toolbar */}
-      <div className="flex shrink-0 items-center gap-3 px-4 py-2.5"
+      {/* Minimal toolbar: just a refresh button */}
+      <div className="flex shrink-0 items-center justify-end px-3 py-2"
         style={{ borderBottom: '1px solid rgb(var(--border))', background: 'rgb(var(--surface-2))' }}>
-        <Button variant="ghost" size="xs" onClick={() => onBack ? onBack() : navigate(-1)} className="inline-flex items-center gap-1.5 text-[rgb(var(--text-2))] hover:text-[rgb(var(--text))]">
-          <ArrowLeft size={13} /> Back
-        </Button>
-        <div className="h-4 w-px bg-white/10" />
-        <span className="text-sm font-bold tracking-tight text-[rgb(var(--text))]">Knowledge Graph</span>
-        <span className="rounded-full px-2 py-0.5 text-[11px]"
-          style={{ background: 'rgb(var(--surface-3))', color: 'rgb(var(--text-3))' }}>
-          {nodes.length} notes · {links.length} links
-        </span>
-        <div className="ml-auto flex items-center gap-4">
-          <div className="hidden items-center gap-4 text-xs sm:flex" style={{ color: 'rgb(var(--text-2))' }}>
-            <span className="flex items-center gap-1.5">
-              <svg width="20" height="8" viewBox="0 0 20 8" fill="none">
-                <line x1="0" y1="4" x2="20" y2="4" stroke="#2dd4bf" strokeWidth="2" strokeDasharray="5 3" />
-                <polygon points="16,1.5 20,4 16,6.5" fill="#2dd4bf" />
-              </svg>
-              Wikilink <span style={{ color: 'rgb(var(--text-3))' }}>{wikilinkCount}</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <svg width="20" height="8" viewBox="0 0 20 8" fill="none">
-                <line x1="0" y1="4" x2="20" y2="4" stroke="#818cf8" strokeWidth="1.5" strokeDasharray="2 2" />
-              </svg>
-              Semantic <span style={{ color: 'rgb(var(--text-3))' }}>{semanticCount}</span>
-            </span>
+        <button
+          title="Re-layout"
+          onClick={onRelayout}
+          className="rounded-md p-1.5 text-[rgb(var(--text-3))] transition hover:bg-[rgb(var(--surface-3))] hover:text-[rgb(var(--text))]"
+        >
+          <RefreshCw size={13} />
+        </button>
+      </div>
+
+      {/* Canvas */}
+      <div ref={canvasWrapRef} className="relative flex-1" style={{ overflow: 'hidden' }}>
+        {dims && nodes.length > 0 && (
+          <ForceGraph2D
+            key={`${rerenderKey}-${dims.w}-${dims.h}-${nodes.length}-${graphMode}`}
+            ref={fgRef}
+            graphData={graphData}
+            backgroundColor={bgColor}
+            width={dims.w}
+            height={dims.h}
+            nodeColor={(node: GNode) => node.id === selectedNoteId ? '#ffffff' : node.color}
+            nodeVal={(node: GNode) => node.val}
+            nodeLabel={(node: GNode) => node.label}
+            nodeRelSize={5}
+            nodeCanvasObjectMode={() => 'after'}
+            nodeCanvasObject={nodeCanvasObject}
+            linkColor={(lnk: GLink) => {
+              if (lnk.kind === 'wikilink') return 'rgba(45,212,191,0.4)'
+              if (lnk.kind === 'semantic') return 'rgba(129,140,248,0.25)'
+              const hex = lnk.sharedTags?.[0] ? tagColorMap.get(lnk.sharedTags[0]) : undefined
+              return hex ? hexToRgba(hex, 0.45) : 'rgba(251,191,36,0.4)'
+            }}
+            linkWidth={(lnk: GLink) => lnk.kind === 'wikilink' ? 1.2 : lnk.kind === 'semantic' ? 0.6 : 1}
+            linkDirectionalArrowLength={(l: GLink) => l.kind === 'wikilink' ? 5 : 0}
+            linkDirectionalArrowRelPos={1}
+            linkDirectionalParticles={(l: GLink) => l.kind === 'wikilink' ? 2 : 0}
+            linkDirectionalParticleSpeed={0.004}
+            linkDirectionalParticleWidth={1.5}
+            linkDirectionalParticleColor={() => '#2dd4bf'}
+            d3AlphaDecay={0.035}
+            d3VelocityDecay={0.6}
+            cooldownTicks={200}
+            warmupTicks={60}
+            enableNodeDrag
+            onNodeHover={handleNodeHover}
+            onNodeDragEnd={handleNodeDragEnd}
+          />
+        )}
+
+        {/* Hint */}
+        {nodes.length > 0 && !selectedNoteId && (
+          <div className="pointer-events-none absolute bottom-5 left-1/2 z-10 -translate-x-1/2 rounded-full px-3 py-1 text-[11px]"
+            style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.25)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            Click node · Double-click to open · Drag to move
           </div>
-          <button title="Re-layout"
-            onClick={() => { setSelectedId(null); setPopover(null); setRerenderKey(k => k + 1) }}
-            className="rounded-md p-1.5 text-[rgb(var(--text-3))] transition hover:bg-[rgb(var(--surface-3))] hover:text-[rgb(var(--text))]">
-            <RefreshCw size={13} />
-          </button>
-        </div>
+        )}
+
+        {/* Empty state */}
+        {nodes.length === 0 && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm"
+            style={{ color: 'rgba(255,255,255,0.25)' }}>
+            {graphMode === 'tags'
+              ? 'Add tags to notes to see tag connections.'
+              : 'No notes yet. Create some notes to see the graph.'}
+          </div>
+        )}
       </div>
-
-      {/* Canvas — only mount when dims AND nodes are ready, so ForceGraph inits with correct data */}
-      <div ref={canvasWrapRef} className="flex-1" style={{ overflow: 'hidden' }}>
-        {dims && nodes.length > 0 && <ForceGraph2D
-          key={`${rerenderKey}-${dims.w}-${dims.h}-${nodes.length}`}
-          ref={fgRef}
-          graphData={graphData}
-          backgroundColor={bgColor}
-          width={dims.w}
-          height={dims.h}
-          nodeColor={(node: GNode) => node.id === selectedId ? '#ffffff' : node.color}
-          nodeVal={(node: GNode) => node.val}
-          nodeLabel={(node: GNode) => node.label}
-          nodeRelSize={5}
-          nodeCanvasObjectMode={() => 'after'}
-          nodeCanvasObject={nodeCanvasObject}
-          linkColor={(lnk: GLink) => lnk.kind === 'wikilink' ? 'rgba(45,212,191,0.4)' : 'rgba(129,140,248,0.25)'}
-          linkWidth={(lnk: GLink) => lnk.kind === 'wikilink' ? 1.2 : 0.6}
-          linkDirectionalArrowLength={(l: GLink) => l.kind === 'wikilink' ? 5 : 0}
-          linkDirectionalArrowRelPos={1}
-          linkDirectionalParticles={(l: GLink) => l.kind === 'wikilink' ? 2 : 0}
-          linkDirectionalParticleSpeed={0.004}
-          linkDirectionalParticleWidth={1.5}
-          linkDirectionalParticleColor={() => '#2dd4bf'}
-          d3AlphaDecay={0.035}
-          d3VelocityDecay={0.6}
-          cooldownTicks={200}
-          warmupTicks={60}
-          enableNodeDrag
-          onNodeHover={handleNodeHover}
-          onNodeDragEnd={handleNodeDragEnd}
-        />}
-      </div>
-
-      {/* Hint */}
-      {nodes.length > 0 && !popover && (
-        <div className="pointer-events-none absolute bottom-5 left-1/2 z-10 -translate-x-1/2 rounded-full px-3 py-1 text-[11px]"
-          style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.25)', border: '1px solid rgba(255,255,255,0.06)' }}>
-          Click node · Double-click to open · Drag to move
-        </div>
-      )}
-
-      {/* Empty state */}
-      {nodes.length === 0 && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm" style={{ color: 'rgba(255,255,255,0.25)' }}>
-          No notes yet. Create some notes to see the graph.
-        </div>
-      )}
-
-      {/* Popover */}
-      {popover && (
-        <NotePreviewPopover
-          noteId={popover.noteId}
-          x={popover.x}
-          y={popover.y}
-          onNavigate={() => { navigate(`/notes/${popover.noteId}`); onBack?.() }}
-          onClose={() => { setSelectedId(null); setPopover(null) }}
-        />
-      )}
     </div>
   )
 }

@@ -1,4 +1,4 @@
-export type EdgeKind = 'wikilink' | 'semantic'
+export type EdgeKind = 'wikilink' | 'semantic' | 'tag'
 
 export type GraphEdge = {
   id?: string
@@ -14,7 +14,7 @@ export type GNode = {
 }
 
 export type GLink = {
-  source: string | GNode; target: string | GNode; kind: EdgeKind
+  source: string | GNode; target: string | GNode; kind: EdgeKind; sharedTags?: string[]
 }
 
 export type GraphPopover = { noteId: string; x: number; y: number }

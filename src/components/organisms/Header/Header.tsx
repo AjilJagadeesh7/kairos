@@ -14,7 +14,7 @@ export function Header() {
   const setMobileSidebarOpen = useAppStore((s) => s.setMobileSidebarOpen)
 
   // Hamburger is shown on pages that have a sidebar drawer
-  const hasSidebar = location.pathname.startsWith('/notes') || location.pathname.startsWith('/settings')
+  const hasSidebar = location.pathname.startsWith('/notes') || location.pathname.startsWith('/settings') || location.pathname.startsWith('/graph')
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-3 backdrop-blur">

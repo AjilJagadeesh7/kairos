@@ -1,4 +1,4 @@
-import { Cloud, Database, Info, Settings2, X } from 'lucide-react'
+import { Cloud, Database, Info, Settings2, Tag, X } from 'lucide-react'
 import type { Section } from '../../../types'
 
 interface SettingsSidebarProps {
@@ -11,6 +11,7 @@ const NAV: Array<{ id: Section; label: string; icon: React.ElementType }> = [
   { id: 'general', label: 'General', icon: Settings2 },
   { id: 'sync',    label: 'Sync',    icon: Cloud      },
   { id: 'storage', label: 'Storage', icon: Database   },
+  { id: 'tags',    label: 'Tags',    icon: Tag        },
   { id: 'about',   label: 'About',   icon: Info       },
 ]
 
