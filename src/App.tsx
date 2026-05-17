@@ -5,6 +5,9 @@ import { Header } from './components/organisms/Header/Header'
 import { AppRoutes } from './routes'
 import { LoaderBar } from './components/molecules/LoaderBar'
 import { ConfirmDialog } from './components/organisms/ConfirmDialog'
+import { PluginProvider } from './plugins/pluginContext'
+
+const DARK_THEMES = new Set(['dark', 'cyberpunk', 'dracula', 'nord', 'catppuccin'])
 
 function AppInner() {
   const theme = useAppStore(s => s.theme)
@@ -20,7 +23,7 @@ function AppInner() {
       </div>
       <Toaster
         position="bottom-right"
-        theme={theme === 'dark' || theme === 'cyberpunk' ? 'dark' : 'light'}
+        theme={DARK_THEMES.has(theme) ? 'dark' : 'light'}
         richColors
         closeButton
       />
@@ -29,7 +32,11 @@ function AppInner() {
 }
 
 function App() {
-  return <AppInner />
+  return (
+    <PluginProvider>
+      <AppInner />
+    </PluginProvider>
+  )
 }
 
 export default App

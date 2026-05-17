@@ -1,26 +1,25 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { BookOpen, SquareKanban, Network, Settings2 } from 'lucide-react'
 import { useAppStore } from '../../../store/useAppStore'
+import { usePluginRegistry } from '../../../plugins/pluginContext'
 import { Button } from '../../atoms/Button'
 import { ThemeSelect } from '../../molecules/ThemeSelect'
 import { SyncStatusBadge } from '../../molecules/SyncStatusBadge'
 
 export function Header() {
-  const navigate = useNavigate()
-  const location = useLocation()
+  const navigate             = useNavigate()
+  const location             = useLocation()
   const theme                = useAppStore((s) => s.theme)
   const setTheme             = useAppStore((s) => s.setTheme)
   const mobileSidebarOpen    = useAppStore((s) => s.mobileSidebarOpen)
   const setMobileSidebarOpen = useAppStore((s) => s.setMobileSidebarOpen)
+  const { pages: pluginPages } = usePluginRegistry()
 
-  // Hamburger is shown on pages that have a sidebar drawer
   const hasSidebar = location.pathname.startsWith('/notes') || location.pathname.startsWith('/settings') || location.pathname.startsWith('/graph')
-
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-3 backdrop-blur">
       <div className="flex items-center gap-3">
-        {/* Mobile sidebar toggle — only on notes pages */}
         {hasSidebar && (
           <button
             className="flex h-8 w-8 items-center justify-center rounded-md text-[rgb(var(--text-2))] transition hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))] xl:hidden"
@@ -42,6 +41,7 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-1">
+        {/* Core nav */}
         <NavLink to="/notes">
           {({ isActive }) => (
             <Button variant="ghost" size="xs" className={`inline-flex items-center gap-1 ${isActive ? 'text-[rgb(var(--accent))]' : ''}`}>
@@ -71,9 +71,20 @@ export function Header() {
           )}
         </NavLink>
 
+        {/* Plugin-registered nav items */}
+        {pluginPages.map(({ path, navLabel, navIcon: NavIcon }) => (
+          <NavLink key={path} to={path}>
+            {({ isActive }) => (
+              <Button variant="ghost" size="xs" className={`inline-flex items-center gap-1 ${isActive ? 'text-[rgb(var(--accent))]' : ''}`}>
+                {NavIcon && <NavIcon size={13} />}
+                {navLabel}
+              </Button>
+            )}
+          </NavLink>
+        ))}
+
         <div className="mx-1 h-4 w-px bg-[rgb(var(--border))]" />
 
-        {/* Sync status — clicking goes to Settings › Sync */}
         <SyncStatusBadge />
         <ThemeSelect value={theme} onChange={setTheme} />
       </div>

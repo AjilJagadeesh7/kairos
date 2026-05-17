@@ -95,7 +95,62 @@ export function useAppStartup() {
         const { useKanbanStore } = await import('../store/useKanbanStore')
         const kanbanStore = useKanbanStore.getState()
         if (!kanbanStore.isLoaded) await kanbanStore.loadBoards()
+
+        // Load plugins after data is ready
+        const { loadAllPlugins } = await import('../plugins/pluginManager')
+        await loadAllPlugins()
+
+        // Handle pending URL-param install (web/PWA — deferred because vault wasn't ready)
+        const pending = sessionStorage.getItem('mindvault_pending_install')
+        if (pending) {
+          sessionStorage.removeItem('mindvault_pending_install')
+          const req = JSON.parse(pending) as { id: string; source: string }
+          const { installPlugin } = await import('../plugins/installPlugin')
+          await installPlugin({
+            id: req.id,
+            manifestUrl: `${req.source}/plugins/${req.id}/manifest.json`,
+            bundleUrl:   `${req.source}/plugins/${req.id}/index.js`,
+          })
+        }
       }
+
+      // Handle URL-param install when vault IS already connected (web/PWA)
+      {
+        const params = new URLSearchParams(window.location.search)
+        const installId = params.get('installPlugin')
+        const source    = params.get('source')
+        if (installId && source) {
+          // Clean URL immediately so it doesn't re-trigger on refresh
+          const clean = new URL(window.location.href)
+          clean.searchParams.delete('installPlugin')
+          clean.searchParams.delete('source')
+          window.history.replaceState({}, '', clean.toString())
+
+          if (isPlainFolderConnected()) {
+            const { installPlugin } = await import('../plugins/installPlugin')
+            await installPlugin({
+              id: installId,
+              manifestUrl: `${source}/plugins/${installId}/manifest.json`,
+              bundleUrl:   `${source}/plugins/${installId}/index.js`,
+            })
+          } else {
+            // Vault not yet connected — defer install until after vault setup
+            sessionStorage.setItem('mindvault_pending_install', JSON.stringify({ id: installId, source }))
+          }
+        }
+      }
+
+      // Tauri deep link handler
+      try {
+        const { isDesktop } = await import('../utils/platform')
+        if (isDesktop()) {
+          const { onOpenUrl } = await import(/* @vite-ignore */ '@tauri-apps/plugin-deep-link')
+          await onOpenUrl(async (urls: string[]) => {
+            const { handleInstallDeepLink } = await import('../plugins/installPlugin')
+            for (const url of urls) await handleInstallDeepLink(url)
+          })
+        }
+      } catch { /* tauri-plugin-deep-link not available in web build */ }
 
       const { pingS3, isS3Connected } = await import('../sync/s3')
       const { pingWebDAV, isWebDAVConnected } = await import('../sync/webdav')

@@ -44,6 +44,14 @@
     },
     "shell": {
       "open": true
+    },
+    "deep-link": {
+      "mobile": [
+        { "host": "install", "pathPrefix": ["/"] }
+      ],
+      "desktop": {
+        "schemes": ["mindvault"]
+      }
     }
   }
 }

@@ -2,9 +2,10 @@
  * Plain (unencrypted) local folder — primary storage.
  *
  * Vault structure:
- *   {vault}/notes/     — one .md file per note
- *   {vault}/kanban/    — one .json file per board
- *   {vault}/config/    — settings.json and other config
+ *   {vault}/notes/          — one .md file per note
+ *   {vault}/kanban/         — one .json file per board
+ *   {vault}/config/         — settings.json and other config
+ *   {vault}/plugins/{id}/   — plugin bundles + data
  *
  * Desktop (Tauri) — uses plugin-fs + plugin-dialog.
  * Web — uses File System Access API (Chrome/Edge).
@@ -324,4 +325,59 @@ export async function writePlainConfig(filename: string, content: string): Promi
   const w   = await fh.createWritable()
   await w.write(content)
   await w.close()
+}
+
+// ─── Plugin file helpers ───────────────────────────────────────────────────────
+// Files live at {vault}/plugins/{pluginId}/{filename}
+
+export async function readPluginFile(pluginId: string, filename: string): Promise<string | null> {
+  if (isDesktop()) {
+    if (!_tauriPath) return null
+    const { readTextFile, exists } = await import('@tauri-apps/plugin-fs')
+    const path = `${_tauriPath}/plugins/${pluginId}/${filename}`
+    try {
+      if (!(await exists(path))) return null
+      return await readTextFile(path)
+    } catch { return null }
+  }
+  if (!_webHandle) return null
+  try {
+    const pluginsDir = await _webHandle.getDirectoryHandle('plugins', { create: false })
+    const pluginDir  = await pluginsDir.getDirectoryHandle(pluginId, { create: false })
+    const fh         = await pluginDir.getFileHandle(filename)
+    const file       = await fh.getFile()
+    return file.text()
+  } catch { return null }
+}
+
+export async function writePluginFile(pluginId: string, filename: string, content: string): Promise<void> {
+  if (isDesktop()) {
+    if (!_tauriPath) throw new Error('Vault not connected')
+    const { mkdir, writeTextFile } = await import('@tauri-apps/plugin-fs')
+    const dir = `${_tauriPath}/plugins/${pluginId}`
+    await mkdir(dir, { recursive: true }).catch(() => {})
+    await writeTextFile(`${dir}/${filename}`, content)
+    return
+  }
+  if (!_webHandle) throw new Error('Vault not connected')
+  const pluginsDir = await _webHandle.getDirectoryHandle('plugins', { create: true })
+  const pluginDir  = await pluginsDir.getDirectoryHandle(pluginId, { create: true })
+  const fh         = await pluginDir.getFileHandle(filename, { create: true })
+  const w          = await fh.createWritable()
+  await w.write(content)
+  await w.close()
+}
+
+export async function deletePluginFolder(pluginId: string): Promise<void> {
+  if (isDesktop()) {
+    if (!_tauriPath) return
+    const { remove } = await import('@tauri-apps/plugin-fs')
+    await remove(`${_tauriPath}/plugins/${pluginId}`, { recursive: true }).catch(() => {})
+    return
+  }
+  if (!_webHandle) return
+  try {
+    const pluginsDir = await _webHandle.getDirectoryHandle('plugins', { create: false })
+    await pluginsDir.removeEntry(pluginId, { recursive: true })
+  } catch { /* already gone */ }
 }
