@@ -67,6 +67,51 @@
   --accent-hover:210 210 210;   /* button hover      #D2D2D2  */
 }
 
+/* ─── DRACULA THEME ──────────────────────────────────────────────────────── */
+:root[data-theme='dracula'] {
+  --bg:           30  31  45;   /* #1E1F2D deep void                         */
+  --surface:      40  42  54;   /* #282a36 classic Dracula bg                */
+  --surface-2:    33  34  44;   /* #21222c dark panel                        */
+  --surface-3:    68  71  90;   /* #44475a comment grey                      */
+  --border:       68  71  90;   /* #44475a subtle divider                    */
+  --text:        248 248 242;   /* #f8f8f2 foreground                        */
+  --text-2:      189 147 249;   /* #bd93f9 purple secondary                  */
+  --text-3:       98 114 164;   /* #6272a4 comment                           */
+  --accent:      255 121 198;   /* #ff79c6 pink primary                      */
+  --accent-fg:    40  42  54;   /* #282a36 dark on pink                      */
+  --accent-hover:255 146 208;   /* #ff92d0 lighter pink                      */
+}
+
+/* ─── NORD THEME ─────────────────────────────────────────────────────────── */
+:root[data-theme='nord'] {
+  --bg:           38  44  56;   /* #262c38 slightly darker than polar night  */
+  --surface:      59  66  82;   /* #3b4252 polar night 2                     */
+  --surface-2:    46  52  64;   /* #2e3440 polar night 1                     */
+  --surface-3:    67  76  94;   /* #434c5e polar night 3                     */
+  --border:       76  86 106;   /* #4c566a polar night 4                     */
+  --text:        236 239 244;   /* #eceff4 snow storm 3                      */
+  --text-2:      216 222 233;   /* #d8dee9 snow storm 1                      */
+  --text-3:      129 161 193;   /* #81a1c1 frost 3                           */
+  --accent:      136 192 208;   /* #88c0d0 frost 4 (ice blue)                */
+  --accent-fg:    46  52  64;   /* #2e3440 dark on ice                       */
+  --accent-hover:143 188 187;   /* #8fbcbb frost 1                           */
+}
+
+/* ─── CATPPUCCIN MOCHA THEME ─────────────────────────────────────────────── */
+:root[data-theme='catppuccin'] {
+  --bg:           17  17  27;   /* #11111b crust                             */
+  --surface:      49  50  68;   /* #313244 surface 0                         */
+  --surface-2:    30  30  46;   /* #1e1e2e base                              */
+  --surface-3:    69  71  90;   /* #45475a surface 1                         */
+  --border:       88  91 112;   /* #585b70 surface 2                         */
+  --text:        205 214 244;   /* #cdd6f4 text                              */
+  --text-2:      186 194 222;   /* #bac2de subtext 1                         */
+  --text-3:      127 132 156;   /* #7f849c overlay 0                         */
+  --accent:      203 166 247;   /* #cba6f7 mauve                             */
+  --accent-fg:    30  30  46;   /* #1e1e2e base on mauve                     */
+  --accent-hover:212 183 249;   /* #d4b7f9 lighter mauve                     */
+}
+
 /* ─── CYBERPUNK THEME (retro-punk) ───────────────────────────────────────── */
 :root[data-theme='cyberpunk'] {
   --bg:            2   1   8;   /* void black        #020108  */
@@ -367,6 +412,66 @@ body {
   --crepe-color-hover:              #2a2a2a;
   --crepe-color-selected:           #333333;
   --crepe-color-inline-area:        #1e1e1e;
+}
+
+/* Dracula */
+:root[data-theme='dracula'] .milkdown {
+  --crepe-color-background:         #282a36;
+  --crepe-color-on-background:      #f8f8f2;
+  --crepe-color-surface:            #21222c;
+  --crepe-color-surface-low:        #44475a;
+  --crepe-color-on-surface:         #f8f8f2;
+  --crepe-color-on-surface-variant: #bd93f9;
+  --crepe-color-outline:            #44475a;
+  --crepe-color-primary:            #ff79c6;
+  --crepe-color-secondary:          #44475a;
+  --crepe-color-on-secondary:       #f8f8f2;
+  --crepe-color-inverse:            #21222c;
+  --crepe-color-on-inverse:         #f8f8f2;
+  --crepe-color-inline-code:        #50fa7b;
+  --crepe-color-hover:              #383a4a;
+  --crepe-color-selected:           #44475a;
+  --crepe-color-inline-area:        #1e1f2b;
+}
+
+/* Nord */
+:root[data-theme='nord'] .milkdown {
+  --crepe-color-background:         #3b4252;
+  --crepe-color-on-background:      #eceff4;
+  --crepe-color-surface:            #2e3440;
+  --crepe-color-surface-low:        #434c5e;
+  --crepe-color-on-surface:         #eceff4;
+  --crepe-color-on-surface-variant: #88c0d0;
+  --crepe-color-outline:            #4c566a;
+  --crepe-color-primary:            #88c0d0;
+  --crepe-color-secondary:          #434c5e;
+  --crepe-color-on-secondary:       #eceff4;
+  --crepe-color-inverse:            #2e3440;
+  --crepe-color-on-inverse:         #eceff4;
+  --crepe-color-inline-code:        #a3be8c;
+  --crepe-color-hover:              #3d4558;
+  --crepe-color-selected:           #4c566a;
+  --crepe-color-inline-area:        #2a3040;
+}
+
+/* Catppuccin Mocha */
+:root[data-theme='catppuccin'] .milkdown {
+  --crepe-color-background:         #313244;
+  --crepe-color-on-background:      #cdd6f4;
+  --crepe-color-surface:            #1e1e2e;
+  --crepe-color-surface-low:        #45475a;
+  --crepe-color-on-surface:         #cdd6f4;
+  --crepe-color-on-surface-variant: #bac2de;
+  --crepe-color-outline:            #585b70;
+  --crepe-color-primary:            #cba6f7;
+  --crepe-color-secondary:          #45475a;
+  --crepe-color-on-secondary:       #cdd6f4;
+  --crepe-color-inverse:            #1e1e2e;
+  --crepe-color-on-inverse:         #cdd6f4;
+  --crepe-color-inline-code:        #a6e3a1;
+  --crepe-color-hover:              #3a3b50;
+  --crepe-color-selected:           #585b70;
+  --crepe-color-inline-area:        #181825;
 }
 
 /* Cyberpunk */
