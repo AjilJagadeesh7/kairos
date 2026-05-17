@@ -23,6 +23,7 @@ type AppState = {
   s3Config: S3Config | null
   webdavConfig: WebDAVConfig | null
   mobileSidebarOpen: boolean
+  noteTagColors: Record<string, string>
 
   setTheme: (t: ThemeMode) => void
   setFont: (f: FontOption) => void
@@ -36,6 +37,7 @@ type AppState = {
   setActiveNoteId: (id?: string) => void
   setMobileSidebarOpen: (open: boolean) => void
   setStorageChoices: (choices: StorageTarget[]) => void
+  setNoteTagColor: (tagName: string, color: string) => void
 
   loadNotes: () => Promise<void>
   createNote: () => Promise<string>
@@ -65,6 +67,7 @@ export const useAppStore = create<AppState>()(
       s3Config: null,
       webdavConfig: null,
       mobileSidebarOpen: false,
+      noteTagColors: {},
       storageChoices: readLegacyStorageChoices(),
       theme: (localStorage.getItem('mindvault.theme') as ThemeMode | null) ?? 'light',
       font: (localStorage.getItem('mindvault.font') as FontOption | null) ?? 'manrope',
@@ -83,6 +86,7 @@ export const useAppStore = create<AppState>()(
       setWebDAVConfig: (webdavConfig) => set({ webdavConfig }),
       setActiveNoteId: (activeNoteId) => set({ activeNoteId }),
       setStorageChoices: (storageChoices) => set({ storageChoices }),
+      setNoteTagColor: (tagName, color) => set(s => ({ noteTagColors: { ...s.noteTagColors, [tagName]: color } })),
 
       loadNotes: async () => {
         const { readAllNotes, isPlainFolderConnected } = await import('../sync/plainFolder')
@@ -221,8 +225,9 @@ export const useAppStore = create<AppState>()(
         searchMode:     state.searchMode,
         s3Config:       state.s3Config,
         webdavConfig:   state.webdavConfig,
-        storageChoices: state.storageChoices,
-        theme:          state.theme,
+        storageChoices:  state.storageChoices,
+        noteTagColors:   state.noteTagColors,
+        theme:           state.theme,
         font:           state.font,
         fontWeight:     state.fontWeight,
         aiUrl:          state.aiUrl,

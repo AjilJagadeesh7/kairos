@@ -25,16 +25,22 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
   const [content, setContent] = useState(note.content)
   const [tags, setTags] = useState<string[]>(note.tags)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
-  const deleteNoteById = useAppStore((s) => s.deleteNoteById)
-  const updateNoteTags = useAppStore((s) => s.updateNoteTags)
-  const notes = useAppStore((s) => s.notes)
-  const navigate = useNavigate()
+  const deleteNoteById    = useAppStore(s => s.deleteNoteById)
+  const updateNoteTags    = useAppStore(s => s.updateNoteTags)
+  const setNoteTagColor   = useAppStore(s => s.setNoteTagColor)
+  const noteTagColors     = useAppStore(s => s.noteTagColors)
+  const notes             = useAppStore(s => s.notes)
+  const navigate          = useNavigate()
 
   const allTags = useMemo((): TagRecord[] => {
     const tagSet = new Set<string>()
     notes.forEach(n => n.tags.forEach(t => tagSet.add(t)))
-    return [...tagSet].sort().map(name => ({ name, color: tagColor(name), createdAt: '' }))
-  }, [notes])
+    return [...tagSet].sort().map(name => ({
+      name,
+      color: noteTagColors[name] ?? tagColor(name),
+      createdAt: '',
+    }))
+  }, [notes, noteTagColors])
 
   const tagMap = useMemo(() => new Map(allTags.map(tag => [tag.name, tag])), [allTags])
 
@@ -160,7 +166,12 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
       </div>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <TagSelector selectedTags={tags} onTagsChange={saveTags} availableTags={allTags} />
+        <TagSelector
+          selectedTags={tags}
+          onTagsChange={saveTags}
+          onTagCreate={(name, color) => setNoteTagColor(name, color)}
+          availableTags={allTags}
+        />
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {tags.map((tagName) => {

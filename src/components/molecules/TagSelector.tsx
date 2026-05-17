@@ -1,18 +1,33 @@
 import { useEffect, useRef, useState } from 'react'
 import { Plus, X } from 'lucide-react'
 import { Button } from '../atoms/Button'
+import { ColorPicker } from './ColorPicker'
+import { TAG_COLOR_PALETTE } from '../../utils/kanban'
 import type { TagRecord } from '../../types'
 
 interface TagSelectorProps {
   selectedTags: string[]
   onTagsChange: (tags: string[]) => void
+  onTagCreate?: (name: string, color: string) => void
   availableTags?: TagRecord[]
 }
 
-export function TagSelector({ selectedTags, onTagsChange, availableTags = [] }: TagSelectorProps): JSX.Element {
-  const [isOpen, setIsOpen] = useState(false)
-  const [newTagName, setNewTagName] = useState('')
+function autoColor(name: string): string {
+  let h = 5381
+  for (let i = 0; i < name.length; i++) h = ((h << 5) + h) ^ name.charCodeAt(i)
+  return TAG_COLOR_PALETTE[Math.abs(h) % TAG_COLOR_PALETTE.length]
+}
+
+export function TagSelector({ selectedTags, onTagsChange, onTagCreate, availableTags = [] }: TagSelectorProps): JSX.Element {
+  const [isOpen,      setIsOpen]      = useState(false)
+  const [newTagName,  setNewTagName]  = useState('')
+  const [newTagColor, setNewTagColor] = useState(TAG_COLOR_PALETTE[0])
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Auto-update preview color as user types
+  useEffect(() => {
+    if (newTagName.trim()) setNewTagColor(autoColor(newTagName.trim()))
+  }, [newTagName])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -30,14 +45,16 @@ export function TagSelector({ selectedTags, onTagsChange, availableTags = [] }: 
     if (!tagName) return
     if (!selectedTags.includes(tagName)) {
       onTagsChange([...selectedTags, tagName])
+      onTagCreate?.(tagName, newTagColor)
     }
     setNewTagName('')
+    setNewTagColor(TAG_COLOR_PALETTE[0])
     setIsOpen(false)
   }
 
   const handleSelectTag = (tagName: string) => {
     if (selectedTags.includes(tagName)) {
-      onTagsChange(selectedTags.filter((t) => t !== tagName))
+      onTagsChange(selectedTags.filter(t => t !== tagName))
     } else {
       onTagsChange([...selectedTags, tagName])
     }
@@ -55,12 +72,12 @@ export function TagSelector({ selectedTags, onTagsChange, availableTags = [] }: 
       </Button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 z-50 mt-2 w-64 rounded-lg border border-border bg-surface2 shadow-lg">
+        <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-lg border border-border bg-surface2 shadow-lg">
           {availableTags.length > 0 && (
             <div className="border-b border-border p-3">
               <p className="mb-2 text-xs font-semibold text-text3">Existing tags</p>
               <div className="flex flex-wrap gap-1">
-                {availableTags.map((tag) => (
+                {availableTags.map(tag => (
                   <button
                     key={tag.name}
                     type="button"
@@ -79,20 +96,36 @@ export function TagSelector({ selectedTags, onTagsChange, availableTags = [] }: 
           )}
 
           <form onSubmit={handleAddTag} className="p-3">
-            <p className="mb-2 text-xs font-semibold text-text3">Add new tag</p>
-            <div className="flex gap-2">
+            <p className="mb-2 text-xs font-semibold text-text3">New tag</p>
+
+            {/* Name input with color swatch preview */}
+            <div className="mb-3 flex gap-2">
+              <div
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
+                style={{ backgroundColor: newTagColor }}
+              />
               <input
                 type="text"
                 value={newTagName}
-                onChange={(e) => setNewTagName(e.target.value)}
+                onChange={e => setNewTagName(e.target.value)}
                 placeholder="tag-name…"
                 className="flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-xs text-text outline-none focus:border-accent placeholder:text-text3"
                 autoFocus
               />
-              <Button type="submit" variant="primary" size="xs" disabled={!newTagName.trim()}>
-                Add
-              </Button>
             </div>
+
+            {/* Color swatches */}
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-text3">Color</p>
+            <ColorPicker
+              value={newTagColor}
+              onChange={setNewTagColor}
+              cols={6}
+              className="mb-3"
+            />
+
+            <Button type="submit" variant="primary" size="xs" disabled={!newTagName.trim()} className="w-full justify-center">
+              Add tag
+            </Button>
           </form>
         </div>
       )}
