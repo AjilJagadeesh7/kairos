@@ -1,71 +1,37 @@
 import { useEffect, useRef, useState } from 'react'
 import { Plus, X } from 'lucide-react'
-import { useLiveQuery } from 'dexie-react-hooks'
-import { getAllTags, upsertTag } from '../../db/schema'
 import { Button } from '../atoms/Button'
 import type { TagRecord } from '../../types'
-
-const PRESET_COLORS = [
-  '#ef4444', // red
-  '#f97316', // orange
-  '#eab308', // yellow
-  '#22c55e', // green
-  '#0ea5e9', // blue
-  '#8b5cf6', // purple
-  '#ec4899', // pink
-  '#6366f1', // indigo
-  '#14b8a6', // teal
-  '#a855f7', // violet
-]
 
 interface TagSelectorProps {
   selectedTags: string[]
   onTagsChange: (tags: string[]) => void
+  availableTags?: TagRecord[]
 }
 
-export function TagSelector({ selectedTags, onTagsChange }: TagSelectorProps): JSX.Element {
-  const allTags = useLiveQuery(() => getAllTags())
-  const tags = allTags ?? []
+export function TagSelector({ selectedTags, onTagsChange, availableTags = [] }: TagSelectorProps): JSX.Element {
   const [isOpen, setIsOpen] = useState(false)
   const [newTagName, setNewTagName] = useState('')
-  const [selectedColor, setSelectedColor] = useState(PRESET_COLORS[0])
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false)
       }
     }
-
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleAddTag = async (e: React.FormEvent) => {
+  const handleAddTag = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newTagName.trim()) return
-
     const tagName = newTagName.trim().toLowerCase()
-    const existingTag = tags.find((t) => t.name === tagName)
-
-    if (!existingTag) {
-      const newTag: TagRecord = {
-        name: tagName,
-        color: selectedColor,
-        createdAt: new Date().toISOString(),
-      }
-      await upsertTag(newTag)
-    }
-
-    // Add to selected tags if not already there
+    if (!tagName) return
     if (!selectedTags.includes(tagName)) {
       onTagsChange([...selectedTags, tagName])
     }
-
     setNewTagName('')
-    setSelectedColor(PRESET_COLORS[0])
     setIsOpen(false)
   }
 
@@ -88,15 +54,13 @@ export function TagSelector({ selectedTags, onTagsChange }: TagSelectorProps): J
         <Plus size={13} /> Tag
       </Button>
 
-      {/* Dropdown menu */}
       {isOpen && (
         <div className="absolute top-full left-0 z-50 mt-2 w-64 rounded-lg border border-border bg-surface2 shadow-lg">
-          {/* Existing tags */}
-          {tags.length > 0 && (
+          {availableTags.length > 0 && (
             <div className="border-b border-border p-3">
               <p className="mb-2 text-xs font-semibold text-text3">Existing tags</p>
               <div className="flex flex-wrap gap-1">
-                {tags.map((tag) => (
+                {availableTags.map((tag) => (
                   <button
                     key={tag.name}
                     type="button"
@@ -114,46 +78,21 @@ export function TagSelector({ selectedTags, onTagsChange }: TagSelectorProps): J
             </div>
           )}
 
-          {/* New tag form */}
           <form onSubmit={handleAddTag} className="p-3">
-            <p className="mb-2 text-xs font-semibold text-text3">Create new tag</p>
-            <div className="mb-2 flex gap-2">
+            <p className="mb-2 text-xs font-semibold text-text3">Add new tag</p>
+            <div className="flex gap-2">
               <input
                 type="text"
                 value={newTagName}
                 onChange={(e) => setNewTagName(e.target.value)}
-                placeholder="Tag name…"
+                placeholder="tag-name…"
                 className="flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-xs text-text outline-none focus:border-accent placeholder:text-text3"
                 autoFocus
               />
+              <Button type="submit" variant="primary" size="xs" disabled={!newTagName.trim()}>
+                Add
+              </Button>
             </div>
-
-            {/* Color picker */}
-            <p className="mb-2 text-[10px] font-semibold text-text3">Color</p>
-            <div className="mb-3 flex flex-wrap gap-2">
-              {PRESET_COLORS.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  onClick={() => setSelectedColor(color)}
-                  className={`h-6 w-6 rounded-full transition ${
-                    selectedColor === color ? 'ring-2 ring-offset-2 ring-offset-surface2' : 'hover:opacity-80'
-                  }`}
-                  style={{ backgroundColor: color }}
-                  title={color}
-                />
-              ))}
-            </div>
-
-            <Button
-              type="submit"
-              variant="primary"
-              size="xs"
-              className="w-full"
-              disabled={!newTagName.trim()}
-            >
-              Create & Add Tag
-            </Button>
           </form>
         </div>
       )}

@@ -1,1 +1,1 @@
-export type Section = 'general' | 'sync' | 'storage' | 'tags' | 'about'
+export type Section = 'general' | 'storage-sync' | 'tags' | 'ai' | 'about'

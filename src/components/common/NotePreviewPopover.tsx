@@ -1,18 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ArrowRight, FileText, X } from 'lucide-react'
-import { db } from '../../db/schema'
+import { useAppStore } from '../../store/useAppStore'
 import { stripMarkdown } from '../../utils/stripMarkdown'
 import type { Note } from '../../types'
 
 interface NotePreviewPopoverProps {
-  /** Look up by title (wikilink use-case) */
   title?: string
-  /** Look up by id (graph use-case) */
   noteId?: string
-  /** Screen X coordinate — popover centres on this */
   x: number
-  /** Screen Y coordinate — popover appears below this */
   y: number
   onNavigate: () => void
   onClose: () => void
@@ -28,30 +24,26 @@ export function NotePreviewPopover({
 }: NotePreviewPopoverProps) {
   const [note, setNote] = useState<Note | null | undefined>(undefined)
   const tooltipRef = useRef<HTMLDivElement>(null)
+  const notes = useAppStore((s) => s.notes)
+  const isNotesLoaded = useAppStore((s) => s.isNotesLoaded)
 
-  // Fetch note by id or title
   useEffect(() => {
-    let cancelled = false
-    const lookup = noteId
-      ? db.notes.get(noteId)
-      : title
-        ? db.notes.filter((n) => n.title.trim().toLowerCase() === title.trim().toLowerCase()).first()
-        : Promise.resolve(undefined)
+    if (!isNotesLoaded) return
+    let found: Note | undefined
+    if (noteId) {
+      found = notes.find(n => n.id === noteId)
+    } else if (title) {
+      found = notes.find(n => n.title.trim().toLowerCase() === title.trim().toLowerCase())
+    }
+    setNote(found ?? null)
+  }, [noteId, title, notes, isNotesLoaded])
 
-    lookup.then((found) => {
-      if (!cancelled) setNote(found ?? null)
-    })
-    return () => { cancelled = true }
-  }, [noteId, title])
-
-  // Close on Escape
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  // Close on outside click
   useEffect(() => {
     const onOutside = (e: MouseEvent) => {
       if (tooltipRef.current && !tooltipRef.current.contains(e.target as Node)) {
@@ -85,7 +77,6 @@ export function NotePreviewPopover({
       className="fixed z-[9999] overflow-hidden rounded-xl border border-border bg-surface shadow-2xl"
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Header */}
       <div className="flex items-start gap-2 p-3 pb-2.5">
         <FileText size={14} className="mt-0.5 shrink-0 text-accent" />
         <div className="min-w-0 flex-1">
@@ -122,7 +113,6 @@ export function NotePreviewPopover({
         </button>
       </div>
 
-      {/* Footer */}
       {note && (
         <div className="border-t border-border px-3 py-2">
           <button

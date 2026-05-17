@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { BookOpen, Network, Settings2 } from 'lucide-react'
+import { BookOpen, Kanban, Network, Settings2 } from 'lucide-react'
 import { useAppStore } from '../../../store/useAppStore'
 import { Button } from '../../atoms/Button'
 import { ThemeSelect } from '../../molecules/ThemeSelect'
@@ -15,6 +15,7 @@ export function Header() {
 
   // Hamburger is shown on pages that have a sidebar drawer
   const hasSidebar = location.pathname.startsWith('/notes') || location.pathname.startsWith('/settings') || location.pathname.startsWith('/graph')
+
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-3 backdrop-blur">
@@ -45,6 +46,13 @@ export function Header() {
           {({ isActive }) => (
             <Button variant="ghost" size="xs" className={`inline-flex items-center gap-1 ${isActive ? 'text-[rgb(var(--accent))]' : ''}`}>
               <BookOpen size={13} /> Notes
+            </Button>
+          )}
+        </NavLink>
+        <NavLink to="/kanban">
+          {({ isActive }) => (
+            <Button variant="ghost" size="xs" className={`inline-flex items-center gap-1 ${isActive ? 'text-[rgb(var(--accent))]' : ''}`}>
+              <Kanban size={13} /> Kanban
             </Button>
           )}
         </NavLink>

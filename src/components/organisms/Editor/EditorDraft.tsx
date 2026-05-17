@@ -1,18 +1,23 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, FileDown, Save, Trash2 } from 'lucide-react'
-import { db, getAllTags } from '../../../db/schema'
 import { embedText } from '../../../utils/embeddingClient'
 import { useAppStore } from '../../../store/useAppStore'
 import { useConfirmStore } from '../../../store/useConfirmStore'
+import { TAG_COLOR_PALETTE } from '../../../utils/kanban'
 import { TagSelector } from '../../molecules/TagSelector'
 import { TagBadge } from '../../atoms/TagBadge'
 import { exportPDF } from './exportPDF'
 import { MarkdownEditor } from './MarkdownEditor'
-import { useLiveQuery } from 'dexie-react-hooks'
-import type { EditorDraftProps } from '../../../types'
+import type { EditorDraftProps, TagRecord } from '../../../types'
 
 type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved'
+
+function tagColor(name: string): string {
+  let h = 5381
+  for (let i = 0; i < name.length; i++) h = ((h << 5) + h) ^ name.charCodeAt(i)
+  return TAG_COLOR_PALETTE[Math.abs(h) % TAG_COLOR_PALETTE.length]
+}
 
 export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
   const [title, setTitle] = useState(note.title)
@@ -20,21 +25,24 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
   const [tags, setTags] = useState<string[]>(note.tags)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
   const deleteNoteById = useAppStore((s) => s.deleteNoteById)
+  const updateNoteTags = useAppStore((s) => s.updateNoteTags)
+  const notes = useAppStore((s) => s.notes)
   const navigate = useNavigate()
-  const allTags = useLiveQuery(() => getAllTags())
-  const tagMap = new Map((allTags ?? []).map((tag) => [tag.name, tag]))
 
-  const handleWikilinkClick = useCallback(async (linkedTitle: string) => {
-    const found = await db.notes
-      .filter((n) => n.title.trim().toLowerCase() === linkedTitle.trim().toLowerCase())
-      .first()
+  const allTags = useMemo((): TagRecord[] => {
+    const tagSet = new Set<string>()
+    notes.forEach(n => n.tags.forEach(t => tagSet.add(t)))
+    return [...tagSet].sort().map(name => ({ name, color: tagColor(name), createdAt: '' }))
+  }, [notes])
+
+  const tagMap = useMemo(() => new Map(allTags.map(tag => [tag.name, tag])), [allTags])
+
+  const handleWikilinkClick = useCallback((linkedTitle: string) => {
+    const found = notes.find(n => n.title.trim().toLowerCase() === linkedTitle.trim().toLowerCase())
     if (found) navigate(`/notes/${found.id}`)
-  }, [navigate])
+  }, [notes, navigate])
 
-  // Keep stable refs so saveNote can always read current values
   const editorRootRef = useRef<HTMLDivElement>(null)
-
-  // Keep stable refs so saveNote can always read current values
   const titleRef = useRef(title)
   const contentRef = useRef(content)
   useEffect(() => { titleRef.current = title }, [title])
@@ -61,11 +69,9 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
     const contentHash = Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('')
     await onSave({ title: t || 'Untitled note', content: c, embedding: embedded.embedding, contentHash })
     setSaveStatus('saved')
-    // Reset to idle after brief "Saved" confirmation
     setTimeout(() => setSaveStatus((s) => s === 'saved' ? 'idle' : s), 2000)
   }, [note.id, onSave])
 
-  // When the active note changes (without unmounting), reset all local state
   const prevNoteIdRef = useRef(note.id)
   useEffect(() => {
     if (prevNoteIdRef.current === note.id) return
@@ -78,10 +84,9 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
 
   const saveTags = async (newTags: string[]) => {
     setTags(newTags)
-    await db.notes.update(note.id, { tags: newTags })
+    await updateNoteTags(note.id, newTags)
   }
 
-  // Keyboard shortcut: Ctrl+S / Cmd+S
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -93,9 +98,7 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [saveStatus, saveNote])
 
-  // Mark dirty immediately on any change, then debounce auto-save 2s after last input
   useEffect(() => {
-    // Don't trigger on first mount (content matches note.content)
     if (title === note.title && content === note.content) return
     setSaveStatus('dirty')
     const handle = window.setTimeout(() => void saveNote(), 2000)
@@ -104,7 +107,6 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
 
   return (
     <section className="flex h-full flex-col bg-bg p-4">
-      {/* Title row: title input + save status + save button + delete */}
       <div className="mb-2 flex items-center gap-2">
         <input
           value={title}
@@ -113,7 +115,6 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
           placeholder="Note title"
         />
 
-        {/* Save status pill — only visible when something is happening */}
         <span className={`hidden shrink-0 text-xs transition-all sm:inline-flex items-center gap-1 ${
           saveStatus === 'idle' ? 'opacity-0 pointer-events-none' : 'opacity-100'
         } ${saveStatus === 'saved' ? 'text-green-500' : 'text-text3'}`}>
@@ -122,7 +123,6 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
           {saveStatus === 'dirty'  && 'Unsaved'}
         </span>
 
-        {/* Save button — accent when dirty, muted when clean */}
         <button
           type="button"
           onClick={() => void saveNote()}
@@ -159,13 +159,13 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
       </div>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <TagSelector selectedTags={tags} onTagsChange={saveTags} />
+        <TagSelector selectedTags={tags} onTagsChange={saveTags} availableTags={allTags} />
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {tags.map((tagName) => {
               const tag = tagMap.get(tagName)
               return tag ? (
-                <TagBadge key={tagName} tag={tag} onRemove={() => saveTags(tags.filter((t) => t !== tagName))} variant="md" />
+                <TagBadge key={tagName} tag={tag} onRemove={() => void saveTags(tags.filter((t) => t !== tagName))} variant="md" />
               ) : null
             })}
           </div>
@@ -173,7 +173,7 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
       </div>
 
       <div ref={editorRootRef} className="min-h-0 flex-1 rounded-md border border-border bg-surface">
-        <MarkdownEditor noteId={note.id} initialMarkdown={note.content} noteTitle={title} onChange={setContent} onWikilinkClick={(t) => { void handleWikilinkClick(t) }} />
+        <MarkdownEditor noteId={note.id} initialMarkdown={note.content} noteTitle={title} onChange={setContent} onWikilinkClick={(t) => handleWikilinkClick(t)} />
       </div>
     </section>
   )

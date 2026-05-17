@@ -30,7 +30,7 @@ export function isS3Connected(): boolean {
     && Boolean(_config.endpoint && _config.bucket && _config.accessKey && _config.secretKey)
 }
 
-const KEY_PREFIX = 'mindvault/'
+const KEY_PREFIX = 'mindvault/notes/'
 
 // ---------------------------------------------------------------------------
 // AWS Signature V4 — pure Web Crypto
@@ -181,4 +181,15 @@ export async function testS3Connection(cfg: S3Config): Promise<void> {
   if (res.status === 403) throw new Error('Access denied — check your access key and secret')
   if (res.status === 404) throw new Error('Bucket not found — check bucket name and endpoint')
   if (!res.ok)            throw new Error(`S3 error ${res.status}`)
+}
+
+/** Quick reachability check using the stored config. Returns error message or null. */
+export async function pingS3(): Promise<string | null> {
+  if (!_config) return null
+  try {
+    await testS3Connection(_config)
+    return null
+  } catch (err) {
+    return err instanceof Error ? err.message : 'S3 unreachable'
+  }
 }

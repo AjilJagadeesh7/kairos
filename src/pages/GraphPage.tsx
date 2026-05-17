@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useLiveQuery } from 'dexie-react-hooks'
-import { db } from '../db/schema'
 import { parseWikilinks } from '../utils/wikilinks'
 import { cosineSimilarity } from '../utils/similarity'
 import { colorForIndex } from '../utils/colorForIndex'
+import { TAG_COLOR_PALETTE } from '../utils/kanban'
 import { useAppStore } from '../store/useAppStore'
 import { GraphSidebar } from '../components/organisms/Graph/GraphSidebar'
 import { GraphView } from '../components/organisms/Graph/GraphView'
@@ -25,17 +24,23 @@ export function GraphPage() {
   const mobileSidebarOpen    = useAppStore((s) => s.mobileSidebarOpen)
   const setMobileSidebarOpen = useAppStore((s) => s.setMobileSidebarOpen)
 
-  const notes      = useLiveQuery(() => db.notes.toArray(), [], [])
-  const tagRecords = useLiveQuery(() => db.tags.toArray(),  [], [])
+  const notes = useAppStore((s) => s.notes)
 
   const [graphMode,      setGraphMode]      = useState<GraphMode>('links')
   const [rerenderKey,    setRerenderKey]    = useState(0)
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null)
 
-  const tagColorMap = useMemo(
-    () => new Map((tagRecords ?? []).map(t => [t.name, t.color])),
-    [tagRecords],
-  )
+  const tagColorMap = useMemo(() => {
+    const map = new Map<string, string>()
+    notes.forEach(n => n.tags.forEach(tag => {
+      if (!map.has(tag)) {
+        let h = 5381
+        for (let i = 0; i < tag.length; i++) h = ((h << 5) + h) ^ tag.charCodeAt(i)
+        map.set(tag, TAG_COLOR_PALETTE[Math.abs(h) % TAG_COLOR_PALETTE.length])
+      }
+    }))
+    return map
+  }, [notes])
 
   const { linksNodes, linksLinks, tagsNodes, tagsLinks } = useMemo(() => {
     if (!notes?.length) return {

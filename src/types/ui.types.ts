@@ -1,2 +1,7 @@
 export type ThemeMode = 'light' | 'dark' | 'cyberpunk'
 export type SearchMode = 'fulltext' | 'semantic'
+export type FontOption =
+  | 'manrope' | 'inter' | 'roboto' | 'ubuntu' | 'poppins'
+  | 'lora' | 'libre-baskerville' | 'playfair-display'
+  | 'cormorant' | 'cinzel'
+export type FontWeight = 'light' | 'regular' | 'medium'

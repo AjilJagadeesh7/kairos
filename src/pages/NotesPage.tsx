@@ -1,31 +1,20 @@
 import { useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { useLiveQuery } from 'dexie-react-hooks'
-import { db } from '../db/schema'
+import { useParams } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
 import { Sidebar } from '../components/organisms/Sidebar/Sidebar'
 import { NoteEditor } from '../components/organisms/Editor/NoteEditor'
+import { NotesHome } from '../components/organisms/Notes/NotesHome'
 
 export function NotesPage() {
   const { noteId } = useParams<{ noteId: string }>()
-  const navigate = useNavigate()
   const setActiveNoteId = useAppStore((s) => s.setActiveNoteId)
   const mobileSidebarOpen = useAppStore((s) => s.mobileSidebarOpen)
   const setMobileSidebarOpen = useAppStore((s) => s.setMobileSidebarOpen)
 
-  // Keep store in sync with URL param
+  // Keep store in sync with URL param — undefined when at /notes (no note selected)
   useEffect(() => {
     setActiveNoteId(noteId)
   }, [noteId, setActiveNoteId])
-
-  // If at /notes with no noteId, redirect to the most-recently-updated note
-  const firstNote = useLiveQuery(
-    () => noteId ? undefined : db.notes.orderBy('updatedAt').reverse().first(),
-    [noteId],
-  )
-  useEffect(() => {
-    if (!noteId && firstNote) navigate(`/notes/${firstNote.id}`, { replace: true })
-  }, [noteId, firstNote, navigate])
 
   return (
     <main className="relative flex h-full overflow-hidden">
@@ -46,9 +35,9 @@ export function NotesPage() {
         <Sidebar onClose={() => setMobileSidebarOpen(false)} />
       </div>
 
-      {/* Editor */}
+      {/* Main area: notes home or editor */}
       <section className="flex min-w-0 flex-1 flex-col border-l border-border">
-        <NoteEditor />
+        {noteId ? <NoteEditor /> : <NotesHome />}
       </section>
     </main>
   )

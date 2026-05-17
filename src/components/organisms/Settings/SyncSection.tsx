@@ -1,14 +1,10 @@
 import { useEffect, useState } from 'react'
-import { FolderOpen, RefreshCw, X } from 'lucide-react'
+import { CheckCircle2, Circle, FolderOpen, RefreshCw, X } from 'lucide-react'
 import { useAppStore } from '../../../store/useAppStore'
 import { Button } from '../../atoms/Button'
 import { SectionCard } from '../../molecules/SectionCard'
 import { Field } from '../../molecules/Field'
 import { StatusPill } from '../../molecules/StatusPill'
-import {
-  connectLocalFolder, disconnectLocalFolder,
-  getLocalFolderName, initLocalFolder, isLocalFolderConnected,
-} from '../../../sync/localFolder'
 import {
   isS3Connected, setS3Config, testS3Connection,
 } from '../../../sync/s3'
@@ -27,9 +23,11 @@ export function SyncSection() {
   const saveS3        = useAppStore((s) => s.setS3Config)
   const saveDAV       = useAppStore((s) => s.setWebDAVConfig)
 
-  const [localConnected,  setLocalConnected]  = useState(false)
-  const [localFolderName, setLocalFolderName] = useState<string | null>(null)
+  // Primary vault folder state
+  const [vaultConnected, setVaultConnected] = useState(false)
+  const [vaultName,      setVaultName]      = useState<string | null>(null)
 
+  // S3 state
   const [s3Endpoint,  setS3Endpoint]  = useState(storedS3?.endpoint  ?? '')
   const [s3Bucket,    setS3Bucket]    = useState(storedS3?.bucket     ?? '')
   const [s3Region,    setS3Region]    = useState(storedS3?.region     ?? 'auto')
@@ -39,6 +37,7 @@ export function SyncSection() {
   const [s3Error,     setS3Error]     = useState('')
   const [s3Saving,    setS3Saving]    = useState(false)
 
+  // WebDAV state
   const [davUrl,       setDavUrl]       = useState(storedDAV?.url      ?? '')
   const [davUser,      setDavUser]      = useState(storedDAV?.username  ?? '')
   const [davPass,      setDavPass]      = useState(storedDAV?.password  ?? '')
@@ -49,30 +48,36 @@ export function SyncSection() {
   const [syncing, setSyncing] = useState(false)
 
   useEffect(() => {
-    void initLocalFolder().then(() => {
-      setLocalConnected(isLocalFolderConnected())
-      setLocalFolderName(getLocalFolderName())
+    void import('../../../sync/plainFolder').then(({ isPlainFolderConnected, getPlainFolderName }) => {
+      setVaultConnected(isPlainFolderConnected())
+      setVaultName(getPlainFolderName())
     })
-    if (storedS3)  { setS3Config(storedS3);   setS3Connected(isS3Connected()) }
+    if (storedS3)  { setS3Config(storedS3);    setS3Connected(isS3Connected()) }
     if (storedDAV) { setWebDAVConfig(storedDAV); setDavConnected(isWebDAVConnected()) }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function onConnectLocal() {
+  async function onConnectVault() {
+    const { connectPlainFolder, isPlainFolderConnected, getPlainFolderName } = await import('../../../sync/plainFolder')
     try {
-      await connectLocalFolder()
-      setLocalConnected(isLocalFolderConnected())
-      setLocalFolderName(getLocalFolderName())
-      // Flush all current settings into the newly connected folder
+      await connectPlainFolder()
+      setVaultConnected(isPlainFolderConnected())
+      setVaultName(getPlainFolderName())
+      // Load notes and boards from newly selected folder
+      const store = useAppStore.getState()
+      await store.loadNotes()
+      const { useKanbanStore } = await import('../../../store/useKanbanStore')
+      await useKanbanStore.getState().loadBoards()
       const { saveCurrentSettings } = await import('../../../sync/settingsSync')
       void saveCurrentSettings()
     } catch { /* user cancelled */ }
   }
 
-  async function onDisconnectLocal() {
-    await disconnectLocalFolder()
-    setLocalConnected(false)
-    setLocalFolderName(null)
+  async function onDisconnectVault() {
+    const { disconnectPlainFolder } = await import('../../../sync/plainFolder')
+    await disconnectPlainFolder()
+    setVaultConnected(false)
+    setVaultName(null)
   }
 
   async function onSaveS3() {
@@ -92,6 +97,14 @@ export function SyncSection() {
     } finally { setS3Saving(false) }
   }
 
+  async function onDisconnectS3() {
+    setS3Config(null); saveS3(null); setS3Connected(false)
+    setS3Endpoint(''); setS3Bucket(''); setS3Region('auto')
+    setS3AccessKey(''); setS3SecretKey('')
+    const { saveCurrentSettings } = await import('../../../sync/settingsSync')
+    void saveCurrentSettings()
+  }
+
   async function onSaveWebDAV() {
     setDavError(''); setDavSaving(true)
     const cfg: WebDAVConfig = { url: davUrl.trim(), username: davUser.trim(), password: davPass }
@@ -105,51 +118,91 @@ export function SyncSection() {
     } finally { setDavSaving(false) }
   }
 
+  async function onDisconnectWebDAV() {
+    setWebDAVConfig(null); saveDAV(null); setDavConnected(false)
+    setDavUrl(''); setDavUser(''); setDavPass('')
+    const { saveCurrentSettings } = await import('../../../sync/settingsSync')
+    void saveCurrentSettings()
+  }
+
   async function onSyncNow() {
     setSyncing(true)
     await syncAllProviders(setSyncStatus)
+    // Reload after sync in case remote had new notes
+    const { isPlainFolderConnected } = await import('../../../sync/plainFolder')
+    if (isPlainFolderConnected()) await useAppStore.getState().loadNotes()
     setSyncing(false)
   }
 
-  const anyConnected = localConnected || s3Connected || davConnected
+  const anyRemoteConnected = s3Connected || davConnected
 
   return (
-    <div className="space-y-4">
-      {/* Local Folder */}
-      <SectionCard title="Local Folder">
-        <p className="mb-3 text-xs text-[rgb(var(--text-2))]">
-          Sync notes as plain .md files to a folder on this device.
-          Works with Dropbox, iCloud Drive, OneDrive, Proton Drive desktop app, etc.
+    <div className="space-y-6">
+
+      {/* ── Vault folder (primary storage) ─────────────────────────────── */}
+      <SectionCard title="Vault Folder">
+        <p className="mb-4 text-xs text-[rgb(var(--text-2))]">
+          Your single source of truth. All notes, boards, and config are stored inside this folder
+          as plain files — easy to back up, version-control, or move to another device.
+          The folder will contain <code className="rounded bg-[rgb(var(--surface-2))] px-1">notes/</code>,{' '}
+          <code className="rounded bg-[rgb(var(--surface-2))] px-1">kanban/</code>, and{' '}
+          <code className="rounded bg-[rgb(var(--surface-2))] px-1">config/</code> subdirectories.
         </p>
-        <div className="flex items-center justify-between gap-3">
-          <StatusPill connected={localConnected} label={localConnected ? (localFolderName ?? 'Connected') : 'Not connected'} />
-          {localConnected ? (
+
+        {vaultConnected ? (
+          <div className="flex items-center justify-between rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] px-3 py-2.5">
             <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1.5 text-xs text-[rgb(var(--text-2))]">
-                <FolderOpen size={12} className="text-green-500" /> {localFolderName}
-              </span>
-              <Button variant="ghost" size="xs" onClick={() => void onDisconnectLocal()}>
+              <CheckCircle2 size={15} className="shrink-0 text-green-500" />
+              <div>
+                <p className="text-sm font-medium text-[rgb(var(--text))]">{vaultName ?? 'Connected'}</p>
+                <p className="text-[10px] text-[rgb(var(--text-3))]">notes/ · kanban/ · config/</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="xs" onClick={() => void onConnectVault()}>
+                <FolderOpen size={12} className="mr-1" /> Change…
+              </Button>
+              <Button variant="ghost" size="xs" onClick={() => void onDisconnectVault()}>
                 <X size={11} className="mr-1" /> Disconnect
               </Button>
             </div>
-          ) : (
-            <Button variant="primary" size="sm" onClick={() => void onConnectLocal()}>Choose Folder…</Button>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-[rgb(var(--border))] p-8 text-center">
+            <Circle size={24} className="text-[rgb(var(--text-3))]" />
+            <div>
+              <p className="text-sm font-medium text-[rgb(var(--text))]">No vault folder selected</p>
+              <p className="mt-0.5 text-xs text-[rgb(var(--text-3))]">
+                Pick a folder on your device. Subdirectories will be created automatically.
+              </p>
+            </div>
+            <Button variant="primary" size="sm" onClick={() => void onConnectVault()}>
+              <FolderOpen size={13} className="mr-1.5" /> Choose Folder…
+            </Button>
+          </div>
+        )}
       </SectionCard>
+
+      {/* ── Remote sync ────────────────────────────────────────────────── */}
+      <div>
+        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-[rgb(var(--text-3))]">
+          Remote Sync (optional)
+        </p>
+        <p className="mb-4 text-xs text-[rgb(var(--text-2))]">
+          Connect one or more remote providers to sync your vault across devices.
+          Notes are pushed after every save and pulled on startup.
+        </p>
+      </div>
 
       {/* S3 */}
       <SectionCard title="S3 / Cloudflare R2 / Backblaze B2">
         <p className="mb-3 text-xs text-[rgb(var(--text-2))]">
-          Any S3-compatible object storage. Ensure CORS is configured if using from a web browser.
+          Any S3-compatible object storage. Ensure CORS is configured when using from a web browser.
         </p>
         {s3Connected ? (
           <div className="flex items-center justify-between">
             <StatusPill connected label={storedS3?.bucket ?? 'Connected'} />
-            <Button variant="ghost" size="xs" onClick={() => {
-              setS3Config(null); saveS3(null); setS3Connected(false)
-              void import('../../../sync/settingsSync').then(({ saveCurrentSettings }) => saveCurrentSettings())
-            }}>
+            <Button variant="ghost" size="xs" onClick={() => void onDisconnectS3()}>
               <X size={11} className="mr-1" /> Disconnect
             </Button>
           </div>
@@ -179,16 +232,13 @@ export function SyncSection() {
         {davConnected ? (
           <div className="flex items-center justify-between">
             <StatusPill connected label={storedDAV?.username ?? 'Connected'} />
-            <Button variant="ghost" size="xs" onClick={() => {
-              setWebDAVConfig(null); saveDAV(null); setDavConnected(false)
-              void import('../../../sync/settingsSync').then(({ saveCurrentSettings }) => saveCurrentSettings())
-            }}>
+            <Button variant="ghost" size="xs" onClick={() => void onDisconnectWebDAV()}>
               <X size={11} className="mr-1" /> Disconnect
             </Button>
           </div>
         ) : (
           <div className="space-y-3">
-            <Field label="WebDAV URL" placeholder="https://cloud.example.com/…" type="url" value={davUrl} onChange={setDavUrl} />
+            <Field label="WebDAV URL" placeholder="https://cloud.example.com/remote.php/dav/files/user" type="url" value={davUrl} onChange={setDavUrl} />
             <div className="grid grid-cols-2 gap-3">
               <Field label="Username" value={davUser} onChange={setDavUser} />
               <Field label="Password / App Password" type="password" value={davPass} onChange={setDavPass} />
@@ -203,11 +253,11 @@ export function SyncSection() {
       </SectionCard>
 
       {/* Sync now */}
-      {anyConnected ? (
+      {anyRemoteConnected && (
         <div className="flex items-center justify-between rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-3">
           <div>
-            <p className="text-sm font-medium text-[rgb(var(--text))]">Sync All Notes Now</p>
-            <p className="text-xs text-[rgb(var(--text-3))]">Push & pull plain .md files across all connected providers.</p>
+            <p className="text-sm font-medium text-[rgb(var(--text))]">Sync Now</p>
+            <p className="text-xs text-[rgb(var(--text-3))]">Push & pull notes across all connected remote providers.</p>
           </div>
           <Button variant="primary" size="sm" onClick={() => void onSyncNow()} disabled={syncing}
             className="inline-flex items-center gap-1.5 shrink-0">
@@ -215,12 +265,9 @@ export function SyncSection() {
             {syncing ? 'Syncing…' : 'Sync Now'}
           </Button>
         </div>
-      ) : (
-        <p className="rounded-xl border border-dashed border-[rgb(var(--border))] p-4 text-center text-xs text-[rgb(var(--text-3))]">
-          Connect at least one provider above to enable sync. Notes are always saved to IndexedDB locally.
-        </p>
       )}
 
+      {/* Sync status indicator */}
       <div className={`flex items-center gap-2 text-xs ${
         syncStatus === 'ok'      ? 'text-green-500'  :
         syncStatus === 'error'   ? 'text-red-400'    :
@@ -234,7 +281,7 @@ export function SyncSection() {
         {syncStatus === 'idle'    && 'Syncs automatically on startup and after every save'}
         {syncStatus === 'syncing' && 'Syncing…'}
         {syncStatus === 'ok'      && 'Last sync succeeded'}
-        {syncStatus === 'error'   && 'Last sync encountered an error — check console'}
+        {syncStatus === 'error'   && 'Last sync encountered an error'}
       </div>
     </div>
   )

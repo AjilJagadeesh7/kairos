@@ -5,7 +5,7 @@ import { SettingsSidebar } from '../components/organisms/Settings/SettingsSideba
 import type { Section } from '../types'
 
 export function SettingsPage() {
-  const [section, setSection] = useState<Section>('general')
+  const [section, setSection] = useState<Section>('storage-sync')
   const mobileSidebarOpen    = useAppStore((s) => s.mobileSidebarOpen)
   const setMobileSidebarOpen = useAppStore((s) => s.setMobileSidebarOpen)
 

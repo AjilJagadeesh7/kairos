@@ -48,11 +48,16 @@ async function ensureDir(baseUrl: string, authHeader: string): Promise<void> {
 // Public API
 // ---------------------------------------------------------------------------
 
+// Notes are stored under a notes/ subpath inside the configured URL
+function notesUrl(cfg: WebDAVConfig): string {
+  return `${cfg.url.replace(/\/$/, '')}/notes`
+}
+
 export async function listWebDAVNotes(): Promise<Note[]> {
   const cfg = _config
   if (!cfg) throw new Error('WebDAV not configured')
 
-  const baseUrl    = cfg.url.replace(/\/$/, '')
+  const baseUrl    = notesUrl(cfg)
   const authHeader = basicAuth(cfg.username, cfg.password)
 
   await ensureDir(baseUrl, authHeader)
@@ -95,9 +100,8 @@ export async function upsertWebDAVNote(note: Note): Promise<string> {
   const cfg = _config
   if (!cfg) throw new Error('WebDAV not configured')
 
-  const baseUrl    = cfg.url.replace(/\/$/, '')
   const authHeader = basicAuth(cfg.username, cfg.password)
-  const fileUrl    = `${baseUrl}/${noteIdToPath(note.id)}`
+  const fileUrl    = `${notesUrl(cfg)}/${noteIdToPath(note.id)}`
 
   const res = await fetch(fileUrl, {
     method: 'PUT',
@@ -114,7 +118,7 @@ export async function upsertWebDAVNote(note: Note): Promise<string> {
 export async function deleteWebDAVNote(noteId: string): Promise<void> {
   const cfg = _config
   if (!cfg) throw new Error('WebDAV not configured')
-  const fileUrl = `${cfg.url.replace(/\/$/, '')}/${noteIdToPath(noteId)}`
+  const fileUrl = `${notesUrl(cfg)}/${noteIdToPath(noteId)}`
   const res     = await fetch(fileUrl, {
     method: 'DELETE',
     headers: { Authorization: basicAuth(cfg.username, cfg.password) },
@@ -137,4 +141,15 @@ export async function testWebDAVConnection(cfg: WebDAVConfig): Promise<void> {
   if (res.status === 403) throw new Error('Access denied — check permissions')
   if (res.status === 404) throw new Error('Directory not found — check your WebDAV URL')
   if (res.status !== 207 && !res.ok) throw new Error(`WebDAV server returned ${res.status}`)
+}
+
+/** Quick reachability check using stored config. Returns error message or null. */
+export async function pingWebDAV(): Promise<string | null> {
+  if (!_config) return null
+  try {
+    await testWebDAVConnection(_config)
+    return null
+  } catch (err) {
+    return err instanceof Error ? err.message : 'WebDAV unreachable'
+  }
 }

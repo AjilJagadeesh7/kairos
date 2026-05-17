@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type { FileHandleRecord, Note, SettingRecord, SyncMeta, TagRecord } from '../types'
+import type { Board } from '../types/kanban.types'
 
 type EmbeddingRecord = {
   noteId: string
@@ -14,6 +15,7 @@ export class MindVaultDB extends Dexie {
   embeddings!: EntityTable<EmbeddingRecord, 'noteId'>
   fileHandles!: EntityTable<FileHandleRecord, 'key'>
   tags!: EntityTable<TagRecord, 'name'>
+  boards!: EntityTable<Board, 'id'>
 
   constructor() {
     super('mindvault')
@@ -58,6 +60,16 @@ export class MindVaultDB extends Dexie {
       embeddings: 'noteId',
       fileHandles: 'key',
       tags: 'name',
+    })
+    // Version 5: add boards table for kanban
+    this.version(5).stores({
+      notes: 'id, title, *tags, createdAt, updatedAt',
+      settings: 'key',
+      syncMeta: 'noteId, lastSynced, driveFileId',
+      embeddings: 'noteId',
+      fileHandles: 'key',
+      tags: 'name',
+      boards: 'id, title, updatedAt',
     })
   }
 }
@@ -110,4 +122,16 @@ export async function upsertTag(tag: TagRecord): Promise<void> {
 
 export async function deleteTag(name: string): Promise<void> {
   await db.tags.delete(name)
+}
+
+export async function getAllBoards(): Promise<Board[]> {
+  return db.boards.orderBy('updatedAt').reverse().toArray()
+}
+
+export async function upsertBoard(board: Board): Promise<void> {
+  await db.boards.put(board)
+}
+
+export async function deleteBoardFromDB(id: string): Promise<void> {
+  await db.boards.delete(id)
 }

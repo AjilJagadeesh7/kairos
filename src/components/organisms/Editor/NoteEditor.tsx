@@ -1,19 +1,17 @@
-import { useLiveQuery } from 'dexie-react-hooks'
 import { Loader2 } from 'lucide-react'
-import { db } from '../../../db/schema'
 import { useAppStore } from '../../../store/useAppStore'
 import { EditorDraft } from './EditorDraft'
 
 export function NoteEditor(): JSX.Element {
   const activeNoteId = useAppStore((s) => s.activeNoteId)
+  const isNotesLoaded = useAppStore((s) => s.isNotesLoaded)
+  const notes = useAppStore((s) => s.notes)
   const updateActiveNote = useAppStore((s) => s.updateActiveNote)
 
-  const activeNote = useLiveQuery(
-    async () => (activeNoteId ? db.notes.get(activeNoteId) : null),
-    [activeNoteId],
-  )
+  const activeNote = isNotesLoaded
+    ? (activeNoteId ? (notes.find(n => n.id === activeNoteId) ?? null) : null)
+    : undefined
 
-  // undefined = still loading from DB; null = no note selected; Note = ready
   if (activeNote === undefined) {
     return (
       <div className="flex h-full items-center justify-center text-text3">

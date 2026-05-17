@@ -1,12 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useLiveQuery } from 'dexie-react-hooks'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, Copy, Loader2, Plus, Search, Trash2, X } from 'lucide-react'
-import { db, getAllTags } from '../../../db/schema'
 import { useAppStore } from '../../../store/useAppStore'
 import { useConfirmStore } from '../../../store/useConfirmStore'
 import { useSemanticSearch } from '../../../hooks/useSemanticSearch'
 import { timeAgo } from '../../../utils/timeAgo'
+import { TAG_COLOR_PALETTE } from '../../../utils/kanban'
 import { Button } from '../../atoms/Button'
 import { TagBadge } from '../../atoms/TagBadge'
 import { Dropdown } from '../../molecules/Dropdown'
@@ -19,12 +18,17 @@ interface SidebarProps {
   onClose?: () => void
 }
 
+function tagColor(name: string): string {
+  let h = 5381
+  for (let i = 0; i < name.length; i++) {
+    h = ((h << 5) + h) ^ name.charCodeAt(i)
+  }
+  return TAG_COLOR_PALETTE[Math.abs(h) % TAG_COLOR_PALETTE.length]
+}
+
 export function Sidebar({ onClose }: SidebarProps): JSX.Element {
-  // Always ordered by last saved (updatedAt desc) — Dexie keeps this live
-  const rawNotes = useLiveQuery(() => db.notes.orderBy('updatedAt').reverse().toArray())
-  const notes = rawNotes ?? []
-  const isLoading = rawNotes === undefined
-  const allTagsData = useLiveQuery(() => getAllTags())
+  const notes = useAppStore(s => s.notes)
+  const isNotesLoaded = useAppStore(s => s.isNotesLoaded)
   const navigate = useNavigate()
   const {
     activeNoteId,
@@ -36,12 +40,18 @@ export function Sidebar({ onClose }: SidebarProps): JSX.Element {
   } = useAppStore()
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [selectedTagFilters, setSelectedTagFilters] = useState<string[]>([])
-  const [tagMap, setTagMap] = useState<Map<string, TagRecord>>(new Map())
 
-  const allTags = useMemo(
-    () => (allTagsData ? [...allTagsData].sort((a, b) => a.name.localeCompare(b.name)) : []),
-    [allTagsData],
-  )
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>()
+    notes.forEach(n => n.tags.forEach(t => tagSet.add(t)))
+    return [...tagSet].sort()
+  }, [notes])
+
+  const tagMap = useMemo(() => {
+    return new Map<string, TagRecord>(
+      allTags.map(name => [name, { name, color: tagColor(name), createdAt: '' }]),
+    )
+  }, [allTags])
 
   const handleDelete = (e: React.MouseEvent, note: Note) => {
     e.stopPropagation()
@@ -62,16 +72,8 @@ export function Sidebar({ onClose }: SidebarProps): JSX.Element {
     setTimeout(() => setCopiedId(null), 1500)
   }
 
-  // Build tag map for quick lookup
-  useEffect(() => {
-    if (allTagsData) {
-      const map = new Map(allTagsData.map((tag) => [tag.name, tag]))
-      setTagMap(map)
-    }
-  }, [allTagsData])
-
   const filtered = useMemo(() => {
-    let list = notes
+    let list = [...notes]
 
     if (selectedTagFilters.length > 0) {
       list = list.filter((n) => selectedTagFilters.every(tag => n.tags.includes(tag)))
@@ -93,7 +95,7 @@ export function Sidebar({ onClose }: SidebarProps): JSX.Element {
 
   return (
     <aside className="flex h-full w-full flex-col border-r border-border bg-surface2">
-      {/* Header: title + close button (mobile) + new note */}
+      {/* Header */}
       <div className="sidebar-header flex items-center gap-2 border-b border-border px-3 py-3">
         <span className="flex-1 text-xs font-semibold uppercase tracking-widest text-text3">Notes</span>
         <Button
@@ -104,7 +106,6 @@ export function Sidebar({ onClose }: SidebarProps): JSX.Element {
         >
           <Plus size={13} /> New
         </Button>
-        {/* Close sidebar — mobile/tablet only */}
         {onClose && (
           <button
             type="button"
@@ -117,9 +118,8 @@ export function Sidebar({ onClose }: SidebarProps): JSX.Element {
         )}
       </div>
 
-      {/* Search section */}
+      {/* Search */}
       <div className="sidebar-top border-b border-border px-3 py-3">
-        {/* Search bar */}
         <div className="relative mb-3">
           <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-text3" />
           <input
@@ -140,7 +140,6 @@ export function Sidebar({ onClose }: SidebarProps): JSX.Element {
           </span>
         </div>
 
-        {/* Filters dropdown */}
         <div className="sidebar-filter-group relative mb-3">
           <Dropdown>
             <span className="text-text3">Filters</span>
@@ -160,7 +159,7 @@ export function Sidebar({ onClose }: SidebarProps): JSX.Element {
 
       {/* Note list */}
       <ul className="flex-1 space-y-1 overflow-y-auto border-t border-border px-2 pb-4 pt-4">
-        {isLoading ? (
+        {!isNotesLoaded ? (
           <li className="flex items-center justify-center py-10 text-text3">
             <Loader2 size={20} className="animate-spin" />
           </li>

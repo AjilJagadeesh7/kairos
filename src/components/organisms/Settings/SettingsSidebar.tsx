@@ -1,4 +1,4 @@
-import { Cloud, Database, Info, Settings2, Tag, X } from 'lucide-react'
+import { BrainCircuit, FolderSync, Info, Settings2, Tag, X } from 'lucide-react'
 import type { Section } from '../../../types'
 
 interface SettingsSidebarProps {
@@ -8,11 +8,11 @@ interface SettingsSidebarProps {
 }
 
 const NAV: Array<{ id: Section; label: string; icon: React.ElementType }> = [
-  { id: 'general', label: 'General', icon: Settings2 },
-  { id: 'sync',    label: 'Sync',    icon: Cloud      },
-  { id: 'storage', label: 'Storage', icon: Database   },
-  { id: 'tags',    label: 'Tags',    icon: Tag        },
-  { id: 'about',   label: 'About',   icon: Info       },
+  { id: 'general',      label: 'General',          icon: Settings2    },
+  { id: 'storage-sync', label: 'Storage & Sync',   icon: FolderSync   },
+  { id: 'tags',         label: 'Tags',             icon: Tag          },
+  { id: 'ai',           label: 'AI',               icon: BrainCircuit },
+  { id: 'about',        label: 'About',            icon: Info         },
 ]
 
 export function SettingsSidebar({ section, onSectionChange, onClose }: SettingsSidebarProps) {

@@ -1,11 +1,7 @@
-/**
- * Sync orchestrator — pushes plain .md notes to ALL connected providers simultaneously.
- * No encryption. IndexedDB is always the source of truth (cache).
- */
 import { isLocalFolderConnected, listLocalNotes, upsertLocalNote, deleteLocalNote } from './localFolder'
 import { isS3Connected, listS3Notes, upsertS3Note, deleteS3Note } from './s3'
 import { isWebDAVConnected, listWebDAVNotes, upsertWebDAVNote, deleteWebDAVNote } from './webdav'
-import { db, upsertNote } from '../db/schema'
+import { db } from '../db/schema'
 import type { Note, SyncStatus } from '../types'
 
 // ---------------------------------------------------------------------------
@@ -39,6 +35,8 @@ export async function pushNoteToAll(note: Note): Promise<void> {
 export async function syncAllProviders(onStatus: (s: SyncStatus) => void): Promise<void> {
   onStatus('syncing')
   try {
+    const { readAllNotes, writePlainNote, isPlainFolderConnected } = await import('./plainFolder')
+
     const [localRemotes, s3Remotes, davRemotes] = await Promise.all([
       isLocalFolderConnected() ? listLocalNotes()    : Promise.resolve([]),
       isS3Connected()          ? listS3Notes()       : Promise.resolve([]),
@@ -56,23 +54,26 @@ export async function syncAllProviders(onStatus: (s: SyncStatus) => void): Promi
       }
     }
 
-    const localList = await db.notes.toArray()
+    // Load local notes from filesystem
+    const localList = isPlainFolderConnected() ? await readAllNotes() : []
     const localMap  = new Map(localList.map((n) => [n.id, n]))
 
-    // Pull: remote notes that are newer than local → write to IndexedDB
+    // Pull: remote notes that are newer than local → write to filesystem
     for (const remote of remoteMap.values()) {
       const local    = localMap.get(remote.id)
       const remoteTs = new Date(remote.updatedAt).getTime()
       const localTs  = local ? new Date(local.updatedAt).getTime() : -1
 
       if (!local || remoteTs > localTs) {
-        await upsertNote({ ...remote, embedding: local?.embedding ?? [] })
+        if (isPlainFolderConnected()) {
+          await writePlainNote({ ...remote, embedding: local?.embedding ?? [] })
+        }
         await db.syncMeta.put({ noteId: remote.id, lastSynced: new Date().toISOString() })
       }
     }
 
     // Push: all local notes → all providers
-    const freshNotes = await db.notes.toArray()
+    const freshNotes = isPlainFolderConnected() ? await readAllNotes() : []
     await Promise.allSettled(freshNotes.map((n) => pushNoteToAll(n)))
 
     onStatus('ok')

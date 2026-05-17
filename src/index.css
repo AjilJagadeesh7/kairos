@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Manrope:wght@400;500;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Inter:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,500;0,700;1,400&family=Manrope:wght@300;400;500;700;800&family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Poppins:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -55,16 +55,16 @@
 :root.dark,
 :root[data-theme='dark'] {
   --bg:           10  10  10;   /* app background    #0A0A0A  */
-  --surface:      18  18  18;   /* cards / editor    #121212  */
-  --surface-2:    24  24  24;   /* sidebar / panels  #181818  */
-  --surface-3:    34  34  34;   /* hover             #222222  */
-  --border:       44  44  44;   /* borders           #2C2C2C  */
-  --text:        230 230 230;   /* primary text      #E6E6E6  */
-  --text-2:      140 140 140;   /* secondary text    #8C8C8C  */
-  --text-3:       80  80  80;   /* placeholder       #505050  */
-  --accent:      230 230 230;   /* button bg dark    #E6E6E6  */
-  --accent-fg:    10  10  10;   /* button text       #0A0A0A  */
-  --accent-hover:200 200 200;   /* button hover      #C8C8C8  */
+  --surface:      20  20  20;   /* cards / editor    #141414  */
+  --surface-2:    28  28  28;   /* sidebar / panels  #1C1C1C  */
+  --surface-3:    40  40  40;   /* hover             #282828  */
+  --border:       56  56  56;   /* borders           #383838  */
+  --text:        242 242 242;   /* primary text      #F2F2F2  */
+  --text-2:      172 172 172;   /* secondary text    #ACACAC  */
+  --text-3:      112 112 112;   /* placeholder       #707070  */
+  --accent:      238 238 238;   /* button bg dark    #EEEEEE  */
+  --accent-fg:    12  12  12;   /* button text       #0C0C0C  */
+  --accent-hover:210 210 210;   /* button hover      #D2D2D2  */
 }
 
 /* ─── CYBERPUNK THEME (retro-punk) ───────────────────────────────────────── */
@@ -268,7 +268,8 @@ html, body, #root {
 * { box-sizing: border-box; }
 
 body {
-  font-family: Manrope, ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-sans, Manrope, ui-sans-serif, system-ui, sans-serif);
+  font-weight: var(--font-weight, 400);
   background-color: rgb(var(--bg));
   color: rgb(var(--text));
 }
@@ -343,7 +344,7 @@ body {
   --crepe-color-hover:              rgb(var(--surface-3));
   --crepe-color-selected:           rgb(var(--border));
   --crepe-color-inline-area:        rgb(var(--surface-3));
-  --crepe-font-default: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --crepe-font-default: var(--font-sans, 'Manrope', ui-sans-serif, system-ui, sans-serif);
   --crepe-font-code:    'JetBrains Mono', ui-monospace, monospace;
 }
 

@@ -1,26 +1,32 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { v4 as uuidv4 } from 'uuid'
-import { db, upsertNote, upsertEmbedding } from '../db/schema'
+import { upsertEmbedding } from '../db/schema'
 import { useLoaderStore } from './useLoaderStore'
-import type { Note, SearchMode, SyncStatus, ThemeMode, StorageTarget } from '../types'
+import type { Note, SearchMode, SyncStatus, ThemeMode, StorageTarget, FontOption, FontWeight } from '../types'
 import type { S3Config } from '../sync/s3'
 import type { WebDAVConfig } from '../sync/webdav'
 import { parseTags } from '../utils/wikilinks'
 
 type AppState = {
+  notes: Note[]
+  isNotesLoaded: boolean
   activeNoteId?: string
   query: string
   searchMode: SearchMode
   syncStatus: SyncStatus
   storageChoices: StorageTarget[]
   theme: ThemeMode
+  font: FontOption
+  fontWeight: FontWeight
   aiUrl: string
   s3Config: S3Config | null
   webdavConfig: WebDAVConfig | null
   mobileSidebarOpen: boolean
 
   setTheme: (t: ThemeMode) => void
+  setFont: (f: FontOption) => void
+  setFontWeight: (w: FontWeight) => void
   setAiUrl: (url: string) => void
   setSearchMode: (mode: SearchMode) => void
   setQuery: (query: string) => void
@@ -30,8 +36,11 @@ type AppState = {
   setActiveNoteId: (id?: string) => void
   setMobileSidebarOpen: (open: boolean) => void
   setStorageChoices: (choices: StorageTarget[]) => void
+
+  loadNotes: () => Promise<void>
   createNote: () => Promise<string>
   updateActiveNote: (patch: Pick<Note, 'title' | 'content' | 'embedding'> & { contentHash: string }) => Promise<void>
+  updateNoteTags: (noteId: string, tags: string[]) => Promise<void>
   deleteNoteById: (id: string) => Promise<void>
 }
 
@@ -47,6 +56,8 @@ function readLegacyStorageChoices(): StorageTarget[] {
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
+      notes: [],
+      isNotesLoaded: false,
       query: '',
       searchMode: 'fulltext',
       syncStatus: 'idle',
@@ -55,9 +66,13 @@ export const useAppStore = create<AppState>()(
       mobileSidebarOpen: false,
       storageChoices: readLegacyStorageChoices(),
       theme: (localStorage.getItem('mindvault.theme') as ThemeMode | null) ?? 'light',
+      font: (localStorage.getItem('mindvault.font') as FontOption | null) ?? 'manrope',
+      fontWeight: (localStorage.getItem('mindvault.fontWeight') as FontWeight | null) ?? 'regular',
       aiUrl: 'http://localhost:11434',
 
       setTheme: (theme) => set({ theme }),
+      setFont: (font) => set({ font }),
+      setFontWeight: (fontWeight) => set({ fontWeight }),
       setAiUrl: (aiUrl) => set({ aiUrl }),
       setMobileSidebarOpen: (mobileSidebarOpen) => set({ mobileSidebarOpen }),
       setSearchMode: (searchMode) => set({ searchMode }),
@@ -68,22 +83,54 @@ export const useAppStore = create<AppState>()(
       setActiveNoteId: (activeNoteId) => set({ activeNoteId }),
       setStorageChoices: (storageChoices) => set({ storageChoices }),
 
+      loadNotes: async () => {
+        const { readAllNotes, isPlainFolderConnected } = await import('../sync/plainFolder')
+        if (!isPlainFolderConnected()) {
+          set({ isNotesLoaded: true })
+          return
+        }
+        try {
+          const notes = await readAllNotes()
+          // Sort by updatedAt desc
+          notes.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+          set({ notes, isNotesLoaded: true })
+        } catch (err) {
+          console.warn('[loadNotes] failed:', err)
+          set({ isNotesLoaded: true })
+        }
+      },
+
       createNote: async () => {
         const { run } = useLoaderStore.getState()
         return run('create-note', async () => {
           const now = new Date().toISOString()
-          const id  = uuidv4()
-          const note: Note = { id, title: 'Untitled note', content: '', tags: [], embedding: [], createdAt: now, updatedAt: now }
-          await upsertNote(note)
-          set({ activeNoteId: id })
+          const id = uuidv4()
+          const note: Note = {
+            id,
+            title: 'Untitled note',
+            content: '',
+            tags: [],
+            embedding: [],
+            createdAt: now,
+            updatedAt: now,
+          }
+
+          // Write to filesystem (primary storage)
+          const { writePlainNote, isPlainFolderConnected } = await import('../sync/plainFolder')
+          if (isPlainFolderConnected()) {
+            await writePlainNote(note)
+          }
+
+          // Add to in-memory store
+          set(s => ({ notes: [note, ...s.notes], activeNoteId: id }))
           return id
         }, 'Creating note…')
       },
 
       updateActiveNote: async ({ title, content, embedding, contentHash }) => {
-        const { activeNoteId } = get()
+        const { activeNoteId, notes } = get()
         if (!activeNoteId) return
-        const existing = await db.notes.get(activeNoteId)
+        const existing = notes.find(n => n.id === activeNoteId)
         if (!existing) return
 
         const updated: Note = {
@@ -95,16 +142,20 @@ export const useAppStore = create<AppState>()(
           updatedAt: new Date().toISOString(),
         }
 
-        await upsertNote(updated)
-        await upsertEmbedding(activeNoteId, embedding ?? [], contentHash)
+        // Update in-memory store — move updated note to top
+        set(s => ({
+          notes: [updated, ...s.notes.filter(n => n.id !== activeNoteId)],
+        }))
 
-        // Write to plain local folder storage if selected
-        const { storageChoices } = get()
-        if (storageChoices.includes('local')) {
-          const { isPlainFolderConnected, writePlainNote } = await import('../sync/plainFolder')
-          if (isPlainFolderConnected()) {
-            writePlainNote(updated).catch((err) => console.warn('[storage] plain folder write failed:', err))
-          }
+        // Write to filesystem (primary storage)
+        const { writePlainNote, isPlainFolderConnected } = await import('../sync/plainFolder')
+        if (isPlainFolderConnected()) {
+          writePlainNote(updated).catch(err => console.warn('[storage] write failed:', err))
+        }
+
+        // Store embedding in Dexie (for semantic search)
+        if (embedding && embedding.length > 0) {
+          await upsertEmbedding(activeNoteId, embedding, contentHash)
         }
 
         // Background push to all connected sync providers
@@ -114,29 +165,40 @@ export const useAppStore = create<AppState>()(
           setSyncStatus('syncing')
           pushNoteToAll(updated)
             .then(() => setSyncStatus('ok'))
-            .catch((err) => { console.warn('[sync] push failed:', err); setSyncStatus('error') })
+            .catch(err => { console.warn('[sync] push failed:', err); setSyncStatus('error') })
+        }
+      },
+
+      updateNoteTags: async (noteId, tags) => {
+        const { notes } = get()
+        const existing = notes.find(n => n.id === noteId)
+        if (!existing) return
+        const updated = { ...existing, tags, updatedAt: new Date().toISOString() }
+        set(s => ({ notes: s.notes.map(n => n.id === noteId ? updated : n) }))
+        const { writePlainNote, isPlainFolderConnected } = await import('../sync/plainFolder')
+        if (isPlainFolderConnected()) {
+          writePlainNote(updated).catch(err => console.warn('[storage] write failed:', err))
         }
       },
 
       deleteNoteById: async (id) => {
         const { run } = useLoaderStore.getState()
         await run('delete-note', async () => {
-          const { storageChoices } = get()
-          if (storageChoices.includes('local')) {
-            const { isPlainFolderConnected, deletePlainNote } = await import('../sync/plainFolder')
-            if (isPlainFolderConnected()) {
-              await deletePlainNote(id).catch(() => { /* best-effort */ })
-            }
+          // Remove from in-memory store
+          set(s => ({
+            notes: s.notes.filter(n => n.id !== id),
+            activeNoteId: s.activeNoteId === id ? undefined : s.activeNoteId,
+          }))
+
+          // Delete from filesystem
+          const { deletePlainNote, isPlainFolderConnected } = await import('../sync/plainFolder')
+          if (isPlainFolderConnected()) {
+            await deletePlainNote(id).catch(() => { /* best-effort */ })
           }
 
+          // Remove from sync providers
           const { deleteNoteFromAll, anySyncProviderConnected } = await import('../sync/syncOrchestrator')
           if (anySyncProviderConnected()) await deleteNoteFromAll(id)
-
-          await db.notes.delete(id)
-          await db.syncMeta.delete(id)
-          await db.embeddings.delete(id)
-          const { activeNoteId } = get()
-          if (activeNoteId === id) set({ activeNoteId: undefined })
         }, 'Deleting note…')
       },
     }),
@@ -149,6 +211,8 @@ export const useAppStore = create<AppState>()(
         webdavConfig:   state.webdavConfig,
         storageChoices: state.storageChoices,
         theme:          state.theme,
+        font:           state.font,
+        fontWeight:     state.fontWeight,
         aiUrl:          state.aiUrl,
       }),
     },
