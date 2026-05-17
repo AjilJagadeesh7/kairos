@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { BookOpen, Kanban, Network, Settings2 } from 'lucide-react'
+import { BookOpen, SquareKanban, Network, Settings2 } from 'lucide-react'
 import { useAppStore } from '../../../store/useAppStore'
 import { Button } from '../../atoms/Button'
 import { ThemeSelect } from '../../molecules/ThemeSelect'
@@ -52,7 +52,7 @@ export function Header() {
         <NavLink to="/kanban">
           {({ isActive }) => (
             <Button variant="ghost" size="xs" className={`inline-flex items-center gap-1 ${isActive ? 'text-[rgb(var(--accent))]' : ''}`}>
-              <Kanban size={13} /> Kanban
+              <SquareKanban size={13} /> Kanban
             </Button>
           )}
         </NavLink>
