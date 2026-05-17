@@ -26,14 +26,14 @@ export function useSidebarNotes(onClose?: () => void) {
   const [copiedId,           setCopiedId]           = useState<string | null>(null)
   const [selectedTagFilters, setSelectedTagFilters] = useState<string[]>([])
 
-  const allTags = useMemo(() => {
+  const allTags = useMemo((): TagRecord[] => {
     const tagSet = new Set<string>()
     notes.forEach(n => n.tags.forEach(t => tagSet.add(t)))
-    return [...tagSet].sort()
+    return [...tagSet].sort().map(name => ({ name, color: tagColor(name), createdAt: '' }))
   }, [notes])
 
   const tagMap = useMemo(
-    () => new Map<string, TagRecord>(allTags.map(name => [name, { name, color: tagColor(name), createdAt: '' }])),
+    () => new Map<string, TagRecord>(allTags.map(tag => [tag.name, tag])),
     [allTags],
   )
 
