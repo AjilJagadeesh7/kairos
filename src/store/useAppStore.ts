@@ -41,6 +41,7 @@ type AppState = {
   createNote: () => Promise<string>
   updateActiveNote: (patch: Pick<Note, 'title' | 'content' | 'embedding'> & { contentHash: string }) => Promise<void>
   updateNoteTags: (noteId: string, tags: string[]) => Promise<void>
+  appendWikilink: (noteId: string, targetTitle: string) => Promise<void>
   deleteNoteById: (id: string) => Promise<void>
 }
 
@@ -179,6 +180,17 @@ export const useAppStore = create<AppState>()(
         if (isPlainFolderConnected()) {
           writePlainNote(updated).catch(err => console.warn('[storage] write failed:', err))
         }
+      },
+
+      appendWikilink: async (noteId, targetTitle) => {
+        const { notes } = get()
+        const existing = notes.find(n => n.id === noteId)
+        if (!existing) return
+        const separator = existing.content.trimEnd().length > 0 ? '\n\n' : ''
+        const updated = { ...existing, content: `${existing.content.trimEnd()}${separator}[[${targetTitle}]]`, updatedAt: new Date().toISOString() }
+        set(s => ({ notes: s.notes.map(n => n.id === noteId ? updated : n) }))
+        const { writePlainNote, isPlainFolderConnected } = await import('../sync/plainFolder')
+        if (isPlainFolderConnected()) writePlainNote(updated).catch(err => console.warn('[storage] write failed:', err))
       },
 
       deleteNoteById: async (id) => {

@@ -3,6 +3,7 @@ import { parseWikilinks } from '../utils/wikilinks'
 import { cosineSimilarity } from '../utils/similarity'
 import { colorForIndex } from '../utils/colorForIndex'
 import { TAG_COLOR_PALETTE } from '../utils/kanban'
+import { useKanbanStore } from '../store/useKanbanStore'
 import type { Note, GNode, GLink } from '../types'
 
 function hashTagColor(tag: string): string {
@@ -11,7 +12,14 @@ function hashTagColor(tag: string): string {
   return TAG_COLOR_PALETTE[Math.abs(h) % TAG_COLOR_PALETTE.length]
 }
 
-export function useGraphData(notes: Note[], rerenderKey: number, selectedNoteId: string | null) {
+export function useGraphData(
+  notes: Note[],
+  rerenderKey: number,
+  selectedNoteId: string | null,
+  showTasks: boolean,
+) {
+  const boards = useKanbanStore(s => s.boards)
+
   const tagColorMap = useMemo(() => {
     const map = new Map<string, string>()
     notes.forEach(n => n.tags.forEach(tag => { if (!map.has(tag)) map.set(tag, hashTagColor(tag)) }))
@@ -54,11 +62,12 @@ export function useGraphData(notes: Note[], rerenderKey: number, selectedNoteId:
       }
     }
     const linksNodes: GNode[] = notes.map((n, i) => ({
-      id:    n.id,
-      label: n.title || 'Untitled',
-      color: colorForIndex(i),
-      val:   Math.max(1, Math.min((linksDeg.get(n.id) ?? 0) * 1.5 + 1, 14)),
-      tags:  n.tags ?? [],
+      id:       n.id,
+      label:    n.title || 'Untitled',
+      color:    colorForIndex(i),
+      val:      Math.max(1, Math.min((linksDeg.get(n.id) ?? 0) * 1.5 + 1, 14)),
+      tags:     n.tags ?? [],
+      nodeType: 'note' as const,
     }))
 
     // Tags graph
@@ -80,16 +89,53 @@ export function useGraphData(notes: Note[], rerenderKey: number, selectedNoteId:
       }
     }
     const tagsNodes: GNode[] = notes.map((n, i) => ({
-      id:    n.id,
-      label: n.title || 'Untitled',
-      color: colorForIndex(i),
-      val:   Math.max(1, Math.min((tagsDeg.get(n.id) ?? 0) * 1.5 + 1, 14)),
-      tags:  n.tags ?? [],
+      id:       n.id,
+      label:    n.title || 'Untitled',
+      color:    colorForIndex(i),
+      val:      Math.max(1, Math.min((tagsDeg.get(n.id) ?? 0) * 1.5 + 1, 14)),
+      tags:     n.tags ?? [],
+      nodeType: 'note' as const,
     }))
 
     return { linksNodes, linksLinks, tagsNodes, tagsLinks }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notes, rerenderKey])
+
+  // Task nodes and edges (only when showTasks=true)
+  const { taskNodes, taskLinks } = useMemo(() => {
+    if (!showTasks || !boards.length) return { taskNodes: [] as GNode[], taskLinks: [] as GLink[] }
+
+    const taskNodes: GNode[] = []
+    const taskLinks: GLink[] = []
+    const noteIds = new Set(notes.map(n => n.id))
+
+    for (const board of boards) {
+      const colMap = new Map(board.columns.map(c => [c.id, c]))
+      for (const task of board.tasks) {
+        const col   = colMap.get(task.columnId)
+        const color = col?.color ?? '#6b7280'
+        taskNodes.push({
+          id:       task.id,
+          label:    task.title,
+          color,
+          val:      3,
+          tags:     task.tags ?? [],
+          nodeType: 'task' as const,
+          taskId:   task.id,
+          boardId:  board.id,
+        })
+        for (const noteId of (task.linkedNotes ?? [])) {
+          if (noteIds.has(noteId)) {
+            taskLinks.push({ source: task.id, target: noteId, kind: 'task-note' })
+          }
+        }
+        for (const linkedTaskId of (task.linkedTasks ?? [])) {
+          taskLinks.push({ source: task.id, target: linkedTaskId, kind: 'task-task' })
+        }
+      }
+    }
+    return { taskNodes, taskLinks }
+  }, [showTasks, boards, notes])
 
   const tagLegendItems = useMemo(() => {
     const tagSet = new Set<string>()
@@ -103,5 +149,12 @@ export function useGraphData(notes: Note[], rerenderKey: number, selectedNoteId:
     [notes, selectedNoteId],
   )
 
-  return { tagColorMap, linksNodes, linksLinks, tagsNodes, tagsLinks, tagLegendItems, selectedNote }
+  return {
+    tagColorMap,
+    linksNodes, linksLinks,
+    tagsNodes, tagsLinks,
+    taskNodes, taskLinks,
+    tagLegendItems,
+    selectedNote,
+  }
 }

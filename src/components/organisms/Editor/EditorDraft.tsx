@@ -9,6 +9,7 @@ import { TagSelector } from '../../molecules/TagSelector'
 import { TagBadge } from '../../atoms/TagBadge'
 import { exportPDF } from './exportPDF'
 import { MarkdownEditor } from './MarkdownEditor'
+import { BacklinksPanel } from './BacklinksPanel'
 import type { EditorDraftProps, TagRecord } from '../../../types'
 
 type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved'
@@ -175,6 +176,8 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
       <div ref={editorRootRef} className="min-h-0 flex-1 rounded-md border border-border bg-surface">
         <MarkdownEditor noteId={note.id} initialMarkdown={note.content} noteTitle={title} onChange={setContent} onWikilinkClick={(t) => handleWikilinkClick(t)} />
       </div>
+
+      <BacklinksPanel noteTitle={title} />
     </section>
   )
 }
