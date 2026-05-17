@@ -38,6 +38,7 @@ type AppState = {
   setMobileSidebarOpen: (open: boolean) => void
   setStorageChoices: (choices: StorageTarget[]) => void
   setNoteTagColor: (tagName: string, color: string) => void
+  removeNoteTag: (tagName: string) => void
 
   loadNotes: () => Promise<void>
   createNote: () => Promise<string>
@@ -87,6 +88,10 @@ export const useAppStore = create<AppState>()(
       setActiveNoteId: (activeNoteId) => set({ activeNoteId }),
       setStorageChoices: (storageChoices) => set({ storageChoices }),
       setNoteTagColor: (tagName, color) => set(s => ({ noteTagColors: { ...s.noteTagColors, [tagName]: color } })),
+      removeNoteTag: (tagName) => set(s => {
+        const { [tagName]: _, ...rest } = s.noteTagColors
+        return { noteTagColors: rest }
+      }),
 
       loadNotes: async () => {
         const { readAllNotes, isPlainFolderConnected } = await import('../sync/plainFolder')
