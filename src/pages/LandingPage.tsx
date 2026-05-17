@@ -5,10 +5,17 @@ import { useKanbanStore } from '../store/useKanbanStore'
 import { timeAgo } from '../utils/timeAgo'
 import { getDueState } from '../utils/kanban'
 
+function greeting(name: string): string {
+  const h = new Date().getHours()
+  const base = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'
+  return name.trim() ? `${base}, ${name.trim().split(' ')[0]}` : 'MindVault'
+}
+
 export function LandingPage() {
-  const navigate = useNavigate()
-  const notes = useAppStore(s => s.notes)
-  const boards = useKanbanStore(s => s.boards)
+  const navigate  = useNavigate()
+  const notes     = useAppStore(s => s.notes)
+  const boards    = useKanbanStore(s => s.boards)
+  const userName  = useAppStore(s => s.userName)
 
   const recentNotes = [...notes]
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
@@ -23,8 +30,14 @@ export function LandingPage() {
       <div className="mx-auto max-w-5xl">
         {/* Hero */}
         <div className="mb-10">
-          <h1 className="text-3xl font-black tracking-tight text-[rgb(var(--text))]">MindVault</h1>
-          <p className="mt-1 text-[rgb(var(--text-2))]">Private-by-default notes, kanban, and knowledge base</p>
+          <h1 className="text-3xl font-black tracking-tight text-[rgb(var(--text))]">
+            {greeting(userName)}
+          </h1>
+          <p className="mt-1 text-[rgb(var(--text-2))]">
+            {userName.trim()
+              ? 'Your private, local-first knowledge base'
+              : 'Private-by-default notes, kanban, and knowledge base'}
+          </p>
         </div>
 
         <div className="grid gap-8 lg:grid-cols-2">

@@ -2,6 +2,7 @@ import { isLocalFolderConnected, listLocalNotes, upsertLocalNote, deleteLocalNot
 import { isS3Connected, listS3Notes, upsertS3Note, deleteS3Note } from './s3'
 import { isWebDAVConnected, listWebDAVNotes, upsertWebDAVNote, deleteWebDAVNote } from './webdav'
 import { db } from '../db/schema'
+import { useConflictStore } from '../store/useConflictStore'
 import type { Note, SyncStatus } from '../types'
 
 // ---------------------------------------------------------------------------
@@ -59,10 +60,31 @@ export async function syncAllProviders(onStatus: (s: SyncStatus) => void): Promi
     const localMap  = new Map(localList.map((n) => [n.id, n]))
 
     // Pull: remote notes that are newer than local → write to filesystem
+    // Detect conflicts when both sides changed since last sync
+    const { addConflict } = useConflictStore.getState()
+
     for (const remote of remoteMap.values()) {
-      const local    = localMap.get(remote.id)
-      const remoteTs = new Date(remote.updatedAt).getTime()
-      const localTs  = local ? new Date(local.updatedAt).getTime() : -1
+      const local      = localMap.get(remote.id)
+      const remoteTs   = new Date(remote.updatedAt).getTime()
+      const localTs    = local ? new Date(local.updatedAt).getTime() : -1
+      const syncRecord = await db.syncMeta.get(remote.id)
+      const lastSyncTs = syncRecord ? new Date(syncRecord.lastSynced).getTime() : 0
+
+      // Conflict: both local and remote changed after the last known sync point
+      const localChangedSinceSync  = local  && localTs  > lastSyncTs && lastSyncTs > 0
+      const remoteChangedSinceSync = remoteTs > lastSyncTs && lastSyncTs > 0
+      const contentsDiffer         = local && local.content !== remote.content
+
+      if (local && localChangedSinceSync && remoteChangedSinceSync && contentsDiffer) {
+        addConflict({
+          noteId: remote.id,
+          localNote: local,
+          remoteNote: remote,
+          detectedAt: new Date().toISOString(),
+        })
+        // Don't auto-overwrite — let user resolve
+        continue
+      }
 
       if (!local || remoteTs > localTs) {
         if (isPlainFolderConnected()) {

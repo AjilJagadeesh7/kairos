@@ -7,6 +7,7 @@ import type { Note, SearchMode, SyncStatus, ThemeMode, StorageTarget, FontOption
 import type { S3Config } from '../sync/s3'
 import type { WebDAVConfig } from '../sync/webdav'
 import { parseTags } from '../utils/wikilinks'
+import { buildIndex, indexNote, deindexNote } from '../search/noteIndex'
 
 type AppState = {
   notes: Note[]
@@ -24,6 +25,11 @@ type AppState = {
   webdavConfig: WebDAVConfig | null
   mobileSidebarOpen: boolean
   noteTagColors: Record<string, string>
+  userName: string
+  onboardingDone: boolean
+
+  setUserName: (name: string) => void
+  completeOnboarding: () => void
 
   setTheme: (t: ThemeMode) => void
   setFont: (f: FontOption) => void
@@ -74,6 +80,11 @@ export const useAppStore = create<AppState>()(
       font: (localStorage.getItem('mindvault.font') as FontOption | null) ?? 'manrope',
       fontWeight: (localStorage.getItem('mindvault.fontWeight') as FontWeight | null) ?? 'regular',
       aiUrl: 'http://localhost:11434',
+      userName: '',
+      onboardingDone: false,
+
+      setUserName: (userName) => set({ userName }),
+      completeOnboarding: () => set({ onboardingDone: true }),
 
       setTheme: (theme) => set({ theme }),
       setFont: (font) => set({ font }),
@@ -103,6 +114,7 @@ export const useAppStore = create<AppState>()(
           const notes = await readAllNotes()
           // Sort by updatedAt desc
           notes.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+          buildIndex(notes)
           set({ notes, isNotesLoaded: true })
         } catch (err) {
           console.warn('[loadNotes] failed:', err)
@@ -131,7 +143,8 @@ export const useAppStore = create<AppState>()(
             await writePlainNote(note)
           }
 
-          // Add to in-memory store
+          // Add to in-memory store and search index
+          indexNote(note)
           set(s => ({ notes: [note, ...s.notes], activeNoteId: id }))
           return id
         }, 'Creating note…')
@@ -152,7 +165,8 @@ export const useAppStore = create<AppState>()(
           updatedAt: new Date().toISOString(),
         }
 
-        // Update in-memory store — move updated note to top
+        // Update search index and in-memory store
+        indexNote(updated)
         set(s => ({
           notes: [updated, ...s.notes.filter(n => n.id !== activeNoteId)],
         }))
@@ -184,6 +198,7 @@ export const useAppStore = create<AppState>()(
         const existing = notes.find(n => n.id === noteId)
         if (!existing) return
         const updated = { ...existing, tags, updatedAt: new Date().toISOString() }
+        indexNote(updated)
         set(s => ({ notes: s.notes.map(n => n.id === noteId ? updated : n) }))
         const { writePlainNote, isPlainFolderConnected } = await import('../sync/plainFolder')
         if (isPlainFolderConnected()) {
@@ -205,6 +220,7 @@ export const useAppStore = create<AppState>()(
       deleteNoteById: async (id) => {
         const { run } = useLoaderStore.getState()
         await run('delete-note', async () => {
+          deindexNote(id)
           // Remove from in-memory store
           set(s => ({
             notes: s.notes.filter(n => n.id !== id),
@@ -226,16 +242,18 @@ export const useAppStore = create<AppState>()(
     {
       name: 'mindvault-ui-store',
       partialize: (state) => ({
-        activeNoteId:   state.activeNoteId,
-        searchMode:     state.searchMode,
-        s3Config:       state.s3Config,
-        webdavConfig:   state.webdavConfig,
+        activeNoteId:    state.activeNoteId,
+        searchMode:      state.searchMode,
+        s3Config:        state.s3Config,
+        webdavConfig:    state.webdavConfig,
         storageChoices:  state.storageChoices,
         noteTagColors:   state.noteTagColors,
         theme:           state.theme,
-        font:           state.font,
-        fontWeight:     state.fontWeight,
-        aiUrl:          state.aiUrl,
+        font:            state.font,
+        fontWeight:      state.fontWeight,
+        aiUrl:           state.aiUrl,
+        userName:        state.userName,
+        onboardingDone:  state.onboardingDone,
       }),
     },
   ),

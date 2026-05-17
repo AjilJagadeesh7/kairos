@@ -10,6 +10,9 @@ import { TagBadge } from '../../atoms/TagBadge'
 import { exportPDF } from './exportPDF'
 import { MarkdownEditor } from './MarkdownEditor'
 import { BacklinksPanel } from './BacklinksPanel'
+import { NoteInfoPanel } from './NoteInfoPanel'
+import { ConflictBanner } from './ConflictBanner'
+import { useConflictStore } from '../../../store/useConflictStore'
 import type { EditorDraftProps, TagRecord } from '../../../types'
 
 type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved'
@@ -27,6 +30,7 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
   const deleteNoteById    = useAppStore(s => s.deleteNoteById)
   const updateNoteTags    = useAppStore(s => s.updateNoteTags)
+  const conflict          = useConflictStore(s => s.conflicts.find(c => c.noteId === note.id))
   const setNoteTagColor   = useAppStore(s => s.setNoteTagColor)
   const noteTagColors     = useAppStore(s => s.noteTagColors)
   const notes             = useAppStore(s => s.notes)
@@ -113,7 +117,17 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
   }, [title, content]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <section className="flex h-full flex-col bg-bg p-4">
+    <section className="flex h-full flex-col bg-bg">
+      {conflict && (
+        <ConflictBanner
+          conflict={conflict}
+          onApplyRemote={(newContent, newTitle) => {
+            setContent(newContent)
+            setTitle(newTitle)
+          }}
+        />
+      )}
+      <div className="flex h-full flex-col p-4">
       <div className="mb-2 flex items-center gap-2">
         <input
           value={title}
@@ -185,10 +199,12 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
       </div>
 
       <div ref={editorRootRef} className="min-h-0 flex-1 rounded-md border border-border bg-surface">
-        <MarkdownEditor noteId={note.id} initialMarkdown={note.content} noteTitle={title} onChange={setContent} onWikilinkClick={(t) => handleWikilinkClick(t)} />
+        <MarkdownEditor noteId={note.id} initialMarkdown={note.content} noteTitle={title} notes={notes} onChange={setContent} onWikilinkClick={(t) => handleWikilinkClick(t)} />
       </div>
 
       <BacklinksPanel noteTitle={title} />
+      <NoteInfoPanel note={note} content={content} />
+      </div>
     </section>
   )
 }

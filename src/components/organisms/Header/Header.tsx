@@ -6,6 +6,13 @@ import { Button } from '../../atoms/Button'
 import { ThemeSelect } from '../../molecules/ThemeSelect'
 import { SyncStatusBadge } from '../../molecules/SyncStatusBadge'
 
+const NAV_ITEMS = [
+  { to: '/notes',    Icon: BookOpen,     label: 'Notes' },
+  { to: '/kanban',   Icon: SquareKanban, label: 'Kanban' },
+  { to: '/graph',    Icon: Network,      label: 'Graph' },
+  { to: '/settings', Icon: Settings2,    label: 'Settings' },
+]
+
 export function Header() {
   const navigate             = useNavigate()
   const location             = useLocation()
@@ -15,11 +22,13 @@ export function Header() {
   const setMobileSidebarOpen = useAppStore((s) => s.setMobileSidebarOpen)
   const { pages: pluginPages } = usePluginRegistry()
 
-  const hasSidebar = location.pathname.startsWith('/notes') || location.pathname.startsWith('/settings') || location.pathname.startsWith('/graph')
+  const hasSidebar = location.pathname.startsWith('/notes')
+    || location.pathname.startsWith('/settings')
+    || location.pathname.startsWith('/graph')
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-3 backdrop-blur">
-      <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2.5 backdrop-blur sm:px-4 sm:py-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         {hasSidebar && (
           <button
             className="flex h-8 w-8 items-center justify-center rounded-md text-[rgb(var(--text-2))] transition hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))] xl:hidden"
@@ -35,59 +44,53 @@ export function Header() {
         )}
 
         <button onClick={() => navigate('/')} className="text-left">
-          <h1 className="text-lg font-black tracking-tight">MindVault</h1>
-          <p className="hidden text-xs text-[rgb(var(--text-2))] sm:block">Private-by-default notes</p>
+          <h1 className="text-base font-black tracking-tight sm:text-lg">MindVault</h1>
+          <p className="hidden text-[10px] text-[rgb(var(--text-2))] sm:block sm:text-xs">
+            Private-by-default notes
+          </p>
         </button>
       </div>
 
-      <div className="flex items-center gap-1">
-        {/* Core nav */}
-        <NavLink to="/notes">
-          {({ isActive }) => (
-            <Button variant="ghost" size="xs" className={`inline-flex items-center gap-1 ${isActive ? 'text-[rgb(var(--accent))]' : ''}`}>
-              <BookOpen size={13} /> Notes
-            </Button>
-          )}
-        </NavLink>
-        <NavLink to="/kanban">
-          {({ isActive }) => (
-            <Button variant="ghost" size="xs" className={`inline-flex items-center gap-1 ${isActive ? 'text-[rgb(var(--accent))]' : ''}`}>
-              <SquareKanban size={13} /> Kanban
-            </Button>
-          )}
-        </NavLink>
-        <NavLink to="/graph">
-          {({ isActive }) => (
-            <Button variant="ghost" size="xs" className={`inline-flex items-center gap-1 ${isActive ? 'text-[rgb(var(--accent))]' : ''}`}>
-              <Network size={13} /> Graph
-            </Button>
-          )}
-        </NavLink>
-        <NavLink to="/settings">
-          {({ isActive }) => (
-            <Button variant="ghost" size="xs" className={`inline-flex items-center gap-1 ${isActive ? 'text-[rgb(var(--accent))]' : ''}`}>
-              <Settings2 size={13} /> Settings
-            </Button>
-          )}
-        </NavLink>
-
-        {/* Plugin-registered nav items */}
-        {pluginPages.map(({ path, navLabel, navIcon: NavIcon }) => (
-          <NavLink key={path} to={path}>
+      <nav aria-label="Main navigation" className="flex items-center gap-0.5 sm:gap-1">
+        {/* Core nav — icons only on xs, icon+label on sm+ */}
+        {NAV_ITEMS.map(({ to, Icon, label }) => (
+          <NavLink key={to} to={to}>
             {({ isActive }) => (
-              <Button variant="ghost" size="xs" className={`inline-flex items-center gap-1 ${isActive ? 'text-[rgb(var(--accent))]' : ''}`}>
-                {NavIcon && <NavIcon size={13} />}
-                {navLabel}
+              <Button
+                variant="ghost"
+                size="xs"
+                title={label}
+                className={`inline-flex items-center gap-1 px-2 sm:px-2.5 ${isActive ? 'text-[rgb(var(--accent))]' : ''}`}
+              >
+                <Icon size={14} />
+                <span className="hidden sm:inline">{label}</span>
               </Button>
             )}
           </NavLink>
         ))}
 
-        <div className="mx-1 h-4 w-px bg-[rgb(var(--border))]" />
+        {/* Plugin-registered nav items */}
+        {pluginPages.map(({ path, navLabel, navIcon: NavIcon }) => (
+          <NavLink key={path} to={path}>
+            {({ isActive }) => (
+              <Button
+                variant="ghost"
+                size="xs"
+                title={navLabel}
+                className={`inline-flex items-center gap-1 px-2 sm:px-2.5 ${isActive ? 'text-[rgb(var(--accent))]' : ''}`}
+              >
+                {NavIcon && <NavIcon size={14} />}
+                <span className="hidden sm:inline">{navLabel}</span>
+              </Button>
+            )}
+          </NavLink>
+        ))}
+
+        <div className="mx-0.5 h-4 w-px bg-[rgb(var(--border))] sm:mx-1" />
 
         <SyncStatusBadge />
         <ThemeSelect value={theme} onChange={setTheme} />
-      </div>
+      </nav>
     </header>
   )
 }

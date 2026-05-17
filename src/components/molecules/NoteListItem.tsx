@@ -14,13 +14,20 @@ interface Props {
 }
 
 export function NoteListItem({ note, isActive, isCopied, tagMap, onOpen, onDelete, onCopyLink }: Props) {
+  const label = note.title || 'Untitled note'
+
   return (
     <div
       role="button"
       tabIndex={0}
+      data-note-item
+      aria-label={label}
+      aria-current={isActive ? 'true' : undefined}
       onClick={onOpen}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onOpen() }}
-      className={`group sidebar-note-card flex cursor-pointer select-none items-center gap-2 rounded-lg border px-2 py-2 transition-colors ${
+      onKeyDown={e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen() }
+      }}
+      className={`group sidebar-note-card flex cursor-pointer select-none items-center gap-2 rounded-lg border px-2 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 ${
         isActive
           ? 'active border-accent/20 bg-surface shadow-sm'
           : 'border-border bg-surface2 hover:border-accent/30 hover:bg-surface'
@@ -29,7 +36,7 @@ export function NoteListItem({ note, isActive, isCopied, tagMap, onOpen, onDelet
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <h3 className="note-title min-w-0 truncate text-[11px] font-semibold text-text">
-            {note.title || 'Untitled note'}
+            {label}
           </h3>
           <span className="note-meta whitespace-nowrap text-[10px] text-text3">{timeAgo(note.updatedAt)}</span>
         </div>
@@ -43,22 +50,25 @@ export function NoteListItem({ note, isActive, isCopied, tagMap, onOpen, onDelet
         )}
       </div>
 
-      <div className="flex items-center gap-1">
+      {/* Actions — always accessible, visually hidden until hover/focus */}
+      <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
         <button
           type="button"
           title="Copy wikilink"
+          aria-label={`Copy link to "${label}"`}
           onClick={onCopyLink}
-          className="flex h-7 w-7 items-center justify-center rounded-md text-text3 transition hover:bg-surface2 hover:text-text active:scale-95"
+          className="flex h-8 w-8 items-center justify-center rounded-md text-text3 transition hover:bg-surface2 hover:text-text active:scale-95 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
         >
-          {isCopied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+          {isCopied ? <Check size={14} className="text-green-500" aria-hidden /> : <Copy size={14} aria-hidden />}
         </button>
         <button
           type="button"
           title="Delete note"
+          aria-label={`Delete "${label}"`}
           onClick={onDelete}
-          className="flex h-7 w-7 items-center justify-center rounded-md text-text3 transition hover:bg-surface2 hover:text-red-400 active:scale-95"
+          className="flex h-8 w-8 items-center justify-center rounded-md text-text3 transition hover:bg-surface2 hover:text-red-400 active:scale-95 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
         >
-          <Trash2 size={14} />
+          <Trash2 size={14} aria-hidden />
         </button>
       </div>
     </div>

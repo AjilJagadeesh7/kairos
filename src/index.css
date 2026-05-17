@@ -4,18 +4,85 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── GLOBAL FOCUS RING ───────────────────────────────────────────────────── */
+/* Remove browser default outline; all interactive elements get our custom ring
+   only on keyboard navigation (focus-visible). Mouse clicks stay ring-free. */
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid rgb(var(--accent) / 0.6);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ─── TOUCH TARGETS ───────────────────────────────────────────────────────── */
+/* Ensures interactive elements meet WCAG 2.5.5 minimum 44×44 px on touch. */
+@media (pointer: coarse) {
+  button, [role="button"], a, select, input[type="checkbox"], input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  /* Exceptions: icon-only chip buttons that are grouped tightly */
+  .touch-compact button, .touch-compact [role="button"] {
+    min-height: unset;
+    min-width: unset;
+  }
+}
+
 /* ─── WIKILINK TOKENS ─────────────────────────────────────────────────────── */
 .wikilink-token {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   color: rgb(var(--accent));
-  background-color: rgb(var(--accent) / 0.1);
-  border-radius: 4px;
-  padding: 0 3px;
+  background-color: rgb(var(--accent) / 0.08);
+  border: 1px solid rgb(var(--accent) / 0.18);
+  border-radius: 5px;
+  padding: 0 5px 0 3px;
   cursor: pointer;
   font-weight: 500;
-  transition: background-color 0.15s;
+  font-size: 0.9em;
+  line-height: 1.6;
+  vertical-align: middle;
+  transition: background-color 0.12s, border-color 0.12s;
+  text-decoration: none;
+}
+.wikilink-token::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'/%3E%3Cpath d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'/%3E%3Cpath d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'/%3E%3C/svg%3E");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  flex-shrink: 0;
+  opacity: 0.8;
 }
 .wikilink-token:hover {
-  background-color: rgb(var(--accent) / 0.2);
+  background-color: rgb(var(--accent) / 0.15);
+  border-color: rgb(var(--accent) / 0.35);
+}
+
+/* ─── ONBOARDING ANIMATIONS ──────────────────────────────────────────────── */
+@keyframes onboard-modal-in {
+  from { opacity: 0; transform: scale(0.94) translateY(12px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+@keyframes onboard-step-in {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ─── PAGE / ROUTE FADE ───────────────────────────────────────────────────── */
+@keyframes page-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-enter {
+  animation: page-fade-in 0.22s ease both;
 }
 
 /* ─── LOADER BAR ──────────────────────────────────────────────────────────── */

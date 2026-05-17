@@ -1,23 +1,112 @@
-import { NavLink } from 'react-router-dom'
-import { Cloud, CloudOff } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { AlertTriangle, Check, Cloud, CloudOff, Loader2, X } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
+import { useConflictStore } from '../../store/useConflictStore'
 import { anySyncProviderConnected } from '../../sync/syncOrchestrator'
+import { useClickOutside } from '../../hooks/useClickOutside'
+
+const STATUS_LABEL: Record<string, string> = {
+  idle:    'Sync is idle — auto-syncs on save and startup',
+  syncing: 'Syncing…',
+  ok:      'Last sync succeeded',
+  error:   'Last sync failed — check your connection or credentials',
+}
 
 export function SyncStatusBadge(): JSX.Element {
-  const syncStatus = useAppStore((s) => s.syncStatus)
-  const connected = anySyncProviderConnected()
+  const syncStatus    = useAppStore(s => s.syncStatus)
+  const conflictCount = useConflictStore(s => s.conflicts.length)
+  const connected     = anySyncProviderConnected()
+  const navigate      = useNavigate()
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  useClickOutside(ref, () => setOpen(false))
 
   const dotColor =
-    syncStatus === 'ok'      ? 'bg-green-500'  :
+    conflictCount > 0      ? 'bg-amber-400'               :
+    syncStatus === 'ok'    ? 'bg-green-500'                :
     syncStatus === 'syncing' ? 'bg-yellow-400 animate-pulse' :
-    syncStatus === 'error'   ? 'bg-red-400'    : 'bg-[rgb(var(--surface-3))]'
+    syncStatus === 'error' ? 'bg-red-400'                  :
+    'bg-[rgb(var(--surface-3))]'
 
   return (
-    <NavLink to="/settings" title={connected ? `Sync active · ${syncStatus}` : 'Sync disabled — click to configure'}>
-      <div className="inline-flex items-center gap-1.5 rounded px-2 py-1 text-xs text-[rgb(var(--text-2))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]">
-        {connected ? <Cloud size={13} /> : <CloudOff size={13} />}
-        <span className={`h-1.5 w-1.5 rounded-full ${dotColor}`} />
-      </div>
-    </NavLink>
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        aria-label={`Sync status: ${syncStatus}${conflictCount > 0 ? `, ${conflictCount} conflict${conflictCount > 1 ? 's' : ''}` : ''}`}
+        aria-expanded={open}
+        aria-haspopup="true"
+        className="inline-flex items-center gap-1.5 rounded px-2 py-1 text-xs text-[rgb(var(--text-2))] transition hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]"
+      >
+        {connected
+          ? syncStatus === 'syncing'
+            ? <Loader2 size={13} className="animate-spin" aria-hidden />
+            : <Cloud size={13} aria-hidden />
+          : <CloudOff size={13} aria-hidden />
+        }
+        <span className={`h-1.5 w-1.5 rounded-full ${dotColor}`} aria-hidden />
+        {conflictCount > 0 && (
+          <span className="rounded-full bg-amber-400/20 px-1 text-[10px] font-semibold text-amber-600">
+            {conflictCount}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div
+          role="dialog"
+          aria-label="Sync status details"
+          className="absolute right-0 top-full z-50 mt-1 w-64 overflow-hidden rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-2xl"
+        >
+          {/* Status row */}
+          <div className="flex items-start gap-2.5 px-4 py-3">
+            <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${dotColor}`} aria-hidden />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold capitalize text-[rgb(var(--text))]">
+                {connected ? `Sync ${syncStatus}` : 'Sync disabled'}
+              </p>
+              <p className="mt-0.5 text-[11px] text-[rgb(var(--text-3))]">
+                {connected ? STATUS_LABEL[syncStatus] : 'No sync provider connected'}
+              </p>
+            </div>
+          </div>
+
+          {/* Conflicts section */}
+          {conflictCount > 0 && (
+            <div className="border-t border-[rgb(var(--border))] bg-amber-50/60 px-4 py-2.5 dark:bg-amber-950/20">
+              <div className="flex items-center gap-1.5">
+                <AlertTriangle size={12} className="text-amber-500" aria-hidden />
+                <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400">
+                  {conflictCount} conflict{conflictCount > 1 ? 's' : ''} to resolve
+                </span>
+              </div>
+              <p className="mt-0.5 text-[10px] text-amber-600/80 dark:text-amber-500/80">
+                Open the affected notes to review and merge.
+              </p>
+            </div>
+          )}
+
+          {/* Footer actions */}
+          <div className="flex items-center gap-2 border-t border-[rgb(var(--border))] px-4 py-2.5">
+            <button
+              type="button"
+              onClick={() => { setOpen(false); navigate('/settings') }}
+              className="flex-1 rounded-lg bg-[rgb(var(--accent))] px-3 py-1.5 text-center text-[11px] font-semibold text-[rgb(var(--accent-fg))] transition hover:opacity-90"
+            >
+              {connected ? 'Sync settings' : 'Configure sync'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label="Close"
+              className="rounded p-1.5 text-[rgb(var(--text-3))] hover:text-[rgb(var(--text))]"
+            >
+              <X size={13} aria-hidden />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

@@ -13,12 +13,14 @@ import {
 } from '@milkdown/preset-commonmark'
 import { wikilinkHighlightPlugin } from './wikilinkPlugin'
 import { useWikilinkTooltip } from '../../../hooks/useWikilinkTooltip'
+import { useWikilinkAutocomplete } from '../../../hooks/useWikilinkAutocomplete'
 import { useEditorContextMenu } from '../../../hooks/useEditorContextMenu'
 import { ContextMenu } from '../../molecules/ContextMenu'
 import { NotePreviewPopover } from '../../common/NotePreviewPopover'
+import { WikilinkDropdown } from './WikilinkDropdown'
 import type { MarkdownEditorProps, TableCommandRunner } from '../../../types'
 
-export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, onChange, onWikilinkClick }: MarkdownEditorProps): JSX.Element {
+export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, notes, onChange, onWikilinkClick }: MarkdownEditorProps): JSX.Element {
   const rootRef              = useRef<HTMLDivElement | null>(null)
   const crepeRef             = useRef<Crepe | null>(null)
   const editorReadyRef       = useRef(false)
@@ -32,6 +34,7 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, onChange, o
 
   const { tooltip, attach: attachTooltip, dismiss: dismissTooltip } = useWikilinkTooltip(rootRef)
   const { menu, handleContextMenu, resizeImage, closeMenu } = useEditorContextMenu(crepeRef, rootRef)
+  const { ac, suggestions, complete, dismiss: dismissAc } = useWikilinkAutocomplete(crepeRef, rootRef, notes)
 
   // Swap content without reinitialising Milkdown when active note changes
   useEffect(() => {
@@ -102,6 +105,17 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, onChange, o
   return (
     <div className="relative h-full min-h-[320px]" onContextMenu={handleContextMenu}>
       <div ref={rootRef} className="h-full min-h-[320px]" />
+
+      {ac.visible && (
+        <WikilinkDropdown
+          x={ac.x}
+          y={ac.y}
+          query={ac.query}
+          suggestions={suggestions}
+          onSelect={complete}
+          onDismiss={dismissAc}
+        />
+      )}
 
       {tooltip.visible && (
         <NotePreviewPopover
