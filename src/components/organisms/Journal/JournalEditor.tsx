@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, ChevronLeft, ChevronRight, Save, Trash2 } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, History, Save, Trash2 } from 'lucide-react'
 import { useJournalStore, todayDate } from '../../../store/useJournalStore'
 import { useConfirmStore } from '../../../store/useConfirmStore'
 import { MarkdownEditor } from '../Editor/MarkdownEditor'
+import { HistoryPanel } from '../Editor/HistoryPanel'
 import { useAppStore } from '../../../store/useAppStore'
 
 type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved'
@@ -41,6 +42,8 @@ export function JournalEditor({ date }: JournalEditorProps) {
   const existing   = entries[date]
   const [content, setContent]       = useState(existing?.content ?? '')
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
+  const [showHistory, setShowHistory] = useState(false)
+  const [restoreKey, setRestoreKey]   = useState(0)
 
   const contentRef  = useRef(content)
   const prevDateRef = useRef(date)
@@ -52,7 +55,15 @@ export function JournalEditor({ date }: JournalEditorProps) {
     prevDateRef.current = date
     setContent(entries[date]?.content ?? '')
     setSaveStatus('idle')
+    setShowHistory(false)
   }, [date, entries])
+
+  const handleRestore = (restoredContent: string) => {
+    setContent(restoredContent)
+    setRestoreKey(k => k + 1)
+    setSaveStatus('dirty')
+    setShowHistory(false)
+  }
 
   const persist = useCallback(async () => {
     setSaveStatus('saving')
@@ -98,7 +109,7 @@ export function JournalEditor({ date }: JournalEditorProps) {
   const nextDate = offsetDate(date, 1)
 
   return (
-    <section className="flex h-full flex-col bg-[rgb(var(--bg))]">
+    <section className="relative flex h-full flex-col bg-[rgb(var(--bg))]">
       <div className="flex h-full flex-col p-4">
         {/* Toolbar */}
         <div className="mb-3 flex items-center gap-2">
@@ -149,6 +160,19 @@ export function JournalEditor({ date }: JournalEditorProps) {
             <span className="hidden sm:inline">Save</span>
           </button>
 
+          <button
+            type="button"
+            title="Version history"
+            onClick={() => setShowHistory(h => !h)}
+            className={`flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md border transition ${
+              showHistory
+                ? 'border-[rgb(var(--accent)/0.4)] bg-[rgb(var(--accent)/0.1)] text-[rgb(var(--accent))]'
+                : 'border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--text-2))] hover:border-[rgb(var(--accent)/0.5)] hover:text-[rgb(var(--accent))]'
+            }`}
+          >
+            <History size={14} />
+          </button>
+
           {existing && (
             <button
               type="button"
@@ -164,14 +188,24 @@ export function JournalEditor({ date }: JournalEditorProps) {
         {/* Editor */}
         <div className="min-h-0 flex-1 rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))]">
           <MarkdownEditor
+            key={restoreKey}
             noteId={date}
-            initialMarkdown={existing?.content ?? ''}
+            initialMarkdown={content}
             noteTitle={formatDate(date)}
             notes={notes}
             onChange={setContent}
           />
         </div>
       </div>
+
+      {showHistory && (
+        <HistoryPanel
+          id={date}
+          type="journal"
+          onRestore={handleRestore}
+          onClose={() => setShowHistory(false)}
+        />
+      )}
     </section>
   )
 }

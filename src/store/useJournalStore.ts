@@ -42,9 +42,11 @@ export const useJournalStore = create<JournalState>()((set, get) => ({
 
     set(s => ({ entries: { ...s.entries, [date]: entry } }))
 
-    const { writeJournalEntry, isPlainFolderConnected } = await import('../sync/plainFolder')
+    const { writeJournalEntry, appendJournalVersion, isPlainFolderConnected } = await import('../sync/plainFolder')
     if (isPlainFolderConnected()) {
       writeJournalEntry(entry).catch(err => console.warn('[journal] write failed:', err))
+      appendJournalVersion(date, { savedAt: now, content })
+        .catch(err => console.warn('[history] journal append failed:', err))
     }
   },
 

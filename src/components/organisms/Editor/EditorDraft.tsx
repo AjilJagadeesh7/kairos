@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, FileDown, Save, Trash2 } from 'lucide-react'
+import { Check, FileDown, History, Save, Trash2 } from 'lucide-react'
 import { embedText } from '../../../utils/embeddingClient'
 import { useAppStore } from '../../../store/useAppStore'
 import { useConfirmStore } from '../../../store/useConfirmStore'
@@ -9,6 +9,7 @@ import { TagSelector } from '../../molecules/TagSelector'
 import { TagBadge } from '../../atoms/TagBadge'
 import { exportPDF } from './exportPDF'
 import { MarkdownEditor } from './MarkdownEditor'
+import { HistoryPanel } from './HistoryPanel'
 import { BacklinksPanel } from './BacklinksPanel'
 import { NoteInfoPanel } from './NoteInfoPanel'
 import { ConflictBanner } from './ConflictBanner'
@@ -24,10 +25,12 @@ function tagColor(name: string): string {
 }
 
 export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
-  const [title, setTitle] = useState(note.title)
-  const [content, setContent] = useState(note.content)
-  const [tags, setTags] = useState<string[]>(note.tags)
+  const [title, setTitle]           = useState(note.title)
+  const [content, setContent]       = useState(note.content)
+  const [tags, setTags]             = useState<string[]>(note.tags)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
+  const [showHistory, setShowHistory] = useState(false)
+  const [restoreKey, setRestoreKey]   = useState(0)   // bump to force MarkdownEditor remount on restore
   const deleteNoteById    = useAppStore(s => s.deleteNoteById)
   const updateNoteTags    = useAppStore(s => s.updateNoteTags)
   const conflict          = useConflictStore(s => s.conflicts.find(c => c.noteId === note.id))
@@ -91,7 +94,16 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
     setContent(note.content)
     setTags(note.tags)
     setSaveStatus('idle')
+    setShowHistory(false)
   }, [note])
+
+  const handleRestore = (restoredContent: string, restoredTitle?: string) => {
+    if (restoredTitle) setTitle(restoredTitle)
+    setContent(restoredContent)
+    setRestoreKey(k => k + 1)   // remounts MarkdownEditor with restored initialMarkdown
+    setSaveStatus('dirty')
+    setShowHistory(false)
+  }
 
   const saveTags = async (newTags: string[]) => {
     setTags(newTags)
@@ -117,7 +129,7 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
   }, [title, content]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <section className="flex h-full flex-col bg-bg">
+    <section className="relative flex h-full flex-col bg-bg">
       {conflict && (
         <ConflictBanner
           conflict={conflict}
@@ -171,6 +183,19 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
 
         <button
           type="button"
+          title="Version history"
+          onClick={() => setShowHistory(h => !h)}
+          className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-md border transition ${
+            showHistory
+              ? 'border-accent/40 bg-accent/10 text-accent'
+              : 'border-border bg-surface text-text3 hover:border-accent/50 hover:text-accent'
+          }`}
+        >
+          <History size={15} />
+        </button>
+
+        <button
+          type="button"
           title="Delete note"
           onClick={handleDeleteNote}
           className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-md border border-border bg-surface text-text3 transition hover:border-red-400/50 hover:text-red-400"
@@ -199,12 +224,21 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
       </div>
 
       <div ref={editorRootRef} className="min-h-0 flex-1 rounded-md border border-border bg-surface">
-        <MarkdownEditor noteId={note.id} initialMarkdown={note.content} noteTitle={title} notes={notes} onChange={setContent} onWikilinkClick={(t) => handleWikilinkClick(t)} />
+        <MarkdownEditor key={restoreKey} noteId={note.id} initialMarkdown={content} noteTitle={title} notes={notes} onChange={setContent} onWikilinkClick={(t) => handleWikilinkClick(t)} />
       </div>
 
       <BacklinksPanel noteTitle={title} />
       <NoteInfoPanel note={note} content={content} />
       </div>
+
+      {showHistory && (
+        <HistoryPanel
+          id={note.id}
+          type="note"
+          onRestore={handleRestore}
+          onClose={() => setShowHistory(false)}
+        />
+      )}
     </section>
   )
 }

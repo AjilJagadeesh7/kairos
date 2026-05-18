@@ -13,7 +13,7 @@
 import { isDesktop } from '../utils/platform'
 import { db } from '../db/schema'
 import { serializeNote, deserializeNote, noteIdToPath } from '../adapters/storage/noteSerializer'
-import type { Note, JournalEntry } from '../types'
+import type { Note, JournalEntry, ContentVersion } from '../types'
 import type { Board } from '../types/kanban.types'
 
 const TAURI_KEY      = 'mindvault_plain_folder_path'
@@ -419,6 +419,103 @@ export async function readAllJournalEntries(): Promise<JournalEntry[]> {
   } catch {
     return []
   }
+}
+
+// ---------------------------------------------------------------------------
+// Version history — vault/history/notes/{id}.json  |  vault/history/journal/{date}.json
+// ---------------------------------------------------------------------------
+
+const MAX_VERSIONS = 50
+
+type HistorySub = 'notes' | 'journal'
+
+async function _historyFilePath(sub: HistorySub, id: string): Promise<string | null> {
+  if (!isDesktop() || !_tauriPath) return null
+  const { mkdir } = await import('@tauri-apps/plugin-fs')
+  const dir = `${_tauriPath}/history/${sub}`
+  await mkdir(dir, { recursive: true }).catch(() => {})
+  return `${dir}/${id}.json`
+}
+
+async function _historyFileHandle(sub: HistorySub, id: string): Promise<FileSystemFileHandle | null> {
+  if (!_webHandle) return null
+  const histDir  = await _webHandle.getDirectoryHandle('history', { create: true })
+  const subDir   = await histDir.getDirectoryHandle(sub, { create: true })
+  return subDir.getFileHandle(`${id}.json`, { create: true })
+}
+
+async function _readHistory(sub: HistorySub, id: string): Promise<ContentVersion[]> {
+  try {
+    if (isDesktop()) {
+      const path = await _historyFilePath(sub, id)
+      if (!path) return []
+      const { readTextFile, exists } = await import('@tauri-apps/plugin-fs')
+      if (!(await exists(path))) return []
+      const raw = await readTextFile(path)
+      return (JSON.parse(raw) as { versions: ContentVersion[] }).versions ?? []
+    }
+    const fh   = await _historyFileHandle(sub, id)
+    if (!fh) return []
+    const file = await fh.getFile()
+    const text = await file.text()
+    if (!text.trim()) return []
+    return (JSON.parse(text) as { versions: ContentVersion[] }).versions ?? []
+  } catch {
+    return []
+  }
+}
+
+async function _writeHistory(sub: HistorySub, id: string, versions: ContentVersion[]): Promise<void> {
+  const payload = JSON.stringify({ versions })
+  if (isDesktop()) {
+    const path = await _historyFilePath(sub, id)
+    if (!path) return
+    const { writeTextFile } = await import('@tauri-apps/plugin-fs')
+    await writeTextFile(path, payload)
+    return
+  }
+  const fh = await _historyFileHandle(sub, id)
+  if (!fh) return
+  const w = await fh.createWritable()
+  await w.write(payload)
+  await w.close()
+}
+
+export async function appendNoteVersion(noteId: string, version: ContentVersion): Promise<void> {
+  if (!isPlainFolderConnected()) return
+  const existing = await _readHistory('notes', noteId)
+  const updated  = [...existing, version].slice(-MAX_VERSIONS)
+  await _writeHistory('notes', noteId, updated)
+}
+
+export async function readNoteHistory(noteId: string): Promise<ContentVersion[]> {
+  return _readHistory('notes', noteId)
+}
+
+export async function deleteNoteHistory(noteId: string): Promise<void> {
+  if (isDesktop()) {
+    if (!_tauriPath) return
+    const { remove } = await import('@tauri-apps/plugin-fs')
+    await remove(`${_tauriPath}/history/notes/${noteId}.json`).catch(() => {})
+    return
+  }
+  if (!_webHandle) return
+  try {
+    const histDir = await _webHandle.getDirectoryHandle('history', { create: false })
+    const subDir  = await histDir.getDirectoryHandle('notes', { create: false })
+    await subDir.removeEntry(`${noteId}.json`)
+  } catch { /* already gone */ }
+}
+
+export async function appendJournalVersion(date: string, version: ContentVersion): Promise<void> {
+  if (!isPlainFolderConnected()) return
+  const existing = await _readHistory('journal', date)
+  const updated  = [...existing, version].slice(-MAX_VERSIONS)
+  await _writeHistory('journal', date, updated)
+}
+
+export async function readJournalHistory(date: string): Promise<ContentVersion[]> {
+  return _readHistory('journal', date)
 }
 
 // ─── Plugin file helpers ───────────────────────────────────────────────────────

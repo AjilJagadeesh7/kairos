@@ -171,10 +171,12 @@ export const useAppStore = create<AppState>()(
           notes: [updated, ...s.notes.filter(n => n.id !== activeNoteId)],
         }))
 
-        // Write to filesystem (primary storage)
-        const { writePlainNote, isPlainFolderConnected } = await import('../sync/plainFolder')
+        // Write to filesystem (primary storage) and append a version snapshot
+        const { writePlainNote, appendNoteVersion, isPlainFolderConnected } = await import('../sync/plainFolder')
         if (isPlainFolderConnected()) {
           writePlainNote(updated).catch(err => console.warn('[storage] write failed:', err))
+          appendNoteVersion(updated.id, { savedAt: updated.updatedAt, title: updated.title, content: updated.content })
+            .catch(err => console.warn('[history] append failed:', err))
         }
 
         // Store embedding in Dexie (for semantic search)
@@ -227,10 +229,11 @@ export const useAppStore = create<AppState>()(
             activeNoteId: s.activeNoteId === id ? undefined : s.activeNoteId,
           }))
 
-          // Delete from filesystem
-          const { deletePlainNote, isPlainFolderConnected } = await import('../sync/plainFolder')
+          // Delete from filesystem (note + history)
+          const { deletePlainNote, deleteNoteHistory, isPlainFolderConnected } = await import('../sync/plainFolder')
           if (isPlainFolderConnected()) {
             await deletePlainNote(id).catch(() => { /* best-effort */ })
+            deleteNoteHistory(id).catch(() => { /* best-effort */ })
           }
 
           // Remove from sync providers

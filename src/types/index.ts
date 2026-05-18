@@ -14,6 +14,7 @@ export type { EdgeKind, GraphEdge, GNode, GLink, GraphPopover } from './graph.ty
 export type { Section } from './settings.types'
 export type { SettingRecord, FileHandleRecord, EmbeddingRecord } from './db.types'
 export type { JournalEntry } from './journal.types'
+export type { ContentVersion, VersionHistory } from './history.types'
 export type {
   Board,
   KanbanColumn,
