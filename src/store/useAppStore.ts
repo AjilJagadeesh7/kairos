@@ -195,7 +195,11 @@ export const useAppStore = create<AppState>()(
           setSyncStatus('syncing')
           pushNoteToAll(updated)
             .then(() => setSyncStatus('ok'))
-            .catch(err => { console.warn('[sync] push failed:', err); setSyncStatus('error') })
+            .catch(err => {
+              console.warn('[sync] push failed — queued for retry:', err)
+              setSyncStatus('error')
+              void import('../sync/offlineQueue').then(({ enqueue }) => enqueue(updated.id))
+            })
         }
       },
 

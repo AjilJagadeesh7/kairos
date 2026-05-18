@@ -5,6 +5,28 @@ import { useAppStore } from '../store/useAppStore'
 import { initPlainFolder, isPlainFolderConnected } from '../sync/plainFolder'
 import type { FontOption, FontWeight } from '../types/ui.types'
 
+async function drainOfflineQueue() {
+  const { getPending, dequeue } = await import('../sync/offlineQueue')
+  const { pushNoteToAll, anySyncProviderConnected } = await import('../sync/syncOrchestrator')
+  if (!anySyncProviderConnected()) return
+
+  const pending = getPending()
+  if (pending.length === 0) return
+
+  const notes = useAppStore.getState().notes
+  toast(`Syncing ${pending.length} note${pending.length > 1 ? 's' : ''} saved while offline…`)
+
+  await Promise.allSettled(
+    pending.map(async (id) => {
+      const note = notes.find(n => n.id === id)
+      if (!note) { dequeue(id); return }
+      await pushNoteToAll(note)
+      dequeue(id)
+    })
+  )
+  useAppStore.getState().setSyncStatus('ok')
+}
+
 const FONT_FAMILIES: Record<FontOption, string> = {
   'manrope':           "'Manrope', ui-sans-serif, system-ui, sans-serif",
   'inter':             "'Inter', ui-sans-serif, system-ui, sans-serif",
@@ -25,6 +47,14 @@ export function useAppStartup() {
   const theme      = useAppStore(s => s.theme)
   const font       = useAppStore(s => s.font)
   const fontWeight = useAppStore(s => s.fontWeight)
+
+  // Drain offline queue when connectivity returns
+  useEffect(() => {
+    window.addEventListener('online', drainOfflineQueue)
+    // Also drain on startup in case app was closed while offline
+    if (navigator.onLine) void drainOfflineQueue()
+    return () => window.removeEventListener('online', drainOfflineQueue)
+  }, [])
 
   useEffect(() => {
     const root = document.documentElement
