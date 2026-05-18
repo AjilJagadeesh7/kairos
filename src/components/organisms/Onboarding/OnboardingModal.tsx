@@ -2,6 +2,47 @@ import { useRef, useState } from 'react'
 import { BookOpen, Network, ShieldCheck, SquareKanban, ArrowRight, Check, Link2, Layers, CalendarDays } from 'lucide-react'
 import { useAppStore } from '../../../store/useAppStore'
 
+const SAMPLE_NOTE_2_TITLE = 'Ideas & Inspiration'
+const SAMPLE_NOTE_2 = `## A place for ideas
+
+This note was created so you can see **transclusion** working in the Welcome note.
+
+Some ideas to get you started:
+- What problem do you want to solve this week?
+- What did you learn recently that surprised you?
+- What would you do if you had twice the time?
+
+Feel free to edit or delete these sample notes whenever you're ready.
+`
+
+const SAMPLE_NOTE_1_TITLE = 'Welcome to MindVault'
+const makeSampleNote1 = () => `## Two features that make MindVault different
+
+### 1. Wikilinks — link between notes
+
+Type \`[[\` anywhere in a note to get an autocomplete list of your notes. Click to jump there.
+
+For example, here is a link to [[${SAMPLE_NOTE_2_TITLE}]].
+
+### 2. Transclusion — embed a note inline
+
+Add \`!\` before the brackets to embed another note's full content right here:
+
+![[${SAMPLE_NOTE_2_TITLE}]]
+
+The card above is live — click it to expand or open the note.
+
+---
+
+**A few tips while you're here:**
+- \`Ctrl+S\` saves immediately
+- Open the sidebar and press **New** to pick a template
+- The **Journal** (calendar icon) is for daily writing
+- The **Graph** view shows how your notes connect
+
+Delete these sample notes whenever you're ready to start fresh.
+`
+
 const FEATURES = [
   {
     icon: BookOpen,
@@ -41,6 +82,12 @@ export function OnboardingModal() {
 
   function finish() {
     if (name.trim()) setUserName(name.trim())
+    // Create sample notes so the user can interact with wikilinks/transclusion immediately
+    void (async () => {
+      const store = useAppStore.getState()
+      await store.createNote({ title: SAMPLE_NOTE_2_TITLE, content: SAMPLE_NOTE_2 })
+      await store.createNote({ title: SAMPLE_NOTE_1_TITLE, content: makeSampleNote1() })
+    })()
     completeOnboarding()
   }
 

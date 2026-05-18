@@ -154,6 +154,28 @@ export function useAppStartup() {
         }
       } catch { /* tauri-plugin-deep-link not available in web build */ }
 
+      // Tauri OTA update check
+      try {
+        const { isDesktop } = await import('../utils/platform')
+        if (isDesktop()) {
+          const { check } = await import(/* @vite-ignore */ '@tauri-apps/plugin-updater')
+          const { relaunch } = await import(/* @vite-ignore */ '@tauri-apps/plugin-process')
+          const update = await check()
+          if (update?.available) {
+            toast(`Update available — v${update.version}`, {
+              description: update.body || 'A new version of MindVault is ready to install.',
+              duration: Infinity,
+              action: {
+                label: 'Install & relaunch',
+                onClick: () => {
+                  void update.downloadAndInstall().then(() => relaunch())
+                },
+              },
+            })
+          }
+        }
+      } catch { /* updater not available or no pubkey set yet */ }
+
       const { pingS3, isS3Connected } = await import('../sync/s3')
       const { pingWebDAV, isWebDAVConnected } = await import('../sync/webdav')
 

@@ -39,6 +39,12 @@
     ]
   },
   "plugins": {
+    "updater": {
+      "pubkey": "",
+      "endpoints": [
+        "https://github.com/ajil/mindvault/releases/latest/download/latest.json"
+      ]
+    },
     "fs": {
       "requireLiteralLeadingDot": false
     },

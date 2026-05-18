@@ -1,6 +1,7 @@
 import { Toaster } from 'sonner'
 import { useAppStore } from './store/useAppStore'
 import { useAppStartup } from './hooks/useAppStartup'
+import { usePwaUpdate } from './hooks/usePwaUpdate'
 import { Header } from './components/organisms/Header/Header'
 import { AppRoutes } from './routes'
 import { LoaderBar } from './components/molecules/LoaderBar'
@@ -14,6 +15,7 @@ function AppInner() {
   const theme          = useAppStore(s => s.theme)
   const onboardingDone = useAppStore(s => s.onboardingDone)
   useAppStartup()
+  usePwaUpdate()
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-bg text-text">

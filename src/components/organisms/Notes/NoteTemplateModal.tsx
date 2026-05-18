@@ -12,7 +12,12 @@ export interface NoteTemplate {
   content: string
 }
 
-const TEMPLATES: NoteTemplate[] = [
+function makeTemplates(): NoteTemplate[] {
+  const d = new Date()
+  const longDate  = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+  const shortDate = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  const shortDateYear = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  return [
   {
     id: 'blank',
     name: 'Blank',
@@ -28,7 +33,7 @@ const TEMPLATES: NoteTemplate[] = [
     icon: <Users size={18} />,
     title: 'Meeting — ',
     content: `## Date & Attendees
-**Date:** ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+**Date:** ${longDate}
 **Attendees:**
 
 ## Agenda
@@ -160,7 +165,7 @@ const TEMPLATES: NoteTemplate[] = [
     name: 'Daily Standup',
     description: 'Yesterday, today, blockers',
     icon: <Zap size={18} />,
-    title: `Standup ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`,
+    title: `Standup ${shortDate}`,
     content: `## Yesterday
 -
 
@@ -273,7 +278,7 @@ const TEMPLATES: NoteTemplate[] = [
     name: 'Weekly Review',
     description: 'Wins, lessons, goals for next week',
     icon: <Globe size={18} />,
-    title: `Week of ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+    title: `Week of ${shortDateYear}`,
     content: `## Wins this week
 -
 
@@ -299,7 +304,8 @@ const TEMPLATES: NoteTemplate[] = [
 ## Notes
 `,
   },
-]
+  ]
+}
 
 interface NoteTemplateModalProps {
   onSelect: (template: NoteTemplate) => void
@@ -307,6 +313,7 @@ interface NoteTemplateModalProps {
 }
 
 export function NoteTemplateModal({ onSelect, onClose }: NoteTemplateModalProps) {
+  const templates = makeTemplates()
   const [selected, setSelected] = useState<string>('blank')
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -321,13 +328,13 @@ export function NoteTemplateModal({ onSelect, onClose }: NoteTemplateModalProps)
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Escape') onClose()
     if (e.key === 'Enter') {
-      const t = TEMPLATES.find(t => t.id === selected)
+      const t = templates.find(t => t.id === selected)
       if (t) onSelect(t)
     }
   }
 
   function handleCreate() {
-    const t = TEMPLATES.find(t => t.id === selected)
+    const t = templates.find(t => t.id === selected)
     if (t) onSelect(t)
   }
 
@@ -358,7 +365,7 @@ export function NoteTemplateModal({ onSelect, onClose }: NoteTemplateModalProps)
 
         {/* Template grid */}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 max-h-[60vh] overflow-y-auto pr-1">
-          {TEMPLATES.map(t => {
+          {templates.map(t => {
             const isSelected = selected === t.id
             return (
               <button
