@@ -1,31 +1,41 @@
-import { BrainCircuit, FolderSync, Network, StickyNote, SquareKanban, ShieldCheck, ExternalLink } from 'lucide-react'
+import { BrainCircuit, FolderSync, Network, StickyNote, SquareKanban, ShieldCheck, ExternalLink, CalendarDays, History, GitFork } from 'lucide-react'
 import { SectionCard } from '../../molecules/SectionCard'
 
 const FEATURES = [
   {
     icon: StickyNote,
     title: 'Notes',
-    desc: 'Markdown editor with live preview, wikilinks ([[note title]]), inline tags (#tag), full-text and semantic AI search, backlinks panel, and PDF export.',
+    desc: 'Markdown editor with wikilinks ([[title]]), transclusion (![[title]]), tags, backlinks, full-text & semantic search, version history, PDF export, and 11 note templates.',
+  },
+  {
+    icon: CalendarDays,
+    title: 'Journal',
+    desc: 'Daily entries with a calendar sidebar, full-text search across all entries, version history per entry, and auto-save.',
   },
   {
     icon: SquareKanban,
     title: 'Kanban',
-    desc: 'Multi-board task management with drag-and-drop columns, subtasks, checkpoints, priorities, due dates, labels, and linked notes. Tasks can be linked to notes and to each other.',
+    desc: 'Multi-board task management with drag-and-drop columns, subtasks, checkpoints, priorities, due dates, and labels.',
   },
   {
     icon: Network,
-    title: 'Graph',
-    desc: 'Force-directed knowledge graph showing note–note wikilinks, tag clusters, and kanban task nodes. Neighbourhood focus mode, right-click to create links directly from the graph.',
+    title: 'Knowledge Graph',
+    desc: 'Force-directed 3D graph of note connections via wikilinks. Tag clusters, neighbourhood focus, and right-click link creation.',
+  },
+  {
+    icon: History,
+    title: 'Version History',
+    desc: 'Every save creates a snapshot. Browse previous versions of any note or journal entry and restore with one click.',
   },
   {
     icon: FolderSync,
     title: 'Sync',
-    desc: 'Optional, always opt-in. Supports S3-compatible storage and WebDAV. All notes are encrypted on-device before upload — the server never sees plaintext.',
+    desc: 'Optional S3-compatible and WebDAV sync. Notes are encrypted on-device before upload — the server never sees plaintext.',
   },
   {
     icon: BrainCircuit,
-    title: 'AI (local)',
-    desc: 'Semantic search and embeddings via a local Ollama endpoint. No data ever leaves your device to a third-party AI service.',
+    title: 'Local AI',
+    desc: 'Semantic search and embeddings via a local Ollama endpoint. No data leaves your device to any cloud AI service.',
   },
 ]
 
@@ -35,7 +45,7 @@ const PRIVACY_POINTS = [
   'No telemetry, analytics, or usage tracking of any kind.',
   'Sync is completely optional. When enabled, notes are encrypted with your key before leaving your device.',
   'The sync server (S3/WebDAV) stores only ciphertext — it cannot read your notes.',
-  'AI features use a local model endpoint you configure; no data is sent to Anthropic, OpenAI, or any cloud AI service.',
+  'AI features use a local model endpoint you configure; no data is sent to any cloud AI service.',
   'The app works fully offline; no network connection is ever required.',
 ]
 
@@ -46,16 +56,16 @@ export function AboutSection() {
       <SectionCard title="About MindVault">
         <div className="space-y-3 text-sm text-[rgb(var(--text-2))]">
           <p>
-            MindVault is a <strong className="text-[rgb(var(--text))]">privacy-first</strong>, local-first knowledge base. It combines
-            a rich markdown note editor, a full kanban task manager, and a visual knowledge graph — all without requiring an
+            MindVault is a <strong className="text-[rgb(var(--text))]">privacy-first, local-first knowledge base</strong> combining
+            a rich markdown note editor, daily journal, kanban boards, and a visual knowledge graph — all without requiring an
             account or sending any data to external servers.
           </p>
           <p>
             Everything lives on your device. Sync is optional and always encrypted end-to-end before leaving your machine.
           </p>
-          <div className="flex flex-wrap gap-2 pt-1">
+          <div className="flex flex-wrap items-center gap-2 pt-1">
             <span className="rounded-full bg-[rgb(var(--surface-2))] px-2.5 py-1 font-mono text-xs text-[rgb(var(--text-3))]">
-              v0.0.0
+              v0.1.0
             </span>
             <span className="rounded-full bg-[rgb(var(--surface-2))] px-2.5 py-1 font-mono text-xs text-[rgb(var(--text-3))]">
               AGPL-3.0
@@ -66,8 +76,37 @@ export function AboutSection() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 rounded-full bg-[rgb(var(--surface-2))] px-2.5 py-1 font-mono text-xs text-[rgb(var(--accent))] transition hover:underline"
             >
-              GitHub <ExternalLink size={10} />
+              <GitFork size={11} /> GitHub <ExternalLink size={10} />
             </a>
+          </div>
+        </div>
+      </SectionCard>
+
+      {/* Author */}
+      <SectionCard title="Author">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--accent)/0.1)] text-lg font-bold text-[rgb(var(--accent))]">
+            AJ
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-[rgb(var(--text))]">Ajil Jagadeesh</p>
+            <p className="mt-0.5 text-xs text-[rgb(var(--text-3))]">Designer & developer of MindVault</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <a
+                href="https://github.com/AjilJagadeesh7"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] px-2.5 py-1 text-xs text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent)/0.5)] hover:text-[rgb(var(--accent))]"
+              >
+                <GitFork size={11} /> @AjilJagadeesh7
+              </a>
+              <a
+                href="mailto:ajiljagadeesh7@gmail.com"
+                className="inline-flex items-center gap-1 rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] px-2.5 py-1 text-xs text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent)/0.5)] hover:text-[rgb(var(--accent))]"
+              >
+                ajiljagadeesh7@gmail.com
+              </a>
+            </div>
           </div>
         </div>
       </SectionCard>
