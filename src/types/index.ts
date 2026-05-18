@@ -13,6 +13,7 @@ export { CLOSED_MENU } from './editor.types'
 export type { EdgeKind, GraphEdge, GNode, GLink, GraphPopover } from './graph.types'
 export type { Section } from './settings.types'
 export type { SettingRecord, FileHandleRecord, EmbeddingRecord } from './db.types'
+export type { DailyNote } from './daily.types'
 export type {
   Board,
   KanbanColumn,

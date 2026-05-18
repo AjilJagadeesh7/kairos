@@ -13,7 +13,7 @@
 import { isDesktop } from '../utils/platform'
 import { db } from '../db/schema'
 import { serializeNote, deserializeNote, noteIdToPath } from '../adapters/storage/noteSerializer'
-import type { Note } from '../types'
+import type { Note, DailyNote } from '../types'
 import type { Board } from '../types/kanban.types'
 
 const TAURI_KEY      = 'mindvault_plain_folder_path'
@@ -122,11 +122,12 @@ async function _ensureVaultDirs(): Promise<void> {
     _subdirPath('notes'),
     _subdirPath('kanban'),
     _subdirPath('config'),
+    _subdirPath('daily'),
   ]).catch(() => { /* best-effort */ })
 }
 
 /** Returns Tauri path string or Web FSA DirectoryHandle for the named subdir. */
-async function _subdirPath(name: 'notes' | 'kanban' | 'config'): Promise<string | FileSystemDirectoryHandle> {
+async function _subdirPath(name: 'notes' | 'kanban' | 'config' | 'daily'): Promise<string | FileSystemDirectoryHandle> {
   if (isDesktop()) {
     if (!_tauriPath) throw new Error('Plain folder not connected')
     const { mkdir } = await import('@tauri-apps/plugin-fs')
@@ -325,6 +326,99 @@ export async function writePlainConfig(filename: string, content: string): Promi
   const w   = await fh.createWritable()
   await w.write(content)
   await w.close()
+}
+
+// ---------------------------------------------------------------------------
+// Daily notes — vault/daily/YYYY-MM-DD.md
+// ---------------------------------------------------------------------------
+
+function serializeDailyNote(note: DailyNote): string {
+  return `---\ndate: ${note.date}\nupdatedAt: ${note.updatedAt}\n---\n\n${note.content}`
+}
+
+function deserializeDailyNote(raw: string, fallbackDate: string): DailyNote {
+  if (raw.startsWith('---\n')) {
+    const rest = raw.slice(4)
+    const closeIdx = rest.indexOf('\n---\n')
+    if (closeIdx !== -1) {
+      const fm = rest.slice(0, closeIdx)
+      const body = rest.slice(closeIdx + 5).replace(/^\n/, '')
+      const get = (key: string) => fm.match(new RegExp(`^${key}: (.+)$`, 'm'))?.[1] ?? ''
+      return { date: get('date') || fallbackDate, content: body, updatedAt: get('updatedAt') || new Date().toISOString() }
+    }
+  }
+  return { date: fallbackDate, content: raw, updatedAt: new Date().toISOString() }
+}
+
+export async function writeDailyNote(note: DailyNote): Promise<void> {
+  const content  = serializeDailyNote(note)
+  const fileName = `${note.date}.md`
+
+  if (isDesktop()) {
+    const dir = await _subdirPath('daily') as string
+    const { writeTextFile } = await import('@tauri-apps/plugin-fs')
+    await writeTextFile(`${dir}/${fileName}`, content)
+    return
+  }
+
+  const dir = await _subdirPath('daily') as FileSystemDirectoryHandle
+  const fh  = await dir.getFileHandle(fileName, { create: true })
+  const w   = await fh.createWritable()
+  await w.write(content)
+  await w.close()
+}
+
+export async function deleteDailyNoteFile(date: string): Promise<void> {
+  const fileName = `${date}.md`
+
+  if (isDesktop()) {
+    if (!_tauriPath) return
+    const { remove } = await import('@tauri-apps/plugin-fs')
+    try { await remove(`${_tauriPath}/daily/${fileName}`) } catch { /* already gone */ }
+    return
+  }
+
+  if (!_webHandle) return
+  try {
+    const dir = await _webHandle.getDirectoryHandle('daily', { create: false })
+    await dir.removeEntry(fileName)
+  } catch { /* already gone */ }
+}
+
+export async function readAllDailyNotes(): Promise<DailyNote[]> {
+  if (isDesktop()) {
+    if (!_tauriPath) return []
+    const { readDir, readTextFile, mkdir } = await import('@tauri-apps/plugin-fs')
+    const dailyPath = `${_tauriPath}/daily`
+    try { await mkdir(dailyPath, { recursive: true }) } catch { /* exists */ }
+    const entries = await readDir(dailyPath)
+    const notes: DailyNote[] = []
+    for (const entry of entries) {
+      if (!entry.name?.endsWith('.md')) continue
+      const date = entry.name.slice(0, -3)
+      try {
+        notes.push(deserializeDailyNote(await readTextFile(`${dailyPath}/${entry.name}`), date))
+      } catch { /* skip malformed */ }
+    }
+    return notes
+  }
+
+  if (!_webHandle) return []
+  try {
+    const dir = await _webHandle.getDirectoryHandle('daily', { create: true })
+    const notes: DailyNote[] = []
+    for await (const [, handle] of (dir as FileSystemDirectoryHandle & AsyncIterable<[string, FileSystemHandle]>)) {
+      if (handle.kind !== 'file' || !handle.name.endsWith('.md')) continue
+      const date = handle.name.slice(0, -3)
+      try {
+        const file = await (handle as FileSystemFileHandle).getFile()
+        notes.push(deserializeDailyNote(await file.text(), date))
+      } catch { /* skip */ }
+    }
+    return notes
+  } catch {
+    return []
+  }
 }
 
 // ─── Plugin file helpers ───────────────────────────────────────────────────────

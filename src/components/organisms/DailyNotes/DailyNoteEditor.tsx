@@ -1,0 +1,180 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Check, ChevronLeft, ChevronRight, Save, Trash2 } from 'lucide-react'
+import { useDailyNotesStore, todayDate } from '../../../store/useDailyNotesStore'
+import { useConfirmStore } from '../../../store/useConfirmStore'
+import { MarkdownEditor } from '../Editor/MarkdownEditor'
+import { useAppStore } from '../../../store/useAppStore'
+
+type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved'
+
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+]
+
+function formatDate(date: string): string {
+  const [y, m, d] = date.split('-').map(Number)
+  const dow = new Date(y, m - 1, d).getDay()
+  return `${DAY_NAMES[dow]}, ${MONTH_NAMES[m - 1]} ${d}, ${y}`
+}
+
+function offsetDate(date: string, days: number): string {
+  const [y, m, d] = date.split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  dt.setDate(dt.getDate() + days)
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+}
+
+interface DailyNoteEditorProps {
+  date: string
+}
+
+export function DailyNoteEditor({ date }: DailyNoteEditorProps) {
+  const dailyNotes   = useDailyNotesStore(s => s.dailyNotes)
+  const saveNote     = useDailyNotesStore(s => s.saveDailyNote)
+  const deleteNote   = useDailyNotesStore(s => s.deleteDailyNote)
+  const notes        = useAppStore(s => s.notes)
+  const navigate     = useNavigate()
+
+  const existing     = dailyNotes[date]
+  const [content, setContent]         = useState(existing?.content ?? '')
+  const [saveStatus, setSaveStatus]   = useState<SaveStatus>('idle')
+
+  const contentRef   = useRef(content)
+  const prevDateRef  = useRef(date)
+  useEffect(() => { contentRef.current = content }, [content])
+
+  // Reset when date changes
+  useEffect(() => {
+    if (prevDateRef.current === date) return
+    prevDateRef.current = date
+    setContent(dailyNotes[date]?.content ?? '')
+    setSaveStatus('idle')
+  }, [date, dailyNotes])
+
+  const persist = useCallback(async () => {
+    setSaveStatus('saving')
+    await saveNote(date, contentRef.current)
+    setSaveStatus('saved')
+    setTimeout(() => setSaveStatus(s => s === 'saved' ? 'idle' : s), 2000)
+  }, [date, saveNote])
+
+  // Auto-save on change
+  useEffect(() => {
+    if (content === (dailyNotes[date]?.content ?? '')) return
+    setSaveStatus('dirty')
+    const handle = window.setTimeout(() => void persist(), 2000)
+    return () => window.clearTimeout(handle)
+  }, [content]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Ctrl+S shortcut
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault()
+        if (saveStatus === 'dirty') void persist()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [saveStatus, persist])
+
+  const handleDelete = () => {
+    void useConfirmStore.getState()
+      .confirm({
+        title: `Delete entry for ${formatDate(date)}?`,
+        message: 'This cannot be undone.',
+        confirmLabel: 'Delete',
+        danger: true,
+      })
+      .then(ok => { if (ok) { deleteNote(date); navigate('/daily') } })
+  }
+
+  const today     = todayDate()
+  const isToday   = date === today
+  const prevDate  = offsetDate(date, -1)
+  const nextDate  = offsetDate(date, 1)
+
+  return (
+    <section className="flex h-full flex-col bg-[rgb(var(--bg))]">
+      <div className="flex h-full flex-col p-4">
+        {/* Toolbar */}
+        <div className="mb-3 flex items-center gap-2">
+          {/* Prev/Next day */}
+          <button
+            onClick={() => navigate(`/daily/${prevDate}`)}
+            className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent)/0.5)] hover:text-[rgb(var(--accent))]"
+            title="Previous day"
+          >
+            <ChevronLeft size={14} />
+          </button>
+
+          {/* Date heading */}
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-base font-bold text-[rgb(var(--text))]">{formatDate(date)}</h2>
+            {isToday && (
+              <span className="text-[11px] font-medium text-[rgb(var(--accent))]">Today</span>
+            )}
+          </div>
+
+          <button
+            onClick={() => navigate(`/daily/${nextDate}`)}
+            disabled={nextDate > today}
+            className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent)/0.5)] hover:text-[rgb(var(--accent))] disabled:cursor-not-allowed disabled:opacity-30"
+            title="Next day"
+          >
+            <ChevronRight size={14} />
+          </button>
+
+          {/* Save status */}
+          <span className={`hidden shrink-0 items-center gap-1 text-xs transition-all sm:inline-flex ${
+            saveStatus === 'idle' ? 'pointer-events-none opacity-0' : 'opacity-100'
+          } ${saveStatus === 'saved' ? 'text-green-500' : 'text-[rgb(var(--text-3))]'}`}>
+            {saveStatus === 'saving' && 'Saving…'}
+            {saveStatus === 'saved'  && <><Check size={11} /> Saved</>}
+            {saveStatus === 'dirty'  && 'Unsaved'}
+          </span>
+
+          <button
+            type="button"
+            onClick={() => void persist()}
+            disabled={saveStatus === 'saving' || saveStatus === 'idle'}
+            title={saveStatus === 'dirty' ? 'Save now (⌘S)' : 'No unsaved changes'}
+            className={`flex h-[34px] shrink-0 items-center gap-1.5 rounded-md border px-3 text-sm font-medium transition ${
+              saveStatus === 'dirty'
+                ? 'border-[rgb(var(--accent)/0.4)] bg-[rgb(var(--accent)/0.1)] text-[rgb(var(--accent))] hover:bg-[rgb(var(--accent)/0.2)]'
+                : 'cursor-default border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--text-3))] opacity-40'
+            }`}
+          >
+            <Save size={14} />
+            <span className="hidden sm:inline">Save</span>
+          </button>
+
+          {existing && (
+            <button
+              type="button"
+              title="Delete this entry"
+              onClick={handleDelete}
+              className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--text-3))] transition hover:border-red-400/50 hover:text-red-400"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* Editor */}
+        <div className="min-h-0 flex-1 rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))]">
+          <MarkdownEditor
+            noteId={date}
+            initialMarkdown={existing?.content ?? ''}
+            noteTitle={formatDate(date)}
+            notes={notes}
+            onChange={setContent}
+          />
+        </div>
+      </div>
+    </section>
+  )
+}

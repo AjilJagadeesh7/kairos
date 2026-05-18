@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Crepe } from '@milkdown/crepe'
 import { commandsCtx, editorViewCtx } from '@milkdown/core'
 import { replaceAll } from '@milkdown/utils'
@@ -32,9 +33,21 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, notes, onCh
   useEffect(() => { onChangeRef.current = onChange }, [onChange])
   useEffect(() => { onWikilinkClickRef.current = onWikilinkClick }, [onWikilinkClick])
 
+  const navigate = useNavigate()
+
   const { tooltip, attach: attachTooltip, dismiss: dismissTooltip } = useWikilinkTooltip(rootRef)
   const { menu, handleContextMenu, resizeImage, closeMenu } = useEditorContextMenu(crepeRef, rootRef)
   const { ac, suggestions, complete, dismiss: dismissAc } = useWikilinkAutocomplete(crepeRef, rootRef, notes)
+
+  // Handle navigation events dispatched from TransclusionEmbed widgets (outside React tree)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const path = (e as CustomEvent<{ path: string }>).detail?.path
+      if (path) navigate(path)
+    }
+    window.addEventListener('mv:navigate', handler)
+    return () => window.removeEventListener('mv:navigate', handler)
+  }, [navigate])
 
   // Swap content without reinitialising Milkdown when active note changes
   useEffect(() => {
@@ -112,6 +125,7 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, notes, onCh
           y={ac.y}
           query={ac.query}
           suggestions={suggestions}
+          isTransclusion={ac.isTransclusion}
           onSelect={complete}
           onDismiss={dismissAc}
         />

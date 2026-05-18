@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { FileText, Link2 } from 'lucide-react'
+import { Brackets, FileText, Link2 } from 'lucide-react'
 import type { Note } from '../../../types'
 
 interface WikilinkDropdownProps {
@@ -8,11 +8,12 @@ interface WikilinkDropdownProps {
   y: number
   query: string
   suggestions: Note[]
+  isTransclusion?: boolean
   onSelect: (title: string) => void
   onDismiss: () => void
 }
 
-export function WikilinkDropdown({ x, y, query, suggestions, onSelect, onDismiss }: WikilinkDropdownProps) {
+export function WikilinkDropdown({ x, y, query, suggestions, isTransclusion = false, onSelect, onDismiss }: WikilinkDropdownProps) {
   const [activeIdx, setActiveIdx] = useState(0)
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -57,9 +58,12 @@ export function WikilinkDropdown({ x, y, query, suggestions, onSelect, onDismiss
       className="fixed z-[9999] overflow-hidden rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-2xl"
     >
       <div className="flex items-center gap-1.5 border-b border-[rgb(var(--border))] px-3 py-1.5">
-        <Link2 size={11} className="text-[rgb(var(--accent))]" />
+        {isTransclusion
+          ? <Brackets size={11} className="text-[rgb(var(--accent))]" />
+          : <Link2    size={11} className="text-[rgb(var(--accent))]" />
+        }
         <span className="text-[10px] font-semibold uppercase tracking-wide text-[rgb(var(--text-3))]">
-          Link to note
+          {isTransclusion ? 'Embed note' : 'Link to note'}
         </span>
       </div>
 

@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { FileHandleRecord, Note, SettingRecord, SyncMeta, TagRecord } from '../types'
+import type { FileHandleRecord, Note, SettingRecord, SyncMeta, TagRecord, DailyNote } from '../types'
 import type { Board } from '../types/kanban.types'
 
 type EmbeddingRecord = {
@@ -16,6 +16,7 @@ export class MindVaultDB extends Dexie {
   fileHandles!: EntityTable<FileHandleRecord, 'key'>
   tags!: EntityTable<TagRecord, 'name'>
   boards!: EntityTable<Board, 'id'>
+  dailyNotes!: EntityTable<DailyNote, 'date'>
 
   constructor() {
     super('mindvault')
@@ -70,6 +71,17 @@ export class MindVaultDB extends Dexie {
       fileHandles: 'key',
       tags: 'name',
       boards: 'id, title, updatedAt',
+    })
+    // Version 6: add dailyNotes table
+    this.version(6).stores({
+      notes: 'id, title, *tags, createdAt, updatedAt',
+      settings: 'key',
+      syncMeta: 'noteId, lastSynced, driveFileId',
+      embeddings: 'noteId',
+      fileHandles: 'key',
+      tags: 'name',
+      boards: 'id, title, updatedAt',
+      dailyNotes: 'date, updatedAt',
     })
   }
 }
@@ -134,4 +146,16 @@ export async function upsertBoard(board: Board): Promise<void> {
 
 export async function deleteBoardFromDB(id: string): Promise<void> {
   await db.boards.delete(id)
+}
+
+export async function getAllDailyNotes(): Promise<DailyNote[]> {
+  return db.dailyNotes.orderBy('date').reverse().toArray()
+}
+
+export async function upsertDailyNoteDB(note: DailyNote): Promise<void> {
+  await db.dailyNotes.put(note)
+}
+
+export async function deleteDailyNoteFromDB(date: string): Promise<void> {
+  await db.dailyNotes.delete(date)
 }

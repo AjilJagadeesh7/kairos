@@ -96,6 +96,10 @@ export function useAppStartup() {
         const kanbanStore = useKanbanStore.getState()
         if (!kanbanStore.isLoaded) await kanbanStore.loadBoards()
 
+        const { useDailyNotesStore } = await import('../store/useDailyNotesStore')
+        const dailyStore = useDailyNotesStore.getState()
+        if (!dailyStore.isLoaded) await dailyStore.loadDailyNotes()
+
         // Load plugins after data is ready
         const { loadAllPlugins } = await import('../plugins/pluginManager')
         await loadAllPlugins()

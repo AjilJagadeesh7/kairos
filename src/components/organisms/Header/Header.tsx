@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { BookOpen, SquareKanban, Network, Settings2 } from 'lucide-react'
+import { BookOpen, CalendarDays, SquareKanban, Network, Settings2 } from 'lucide-react'
 import { useAppStore } from '../../../store/useAppStore'
 import { usePluginRegistry } from '../../../plugins/pluginContext'
 import { Button } from '../../atoms/Button'
@@ -7,6 +7,7 @@ import { ThemeSelect } from '../../molecules/ThemeSelect'
 import { SyncStatusBadge } from '../../molecules/SyncStatusBadge'
 
 const NAV_ITEMS = [
+  { to: '/daily',    Icon: CalendarDays, label: 'Daily' },
   { to: '/notes',    Icon: BookOpen,     label: 'Notes' },
   { to: '/kanban',   Icon: SquareKanban, label: 'Kanban' },
   { to: '/graph',    Icon: Network,      label: 'Graph' },
@@ -23,6 +24,7 @@ export function Header() {
   const { pages: pluginPages } = usePluginRegistry()
 
   const hasSidebar = location.pathname.startsWith('/notes')
+    || location.pathname.startsWith('/daily')
     || location.pathname.startsWith('/settings')
     || location.pathname.startsWith('/graph')
 

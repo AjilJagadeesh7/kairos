@@ -8,9 +8,13 @@ export interface AutocompleteState {
   query: string
   x: number
   y: number
+  isTransclusion: boolean
 }
 
-const HIDDEN: AutocompleteState = { visible: false, query: '', x: 0, y: 0 }
+const HIDDEN: AutocompleteState = { visible: false, query: '', x: 0, y: 0, isTransclusion: false }
+
+// Matches both [[query and ![[query at the end of the text-before-cursor
+const AC_RE = /(!?\[\[)([^\]\n]*)$/
 
 const PASSTHROUGH_KEYS = new Set(['Escape', 'ArrowUp', 'ArrowDown', 'Enter', 'Tab'])
 
@@ -35,10 +39,10 @@ export function useWikilinkAutocomplete(
         const { $from } = view.state.selection
         if (!$from.parent.isTextblock) return
         const textBefore = $from.parent.textContent.slice(0, $from.parentOffset)
-        const m = /\[\[([^\]\n]*)$/.exec(textBefore)
+        const m = AC_RE.exec(textBefore)
         if (!m) return
         const coords = view.coordsAtPos($from.pos)
-        next = { visible: true, query: m[1], x: coords.left, y: coords.bottom + 4 }
+        next = { visible: true, query: m[2], x: coords.left, y: coords.bottom + 4, isTransclusion: m[1].startsWith('!') }
       } catch { /* editor not ready */ }
     })
     setAc(next ?? HIDDEN)
@@ -52,9 +56,10 @@ export function useWikilinkAutocomplete(
         const view = ctx.get(editorViewCtx)
         const { $from, from } = view.state.selection
         const textBefore = $from.parent.textContent.slice(0, $from.parentOffset)
-        const m = /\[\[([^\]\n]*)$/.exec(textBefore)
+        const m = AC_RE.exec(textBefore)
         if (!m) return
-        const textNode = view.state.schema.text(`[[${title}]]`)
+        const prefix = m[1].startsWith('!') ? '!' : ''
+        const textNode = view.state.schema.text(`${prefix}[[${title}]]`)
         view.dispatch(view.state.tr.replaceWith(from - m[0].length, from, textNode))
         view.focus()
       } catch { /* ignore */ }

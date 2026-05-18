@@ -66,6 +66,27 @@
   border-color: rgb(var(--accent) / 0.35);
 }
 
+/* ─── TRANSCLUSION ─────────────────────────────────────────────────────────── */
+
+/* Hide the raw ![[title]] text — the widget renders the embed in its place */
+.transclusion-raw {
+  display: none;
+}
+
+/* The widget container sits as a block in the prose flow */
+.transclusion-widget {
+  display: block;
+  margin: 0.75em 0;
+  /* Prevent ProseMirror from placing the cursor inside the widget */
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: auto;
+  /* Reset editor typography so our component controls its own styles */
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
 /* ─── ONBOARDING ANIMATIONS ──────────────────────────────────────────────── */
 @keyframes onboard-modal-in {
   from { opacity: 0; transform: scale(0.94) translateY(12px); }
