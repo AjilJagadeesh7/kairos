@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { Loader2, Plus, Search, X } from 'lucide-react'
 import { useAppStore } from '../../../store/useAppStore'
 import { useSidebarNotes } from '../../../hooks/useSidebarNotes'
@@ -9,6 +9,8 @@ import { TagFiltersDropdown } from '../../molecules/TagFiltersDropdown'
 import { SearchModePills } from '../../molecules/SearchModePills'
 import { SelectedFilters } from '../../molecules/SelectedFilters'
 import { NoteListItem } from '../../molecules/NoteListItem'
+import { NoteTemplateModal } from '../Notes/NoteTemplateModal'
+import type { NoteTemplate } from '../Notes/NoteTemplateModal'
 
 const DATE_FILTERS: { label: string; value: DateFilter }[] = [
   { label: 'Any time', value: 'any' },
@@ -23,12 +25,20 @@ interface Props {
 
 export function Sidebar({ onClose }: Props): JSX.Element {
   const listRef = useRef<HTMLUListElement>(null)
+  const [showTemplates, setShowTemplates] = useState(false)
+  const createNote = useAppStore(s => s.createNote)
   const {
     isNotesLoaded, activeNoteId, query, setQuery, searchMode,
     allTags, tagMap, visible, copiedId, selectedTagFilters, setSelectedTagFilters,
     dateFilter, setDateFilter,
-    openNote, createAndOpen, handleDelete, copyLink,
+    openNote, handleDelete, copyLink,
   } = useSidebarNotes(onClose)
+
+  function handleTemplateSelect(template: NoteTemplate) {
+    setShowTemplates(false)
+    void createNote(template.id === 'blank' ? undefined : { title: template.title, content: template.content })
+      .then(id => { openNote(id) })
+  }
 
   // Arrow-key navigation within the note list
   function onListKeyDown(e: React.KeyboardEvent<HTMLUListElement>) {
@@ -46,6 +56,10 @@ export function Sidebar({ onClose }: Props): JSX.Element {
   }
 
   return (
+    <>
+    {showTemplates && (
+      <NoteTemplateModal onSelect={handleTemplateSelect} onClose={() => setShowTemplates(false)} />
+    )}
     <aside
       aria-label="Notes sidebar"
       className="flex h-full w-full flex-col border-r border-border bg-surface2"
@@ -55,7 +69,7 @@ export function Sidebar({ onClose }: Props): JSX.Element {
         <Button
           variant="primary"
           size="xs"
-          onClick={createAndOpen}
+          onClick={() => setShowTemplates(true)}
           aria-label="New note"
           className="inline-flex items-center gap-1"
         >
@@ -159,5 +173,6 @@ export function Sidebar({ onClose }: Props): JSX.Element {
         )}
       </ul>
     </aside>
+    </>
   )
 }
