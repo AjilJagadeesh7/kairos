@@ -47,7 +47,7 @@ type AppState = {
   removeNoteTag: (tagName: string) => void
 
   loadNotes: () => Promise<void>
-  createNote: () => Promise<string>
+  createNote: (initial?: { title?: string; content?: string }) => Promise<string>
   updateActiveNote: (patch: Pick<Note, 'title' | 'content' | 'embedding'> & { contentHash: string }) => Promise<void>
   updateNoteTags: (noteId: string, tags: string[]) => Promise<void>
   appendWikilink: (noteId: string, targetTitle: string) => Promise<void>
@@ -122,15 +122,15 @@ export const useAppStore = create<AppState>()(
         }
       },
 
-      createNote: async () => {
+      createNote: async (initial) => {
         const { run } = useLoaderStore.getState()
         return run('create-note', async () => {
           const now = new Date().toISOString()
           const id = uuidv4()
           const note: Note = {
             id,
-            title: 'Untitled note',
-            content: '',
+            title: initial?.title ?? 'Untitled note',
+            content: initial?.content ?? '',
             tags: [],
             embedding: [],
             createdAt: now,

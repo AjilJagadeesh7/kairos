@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BookOpen, Plus } from 'lucide-react'
 import { useAppStore } from '../../../store/useAppStore'
@@ -6,6 +6,8 @@ import { timeAgo } from '../../../utils/timeAgo'
 import { TAG_COLOR_PALETTE } from '../../../utils/kanban'
 import { TagBadge } from '../../atoms/TagBadge'
 import { Button } from '../../atoms/Button'
+import { NoteTemplateModal } from './NoteTemplateModal'
+import type { NoteTemplate } from './NoteTemplateModal'
 import type { TagRecord } from '../../../types'
 
 function tagColor(name: string): string {
@@ -20,6 +22,7 @@ export function NotesHome() {
   const navigate = useNavigate()
   const notes = useAppStore(s => s.notes)
   const createNote = useAppStore(s => s.createNote)
+  const [showTemplates, setShowTemplates] = useState(false)
 
   const tagMap = useMemo(() => {
     const map = new Map<string, TagRecord>()
@@ -29,11 +32,19 @@ export function NotesHome() {
     return map
   }, [notes])
 
-  const handleNew = () => {
-    void createNote().then(id => navigate(`/notes/${id}`))
+  const handleNew = () => setShowTemplates(true)
+
+  const handleTemplateSelect = (template: NoteTemplate) => {
+    setShowTemplates(false)
+    void createNote(template.id === 'blank' ? undefined : { title: template.title, content: template.content })
+      .then(id => navigate(`/notes/${id}`))
   }
 
   return (
+    <>
+    {showTemplates && (
+      <NoteTemplateModal onSelect={handleTemplateSelect} onClose={() => setShowTemplates(false)} />
+    )}
     <div className="flex-1 overflow-y-auto bg-[rgb(var(--bg))] px-6 py-8">
       <div className="mx-auto max-w-5xl">
         {/* Header */}
@@ -100,5 +111,6 @@ export function NotesHome() {
         )}
       </div>
     </div>
+    </>
   )
 }
