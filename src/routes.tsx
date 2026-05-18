@@ -5,7 +5,7 @@ import { SettingsPage } from './pages/SettingsPage'
 import { LandingPage } from './pages/LandingPage'
 import { GraphPage } from './pages/GraphPage'
 import { KanbanPage } from './pages/KanbanPage'
-import { DailyNotesPage } from './pages/DailyNotesPage'
+import { JournalPage } from './pages/JournalPage'
 import { usePluginRegistry } from './plugins/pluginContext'
 import { ErrorBoundary } from './components/common/ErrorBoundary'
 
@@ -18,8 +18,8 @@ export function AppRoutes() {
       <Route path="/notes" element={<NotesPage />} />
       <Route path="/notes/:noteId" element={<NotesPage />} />
       <Route path="/graph" element={<GraphPage />} />
-      <Route path="/daily" element={<DailyNotesPage />} />
-      <Route path="/daily/:date" element={<DailyNotesPage />} />
+      <Route path="/journal" element={<JournalPage />} />
+      <Route path="/journal/:date" element={<JournalPage />} />
       <Route path="/kanban" element={<KanbanPage />} />
       <Route path="/kanban/:boardId" element={<KanbanPage />} />
       <Route path="/settings" element={<SettingsPage />} />

@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { FileHandleRecord, Note, SettingRecord, SyncMeta, TagRecord, DailyNote } from '../types'
+import type { FileHandleRecord, Note, SettingRecord, SyncMeta, TagRecord, JournalEntry } from '../types'
 import type { Board } from '../types/kanban.types'
 
 type EmbeddingRecord = {
@@ -16,7 +16,7 @@ export class MindVaultDB extends Dexie {
   fileHandles!: EntityTable<FileHandleRecord, 'key'>
   tags!: EntityTable<TagRecord, 'name'>
   boards!: EntityTable<Board, 'id'>
-  dailyNotes!: EntityTable<DailyNote, 'date'>
+  journal!: EntityTable<JournalEntry, 'date'>
 
   constructor() {
     super('mindvault')
@@ -72,7 +72,7 @@ export class MindVaultDB extends Dexie {
       tags: 'name',
       boards: 'id, title, updatedAt',
     })
-    // Version 6: add dailyNotes table
+    // Version 6: add dailyNotes table (superseded by v7 rename)
     this.version(6).stores({
       notes: 'id, title, *tags, createdAt, updatedAt',
       settings: 'key',
@@ -82,6 +82,18 @@ export class MindVaultDB extends Dexie {
       tags: 'name',
       boards: 'id, title, updatedAt',
       dailyNotes: 'date, updatedAt',
+    })
+    // Version 7: rename dailyNotes → journal
+    this.version(7).stores({
+      notes: 'id, title, *tags, createdAt, updatedAt',
+      settings: 'key',
+      syncMeta: 'noteId, lastSynced, driveFileId',
+      embeddings: 'noteId',
+      fileHandles: 'key',
+      tags: 'name',
+      boards: 'id, title, updatedAt',
+      dailyNotes: null,           // drop old table
+      journal: 'date, updatedAt',
     })
   }
 }
@@ -148,14 +160,14 @@ export async function deleteBoardFromDB(id: string): Promise<void> {
   await db.boards.delete(id)
 }
 
-export async function getAllDailyNotes(): Promise<DailyNote[]> {
-  return db.dailyNotes.orderBy('date').reverse().toArray()
+export async function getAllJournalEntries(): Promise<JournalEntry[]> {
+  return db.journal.orderBy('date').reverse().toArray()
 }
 
-export async function upsertDailyNoteDB(note: DailyNote): Promise<void> {
-  await db.dailyNotes.put(note)
+export async function upsertJournalEntry(entry: JournalEntry): Promise<void> {
+  await db.journal.put(entry)
 }
 
-export async function deleteDailyNoteFromDB(date: string): Promise<void> {
-  await db.dailyNotes.delete(date)
+export async function deleteJournalEntryFromDB(date: string): Promise<void> {
+  await db.journal.delete(date)
 }

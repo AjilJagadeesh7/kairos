@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useDailyNotesStore, todayDate } from '../../../store/useDailyNotesStore'
+import { useJournalStore, todayDate } from '../../../store/useJournalStore'
 
 const DAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 const MONTHS = [
@@ -13,12 +13,12 @@ function toDateString(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 
-interface DailyCalendarProps {
+interface JournalCalendarProps {
   activeDate: string | null
   onClose?: () => void
 }
 
-export function DailyCalendar({ activeDate, onClose }: DailyCalendarProps) {
+export function JournalCalendar({ activeDate, onClose }: JournalCalendarProps) {
   const today = todayDate()
   const [today_y, today_m] = today.split('-').map(Number)
 
@@ -28,8 +28,8 @@ export function DailyCalendar({ activeDate, onClose }: DailyCalendarProps) {
   const [viewYear, setViewYear]   = useState(initY)
   const [viewMonth, setViewMonth] = useState(initM - 1)   // 0-indexed
 
-  const dailyNotes  = useDailyNotesStore(s => s.dailyNotes)
-  const navigate    = useNavigate()
+  const entries  = useJournalStore(s => s.entries)
+  const navigate = useNavigate()
 
   function prevMonth() {
     if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11) }
@@ -44,12 +44,12 @@ export function DailyCalendar({ activeDate, onClose }: DailyCalendarProps) {
   function goToday() {
     setViewYear(today_y)
     setViewMonth(today_m - 1)
-    navigate(`/daily/${today}`)
+    navigate(`/journal/${today}`)
     onClose?.()
   }
 
   function selectDay(date: string) {
-    navigate(`/daily/${date}`)
+    navigate(`/journal/${date}`)
     onClose?.()
   }
 
@@ -61,7 +61,6 @@ export function DailyCalendar({ activeDate, onClose }: DailyCalendarProps) {
     ...Array<null>(leadingBlanks).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ]
-  // Pad to complete last row
   while (cells.length % 7 !== 0) cells.push(null)
 
   const isCurrentMonth = viewYear === today_y && viewMonth === today_m - 1
@@ -70,7 +69,7 @@ export function DailyCalendar({ activeDate, onClose }: DailyCalendarProps) {
     <aside className="flex h-full flex-col bg-[rgb(var(--surface))]">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[rgb(var(--border))] px-4 py-3">
-        <span className="text-sm font-semibold text-[rgb(var(--text))]">Daily Notes</span>
+        <span className="text-sm font-semibold text-[rgb(var(--text))]">Journal</span>
       </div>
 
       {/* Calendar */}
@@ -112,10 +111,10 @@ export function DailyCalendar({ activeDate, onClose }: DailyCalendarProps) {
           {cells.map((day, idx) => {
             if (day === null) return <div key={`blank-${idx}`} />
 
-            const date    = toDateString(viewYear, viewMonth, day)
-            const isToday = date === today
+            const date     = toDateString(viewYear, viewMonth, day)
+            const isToday  = date === today
             const isActive = date === activeDate
-            const hasNote = Boolean(dailyNotes[date])
+            const hasEntry = Boolean(entries[date])
 
             return (
               <button
@@ -132,7 +131,7 @@ export function DailyCalendar({ activeDate, onClose }: DailyCalendarProps) {
                 aria-pressed={isActive}
               >
                 {day}
-                {hasNote && (
+                {hasEntry && (
                   <span className={`absolute bottom-0.5 h-1 w-1 rounded-full ${isActive ? 'bg-white/70' : 'bg-[rgb(var(--accent))]'}`} />
                 )}
               </button>
@@ -151,10 +150,10 @@ export function DailyCalendar({ activeDate, onClose }: DailyCalendarProps) {
         )}
       </div>
 
-      {/* Note count */}
+      {/* Entry count */}
       <div className="border-t border-[rgb(var(--border))] px-4 py-2.5">
         <p className="text-[11px] text-[rgb(var(--text-3))]">
-          {Object.keys(dailyNotes).length} entries
+          {Object.keys(entries).length} entries
         </p>
       </div>
     </aside>

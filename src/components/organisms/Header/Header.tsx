@@ -7,7 +7,7 @@ import { ThemeSelect } from '../../molecules/ThemeSelect'
 import { SyncStatusBadge } from '../../molecules/SyncStatusBadge'
 
 const NAV_ITEMS = [
-  { to: '/daily',    Icon: CalendarDays, label: 'Daily' },
+  { to: '/journal',  Icon: CalendarDays, label: 'Journal' },
   { to: '/notes',    Icon: BookOpen,     label: 'Notes' },
   { to: '/kanban',   Icon: SquareKanban, label: 'Kanban' },
   { to: '/graph',    Icon: Network,      label: 'Graph' },
@@ -24,7 +24,7 @@ export function Header() {
   const { pages: pluginPages } = usePluginRegistry()
 
   const hasSidebar = location.pathname.startsWith('/notes')
-    || location.pathname.startsWith('/daily')
+    || location.pathname.startsWith('/journal')
     || location.pathname.startsWith('/settings')
     || location.pathname.startsWith('/graph')
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, ChevronLeft, ChevronRight, Save, Trash2 } from 'lucide-react'
-import { useDailyNotesStore, todayDate } from '../../../store/useDailyNotesStore'
+import { useJournalStore, todayDate } from '../../../store/useJournalStore'
 import { useConfirmStore } from '../../../store/useConfirmStore'
 import { MarkdownEditor } from '../Editor/MarkdownEditor'
 import { useAppStore } from '../../../store/useAppStore'
@@ -27,43 +27,43 @@ function offsetDate(date: string, days: number): string {
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
 }
 
-interface DailyNoteEditorProps {
+interface JournalEditorProps {
   date: string
 }
 
-export function DailyNoteEditor({ date }: DailyNoteEditorProps) {
-  const dailyNotes   = useDailyNotesStore(s => s.dailyNotes)
-  const saveNote     = useDailyNotesStore(s => s.saveDailyNote)
-  const deleteNote   = useDailyNotesStore(s => s.deleteDailyNote)
-  const notes        = useAppStore(s => s.notes)
-  const navigate     = useNavigate()
+export function JournalEditor({ date }: JournalEditorProps) {
+  const entries    = useJournalStore(s => s.entries)
+  const saveEntry  = useJournalStore(s => s.saveEntry)
+  const deleteEntry = useJournalStore(s => s.deleteEntry)
+  const notes      = useAppStore(s => s.notes)
+  const navigate   = useNavigate()
 
-  const existing     = dailyNotes[date]
-  const [content, setContent]         = useState(existing?.content ?? '')
-  const [saveStatus, setSaveStatus]   = useState<SaveStatus>('idle')
+  const existing   = entries[date]
+  const [content, setContent]       = useState(existing?.content ?? '')
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
 
-  const contentRef   = useRef(content)
-  const prevDateRef  = useRef(date)
+  const contentRef  = useRef(content)
+  const prevDateRef = useRef(date)
   useEffect(() => { contentRef.current = content }, [content])
 
   // Reset when date changes
   useEffect(() => {
     if (prevDateRef.current === date) return
     prevDateRef.current = date
-    setContent(dailyNotes[date]?.content ?? '')
+    setContent(entries[date]?.content ?? '')
     setSaveStatus('idle')
-  }, [date, dailyNotes])
+  }, [date, entries])
 
   const persist = useCallback(async () => {
     setSaveStatus('saving')
-    await saveNote(date, contentRef.current)
+    await saveEntry(date, contentRef.current)
     setSaveStatus('saved')
     setTimeout(() => setSaveStatus(s => s === 'saved' ? 'idle' : s), 2000)
-  }, [date, saveNote])
+  }, [date, saveEntry])
 
   // Auto-save on change
   useEffect(() => {
-    if (content === (dailyNotes[date]?.content ?? '')) return
+    if (content === (entries[date]?.content ?? '')) return
     setSaveStatus('dirty')
     const handle = window.setTimeout(() => void persist(), 2000)
     return () => window.clearTimeout(handle)
@@ -89,29 +89,27 @@ export function DailyNoteEditor({ date }: DailyNoteEditorProps) {
         confirmLabel: 'Delete',
         danger: true,
       })
-      .then(ok => { if (ok) { deleteNote(date); navigate('/daily') } })
+      .then(ok => { if (ok) { deleteEntry(date); navigate('/journal') } })
   }
 
-  const today     = todayDate()
-  const isToday   = date === today
-  const prevDate  = offsetDate(date, -1)
-  const nextDate  = offsetDate(date, 1)
+  const today    = todayDate()
+  const isToday  = date === today
+  const prevDate = offsetDate(date, -1)
+  const nextDate = offsetDate(date, 1)
 
   return (
     <section className="flex h-full flex-col bg-[rgb(var(--bg))]">
       <div className="flex h-full flex-col p-4">
         {/* Toolbar */}
         <div className="mb-3 flex items-center gap-2">
-          {/* Prev/Next day */}
           <button
-            onClick={() => navigate(`/daily/${prevDate}`)}
+            onClick={() => navigate(`/journal/${prevDate}`)}
             className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent)/0.5)] hover:text-[rgb(var(--accent))]"
             title="Previous day"
           >
             <ChevronLeft size={14} />
           </button>
 
-          {/* Date heading */}
           <div className="min-w-0 flex-1">
             <h2 className="truncate text-base font-bold text-[rgb(var(--text))]">{formatDate(date)}</h2>
             {isToday && (
@@ -120,7 +118,7 @@ export function DailyNoteEditor({ date }: DailyNoteEditorProps) {
           </div>
 
           <button
-            onClick={() => navigate(`/daily/${nextDate}`)}
+            onClick={() => navigate(`/journal/${nextDate}`)}
             disabled={nextDate > today}
             className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent)/0.5)] hover:text-[rgb(var(--accent))] disabled:cursor-not-allowed disabled:opacity-30"
             title="Next day"
@@ -128,7 +126,6 @@ export function DailyNoteEditor({ date }: DailyNoteEditorProps) {
             <ChevronRight size={14} />
           </button>
 
-          {/* Save status */}
           <span className={`hidden shrink-0 items-center gap-1 text-xs transition-all sm:inline-flex ${
             saveStatus === 'idle' ? 'pointer-events-none opacity-0' : 'opacity-100'
           } ${saveStatus === 'saved' ? 'text-green-500' : 'text-[rgb(var(--text-3))]'}`}>

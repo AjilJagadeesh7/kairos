@@ -2,30 +2,30 @@ import { useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
-import { useDailyNotesStore, todayDate } from '../store/useDailyNotesStore'
-import { DailyCalendar } from '../components/organisms/DailyNotes/DailyCalendar'
-import { DailyNoteEditor } from '../components/organisms/DailyNotes/DailyNoteEditor'
+import { useJournalStore, todayDate } from '../store/useJournalStore'
+import { JournalCalendar } from '../components/organisms/Journal/JournalCalendar'
+import { JournalEditor } from '../components/organisms/Journal/JournalEditor'
 
-export function DailyNotesPage() {
-  const { date }              = useParams<{ date?: string }>()
-  const navigate              = useNavigate()
-  const isLoaded              = useDailyNotesStore(s => s.isLoaded)
-  const loadDailyNotes        = useDailyNotesStore(s => s.loadDailyNotes)
-  const setActiveDailyDate    = useDailyNotesStore(s => s.setActiveDailyDate)
-  const mobileSidebarOpen     = useAppStore(s => s.mobileSidebarOpen)
-  const setMobileSidebarOpen  = useAppStore(s => s.setMobileSidebarOpen)
-
-  useEffect(() => {
-    if (!isLoaded) void loadDailyNotes()
-  }, [isLoaded, loadDailyNotes])
+export function JournalPage() {
+  const { date }             = useParams<{ date?: string }>()
+  const navigate             = useNavigate()
+  const isLoaded             = useJournalStore(s => s.isLoaded)
+  const loadEntries          = useJournalStore(s => s.loadEntries)
+  const setActiveDate        = useJournalStore(s => s.setActiveDate)
+  const mobileSidebarOpen    = useAppStore(s => s.mobileSidebarOpen)
+  const setMobileSidebarOpen = useAppStore(s => s.setMobileSidebarOpen)
 
   useEffect(() => {
-    setActiveDailyDate(date ?? null)
-  }, [date, setActiveDailyDate])
+    if (!isLoaded) void loadEntries()
+  }, [isLoaded, loadEntries])
 
-  // Default to today when landing on /daily with no date
   useEffect(() => {
-    if (!date) navigate(`/daily/${todayDate()}`, { replace: true })
+    setActiveDate(date ?? null)
+  }, [date, setActiveDate])
+
+  // Default to today when landing on /journal with no date
+  useEffect(() => {
+    if (!date) navigate(`/journal/${todayDate()}`, { replace: true })
   }, [date, navigate])
 
   if (!isLoaded) {
@@ -52,15 +52,15 @@ export function DailyNotesPage() {
           mobileSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
         }`}
       >
-        <DailyCalendar activeDate={date ?? todayDate()} onClose={() => setMobileSidebarOpen(false)} />
+        <JournalCalendar activeDate={date ?? todayDate()} onClose={() => setMobileSidebarOpen(false)} />
       </div>
 
       {/* Editor area */}
       <section className="flex min-w-0 flex-1 flex-col border-l border-[rgb(var(--border))]">
         {date ? (
-          <DailyNoteEditor date={date} />
+          <JournalEditor date={date} />
         ) : (
-          <div className="flex h-full items-center justify-center text-[rgb(var(--text-2))] text-sm">
+          <div className="flex h-full items-center justify-center text-sm text-[rgb(var(--text-2))]">
             Select a date to start writing.
           </div>
         )}
