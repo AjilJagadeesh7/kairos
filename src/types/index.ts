@@ -1,6 +1,6 @@
 export type { Note, TagRecord } from './note.types'
 export type { SyncStatus, SyncProviderType, StorageTarget, SyncMeta } from './sync.types'
-export type { ThemeMode, SearchMode, FontOption, FontWeight } from './ui.types'
+export type { ThemeMode, SearchMode, FontOption, FontWeight, VaultStatus } from './ui.types'
 export type {
   SaveStatus,
   MenuKind,

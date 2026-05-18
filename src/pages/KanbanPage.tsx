@@ -4,6 +4,8 @@ import { Loader2 } from 'lucide-react'
 import { useKanbanStore } from '../store/useKanbanStore'
 import { BoardList } from '../components/organisms/Kanban/BoardList/BoardList'
 import { BoardView } from '../components/organisms/Kanban/BoardView/BoardView'
+import { ErrorBoundary } from '../components/common/ErrorBoundary'
+import { VaultBanner } from '../components/common/VaultBanner'
 
 export function KanbanPage(): JSX.Element {
   const { boardId } = useParams<{ boardId?: string }>()
@@ -43,11 +45,14 @@ export function KanbanPage(): JSX.Element {
 
   return (
     <main className="flex h-full flex-col overflow-hidden bg-[rgb(var(--bg))]">
-      {activeBoard ? (
-        <BoardView board={activeBoard} />
-      ) : (
-        <BoardList boards={[...boards].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())} />
-      )}
+      <VaultBanner />
+      <ErrorBoundary resetKeys={[boardId]}>
+        {activeBoard ? (
+          <BoardView board={activeBoard} />
+        ) : (
+          <BoardList boards={[...boards].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())} />
+        )}
+      </ErrorBoundary>
     </main>
   )
 }

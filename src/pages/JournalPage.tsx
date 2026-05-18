@@ -5,6 +5,8 @@ import { useAppStore } from '../store/useAppStore'
 import { useJournalStore, todayDate } from '../store/useJournalStore'
 import { JournalCalendar } from '../components/organisms/Journal/JournalCalendar'
 import { JournalEditor } from '../components/organisms/Journal/JournalEditor'
+import { ErrorBoundary } from '../components/common/ErrorBoundary'
+import { VaultBanner } from '../components/common/VaultBanner'
 
 export function JournalPage() {
   const { date }             = useParams<{ date?: string }>()
@@ -23,7 +25,6 @@ export function JournalPage() {
     setActiveDate(date ?? null)
   }, [date, setActiveDate])
 
-  // Default to today when landing on /journal with no date
   useEffect(() => {
     if (!date) navigate(`/journal/${todayDate()}`, { replace: true })
   }, [date, navigate])
@@ -37,34 +38,36 @@ export function JournalPage() {
   }
 
   return (
-    <main className="relative flex h-full overflow-hidden">
-      {/* Mobile backdrop */}
-      {mobileSidebarOpen && (
-        <div
-          className="fixed inset-0 z-20 bg-black/40 xl:hidden"
-          onClick={() => setMobileSidebarOpen(false)}
-        />
-      )}
-
-      {/* Calendar sidebar */}
-      <div
-        className={`fixed inset-y-0 left-0 z-30 w-72 transition-transform duration-300 ease-in-out xl:relative xl:inset-auto xl:z-auto xl:w-[260px] xl:translate-x-0 xl:flex-shrink-0 ${
-          mobileSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
-        }`}
-      >
-        <JournalCalendar activeDate={date ?? todayDate()} onClose={() => setMobileSidebarOpen(false)} />
-      </div>
-
-      {/* Editor area */}
-      <section className="flex min-w-0 flex-1 flex-col border-l border-[rgb(var(--border))]">
-        {date ? (
-          <JournalEditor date={date} />
-        ) : (
-          <div className="flex h-full items-center justify-center text-sm text-[rgb(var(--text-2))]">
-            Select a date to start writing.
-          </div>
+    <main className="relative flex h-full flex-col overflow-hidden">
+      <VaultBanner />
+      <div className="relative flex min-h-0 flex-1 overflow-hidden">
+        {mobileSidebarOpen && (
+          <div
+            className="fixed inset-0 z-20 bg-black/40 xl:hidden"
+            onClick={() => setMobileSidebarOpen(false)}
+          />
         )}
-      </section>
+
+        <div
+          className={`fixed inset-y-0 left-0 z-30 w-72 transition-transform duration-300 ease-in-out xl:relative xl:inset-auto xl:z-auto xl:w-[260px] xl:translate-x-0 xl:flex-shrink-0 ${
+            mobileSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+          }`}
+        >
+          <JournalCalendar activeDate={date ?? todayDate()} onClose={() => setMobileSidebarOpen(false)} />
+        </div>
+
+        <section className="flex min-w-0 flex-1 flex-col border-l border-[rgb(var(--border))]">
+          <ErrorBoundary resetKeys={[date]}>
+            {date ? (
+              <JournalEditor date={date} />
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-[rgb(var(--text-2))]">
+                Select a date to start writing.
+              </div>
+            )}
+          </ErrorBoundary>
+        </section>
+      </div>
     </main>
   )
 }

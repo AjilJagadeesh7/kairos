@@ -1,0 +1,40 @@
+import { useNavigate } from 'react-router-dom'
+import { FolderOpen, AlertTriangle } from 'lucide-react'
+import { useAppStore } from '../../store/useAppStore'
+
+export function VaultBanner() {
+  const vaultStatus = useAppStore(s => s.vaultStatus)
+  const navigate = useNavigate()
+
+  if (vaultStatus === 'ok' || vaultStatus === 'loading') return null
+
+  const isMissing = vaultStatus === 'missing'
+
+  return (
+    <div className={`flex items-center gap-3 border-b px-4 py-3 text-sm ${
+      isMissing
+        ? 'border-red-400/20 bg-red-500/5 text-red-400'
+        : 'border-[rgb(var(--accent)/0.2)] bg-[rgb(var(--accent)/0.05)] text-[rgb(var(--accent))]'
+    }`}>
+      {isMissing
+        ? <AlertTriangle size={15} className="shrink-0" />
+        : <FolderOpen size={15} className="shrink-0" />
+      }
+      <span className="flex-1 text-xs">
+        {isMissing
+          ? 'Your vault folder has moved or been deleted. Notes cannot be saved until you reconnect.'
+          : 'No vault folder connected. Pick a local folder to start saving notes.'}
+      </span>
+      <button
+        onClick={() => navigate('/settings')}
+        className={`shrink-0 rounded-md px-3 py-1 text-xs font-semibold transition ${
+          isMissing
+            ? 'bg-red-500/10 hover:bg-red-500/20'
+            : 'bg-[rgb(var(--accent)/0.1)] hover:bg-[rgb(var(--accent)/0.2)]'
+        }`}
+      >
+        {isMissing ? 'Reconnect' : 'Set up vault'}
+      </button>
+    </div>
+  )
+}

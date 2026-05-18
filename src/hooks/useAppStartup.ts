@@ -78,6 +78,8 @@ export function useAppStartup() {
         }
       }
 
+      useAppStore.getState().setVaultStatus(folderStatus === 'ok' ? 'ok' : folderStatus === 'missing' ? 'missing' : 'none')
+
       if (folderStatus === 'missing') {
         toast.error('Vault folder not found', {
           description: 'The folder this app was using has been moved or deleted. Please select a new one.',
@@ -85,11 +87,7 @@ export function useAppStartup() {
           action: { label: 'Select folder', onClick: () => navigate('/settings') },
         })
       } else if (folderStatus === 'none') {
-        toast('Welcome to MindVault', {
-          description: 'Choose a local folder to store your notes and boards.',
-          duration: Infinity,
-          action: { label: 'Set up folder', onClick: () => navigate('/settings') },
-        })
+        // no toast — VaultBanner handles this inline
       } else {
         await store.loadNotes()
         const { useKanbanStore } = await import('../store/useKanbanStore')

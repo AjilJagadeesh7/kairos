@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware'
 import { v4 as uuidv4 } from 'uuid'
 import { upsertEmbedding } from '../db/schema'
 import { useLoaderStore } from './useLoaderStore'
-import type { Note, SearchMode, SyncStatus, ThemeMode, StorageTarget, FontOption, FontWeight } from '../types'
+import type { Note, SearchMode, SyncStatus, ThemeMode, StorageTarget, FontOption, FontWeight, VaultStatus } from '../types'
 import type { S3Config } from '../sync/s3'
 import type { WebDAVConfig } from '../sync/webdav'
 import { parseTags } from '../utils/wikilinks'
@@ -27,9 +27,11 @@ type AppState = {
   noteTagColors: Record<string, string>
   userName: string
   onboardingDone: boolean
+  vaultStatus: VaultStatus
 
   setUserName: (name: string) => void
   completeOnboarding: () => void
+  setVaultStatus: (status: VaultStatus) => void
 
   setTheme: (t: ThemeMode) => void
   setFont: (f: FontOption) => void
@@ -82,9 +84,11 @@ export const useAppStore = create<AppState>()(
       aiUrl: 'http://localhost:11434',
       userName: '',
       onboardingDone: false,
+      vaultStatus: 'loading',
 
       setUserName: (userName) => set({ userName }),
       completeOnboarding: () => set({ onboardingDone: true }),
+      setVaultStatus: (vaultStatus) => set({ vaultStatus }),
 
       setTheme: (theme) => set({ theme }),
       setFont: (font) => set({ font }),
