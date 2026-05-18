@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { BookOpen, CheckSquare, Lightbulb, Users, X, Zap, FileText, BarChart2 } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { BookOpen, CheckSquare, Lightbulb, Users, X, Zap, FileText, BarChart2, FlaskConical, GraduationCap, Bug, Globe } from 'lucide-react'
 import { Button } from '../../atoms/Button'
 
 export interface NoteTemplate {
@@ -23,40 +24,54 @@ const TEMPLATES: NoteTemplate[] = [
   {
     id: 'meeting',
     name: 'Meeting Notes',
-    description: 'Attendees, agenda, action items',
+    description: 'Attendees, agenda, decisions, actions',
     icon: <Users size={18} />,
-    title: 'Meeting Notes — ',
-    content: `## Attendees
--
+    title: 'Meeting — ',
+    content: `## Date & Attendees
+**Date:** ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+**Attendees:**
 
 ## Agenda
 1.
+2.
 
-## Notes
+## Discussion & Decisions
 
 
 ## Action Items
-- [ ]
+| Task | Owner | Due |
+|------|-------|-----|
+| | | |
+
+## Follow-up
 `,
   },
   {
     id: 'project',
     name: 'Project Plan',
-    description: 'Goal, milestones, risks',
+    description: 'Goal, milestones, tasks, risks',
     icon: <BarChart2 size={18} />,
     title: 'Project: ',
-    content: `## Goal
-
+    content: `## Overview
+**Goal:**
+**Owner:**
+**Target date:**
 
 ## Milestones
-- [ ]
-- [ ]
-- [ ]
+- [ ] **Phase 1 —**
+- [ ] **Phase 2 —**
+- [ ] **Phase 3 —**
 
 ## Tasks
 - [ ]
+- [ ]
 
 ## Risks & Mitigations
+| Risk | Likelihood | Mitigation |
+|------|-----------|------------|
+| | | |
+
+## Resources & Links
 
 
 ## Notes
@@ -65,56 +80,76 @@ const TEMPLATES: NoteTemplate[] = [
   {
     id: 'brainstorm',
     name: 'Brainstorm',
-    description: 'Capture ideas fast',
+    description: 'Capture ideas, evaluate, decide',
     icon: <Lightbulb size={18} />,
     title: 'Brainstorm: ',
     content: `## Problem / Question
 
 
+## Constraints
+-
+
 ## Ideas
 -
 -
 -
+-
 
-## Best bets
+## Evaluation
+| Idea | Pros | Cons |
+|------|------|------|
+| | | |
 
-
-## Next steps
+## Decision & Next Steps
 `,
   },
   {
     id: 'book',
     name: 'Book Notes',
-    description: 'Summary, quotes, takeaways',
+    description: 'Summary, key ideas, quotes, takeaways',
     icon: <BookOpen size={18} />,
     title: 'Book: ',
-    content: `## Book
+    content: `## Metadata
 **Title:**
 **Author:**
-**Read:**
+**Finished:**
+**Rating:** ⭐⭐⭐⭐⭐
 
-## Summary
+## In One Sentence
 
 
 ## Key Ideas
--
+1.
+2.
+3.
 
 ## Favourite Quotes
 >
 
-## Takeaways
+>
+
+## What I'll Apply
+-
+
+## Related Reading
 -
 `,
   },
   {
     id: 'todo',
     name: 'To-Do List',
-    description: 'Simple checklist',
+    description: 'Prioritised task checklist',
     icon: <CheckSquare size={18} />,
     title: 'To-Do: ',
-    content: `## Tasks
+    content: `## High priority
 - [ ]
 - [ ]
+
+## Medium priority
+- [ ]
+- [ ]
+
+## Low priority / someday
 - [ ]
 
 ## Done
@@ -123,9 +158,9 @@ const TEMPLATES: NoteTemplate[] = [
   {
     id: 'standup',
     name: 'Daily Standup',
-    description: 'Did, doing, blockers',
+    description: 'Yesterday, today, blockers',
     icon: <Zap size={18} />,
-    title: 'Standup — ',
+    title: `Standup ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`,
     content: `## Yesterday
 -
 
@@ -134,6 +169,134 @@ const TEMPLATES: NoteTemplate[] = [
 
 ## Blockers
 -
+
+## Notes
+`,
+  },
+  {
+    id: 'research',
+    name: 'Research Note',
+    description: 'Topic, sources, findings, gaps',
+    icon: <FlaskConical size={18} />,
+    title: 'Research: ',
+    content: `## Topic
+
+
+## Background
+
+
+## Sources
+| Source | Key Finding | Credibility |
+|--------|-------------|-------------|
+| | | |
+
+## Findings
+
+
+## Open Questions
+-
+
+## Conclusion
+`,
+  },
+  {
+    id: 'learning',
+    name: 'Study Notes',
+    description: 'Concept, examples, review questions',
+    icon: <GraduationCap size={18} />,
+    title: 'Notes: ',
+    content: `## Topic
+
+
+## Core Concepts
+### Concept 1
+
+
+### Concept 2
+
+
+## Examples
+\`\`\`
+
+\`\`\`
+
+## Key Terms
+| Term | Definition |
+|------|-----------|
+| | |
+
+## Summary
+
+
+## Review Questions
+1.
+2.
+3.
+`,
+  },
+  {
+    id: 'bug',
+    name: 'Bug Report',
+    description: 'Steps to reproduce, expected vs actual',
+    icon: <Bug size={18} />,
+    title: 'Bug: ',
+    content: `## Summary
+
+
+## Environment
+**Version:**
+**OS / Browser:**
+
+## Steps to Reproduce
+1.
+2.
+3.
+
+## Expected Behaviour
+
+
+## Actual Behaviour
+
+
+## Root Cause
+
+
+## Fix / Workaround
+
+
+## Related Issues
+-
+`,
+  },
+  {
+    id: 'weekly',
+    name: 'Weekly Review',
+    description: 'Wins, lessons, goals for next week',
+    icon: <Globe size={18} />,
+    title: `Week of ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+    content: `## Wins this week
+-
+
+## What didn't go well
+-
+
+## Lessons learned
+-
+
+## Metrics / Progress
+| Metric | Target | Actual |
+|--------|--------|--------|
+| | | |
+
+## Goals for next week
+- [ ]
+- [ ]
+- [ ]
+
+## Energy & mood
+
+
+## Notes
 `,
   },
 ]
@@ -168,7 +331,7 @@ export function NoteTemplateModal({ onSelect, onClose }: NoteTemplateModalProps)
     if (t) onSelect(t)
   }
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onClick={handleBackdropClick}
@@ -177,7 +340,7 @@ export function NoteTemplateModal({ onSelect, onClose }: NoteTemplateModalProps)
         ref={containerRef}
         tabIndex={-1}
         onKeyDown={handleKeyDown}
-        className="flex w-full max-w-2xl flex-col gap-5 rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6 shadow-2xl outline-none"
+        className="flex w-full max-w-3xl flex-col gap-5 rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6 shadow-2xl outline-none"
       >
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -194,7 +357,7 @@ export function NoteTemplateModal({ onSelect, onClose }: NoteTemplateModalProps)
         </div>
 
         {/* Template grid */}
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 max-h-[60vh] overflow-y-auto pr-1">
           {TEMPLATES.map(t => {
             const isSelected = selected === t.id
             return (
@@ -230,6 +393,7 @@ export function NoteTemplateModal({ onSelect, onClose }: NoteTemplateModalProps)
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

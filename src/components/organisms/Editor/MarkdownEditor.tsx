@@ -168,7 +168,7 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, notes, onCh
 type Builder = { addGroup: (key: string, label: string) => { addItem: (key: string, item: unknown) => void } }
 
 function buildHeadingToolbar(builder: Builder) {
-  const mkH = (level: 1 | 2 | 3) => ({
+  const mkH = (level: 1 | 2 | 3 | 4 | 5 | 6) => ({
     icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><text x="12" y="17" text-anchor="middle" font-size="12" font-weight="700" fill="currentColor">H${level}</text></svg>`,
     active: (ctx: unknown) => {
       try {
@@ -186,6 +186,9 @@ function buildHeadingToolbar(builder: Builder) {
   hGroup.addItem('h1', mkH(1))
   hGroup.addItem('h2', mkH(2))
   hGroup.addItem('h3', mkH(3))
+  hGroup.addItem('h4', mkH(4))
+  hGroup.addItem('h5', mkH(5))
+  hGroup.addItem('h6', mkH(6))
 
   const pGroup = builder.addGroup('paragraph', 'Paragraph')
   pGroup.addItem('text', {

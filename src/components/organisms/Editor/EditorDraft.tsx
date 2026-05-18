@@ -86,17 +86,6 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
     setTimeout(() => setSaveStatus((s) => s === 'saved' ? 'idle' : s), 2000)
   }, [note.id, onSave])
 
-  const prevNoteIdRef = useRef(note.id)
-  useEffect(() => {
-    if (prevNoteIdRef.current === note.id) return
-    prevNoteIdRef.current = note.id
-    setTitle(note.title)
-    setContent(note.content)
-    setTags(note.tags)
-    setSaveStatus('idle')
-    setShowHistory(false)
-  }, [note])
-
   const handleRestore = (restoredContent: string, restoredTitle?: string) => {
     if (restoredTitle) setTitle(restoredTitle)
     setContent(restoredContent)

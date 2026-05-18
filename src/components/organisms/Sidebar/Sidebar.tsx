@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Loader2, Plus, Search, X } from 'lucide-react'
 import { useAppStore } from '../../../store/useAppStore'
 import { useSidebarNotes } from '../../../hooks/useSidebarNotes'
@@ -27,6 +28,7 @@ export function Sidebar({ onClose }: Props): JSX.Element {
   const listRef = useRef<HTMLUListElement>(null)
   const [showTemplates, setShowTemplates] = useState(false)
   const createNote = useAppStore(s => s.createNote)
+  const navigate = useNavigate()
   const {
     isNotesLoaded, activeNoteId, query, setQuery, searchMode,
     allTags, tagMap, visible, copiedId, selectedTagFilters, setSelectedTagFilters,
@@ -37,7 +39,10 @@ export function Sidebar({ onClose }: Props): JSX.Element {
   function handleTemplateSelect(template: NoteTemplate) {
     setShowTemplates(false)
     void createNote(template.id === 'blank' ? undefined : { title: template.title, content: template.content })
-      .then(id => { openNote(id) })
+      .then(id => {
+        navigate(`/notes/${id}`)
+        onClose?.()
+      })
   }
 
   // Arrow-key navigation within the note list

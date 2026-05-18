@@ -28,5 +28,5 @@ export function NoteEditor(): JSX.Element {
     )
   }
 
-  return <EditorDraft note={activeNote} onSave={updateActiveNote} />
+  return <EditorDraft key={activeNote.id} note={activeNote} onSave={updateActiveNote} />
 }
