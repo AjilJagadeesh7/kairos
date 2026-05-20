@@ -14,6 +14,7 @@ import { BacklinksPanel } from './BacklinksPanel'
 import { NoteInfoPanel } from './NoteInfoPanel'
 import { ConflictBanner } from './ConflictBanner'
 import { useConflictStore } from '../../../store/useConflictStore'
+import { eventMatchesAction } from '../../../hooks/useShortcutKey'
 import type { EditorDraftProps, TagRecord } from '../../../types'
 
 type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved'
@@ -33,6 +34,7 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
   const [restoreKey, setRestoreKey]   = useState(0)   // bump to force MarkdownEditor remount on restore
   const deleteNoteById    = useAppStore(s => s.deleteNoteById)
   const updateNoteTags    = useAppStore(s => s.updateNoteTags)
+  const keyBindings       = useAppStore(s => s.keyBindings)
   const conflict          = useConflictStore(s => s.conflicts.find(c => c.noteId === note.id))
   const setNoteTagColor   = useAppStore(s => s.setNoteTagColor)
   const noteTagColors     = useAppStore(s => s.noteTagColors)
@@ -101,14 +103,20 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      if (eventMatchesAction(e, 'save-note', keyBindings)) {
         e.preventDefault()
         if (saveStatus === 'dirty') void saveNote()
+      } else if (eventMatchesAction(e, 'delete-note', keyBindings)) {
+        e.preventDefault()
+        handleDeleteNote()
+      } else if (eventMatchesAction(e, 'toggle-history', keyBindings)) {
+        e.preventDefault()
+        setShowHistory(v => !v)
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [saveStatus, saveNote])
+  }, [saveStatus, saveNote, keyBindings])
 
   useEffect(() => {
     if (title === note.title && content === note.content) return

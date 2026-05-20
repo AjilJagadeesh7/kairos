@@ -8,6 +8,7 @@ import { useGraphData } from '../hooks/useGraphData'
 import { GraphSidebar } from '../components/organisms/Graph/GraphSidebar'
 import { GraphView } from '../components/organisms/Graph/GraphView'
 import { GraphContextMenu } from '../components/organisms/Graph/GraphContextMenu'
+import { ErrorBoundary } from '../components/common/ErrorBoundary'
 import type { RightClickTarget } from '../components/organisms/Graph/GraphView'
 
 type GraphMode = 'links' | 'tags'
@@ -130,6 +131,7 @@ export function GraphPage() {
   }
 
   return (
+    <ErrorBoundary>
     <main className="relative flex h-full overflow-hidden">
       {mobileSidebarOpen && (
         <div
@@ -194,5 +196,6 @@ export function GraphPage() {
         />
       )}
     </main>
+    </ErrorBoundary>
   )
 }

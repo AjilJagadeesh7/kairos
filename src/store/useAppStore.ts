@@ -29,6 +29,7 @@ type AppState = {
   onboardingDone: boolean
   vaultStatus: VaultStatus
   lastSyncTime: string | null
+  keyBindings: Record<string, string>
 
   setUserName: (name: string) => void
   completeOnboarding: () => void
@@ -48,6 +49,8 @@ type AppState = {
   setStorageChoices: (choices: StorageTarget[]) => void
   setNoteTagColor: (tagName: string, color: string) => void
   removeNoteTag: (tagName: string) => void
+  setKeyBinding: (id: string, key: string) => void
+  resetKeyBinding: (id: string) => void
 
   loadNotes: () => Promise<void>
   createNote: (initial?: { title?: string; content?: string }) => Promise<string>
@@ -87,6 +90,7 @@ export const useAppStore = create<AppState>()(
       onboardingDone: false,
       vaultStatus: 'loading',
       lastSyncTime: null,
+      keyBindings: {},
 
       setUserName: (userName) => set({ userName }),
       completeOnboarding: () => set({ onboardingDone: true }),
@@ -123,6 +127,11 @@ export const useAppStore = create<AppState>()(
       removeNoteTag: (tagName) => set(s => {
         const { [tagName]: _, ...rest } = s.noteTagColors
         return { noteTagColors: rest }
+      }),
+      setKeyBinding: (id, key) => set(s => ({ keyBindings: { ...s.keyBindings, [id]: key } })),
+      resetKeyBinding: (id) => set(s => {
+        const { [id]: _, ...rest } = s.keyBindings
+        return { keyBindings: rest }
       }),
 
       loadNotes: async () => {
@@ -282,6 +291,7 @@ export const useAppStore = create<AppState>()(
         aiUrl:           state.aiUrl,
         userName:        state.userName,
         onboardingDone:  state.onboardingDone,
+        keyBindings:     state.keyBindings,
       }),
     },
   ),

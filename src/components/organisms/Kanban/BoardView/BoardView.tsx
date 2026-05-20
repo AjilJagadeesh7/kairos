@@ -4,6 +4,8 @@ import { BoardHeader } from './BoardHeader'
 import { BoardColumns } from './BoardColumns'
 import { TaskDetailPanel } from '../TaskDetail/TaskDetailPanel'
 import { BoardSettings } from '../BoardSettings/BoardSettings'
+import { useAppStore } from '../../../../store/useAppStore'
+import { eventMatchesAction } from '../../../../hooks/useShortcutKey'
 import type { Board } from '../../../../types/kanban.types'
 
 interface BoardViewProps {
@@ -17,26 +19,37 @@ export function BoardView({ board }: BoardViewProps): JSX.Element {
   const redo            = useKanbanStore(s => s.redo)
   const [showSettings, setShowSettings] = useState(false)
 
-  const activeTask = board.tasks.find(t => t.id === activeTaskId) ?? null
+  const keyBindings  = useAppStore(s => s.keyBindings)
+  const createTask   = useKanbanStore(s => s.createTask)
+  const activeTask   = board.tasks.find(t => t.id === activeTaskId) ?? null
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       const target = e.target as HTMLElement
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return
 
-      if (e.key === 'Escape') {
+      if (eventMatchesAction(e, 'close-panel', keyBindings)) {
         if (showSettings) { setShowSettings(false); return }
         if (activeTaskId) { setActiveTaskId(null); return }
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+      if (eventMatchesAction(e, 'redo', keyBindings)) {
         e.preventDefault()
-        if (e.shiftKey) redo(board.id)
-        else undo(board.id)
+        redo(board.id)
+      } else if (eventMatchesAction(e, 'undo', keyBindings)) {
+        e.preventDefault()
+        undo(board.id)
+      } else if (eventMatchesAction(e, 'new-task', keyBindings)) {
+        e.preventDefault()
+        const firstCol = board.columns[0]
+        if (firstCol) {
+          const taskId = createTask(board.id, firstCol.id, 'New task')
+          setActiveTaskId(taskId)
+        }
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [activeTaskId, board.id, showSettings, undo, redo, setActiveTaskId])
+  }, [activeTaskId, board.id, board.columns, showSettings, undo, redo, setActiveTaskId, createTask, keyBindings])
 
   return (
     <div className="flex h-full flex-col overflow-hidden">

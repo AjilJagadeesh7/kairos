@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import { useJournalStore, todayDate } from '../store/useJournalStore'
+import { eventMatchesAction } from '../hooks/useShortcutKey'
 import { JournalCalendar } from '../components/organisms/Journal/JournalCalendar'
 import { JournalEditor } from '../components/organisms/Journal/JournalEditor'
 import { ErrorBoundary } from '../components/common/ErrorBoundary'
@@ -17,9 +18,22 @@ export function JournalPage() {
   const mobileSidebarOpen    = useAppStore(s => s.mobileSidebarOpen)
   const setMobileSidebarOpen = useAppStore(s => s.setMobileSidebarOpen)
 
+  const keyBindings = useAppStore(s => s.keyBindings)
+
   useEffect(() => {
     if (!isLoaded) void loadEntries()
   }, [isLoaded, loadEntries])
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (eventMatchesAction(e, 'journal-today', keyBindings)) {
+        e.preventDefault()
+        navigate(`/journal/${todayDate()}`)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [navigate, keyBindings])
 
   useEffect(() => {
     setActiveDate(date ?? null)
