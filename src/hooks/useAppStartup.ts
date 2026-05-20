@@ -128,8 +128,9 @@ export function useAppStartup() {
         const journalStore = useJournalStore.getState()
         if (!journalStore.isLoaded) await journalStore.loadEntries()
 
-        // Load plugins after data is ready
-        const { loadAllPlugins } = await import('../plugins/pluginManager')
+        // Discover plugins dropped directly into the vault folder, then load
+        const { scanLocalPlugins, loadAllPlugins } = await import('../plugins/pluginManager')
+        await scanLocalPlugins()
         await loadAllPlugins()
 
         // Handle pending URL-param install (web/PWA — deferred because vault wasn't ready)

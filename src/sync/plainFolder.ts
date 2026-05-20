@@ -500,6 +500,28 @@ export async function readJournalHistory(date: string): Promise<ContentVersion[]
 
 // ─── Plugin file helpers ───────────────────────────────────────────────────────
 
+export async function listPluginIds(): Promise<string[]> {
+  if (isDesktop()) {
+    if (!_tauriPath) return []
+    const { readDir, mkdir } = await import('@tauri-apps/plugin-fs')
+    const pluginsPath = `${_tauriPath}/plugins`
+    try { await mkdir(pluginsPath, { recursive: true }) } catch { /* exists */ }
+    try {
+      const entries = await readDir(pluginsPath)
+      return entries
+        .filter(e => e.name && !e.name.startsWith('.') && e.isDirectory)
+        .map(e => e.name!)
+    } catch { return [] }
+  }
+  const pluginsPath = 'MindVault/plugins'
+  await mobileMkdir(pluginsPath)
+  const { Filesystem, Directory } = await import('@capacitor/filesystem')
+  try {
+    const result = await Filesystem.readdir({ path: pluginsPath, directory: Directory.Documents })
+    return result.files.filter(e => !e.name.startsWith('.')).map(e => e.name)
+  } catch { return [] }
+}
+
 export async function readPluginFile(pluginId: string, filename: string): Promise<string | null> {
   if (isDesktop()) {
     if (!_tauriPath) return null

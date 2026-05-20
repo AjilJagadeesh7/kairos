@@ -115,6 +115,43 @@ export async function loadSinglePlugin(pluginId: string): Promise<void> {
   }
 }
 
+// ─── Scan vault plugins/ folder and auto-register new plugins ────────────────
+export async function scanLocalPlugins(): Promise<void> {
+  const { listPluginIds, readPluginFile } = await import('../sync/plainFolder')
+  const ids = await listPluginIds()
+
+  for (const id of ids) {
+    if (usePluginStore.getState().isInstalled(id)) continue
+
+    const raw = await readPluginFile(id, 'manifest.json')
+    if (!raw) {
+      console.warn(`[plugins] no manifest.json found in plugins/${id}/`)
+      continue
+    }
+
+    try {
+      const manifest = JSON.parse(raw) as import('./types').PluginManifest
+      if (!manifest.name || !manifest.version || !manifest.entryPoint) {
+        console.warn(`[plugins] manifest in plugins/${id}/ is missing required fields`)
+        continue
+      }
+      // Folder name is the authoritative id — overrides whatever manifest.id says
+      manifest.id = id
+
+      usePluginStore.getState().addPlugin({
+        id,
+        manifest,
+        enabled: true,
+        installedAt: new Date().toISOString(),
+        source: 'local',
+      })
+      console.info(`[plugins] discovered local plugin: ${id}`)
+    } catch (e) {
+      console.warn(`[plugins] failed to parse manifest in plugins/${id}/`, e)
+    }
+  }
+}
+
 // ─── Load all enabled plugins ─────────────────────────────────────────────────
 export async function loadAllPlugins(): Promise<void> {
   const { plugins } = usePluginStore.getState()
