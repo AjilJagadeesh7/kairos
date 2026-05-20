@@ -30,6 +30,7 @@ type AppState = {
   vaultStatus: VaultStatus
   lastSyncTime: string | null
   keyBindings: Record<string, string>
+  folderList: string[]  // explicitly created folder paths (includes empty folders)
 
   setUserName: (name: string) => void
   completeOnboarding: () => void
@@ -53,11 +54,16 @@ type AppState = {
   resetKeyBinding: (id: string) => void
 
   loadNotes: () => Promise<void>
-  createNote: (initial?: { title?: string; content?: string }) => Promise<string>
+  loadFolders: () => Promise<void>
+  createNote: (initial?: { title?: string; content?: string; folder?: string }) => Promise<string>
   updateActiveNote: (patch: Pick<Note, 'title' | 'content' | 'embedding'> & { contentHash: string }) => Promise<void>
   updateNoteTags: (noteId: string, tags: string[]) => Promise<void>
   appendWikilink: (noteId: string, targetTitle: string) => Promise<void>
   deleteNoteById: (id: string) => Promise<void>
+  moveNoteToFolder: (noteId: string, folder: string) => Promise<void>
+  createFolder: (path: string) => Promise<void>
+  renameFolder: (oldPath: string, newPath: string) => Promise<void>
+  deleteFolder: (path: string) => Promise<void>
 }
 
 function readLegacyStorageChoices(): StorageTarget[] {
@@ -91,6 +97,7 @@ export const useAppStore = create<AppState>()(
       vaultStatus: 'loading',
       lastSyncTime: null,
       keyBindings: {},
+      folderList: [],
 
       setUserName: (userName) => set({ userName }),
       completeOnboarding: () => set({ onboardingDone: true }),
@@ -152,6 +159,17 @@ export const useAppStore = create<AppState>()(
         }
       },
 
+      loadFolders: async () => {
+        const { readFolderList, isPlainFolderConnected } = await import('../sync/plainFolder')
+        if (!isPlainFolderConnected()) return
+        try {
+          const folderList = await readFolderList()
+          set({ folderList })
+        } catch {
+          // best-effort
+        }
+      },
+
       createNote: async (initial) => {
         const { run } = useLoaderStore.getState()
         return run('create-note', async () => {
@@ -165,6 +183,7 @@ export const useAppStore = create<AppState>()(
             embedding: [],
             createdAt: now,
             updatedAt: now,
+            folder: initial?.folder || undefined,
           }
 
           // Write to filesystem (primary storage)
@@ -274,6 +293,88 @@ export const useAppStore = create<AppState>()(
           const { deleteNoteFromAll, anySyncProviderConnected } = await import('../sync/syncOrchestrator')
           if (anySyncProviderConnected()) await deleteNoteFromAll(id)
         }, 'Deleting note…')
+      },
+
+      moveNoteToFolder: async (noteId, folder) => {
+        const { notes } = get()
+        const existing = notes.find(n => n.id === noteId)
+        if (!existing) return
+        const updated: Note = { ...existing, folder: folder || undefined, updatedAt: new Date().toISOString() }
+        indexNote(updated)
+        set(s => ({ notes: s.notes.map(n => n.id === noteId ? updated : n) }))
+        const { writePlainNote, isPlainFolderConnected } = await import('../sync/plainFolder')
+        if (isPlainFolderConnected()) {
+          writePlainNote(updated).catch(err => console.warn('[storage] write failed:', err))
+        }
+      },
+
+      createFolder: async (path) => {
+        if (!path.trim()) return
+        const { folderList } = get()
+        if (folderList.includes(path)) return
+        const next = [...folderList, path].sort()
+        set({ folderList: next })
+        const { writeFolderList, isPlainFolderConnected } = await import('../sync/plainFolder')
+        if (isPlainFolderConnected()) {
+          writeFolderList(next).catch(err => console.warn('[folders] write failed:', err))
+        }
+      },
+
+      renameFolder: async (oldPath, newPath) => {
+        if (!newPath.trim() || oldPath === newPath) return
+        const { notes, folderList } = get()
+
+        // Update all notes in that folder or any subfolder
+        const updatedNotes = notes.map(note => {
+          if (!note.folder) return note
+          if (note.folder === oldPath) return { ...note, folder: newPath, updatedAt: new Date().toISOString() }
+          if (note.folder.startsWith(oldPath + '/')) {
+            return { ...note, folder: newPath + note.folder.slice(oldPath.length), updatedAt: new Date().toISOString() }
+          }
+          return note
+        })
+
+        // Update explicit folder list
+        const nextFolderList = folderList.map(f => {
+          if (f === oldPath) return newPath
+          if (f.startsWith(oldPath + '/')) return newPath + f.slice(oldPath.length)
+          return f
+        })
+
+        set({ notes: updatedNotes, folderList: nextFolderList })
+
+        // Persist all changed notes
+        const { writePlainNote, writeFolderList, isPlainFolderConnected } = await import('../sync/plainFolder')
+        if (isPlainFolderConnected()) {
+          const changed = updatedNotes.filter((n, i) => n !== notes[i])
+          await Promise.all(changed.map(n => writePlainNote(n).catch(() => {})))
+          writeFolderList(nextFolderList).catch(() => {})
+        }
+      },
+
+      deleteFolder: async (path) => {
+        const { notes, folderList } = get()
+
+        // Move all notes in this folder (and subfolders) to root
+        const updatedNotes = notes.map(note => {
+          if (!note.folder) return note
+          if (note.folder === path || note.folder.startsWith(path + '/')) {
+            return { ...note, folder: undefined, updatedAt: new Date().toISOString() }
+          }
+          return note
+        })
+
+        // Remove folder and all subfolders from explicit list
+        const nextFolderList = folderList.filter(f => f !== path && !f.startsWith(path + '/'))
+
+        set({ notes: updatedNotes, folderList: nextFolderList })
+
+        const { writePlainNote, writeFolderList, isPlainFolderConnected } = await import('../sync/plainFolder')
+        if (isPlainFolderConnected()) {
+          const changed = updatedNotes.filter((n, i) => n !== notes[i])
+          await Promise.all(changed.map(n => writePlainNote(n).catch(() => {})))
+          writeFolderList(nextFolderList).catch(() => {})
+        }
       },
     }),
     {

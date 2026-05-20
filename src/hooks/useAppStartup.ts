@@ -124,6 +124,7 @@ export function useAppStartup() {
         // no toast — VaultBanner handles this inline
       } else {
         await store.loadNotes()
+        await store.loadFolders()
         const { useKanbanStore } = await import('../store/useKanbanStore')
         const kanbanStore = useKanbanStore.getState()
         if (!kanbanStore.isLoaded) await kanbanStore.loadBoards()

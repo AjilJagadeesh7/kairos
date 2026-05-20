@@ -498,6 +498,24 @@ export async function readJournalHistory(date: string): Promise<ContentVersion[]
   return _readHistory('journal', date)
 }
 
+// ---------------------------------------------------------------------------
+// Folder list — vault/config/folders.json (persists explicitly created folders)
+// ---------------------------------------------------------------------------
+
+export async function readFolderList(): Promise<string[]> {
+  try {
+    const raw = await readPlainConfig('folders.json')
+    if (!raw) return []
+    return (JSON.parse(raw) as { folders: string[] }).folders ?? []
+  } catch {
+    return []
+  }
+}
+
+export async function writeFolderList(folders: string[]): Promise<void> {
+  await writePlainConfig('folders.json', JSON.stringify({ folders }))
+}
+
 // ─── Plugin file helpers ───────────────────────────────────────────────────────
 
 export async function listPluginIds(): Promise<string[]> {

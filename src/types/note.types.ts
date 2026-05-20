@@ -6,6 +6,7 @@ export type Note = {
   embedding: number[]
   createdAt: string
   updatedAt: string
+  folder?: string  // vault-relative path: "Projects/Work", "" or undefined = root
 }
 
 export type TagRecord = {

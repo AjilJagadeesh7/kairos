@@ -16,13 +16,23 @@ export function VaultSection() {
   }, [])
 
   async function onConnectVault() {
-    const { connectPlainFolder, isPlainFolderConnected, getPlainFolderName } = await import('../../../sync/plainFolder')
+    const { connectPlainFolder, isPlainFolderConnected, getPlainFolderName, writePlainNote, writeFolderList } = await import('../../../sync/plainFolder')
     try {
       await connectPlainFolder()
       setVaultConnected(isPlainFolderConnected())
       setVaultName(getPlainFolderName())
       const store = useAppStore.getState()
+
+      // Flush any in-memory notes/folders created before the vault was connected
+      if (store.notes.length > 0) {
+        await Promise.all(store.notes.map(n => writePlainNote(n).catch(() => {})))
+      }
+      if (store.folderList.length > 0) {
+        await writeFolderList(store.folderList).catch(() => {})
+      }
+
       await store.loadNotes()
+      await store.loadFolders()
       const { useKanbanStore } = await import('../../../store/useKanbanStore')
       await useKanbanStore.getState().loadBoards()
       const { saveCurrentSettings } = await import('../../../sync/settingsSync')

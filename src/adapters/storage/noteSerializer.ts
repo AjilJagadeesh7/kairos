@@ -2,17 +2,17 @@ import type { Note } from '../../types'
 
 /** Serialize a Note to a markdown string with YAML-style frontmatter. */
 export function serializeNote(note: Note): string {
-  return [
+  const lines = [
     '---',
     `id: ${note.id}`,
     `title: ${JSON.stringify(note.title)}`,
     `tags: ${JSON.stringify(note.tags)}`,
     `createdAt: ${note.createdAt}`,
     `updatedAt: ${note.updatedAt}`,
-    '---',
-    '',
-    note.content,
-  ].join('\n')
+  ]
+  if (note.folder) lines.push(`folder: ${JSON.stringify(note.folder)}`)
+  lines.push('---', '', note.content)
+  return lines.join('\n')
 }
 
 /** Parse a serialized markdown string back into a Note. */
@@ -26,6 +26,7 @@ export function deserializeNote(raw: string): Note {
   const body = rest.slice(closeIdx + 5) // skip '\n---\n'
 
   const get = (key: string) => fm.match(new RegExp(`^${key}: (.+)$`, 'm'))?.[1] ?? ''
+  const rawFolder = get('folder')
 
   return {
     id: get('id'),
@@ -35,6 +36,7 @@ export function deserializeNote(raw: string): Note {
     updatedAt: get('updatedAt') || new Date().toISOString(),
     content: body.replace(/^\n/, ''), // strip leading blank line added by serializer
     embedding: [], // embeddings live in the db.embeddings table, not in the note record
+    folder: rawFolder ? (JSON.parse(rawFolder) as string) || undefined : undefined,
   }
 }
 
