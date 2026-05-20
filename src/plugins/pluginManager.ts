@@ -3,6 +3,9 @@ import { useAppStore } from '../store/useAppStore'
 import { useKanbanStore } from '../store/useKanbanStore'
 import { usePluginStore } from './usePluginStore'
 import * as sharedComponents from './sharedComponents'
+import { gate, PermissionError } from './permissionGate'
+import { indexNote } from '../search/noteIndex'
+import { logger } from '../logger/logger'
 import type {
   PluginManifest,
   PluginRegistry,
@@ -11,6 +14,9 @@ import type {
   MindVaultPluginAPI,
   AppEvent,
   PluginModule,
+  NoteListItem,
+  NoteView,
+  NoteWriteData,
 } from './types'
 
 // ─── Module-level registry ────────────────────────────────────────────────────
@@ -55,34 +61,114 @@ export function emitEvent(event: AppEvent, payload?: unknown) {
 
 // ─── API factory ──────────────────────────────────────────────────────────────
 function buildPluginAPI(manifest: PluginManifest): MindVaultPluginAPI {
+  const id = manifest.id
+
   return {
-    pluginId: manifest.id,
+    pluginId: id,
     manifest,
 
+    // ── UI registration ────────────────────────────────────────────────────────
     registerPage(reg: Omit<PluginPageRegistration, 'pluginId'>) {
-      _registry = { ..._registry, pages: [..._registry.pages, { ...reg, pluginId: manifest.id }] }
+      gate(manifest, 'ui:page', 'registerPage')
+      _registry = { ..._registry, pages: [..._registry.pages, { ...reg, pluginId: id }] }
       notifyRegistry()
     },
 
     registerSettingsSection(reg: Omit<PluginSettingsRegistration, 'pluginId'>) {
-      _registry = { ..._registry, settings: [..._registry.settings, { ...reg, pluginId: manifest.id }] }
+      gate(manifest, 'ui:settings', 'registerSettingsSection')
+      _registry = { ..._registry, settings: [..._registry.settings, { ...reg, pluginId: id }] }
       notifyRegistry()
     },
 
-    on: busOn,
+    // ── Event bus ──────────────────────────────────────────────────────────────
+    on(event: AppEvent, handler: (payload: unknown) => void) {
+      gate(manifest, 'events', `subscribe to "${event}"`)
+      busOn(event, handler)
+    },
+
     off: busOff,
-    emit: emitEvent,
 
-    getAppStore: () => useAppStore,
-    getKanbanStore: () => useKanbanStore,
+    emit(event: AppEvent, payload?: unknown) {
+      gate(manifest, 'events', `emit "${event}"`)
+      emitEvent(event, payload)
+    },
 
+    // ── Notes API ──────────────────────────────────────────────────────────────
+    notes: {
+      list(): NoteListItem[] {
+        gate(manifest, 'read:notes', 'notes.list')
+        return useAppStore.getState().notes.map(({ id: nid, title, tags, updatedAt, createdAt }) => ({
+          id: nid, title, tags, updatedAt, createdAt,
+        }))
+      },
+
+      get(noteId: string): NoteView | null {
+        gate(manifest, 'read:notes', 'notes.get')
+        const note = useAppStore.getState().notes.find(n => n.id === noteId) ?? null
+        if (!note) return null
+        const { id: nid, title, content, tags, updatedAt, createdAt } = note
+        return { id: nid, title, content, tags, updatedAt, createdAt }
+      },
+
+      async create(data: { title: string; content?: string }): Promise<string> {
+        gate(manifest, 'write:notes', 'notes.create')
+        return useAppStore.getState().createNote({ title: data.title, content: data.content })
+      },
+
+      async update(noteId: string, patch: NoteWriteData): Promise<void> {
+        gate(manifest, 'write:notes', 'notes.update')
+        const { notes } = useAppStore.getState()
+        const note = notes.find(n => n.id === noteId)
+        if (!note) throw new Error(`Plugin "${id}": note "${noteId}" not found`)
+
+        const updated = {
+          ...note,
+          title:     patch.title     ?? note.title,
+          content:   patch.content   ?? note.content,
+          tags:      patch.tags      ?? note.tags,
+          updatedAt: new Date().toISOString(),
+        }
+
+        const { writePlainNote, isPlainFolderConnected } = await import('../sync/plainFolder')
+        if (isPlainFolderConnected()) await writePlainNote(updated)
+
+        indexNote(updated)
+        useAppStore.setState(s => ({ notes: s.notes.map(n => n.id === noteId ? updated : n) }))
+      },
+
+      async delete(noteId: string): Promise<void> {
+        gate(manifest, 'write:notes', 'notes.delete')
+        await useAppStore.getState().deleteNoteById(noteId)
+      },
+    },
+
+    // ── Kanban API ─────────────────────────────────────────────────────────────
+    kanban: {
+      getBoards() {
+        gate(manifest, 'read:kanban', 'kanban.getBoards')
+        return useKanbanStore.getState().boards.map(({ id: bid, title }) => ({ id: bid, title }))
+      },
+
+      createTask(boardId: string, columnId: string, title: string): string {
+        gate(manifest, 'write:kanban', 'kanban.createTask')
+        return useKanbanStore.getState().createTask(boardId, columnId, title)
+      },
+
+      updateTask(boardId: string, taskId: string, updates: Parameters<MindVaultPluginAPI['kanban']['updateTask']>[2]): void {
+        gate(manifest, 'write:kanban', 'kanban.updateTask')
+        useKanbanStore.getState().updateTask(boardId, taskId, updates)
+      },
+    },
+
+    // ── Plugin file storage ────────────────────────────────────────────────────
     async readPluginData(filename: string) {
       const { readPluginFile } = await import('../sync/plainFolder')
-      return readPluginFile(manifest.id, filename)
+      return readPluginFile(id, filename)
     },
+
     async writePluginData(filename: string, content: string) {
       const { writePluginFile } = await import('../sync/plainFolder')
-      return writePluginFile(manifest.id, filename, content)
+      return writePluginFile(id, filename, content)
     },
 
     components: sharedComponents,
@@ -103,13 +189,18 @@ export async function loadSinglePlugin(pluginId: string): Promise<void> {
   const url  = URL.createObjectURL(blob)
 
   try {
-    // @vite-ignore tells Vite not to statically analyze this import at build time
     const mod = await import(/* @vite-ignore */ url) as PluginModule
     if (typeof mod.default !== 'function') {
       throw new Error(`Plugin "${pluginId}" must export a default setup function`)
     }
     await mod.default(buildPluginAPI(installed.manifest))
-    console.info(`[plugins] loaded: ${pluginId} v${installed.manifest.version}`)
+    logger.info(`loaded: ${pluginId} v${installed.manifest.version}`, 'plugins')
+  } catch (err) {
+    if (err instanceof PermissionError) {
+      // Log the violation and re-throw so allSettled marks this plugin as failed
+      logger.error(err.message, 'plugins:permission', err)
+    }
+    throw err
   } finally {
     URL.revokeObjectURL(url)
   }
@@ -125,14 +216,14 @@ export async function scanLocalPlugins(): Promise<void> {
 
     const raw = await readPluginFile(id, 'manifest.json')
     if (!raw) {
-      console.warn(`[plugins] no manifest.json found in plugins/${id}/`)
+      logger.warn(`no manifest.json found in plugins/${id}/`, 'plugins')
       continue
     }
 
     try {
-      const manifest = JSON.parse(raw) as import('./types').PluginManifest
+      const manifest = JSON.parse(raw) as PluginManifest
       if (!manifest.name || !manifest.version || !manifest.entryPoint) {
-        console.warn(`[plugins] manifest in plugins/${id}/ is missing required fields`)
+        logger.warn(`manifest in plugins/${id}/ is missing required fields`, 'plugins')
         continue
       }
       // Folder name is the authoritative id — overrides whatever manifest.id says
@@ -145,9 +236,9 @@ export async function scanLocalPlugins(): Promise<void> {
         installedAt: new Date().toISOString(),
         source: 'local',
       })
-      console.info(`[plugins] discovered local plugin: ${id}`)
+      logger.info(`discovered local plugin: ${id}`, 'plugins')
     } catch (e) {
-      console.warn(`[plugins] failed to parse manifest in plugins/${id}/`, e)
+      logger.error(`failed to parse manifest in plugins/${id}/`, 'plugins', e)
     }
   }
 }
@@ -169,7 +260,7 @@ export async function loadAllPlugins(): Promise<void> {
 
   results.forEach((r, i) => {
     if (r.status === 'rejected') {
-      console.warn(`[plugins] failed to load "${enabled[i].id}":`, r.reason)
+      logger.error(`failed to load "${enabled[i].id}"`, 'plugins', r.reason)
     }
   })
 
