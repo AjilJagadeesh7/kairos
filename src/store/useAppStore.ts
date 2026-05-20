@@ -6,7 +6,7 @@ import { useLoaderStore } from './useLoaderStore'
 import type { Note, SearchMode, SyncStatus, ThemeMode, StorageTarget, FontOption, FontWeight, VaultStatus } from '../types'
 import type { S3Config } from '../sync/s3'
 import type { WebDAVConfig } from '../sync/webdav'
-import { parseTags } from '../utils/wikilinks'
+import { parseTags, rewriteWikilinksInContent } from '../utils/wikilinks'
 import { buildIndex, indexNote, deindexNote } from '../search/noteIndex'
 
 type AppState = {
@@ -219,6 +219,39 @@ export const useAppStore = create<AppState>()(
         set(s => ({
           notes: [updated, ...s.notes.filter(n => n.id !== activeNoteId)],
         }))
+
+        // Auto-update wikilinks in all other notes when title changes
+        const oldTitle = existing.title
+        if (oldTitle && oldTitle !== title) {
+          const { writePlainNote, isPlainFolderConnected } = await import('../sync/plainFolder')
+          const connected = isPlainFolderConnected()
+          const currentNotes = get().notes
+          const rewritten: Note[] = []
+
+          for (const note of currentNotes) {
+            if (note.id === activeNoteId) continue
+            const newContent = rewriteWikilinksInContent(note.content, oldTitle, title)
+            if (newContent === note.content) continue
+            const rewrote: Note = { ...note, content: newContent, updatedAt: new Date().toISOString() }
+            indexNote(rewrote)
+            rewritten.push(rewrote)
+          }
+
+          if (rewritten.length > 0) {
+            const rewrittenIds = new Set(rewritten.map(n => n.id))
+            set(s => ({
+              notes: s.notes.map(n => rewrittenIds.has(n.id) ? rewritten.find(r => r.id === n.id)! : n),
+            }))
+            if (connected) {
+              // Fire-and-forget — don't block the save
+              void Promise.all(rewritten.map(n => writePlainNote(n).catch(() => {})))
+            }
+            // Toast feedback
+            const { toast } = await import('sonner')
+            const count = rewritten.length
+            toast.success(`Updated ${count} note${count > 1 ? 's' : ''} with new title`)
+          }
+        }
 
         // Write to filesystem (primary storage) and append a version snapshot
         const { writePlainNote, appendNoteVersion, isPlainFolderConnected } = await import('../sync/plainFolder')
