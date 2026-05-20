@@ -92,9 +92,18 @@ export const useAppStore = create<AppState>()(
       completeOnboarding: () => set({ onboardingDone: true }),
       setVaultStatus: (vaultStatus) => set({ vaultStatus }),
 
-      setTheme: (theme) => set({ theme }),
-      setFont: (font) => set({ font }),
-      setFontWeight: (fontWeight) => set({ fontWeight }),
+      setTheme: (theme) => {
+        set({ theme })
+        void import('../sync/settingsSync').then(({ saveCurrentSettings }) => saveCurrentSettings())
+      },
+      setFont: (font) => {
+        set({ font })
+        void import('../sync/settingsSync').then(({ saveCurrentSettings }) => saveCurrentSettings())
+      },
+      setFontWeight: (fontWeight) => {
+        set({ fontWeight })
+        void import('../sync/settingsSync').then(({ saveCurrentSettings }) => saveCurrentSettings())
+      },
       setAiUrl: (aiUrl) => set({ aiUrl }),
       setMobileSidebarOpen: (mobileSidebarOpen) => set({ mobileSidebarOpen }),
       setSearchMode: (searchMode) => set({ searchMode }),

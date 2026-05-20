@@ -30,25 +30,17 @@ export function GeneralSection() {
     useAppStore.setState({ onboardingDone: false })
   }
 
-  async function persist() {
-    const { saveCurrentSettings } = await import('../../../sync/settingsSync')
-    await saveCurrentSettings()
-  }
-
-  async function handleThemeChange(t: Parameters<typeof setTheme>[0]) {
+  function handleThemeChange(t: Parameters<typeof setTheme>[0]) {
     setTheme(t)
-    await persist()
   }
 
-  async function handleFontChange(f: FontOption, fallbackWeight?: FontWeight) {
+  function handleFontChange(f: FontOption, fallbackWeight?: FontWeight) {
     setFont(f)
     if (fallbackWeight) setFontWeight(fallbackWeight)
-    await persist()
   }
 
-  async function handleWeightChange(w: FontWeight) {
+  function handleWeightChange(w: FontWeight) {
     setFontWeight(w)
-    await persist()
   }
 
   return (
