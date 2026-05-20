@@ -4,6 +4,18 @@ import '@milkdown/crepe/theme/common/style.css'
 import '@milkdown/crepe/theme/frame.css'
 import './index.css'
 import App from './App.tsx'
+import { logger } from './logger/logger'
+
+window.onerror = (_msg, _source, _line, _col, error) => {
+  logger.captureError(error ?? new Error(String(_msg)), 'window.onerror')
+}
+
+window.onunhandledrejection = (event: PromiseRejectionEvent) => {
+  const reason = event.reason
+  // Skip Vite HMR module-reload failures — dev-only noise, not real app errors
+  if (typeof reason === 'string' && reason.includes('Importing a module script failed')) return
+  logger.captureError(reason ?? new Error('Unhandled promise rejection'), 'unhandledrejection')
+}
 
 // StrictMode is intentionally omitted: Milkdown's debounced serializer accesses
 // editorViewCtx in a setTimeout that outlives the first effect invocation when

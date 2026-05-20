@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useAppStore } from '../store/useAppStore'
 import { initPlainFolder, isPlainFolderConnected } from '../sync/plainFolder'
+import { initLogger } from '../logger/logger'
 import type { FontOption, FontWeight } from '../types/ui.types'
 
 async function drainOfflineQueue() {
@@ -77,6 +78,9 @@ export function useAppStartup() {
 
   useEffect(() => {
     void (async () => {
+      // Mark session start in the log now that the React tree and Tauri bridge are ready
+      initLogger()
+
       const { initLocalFolder } = await import('../sync/localFolder')
       const { setS3Config } = await import('../sync/s3')
       const { setWebDAVConfig } = await import('../sync/webdav')

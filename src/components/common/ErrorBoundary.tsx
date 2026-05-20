@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
+import { logger } from '../../logger/logger'
 
 interface Props {
   children: ReactNode
@@ -22,6 +23,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
     console.error('[ErrorBoundary]', error, info.componentStack)
+    logger.error(error.message, 'ErrorBoundary', error)
   }
 
   componentDidUpdate(prevProps: Props): void {
