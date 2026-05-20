@@ -5,6 +5,7 @@ import { SyncSection } from './SyncSection'
 import { TagsSection } from './TagsSection'
 import { AboutSection } from './AboutSection'
 import { KeyboardSection } from './KeyboardSection'
+import { LogsSection } from './LogsSection'
 import { PluginsSection } from './PluginsSection'
 import { MarketplaceSection } from './MarketplaceSection'
 import type { Section } from '../../../types'
@@ -30,6 +31,7 @@ export function SettingsPanel({ section }: SettingsPanelProps) {
         {section === 'tags'         && <TagsSection />}
         {section === 'keyboard'     && <KeyboardSection />}
         {section === 'plugins'      && <PluginsSection />}
+        {section === 'logs'         && <LogsSection />}
         {section === 'about'        && <AboutSection />}
 
         {/* Plugin-registered settings sections */}

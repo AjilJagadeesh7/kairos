@@ -129,11 +129,27 @@ function buildPluginAPI(manifest: PluginManifest): MindVaultPluginAPI {
           updatedAt: new Date().toISOString(),
         }
 
-        const { writePlainNote, isPlainFolderConnected } = await import('../sync/plainFolder')
-        if (isPlainFolderConnected()) await writePlainNote(updated)
-
         indexNote(updated)
         useAppStore.setState(s => ({ notes: s.notes.map(n => n.id === noteId ? updated : n) }))
+
+        const { writePlainNote, appendNoteVersion, isPlainFolderConnected } = await import('../sync/plainFolder')
+        if (isPlainFolderConnected()) {
+          await writePlainNote(updated)
+          appendNoteVersion(noteId, { savedAt: updated.updatedAt, title: updated.title, content: updated.content })
+            .catch(() => { /* best-effort */ })
+        }
+
+        // Push to sync providers and queue if offline — same path as the editor
+        const { pushNoteToAll, anySyncProviderConnected } = await import('../sync/syncOrchestrator')
+        if (anySyncProviderConnected()) {
+          useAppStore.getState().setSyncStatus('syncing')
+          pushNoteToAll(updated)
+            .then(() => useAppStore.getState().setSyncStatus('ok'))
+            .catch(() => {
+              useAppStore.getState().setSyncStatus('error')
+              void import('../sync/offlineQueue').then(({ enqueue }) => enqueue(noteId))
+            })
+        }
       },
 
       async delete(noteId: string): Promise<void> {
@@ -212,8 +228,6 @@ export async function scanLocalPlugins(): Promise<void> {
   const ids = await listPluginIds()
 
   for (const id of ids) {
-    if (usePluginStore.getState().isInstalled(id)) continue
-
     const raw = await readPluginFile(id, 'manifest.json')
     if (!raw) {
       logger.warn(`no manifest.json found in plugins/${id}/`, 'plugins')
@@ -229,14 +243,23 @@ export async function scanLocalPlugins(): Promise<void> {
       // Folder name is the authoritative id — overrides whatever manifest.id says
       manifest.id = id
 
+      const existing = usePluginStore.getState().getPlugin(id)
+      if (existing && existing.manifest.version === manifest.version) continue
+
+      // New plugin or manifest changed — register / update
       usePluginStore.getState().addPlugin({
         id,
         manifest,
-        enabled: true,
-        installedAt: new Date().toISOString(),
+        enabled: existing?.enabled ?? true,
+        installedAt: existing?.installedAt ?? new Date().toISOString(),
         source: 'local',
       })
-      logger.info(`discovered local plugin: ${id}`, 'plugins')
+
+      if (existing) {
+        logger.info(`updated manifest: ${id} v${manifest.version}`, 'plugins')
+      } else {
+        logger.info(`discovered local plugin: ${id}`, 'plugins')
+      }
     } catch (e) {
       logger.error(`failed to parse manifest in plugins/${id}/`, 'plugins', e)
     }

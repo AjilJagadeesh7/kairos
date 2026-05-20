@@ -1,4 +1,4 @@
-import { FolderSync, Info, Keyboard, Puzzle, Settings2, Store, Tag, X } from 'lucide-react'
+import { FolderSync, Info, Keyboard, Puzzle, ScrollText, Settings2, Store, Tag, X } from 'lucide-react'
 import { usePluginRegistry } from '../../../plugins/pluginContext'
 import type { Section } from '../../../types'
 
@@ -15,6 +15,7 @@ const CORE_NAV: Array<{ id: Section; label: string; icon: React.ElementType }> =
   { id: 'keyboard',     label: 'Keyboard',         icon: Keyboard     },
   { id: 'plugins',      label: 'Plugins',          icon: Puzzle       },
   { id: 'marketplace',  label: 'Marketplace',      icon: Store        },
+  { id: 'logs',         label: 'Logs',             icon: ScrollText   },
   { id: 'about',        label: 'About',            icon: Info         },
 ]
 
