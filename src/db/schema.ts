@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { FileHandleRecord, Note, SettingRecord, SyncMeta, TagRecord, JournalEntry } from '../types'
+import type { Note, SettingRecord, SyncMeta, TagRecord, JournalEntry } from '../types'
 import type { Board } from '../types/kanban.types'
 
 type EmbeddingRecord = {
@@ -13,7 +13,6 @@ export class MindVaultDB extends Dexie {
   settings!: EntityTable<SettingRecord, 'key'>
   syncMeta!: EntityTable<SyncMeta, 'noteId'>
   embeddings!: EntityTable<EmbeddingRecord, 'noteId'>
-  fileHandles!: EntityTable<FileHandleRecord, 'key'>
   tags!: EntityTable<TagRecord, 'name'>
   boards!: EntityTable<Board, 'id'>
   journal!: EntityTable<JournalEntry, 'date'>
@@ -92,7 +91,18 @@ export class MindVaultDB extends Dexie {
       fileHandles: 'key',
       tags: 'name',
       boards: 'id, title, updatedAt',
-      dailyNotes: null,           // drop old table
+      dailyNotes: null,
+      journal: 'date, updatedAt',
+    })
+    // Version 8: drop fileHandles (web File System Access API no longer supported)
+    this.version(8).stores({
+      notes: 'id, title, *tags, createdAt, updatedAt',
+      settings: 'key',
+      syncMeta: 'noteId, lastSynced, driveFileId',
+      embeddings: 'noteId',
+      fileHandles: null,
+      tags: 'name',
+      boards: 'id, title, updatedAt',
       journal: 'date, updatedAt',
     })
   }

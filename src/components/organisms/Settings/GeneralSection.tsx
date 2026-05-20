@@ -32,7 +32,7 @@ export function GeneralSection() {
 
   async function persist() {
     const { saveCurrentSettings } = await import('../../../sync/settingsSync')
-    void saveCurrentSettings()
+    await saveCurrentSettings()
   }
 
   async function handleThemeChange(t: Parameters<typeof setTheme>[0]) {

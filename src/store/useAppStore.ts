@@ -28,6 +28,7 @@ type AppState = {
   userName: string
   onboardingDone: boolean
   vaultStatus: VaultStatus
+  lastSyncTime: string | null
 
   setUserName: (name: string) => void
   completeOnboarding: () => void
@@ -85,6 +86,7 @@ export const useAppStore = create<AppState>()(
       userName: '',
       onboardingDone: false,
       vaultStatus: 'loading',
+      lastSyncTime: null,
 
       setUserName: (userName) => set({ userName }),
       completeOnboarding: () => set({ onboardingDone: true }),
@@ -97,7 +99,13 @@ export const useAppStore = create<AppState>()(
       setMobileSidebarOpen: (mobileSidebarOpen) => set({ mobileSidebarOpen }),
       setSearchMode: (searchMode) => set({ searchMode }),
       setQuery: (query) => set({ query }),
-      setSyncStatus: (syncStatus) => set({ syncStatus }),
+      setSyncStatus: (syncStatus) => {
+        const updates: Partial<AppState> = { syncStatus }
+        if (syncStatus === 'ok') {
+          updates.lastSyncTime = new Date().toISOString()
+        }
+        set(updates)
+      },
       setS3Config: (s3Config) => set({ s3Config }),
       setWebDAVConfig: (webdavConfig) => set({ webdavConfig }),
       setActiveNoteId: (activeNoteId) => set({ activeNoteId }),

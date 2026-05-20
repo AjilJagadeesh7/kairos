@@ -14,6 +14,7 @@ function hashTagColor(tag: string): string {
 
 export function useGraphData(
   notes: Note[],
+  embeddingMap: Map<string, number[]>,
   rerenderKey: number,
   selectedNoteId: string | null,
   showTasks: boolean,
@@ -54,8 +55,10 @@ export function useGraphData(
     for (let i = 0; i < notes.length; i++) {
       for (let j = i + 1; j < notes.length; j++) {
         const a = notes[i]; const b = notes[j]
-        if (!a.embedding?.length || !b.embedding?.length) continue
-        if (cosineSimilarity(a.embedding!, b.embedding!) > 0.75) {
+        const embA = embeddingMap.get(a.id)
+        const embB = embeddingMap.get(b.id)
+        if (!embA?.length || !embB?.length) continue
+        if (cosineSimilarity(embA, embB) > 0.75) {
           linksLinks.push({ source: a.id, target: b.id, kind: 'semantic' })
           linksInc(a.id); linksInc(b.id)
         }
@@ -99,7 +102,7 @@ export function useGraphData(
 
     return { linksNodes, linksLinks, tagsNodes, tagsLinks }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notes, rerenderKey])
+  }, [notes, embeddingMap, rerenderKey])
 
   // Task nodes and edges (only when showTasks=true)
   const { taskNodes, taskLinks } = useMemo(() => {

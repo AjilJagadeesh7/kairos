@@ -8,8 +8,6 @@ import {
   setS3Config, isS3Connected, listS3Notes, upsertS3Note, type S3Config,
 } from '../../sync/s3'
 import { serializeNote, deserializeNote } from '../storage/noteSerializer'
-import { isWeb } from '../../utils/platform'
-
 export class S3SyncAdapter implements SyncAdapter {
   private config: S3Config | null = null
 
@@ -20,10 +18,6 @@ export class S3SyncAdapter implements SyncAdapter {
     }
     this.config = { endpoint, bucket, region: region || 'auto', accessKey: accessKeyId, secretKey: secretAccessKey }
     setS3Config(this.config)
-
-    if (isWeb()) {
-      console.warn('[MindVault] S3 sync on web requires CORS configured on your bucket.')
-    }
   }
 
   async push(_filePath: string, content: string): Promise<void> {
@@ -51,8 +45,6 @@ export class S3SyncAdapter implements SyncAdapter {
   }
 
   isConnected(): boolean { return isS3Connected() }
-
-  get needsCorsWarning(): boolean { return isWeb() }
 
   private assertConnected(): void {
     if (!isS3Connected()) throw new Error('S3SyncAdapter: not connected. Call connect() first.')

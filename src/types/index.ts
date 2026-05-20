@@ -12,7 +12,7 @@ export type {
 export { CLOSED_MENU } from './editor.types'
 export type { EdgeKind, GraphEdge, GNode, GLink, GraphPopover } from './graph.types'
 export type { Section } from './settings.types'
-export type { SettingRecord, FileHandleRecord, EmbeddingRecord } from './db.types'
+export type { SettingRecord, EmbeddingRecord } from './db.types'
 export type { JournalEntry } from './journal.types'
 export type { ContentVersion, VersionHistory } from './history.types'
 export type {

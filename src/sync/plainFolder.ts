@@ -8,19 +8,71 @@
  *   {vault}/plugins/{id}/   — plugin bundles + data
  *
  * Desktop (Tauri) — uses plugin-fs + plugin-dialog.
- * Web — uses File System Access API (Chrome/Edge).
+ * Mobile (Capacitor) — uses @capacitor/filesystem (Documents/MindVault).
  */
 import { isDesktop } from '../utils/platform'
-import { db } from '../db/schema'
 import { serializeNote, deserializeNote, noteIdToPath } from '../adapters/storage/noteSerializer'
 import type { Note, JournalEntry, ContentVersion } from '../types'
 import type { Board } from '../types/kanban.types'
 
-const TAURI_KEY      = 'mindvault_plain_folder_path'
-const WEB_HANDLE_KEY = 'plainFolder_vault'
+const TAURI_KEY = 'mindvault_plain_folder_path'
 
-let _tauriPath: string | null                    = null
-let _webHandle: FileSystemDirectoryHandle | null = null
+let _tauriPath: string | null = null
+
+// ---------------------------------------------------------------------------
+// Mobile Capacitor Filesystem Helpers
+// ---------------------------------------------------------------------------
+
+async function mobileWrite(path: string, content: string): Promise<void> {
+  const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
+  await Filesystem.writeFile({
+    path,
+    directory: Directory.Documents,
+    data: content,
+    encoding: Encoding.UTF8,
+    recursive: true,
+  })
+}
+
+async function mobileRead(path: string): Promise<string | null> {
+  const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
+  try {
+    const res = await Filesystem.readFile({
+      path,
+      directory: Directory.Documents,
+      encoding: Encoding.UTF8,
+    })
+    return res.data as string
+  } catch {
+    return null
+  }
+}
+
+async function mobileDelete(path: string): Promise<void> {
+  const { Filesystem, Directory } = await import('@capacitor/filesystem')
+  await Filesystem.deleteFile({
+    path,
+    directory: Directory.Documents,
+  }).catch(() => {})
+}
+
+async function mobileMkdir(path: string): Promise<void> {
+  const { Filesystem, Directory } = await import('@capacitor/filesystem')
+  await Filesystem.mkdir({
+    path,
+    directory: Directory.Documents,
+    recursive: true,
+  }).catch(() => {})
+}
+
+async function mobileRmdir(path: string): Promise<void> {
+  const { Filesystem, Directory } = await import('@capacitor/filesystem')
+  await Filesystem.rmdir({
+    path,
+    directory: Directory.Documents,
+    recursive: true,
+  }).catch(() => {})
+}
 
 // ---------------------------------------------------------------------------
 // Init — restores saved folder AND verifies it still exists
@@ -37,7 +89,6 @@ export async function initPlainFolder(): Promise<'ok' | 'missing' | 'none'> {
         _tauriPath = stored
         return 'ok'
       }
-      // Folder was deleted or moved
       localStorage.removeItem(TAURI_KEY)
       return 'missing'
     } catch {
@@ -46,26 +97,12 @@ export async function initPlainFolder(): Promise<'ok' | 'missing' | 'none'> {
     }
   }
 
-  // Web — restore handle from Dexie
+  // Mobile — always available
   try {
-    const rec = await db.fileHandles.get(WEB_HANDLE_KEY)
-    if (!rec?.handle) return 'none'
-    const h    = rec.handle as FileSystemDirectoryHandle
-    const perm = await h.queryPermission({ mode: 'readwrite' })
-    if (perm !== 'granted') return 'none'
-    // Verify handle still points to a real directory by trying to iterate
-    try {
-      for await (const _ of (h as unknown as AsyncIterable<unknown>)) { break }
-    } catch {
-      _webHandle = null
-      await db.fileHandles.delete(WEB_HANDLE_KEY)
-      return 'missing'
-    }
-    _webHandle = h
+    await mobileMkdir('MindVault')
     return 'ok'
   } catch {
-    _webHandle = null
-    return 'none'
+    return 'missing'
   }
 }
 
@@ -80,13 +117,11 @@ export async function connectPlainFolder(): Promise<void> {
     if (!selected || typeof selected !== 'string') return
     _tauriPath = selected
     localStorage.setItem(TAURI_KEY, selected)
-    // Ensure subdirectory structure
     await _ensureVaultDirs()
     return
   }
-  const handle = await window.showDirectoryPicker({ mode: 'readwrite' })
-  _webHandle   = handle
-  await db.fileHandles.put({ key: WEB_HANDLE_KEY, handle: handle as unknown })
+
+  // Mobile — folder is always Documents/MindVault
   await _ensureVaultDirs()
 }
 
@@ -94,10 +129,8 @@ export async function disconnectPlainFolder(): Promise<void> {
   if (isDesktop()) {
     _tauriPath = null
     localStorage.removeItem(TAURI_KEY)
-    return
   }
-  _webHandle = null
-  await db.fileHandles.delete(WEB_HANDLE_KEY)
+  // Mobile — no-op; the app folder can't be disconnected
 }
 
 // ---------------------------------------------------------------------------
@@ -105,12 +138,13 @@ export async function disconnectPlainFolder(): Promise<void> {
 // ---------------------------------------------------------------------------
 
 export function isPlainFolderConnected(): boolean {
-  return isDesktop() ? _tauriPath !== null : _webHandle !== null
+  if (isDesktop()) return _tauriPath !== null
+  return true // mobile always has Documents/MindVault
 }
 
 export function getPlainFolderName(): string | null {
   if (isDesktop()) return _tauriPath ? (_tauriPath.split(/[/\\]/).pop() ?? _tauriPath) : null
-  return _webHandle?.name ?? null
+  return 'MindVault'
 }
 
 // ---------------------------------------------------------------------------
@@ -126,8 +160,7 @@ async function _ensureVaultDirs(): Promise<void> {
   ]).catch(() => { /* best-effort */ })
 }
 
-/** Returns Tauri path string or Web FSA DirectoryHandle for the named subdir. */
-async function _subdirPath(name: 'notes' | 'kanban' | 'config' | 'journal'): Promise<string | FileSystemDirectoryHandle> {
+async function _subdirPath(name: 'notes' | 'kanban' | 'config' | 'journal'): Promise<string> {
   if (isDesktop()) {
     if (!_tauriPath) throw new Error('Plain folder not connected')
     const { mkdir } = await import('@tauri-apps/plugin-fs')
@@ -135,8 +168,9 @@ async function _subdirPath(name: 'notes' | 'kanban' | 'config' | 'journal'): Pro
     try { await mkdir(dir, { recursive: true }) } catch { /* already exists */ }
     return dir
   }
-  if (!_webHandle) throw new Error('Plain folder not connected')
-  return _webHandle.getDirectoryHandle(name, { create: true })
+  const dir = `MindVault/${name}`
+  await mobileMkdir(dir)
+  return dir
 }
 
 // ---------------------------------------------------------------------------
@@ -146,19 +180,14 @@ async function _subdirPath(name: 'notes' | 'kanban' | 'config' | 'journal'): Pro
 export async function writePlainNote(note: Note): Promise<void> {
   const content  = serializeNote(note)
   const fileName = noteIdToPath(note.id)
+  const dir      = await _subdirPath('notes')
 
   if (isDesktop()) {
-    const dir = await _subdirPath('notes') as string
     const { writeTextFile } = await import('@tauri-apps/plugin-fs')
     await writeTextFile(`${dir}/${fileName}`, content)
     return
   }
-
-  const dir = await _subdirPath('notes') as FileSystemDirectoryHandle
-  const fh  = await dir.getFileHandle(fileName, { create: true })
-  const w   = await fh.createWritable()
-  await w.write(content)
-  await w.close()
+  await mobileWrite(`${dir}/${fileName}`, content)
 }
 
 export async function deletePlainNote(noteId: string): Promise<void> {
@@ -170,12 +199,7 @@ export async function deletePlainNote(noteId: string): Promise<void> {
     try { await remove(`${_tauriPath}/notes/${fileName}`) } catch { /* already gone */ }
     return
   }
-
-  if (!_webHandle) return
-  try {
-    const dir = await _webHandle.getDirectoryHandle('notes', { create: false })
-    await dir.removeEntry(fileName)
-  } catch { /* already gone */ }
+  await mobileDelete(`MindVault/notes/${fileName}`)
 }
 
 export async function readAllNotes(): Promise<Note[]> {
@@ -195,16 +219,18 @@ export async function readAllNotes(): Promise<Note[]> {
     return notes
   }
 
-  if (!_webHandle) return []
+  const notesPath = 'MindVault/notes'
+  await mobileMkdir(notesPath)
+  const { Filesystem, Directory } = await import('@capacitor/filesystem')
   try {
-    const dir = await _webHandle.getDirectoryHandle('notes', { create: true })
+    const result = await Filesystem.readdir({ path: notesPath, directory: Directory.Documents })
     const notes: Note[] = []
-    for await (const [, handle] of (dir as FileSystemDirectoryHandle & AsyncIterable<[string, FileSystemHandle]>)) {
-      if (handle.kind !== 'file' || !handle.name.endsWith('.md')) continue
-      try {
-        const file = await (handle as FileSystemFileHandle).getFile()
-        notes.push(deserializeNote(await file.text()))
-      } catch { /* skip */ }
+    for (const entry of result.files) {
+      if (!entry.name.endsWith('.md')) continue
+      const raw = await mobileRead(`${notesPath}/${entry.name}`)
+      if (raw) {
+        try { notes.push(deserializeNote(raw)) } catch {}
+      }
     }
     return notes
   } catch {
@@ -219,19 +245,14 @@ export async function readAllNotes(): Promise<Note[]> {
 export async function writePlainBoard(board: Board): Promise<void> {
   const content  = JSON.stringify(board, null, 2)
   const fileName = `${board.id}.json`
+  const dir      = await _subdirPath('kanban')
 
   if (isDesktop()) {
-    const dir = await _subdirPath('kanban') as string
     const { writeTextFile } = await import('@tauri-apps/plugin-fs')
     await writeTextFile(`${dir}/${fileName}`, content)
     return
   }
-
-  const dir = await _subdirPath('kanban') as FileSystemDirectoryHandle
-  const fh  = await dir.getFileHandle(fileName, { create: true })
-  const w   = await fh.createWritable()
-  await w.write(content)
-  await w.close()
+  await mobileWrite(`${dir}/${fileName}`, content)
 }
 
 export async function deletePlainBoard(boardId: string): Promise<void> {
@@ -243,12 +264,7 @@ export async function deletePlainBoard(boardId: string): Promise<void> {
     try { await remove(`${_tauriPath}/kanban/${fileName}`) } catch { /* already gone */ }
     return
   }
-
-  if (!_webHandle) return
-  try {
-    const dir = await _webHandle.getDirectoryHandle('kanban', { create: false })
-    await dir.removeEntry(fileName)
-  } catch { /* already gone */ }
+  await mobileDelete(`MindVault/kanban/${fileName}`)
 }
 
 export async function readAllBoards(): Promise<Board[]> {
@@ -268,16 +284,18 @@ export async function readAllBoards(): Promise<Board[]> {
     return boards
   }
 
-  if (!_webHandle) return []
+  const kanbanPath = 'MindVault/kanban'
+  await mobileMkdir(kanbanPath)
+  const { Filesystem, Directory } = await import('@capacitor/filesystem')
   try {
-    const dir = await _webHandle.getDirectoryHandle('kanban', { create: true })
+    const result = await Filesystem.readdir({ path: kanbanPath, directory: Directory.Documents })
     const boards: Board[] = []
-    for await (const [, handle] of (dir as FileSystemDirectoryHandle & AsyncIterable<[string, FileSystemHandle]>)) {
-      if (handle.kind !== 'file' || !handle.name.endsWith('.json')) continue
-      try {
-        const file = await (handle as FileSystemFileHandle).getFile()
-        boards.push(JSON.parse(await file.text()) as Board)
-      } catch { /* skip */ }
+    for (const entry of result.files) {
+      if (!entry.name.endsWith('.json')) continue
+      const raw = await mobileRead(`${kanbanPath}/${entry.name}`)
+      if (raw) {
+        try { boards.push(JSON.parse(raw) as Board) } catch {}
+      }
     }
     return boards
   } catch {
@@ -301,31 +319,18 @@ export async function readPlainConfig(filename: string): Promise<string | null> 
       return null
     }
   }
-
-  if (!_webHandle) return null
-  try {
-    const dir  = await _webHandle.getDirectoryHandle('config', { create: false })
-    const fh   = await dir.getFileHandle(filename)
-    const file = await fh.getFile()
-    return file.text()
-  } catch {
-    return null
-  }
+  return mobileRead(`MindVault/config/${filename}`)
 }
 
 export async function writePlainConfig(filename: string, content: string): Promise<void> {
+  const dir = await _subdirPath('config')
+
   if (isDesktop()) {
-    const dir = await _subdirPath('config') as string
     const { writeTextFile } = await import('@tauri-apps/plugin-fs')
     await writeTextFile(`${dir}/${filename}`, content)
     return
   }
-
-  const dir = await _subdirPath('config') as FileSystemDirectoryHandle
-  const fh  = await dir.getFileHandle(filename, { create: true })
-  const w   = await fh.createWritable()
-  await w.write(content)
-  await w.close()
+  await mobileWrite(`${dir}/${filename}`, content)
 }
 
 // ---------------------------------------------------------------------------
@@ -353,19 +358,14 @@ function deserializeJournalEntry(raw: string, fallbackDate: string): JournalEntr
 export async function writeJournalEntry(entry: JournalEntry): Promise<void> {
   const content  = serializeJournalEntry(entry)
   const fileName = `${entry.date}.md`
+  const dir      = await _subdirPath('journal')
 
   if (isDesktop()) {
-    const dir = await _subdirPath('journal') as string
     const { writeTextFile } = await import('@tauri-apps/plugin-fs')
     await writeTextFile(`${dir}/${fileName}`, content)
     return
   }
-
-  const dir = await _subdirPath('journal') as FileSystemDirectoryHandle
-  const fh  = await dir.getFileHandle(fileName, { create: true })
-  const w   = await fh.createWritable()
-  await w.write(content)
-  await w.close()
+  await mobileWrite(`${dir}/${fileName}`, content)
 }
 
 export async function deleteJournalEntryFile(date: string): Promise<void> {
@@ -377,12 +377,7 @@ export async function deleteJournalEntryFile(date: string): Promise<void> {
     try { await remove(`${_tauriPath}/journal/${fileName}`) } catch { /* already gone */ }
     return
   }
-
-  if (!_webHandle) return
-  try {
-    const dir = await _webHandle.getDirectoryHandle('journal', { create: false })
-    await dir.removeEntry(fileName)
-  } catch { /* already gone */ }
+  await mobileDelete(`MindVault/journal/${fileName}`)
 }
 
 export async function readAllJournalEntries(): Promise<JournalEntry[]> {
@@ -403,19 +398,21 @@ export async function readAllJournalEntries(): Promise<JournalEntry[]> {
     return result
   }
 
-  if (!_webHandle) return []
+  const journalPath = 'MindVault/journal'
+  await mobileMkdir(journalPath)
+  const { Filesystem, Directory } = await import('@capacitor/filesystem')
   try {
-    const dir = await _webHandle.getDirectoryHandle('journal', { create: true })
-    const result: JournalEntry[] = []
-    for await (const [, handle] of (dir as FileSystemDirectoryHandle & AsyncIterable<[string, FileSystemHandle]>)) {
-      if (handle.kind !== 'file' || !handle.name.endsWith('.md')) continue
-      const date = handle.name.slice(0, -3)
-      try {
-        const file = await (handle as FileSystemFileHandle).getFile()
-        result.push(deserializeJournalEntry(await file.text(), date))
-      } catch { /* skip */ }
+    const result = await Filesystem.readdir({ path: journalPath, directory: Directory.Documents })
+    const journal: JournalEntry[] = []
+    for (const entry of result.files) {
+      if (!entry.name.endsWith('.md')) continue
+      const date = entry.name.slice(0, -3)
+      const raw = await mobileRead(`${journalPath}/${entry.name}`)
+      if (raw) {
+        try { journal.push(deserializeJournalEntry(raw, date)) } catch {}
+      }
     }
-    return result
+    return journal
   } catch {
     return []
   }
@@ -429,37 +426,30 @@ const MAX_VERSIONS = 50
 
 type HistorySub = 'notes' | 'journal'
 
-async function _historyFilePath(sub: HistorySub, id: string): Promise<string | null> {
-  if (!isDesktop() || !_tauriPath) return null
-  const { mkdir } = await import('@tauri-apps/plugin-fs')
-  const dir = `${_tauriPath}/history/${sub}`
-  await mkdir(dir, { recursive: true }).catch(() => {})
+async function _historyFilePath(sub: HistorySub, id: string): Promise<string> {
+  if (isDesktop()) {
+    const { mkdir } = await import('@tauri-apps/plugin-fs')
+    const dir = `${_tauriPath}/history/${sub}`
+    await mkdir(dir, { recursive: true }).catch(() => {})
+    return `${dir}/${id}.json`
+  }
+  const dir = `MindVault/history/${sub}`
+  await mobileMkdir(dir)
   return `${dir}/${id}.json`
-}
-
-async function _historyFileHandle(sub: HistorySub, id: string): Promise<FileSystemFileHandle | null> {
-  if (!_webHandle) return null
-  const histDir  = await _webHandle.getDirectoryHandle('history', { create: true })
-  const subDir   = await histDir.getDirectoryHandle(sub, { create: true })
-  return subDir.getFileHandle(`${id}.json`, { create: true })
 }
 
 async function _readHistory(sub: HistorySub, id: string): Promise<ContentVersion[]> {
   try {
+    const path = await _historyFilePath(sub, id)
+    let raw: string | null = null
     if (isDesktop()) {
-      const path = await _historyFilePath(sub, id)
-      if (!path) return []
       const { readTextFile, exists } = await import('@tauri-apps/plugin-fs')
-      if (!(await exists(path))) return []
-      const raw = await readTextFile(path)
-      return (JSON.parse(raw) as { versions: ContentVersion[] }).versions ?? []
+      if (await exists(path)) raw = await readTextFile(path)
+    } else {
+      raw = await mobileRead(path)
     }
-    const fh   = await _historyFileHandle(sub, id)
-    if (!fh) return []
-    const file = await fh.getFile()
-    const text = await file.text()
-    if (!text.trim()) return []
-    return (JSON.parse(text) as { versions: ContentVersion[] }).versions ?? []
+    if (!raw) return []
+    return (JSON.parse(raw) as { versions: ContentVersion[] }).versions ?? []
   } catch {
     return []
   }
@@ -467,18 +457,13 @@ async function _readHistory(sub: HistorySub, id: string): Promise<ContentVersion
 
 async function _writeHistory(sub: HistorySub, id: string, versions: ContentVersion[]): Promise<void> {
   const payload = JSON.stringify({ versions })
+  const path = await _historyFilePath(sub, id)
   if (isDesktop()) {
-    const path = await _historyFilePath(sub, id)
-    if (!path) return
     const { writeTextFile } = await import('@tauri-apps/plugin-fs')
     await writeTextFile(path, payload)
     return
   }
-  const fh = await _historyFileHandle(sub, id)
-  if (!fh) return
-  const w = await fh.createWritable()
-  await w.write(payload)
-  await w.close()
+  await mobileWrite(path, payload)
 }
 
 export async function appendNoteVersion(noteId: string, version: ContentVersion): Promise<void> {
@@ -499,12 +484,7 @@ export async function deleteNoteHistory(noteId: string): Promise<void> {
     await remove(`${_tauriPath}/history/notes/${noteId}.json`).catch(() => {})
     return
   }
-  if (!_webHandle) return
-  try {
-    const histDir = await _webHandle.getDirectoryHandle('history', { create: false })
-    const subDir  = await histDir.getDirectoryHandle('notes', { create: false })
-    await subDir.removeEntry(`${noteId}.json`)
-  } catch { /* already gone */ }
+  await mobileDelete(`MindVault/history/notes/${noteId}.json`)
 }
 
 export async function appendJournalVersion(date: string, version: ContentVersion): Promise<void> {
@@ -519,7 +499,6 @@ export async function readJournalHistory(date: string): Promise<ContentVersion[]
 }
 
 // ─── Plugin file helpers ───────────────────────────────────────────────────────
-// Files live at {vault}/plugins/{pluginId}/{filename}
 
 export async function readPluginFile(pluginId: string, filename: string): Promise<string | null> {
   if (isDesktop()) {
@@ -531,14 +510,7 @@ export async function readPluginFile(pluginId: string, filename: string): Promis
       return await readTextFile(path)
     } catch { return null }
   }
-  if (!_webHandle) return null
-  try {
-    const pluginsDir = await _webHandle.getDirectoryHandle('plugins', { create: false })
-    const pluginDir  = await pluginsDir.getDirectoryHandle(pluginId, { create: false })
-    const fh         = await pluginDir.getFileHandle(filename)
-    const file       = await fh.getFile()
-    return file.text()
-  } catch { return null }
+  return mobileRead(`MindVault/plugins/${pluginId}/${filename}`)
 }
 
 export async function writePluginFile(pluginId: string, filename: string, content: string): Promise<void> {
@@ -550,13 +522,9 @@ export async function writePluginFile(pluginId: string, filename: string, conten
     await writeTextFile(`${dir}/${filename}`, content)
     return
   }
-  if (!_webHandle) throw new Error('Vault not connected')
-  const pluginsDir = await _webHandle.getDirectoryHandle('plugins', { create: true })
-  const pluginDir  = await pluginsDir.getDirectoryHandle(pluginId, { create: true })
-  const fh         = await pluginDir.getFileHandle(filename, { create: true })
-  const w          = await fh.createWritable()
-  await w.write(content)
-  await w.close()
+  const dir = `MindVault/plugins/${pluginId}`
+  await mobileMkdir(dir)
+  await mobileWrite(`${dir}/${filename}`, content)
 }
 
 export async function deletePluginFolder(pluginId: string): Promise<void> {
@@ -566,9 +534,5 @@ export async function deletePluginFolder(pluginId: string): Promise<void> {
     await remove(`${_tauriPath}/plugins/${pluginId}`, { recursive: true }).catch(() => {})
     return
   }
-  if (!_webHandle) return
-  try {
-    const pluginsDir = await _webHandle.getDirectoryHandle('plugins', { create: false })
-    await pluginsDir.removeEntry(pluginId, { recursive: true })
-  } catch { /* already gone */ }
+  await mobileRmdir(`MindVault/plugins/${pluginId}`)
 }

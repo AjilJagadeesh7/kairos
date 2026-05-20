@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { db } from '../db/schema'
 import { useAppStore } from '../store/useAppStore'
 import { useKanbanStore } from '../store/useKanbanStore'
 import { useGraphData } from '../hooks/useGraphData'
@@ -24,8 +26,13 @@ export function GraphPage() {
   const [focusMode,      setFocusMode]      = useState(false)
   const [contextMenu,    setContextMenu]    = useState<RightClickTarget | null>(null)
 
+  const embeddings = useLiveQuery(() => db.embeddings.toArray()) || []
+  const embeddingMap = useMemo(() => {
+    return new Map<string, number[]>(embeddings.map(e => [e.noteId, e.data]))
+  }, [embeddings])
+
   const { tagColorMap, linksNodes, linksLinks, tagsNodes, tagsLinks, taskNodes, taskLinks, tagLegendItems, selectedNote } =
-    useGraphData(notes, rerenderKey, selectedNodeId, showTasks)
+    useGraphData(notes, embeddingMap, rerenderKey, selectedNodeId, showTasks)
 
   const baseNodes = graphMode === 'links' ? linksNodes : tagsNodes
   const baseLinks = graphMode === 'links' ? linksLinks : tagsLinks
