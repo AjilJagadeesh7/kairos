@@ -3,7 +3,6 @@ import { ErrorBoundary } from '../../common/ErrorBoundary'
 import { GeneralSection } from './GeneralSection'
 import { SyncSection } from './SyncSection'
 import { TagsSection } from './TagsSection'
-import { AiSection } from './AiSection'
 import { AboutSection } from './AboutSection'
 import { KeyboardSection } from './KeyboardSection'
 import { PluginsSection } from './PluginsSection'
@@ -29,7 +28,6 @@ export function SettingsPanel({ section }: SettingsPanelProps) {
         {section === 'general'      && <GeneralSection />}
         {section === 'storage-sync' && <SyncSection />}
         {section === 'tags'         && <TagsSection />}
-        {section === 'ai'           && <AiSection />}
         {section === 'keyboard'     && <KeyboardSection />}
         {section === 'plugins'      && <PluginsSection />}
         {section === 'about'        && <AboutSection />}

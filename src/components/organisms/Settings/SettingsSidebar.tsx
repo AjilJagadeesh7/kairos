@@ -1,4 +1,4 @@
-import { BrainCircuit, FolderSync, Info, Keyboard, Puzzle, Settings2, Store, Tag, X } from 'lucide-react'
+import { FolderSync, Info, Keyboard, Puzzle, Settings2, Store, Tag, X } from 'lucide-react'
 import { usePluginRegistry } from '../../../plugins/pluginContext'
 import type { Section } from '../../../types'
 
@@ -12,7 +12,6 @@ const CORE_NAV: Array<{ id: Section; label: string; icon: React.ElementType }> =
   { id: 'general',      label: 'General',          icon: Settings2    },
   { id: 'storage-sync', label: 'Storage & Sync',   icon: FolderSync   },
   { id: 'tags',         label: 'Tags',             icon: Tag          },
-  { id: 'ai',           label: 'AI',               icon: BrainCircuit },
   { id: 'keyboard',     label: 'Keyboard',         icon: Keyboard     },
   { id: 'plugins',      label: 'Plugins',          icon: Puzzle       },
   { id: 'marketplace',  label: 'Marketplace',      icon: Store        },
