@@ -10,6 +10,7 @@ export interface ShortcutDef {
 
 // Actions with default bindings — always shown in the keyboard settings list
 export const DEFAULT_SHORTCUTS: ShortcutDef[] = [
+  { id: 'command-palette', label: 'Open command palette', context: 'Global', defaultKey: 'ctrl+p' },
   { id: 'show-shortcuts', label: 'Show keyboard shortcuts', context: 'Global', defaultKey: 'ctrl+/' },
   { id: 'save-note',      label: 'Save note',               context: 'Notes',  defaultKey: 'ctrl+s' },
   { id: 'undo',           label: 'Undo',                    context: 'Kanban', defaultKey: 'ctrl+z' },

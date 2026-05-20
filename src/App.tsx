@@ -10,6 +10,7 @@ import { ConfirmDialog } from './components/organisms/ConfirmDialog'
 import { PluginProvider } from './plugins/pluginContext'
 import { OnboardingModal } from './components/organisms/Onboarding/OnboardingModal'
 import { ShortcutsModal } from './components/organisms/ShortcutsModal'
+import { CommandPalette } from './components/organisms/CommandPalette'
 import { SHORTCUT_REGISTRY, matchesBinding, bindingHasModifier } from './shortcuts/registry'
 import { todayDate } from './store/useJournalStore'
 
@@ -21,10 +22,12 @@ function AppInner() {
   const keyBindings    = useAppStore(s => s.keyBindings)
   const createNote     = useAppStore(s => s.createNote)
   const navigate       = useNavigate()
-  const [showShortcuts, setShowShortcuts] = useState(false)
+  const [showShortcuts, setShowShortcuts]       = useState(false)
+  const [showCommandPalette, setShowCommandPalette] = useState(false)
   useAppStartup()
 
-  const closeShortcuts = useCallback(() => setShowShortcuts(false), [])
+  const closeShortcuts     = useCallback(() => setShowShortcuts(false), [])
+  const closeCommandPalette = useCallback(() => setShowCommandPalette(false), [])
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -41,6 +44,7 @@ function AppInner() {
         e.preventDefault()
 
         switch (def.id) {
+          case 'command-palette': setShowCommandPalette(v => !v); break
           case 'show-shortcuts': setShowShortcuts(v => !v); break
           case 'goto-notes':    navigate('/notes'); break
           case 'goto-graph':    navigate('/graph'); break
@@ -72,6 +76,7 @@ function AppInner() {
       <LoaderBar />
       <ConfirmDialog />
       {!onboardingDone && <OnboardingModal />}
+      {showCommandPalette && <CommandPalette onClose={closeCommandPalette} />}
       {showShortcuts && <ShortcutsModal onClose={closeShortcuts} />}
       <Header />
       <div id="main-content" className="page-enter min-h-0 flex-1 overflow-hidden">

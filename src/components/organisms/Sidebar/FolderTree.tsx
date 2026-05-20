@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   ChevronRight, Folder, FolderOpen, FileText,
   Plus, FolderPlus, MoreHorizontal, Pencil, Trash2,
@@ -44,14 +44,13 @@ interface FolderMenuProps {
 function FolderMenu({ onNewNote, onNewSubfolder, onRename, onDelete, onClose }: FolderMenuProps) {
   const ref = useRef<HTMLDivElement>(null)
 
-  // Close on outside click
-  useState(() => {
+  useEffect(() => {
     function handler(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) onClose()
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
-  })
+  }, [onClose])
 
   return (
     <div
@@ -94,13 +93,13 @@ interface MovePopoverProps {
 function MovePopover({ allFolderPaths, currentFolder, onMove, onClose }: MovePopoverProps) {
   const ref = useRef<HTMLDivElement>(null)
 
-  useState(() => {
+  useEffect(() => {
     function handler(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) onClose()
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
-  })
+  }, [onClose])
 
   const options = [
     { label: '/ (root)', value: '' },
