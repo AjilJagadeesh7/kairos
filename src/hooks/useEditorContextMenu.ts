@@ -12,11 +12,10 @@ export function useEditorContextMenu(
   const [menu, setMenu] = useState<ContextMenuState>(CLOSED_MENU)
 
   function handleContextMenu(event: React.MouseEvent<HTMLDivElement>) {
+    event.preventDefault()
     const crepe = crepeRef.current
     if (!crepe) return
     const target = event.target as HTMLElement
-    if (!target.closest('.milkdown')) return
-    event.preventDefault()
 
     let kind: ContextMenuState['kind'] = 'default'
     let imageSrc = ''
@@ -24,17 +23,25 @@ export function useEditorContextMenu(
     let rowIndex = -1
     let colIndex = -1
 
+    let selectedText = ''
     crepe.editor.action((ctx) => {
       const view = ctx.get(editorViewCtx)
       const pos  = view.posAtCoords({ left: event.clientX, top: event.clientY })
       if (pos) {
-        view.dispatch(view.state.tr.setSelection(Selection.near(view.state.doc.resolve(pos.pos))))
+        // Only move the cursor if there's no active selection (right-clicking into empty space)
+        if (view.state.selection.empty) {
+          view.dispatch(view.state.tr.setSelection(Selection.near(view.state.doc.resolve(pos.pos))))
+        }
         const node = view.state.doc.nodeAt(pos.pos)
         if (node && (node.type.name === 'image' || node.type.name === 'image-block')) {
           kind = 'image'; imageSrc = node.attrs.src as string; imageNodePos = pos.pos
         }
       }
-      if (kind === 'default' && !view.state.selection.empty) kind = 'text'
+      const sel = view.state.selection
+      if (!sel.empty) {
+        kind = 'text'
+        selectedText = view.state.doc.textBetween(sel.from, sel.to, ' ')
+      }
       view.focus()
     })
 
@@ -66,7 +73,7 @@ export function useEditorContextMenu(
       })
     }
 
-    setMenu({ visible: true, x: event.clientX, y: event.clientY, kind, rowIndex, colIndex, imageSrc, imageNodePos })
+    setMenu({ visible: true, x: event.clientX, y: event.clientY, kind, rowIndex, colIndex, imageSrc, imageNodePos, selectedText })
   }
 
   function resizeImage(widthPx: number | null) {

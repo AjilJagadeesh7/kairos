@@ -13,11 +13,13 @@ export type ContextMenuState = {
   colIndex: number
   imageSrc: string
   imageNodePos: number
+  selectedText: string
 }
 
 export const CLOSED_MENU: ContextMenuState = {
   visible: false, x: 0, y: 0, kind: 'default',
   rowIndex: -1, colIndex: -1, imageSrc: '', imageNodePos: -1,
+  selectedText: '',
 }
 
 export type EditorDraftProps = {

@@ -2,45 +2,95 @@ import { useRef, useState } from 'react'
 import { BookOpen, Network, ShieldCheck, SquareKanban, ArrowRight, Check, Link2, Layers, CalendarDays } from 'lucide-react'
 import { useAppStore } from '../../../store/useAppStore'
 
-const SAMPLE_NOTE_2_TITLE = 'Ideas & Inspiration'
-const SAMPLE_NOTE_2 = `## A place for ideas
+const SAMPLE_NOTE_2_TITLE = 'MindVault Features'
+const SAMPLE_NOTE_2 = `## What makes MindVault different
 
-This note was created so you can see **transclusion** working in the Welcome note.
+> [!TIP] Privacy first
+> Everything is stored locally on your device. No accounts, no telemetry, no cloud lock-in. Sync is optional and always end-to-end encrypted.
 
-Some ideas to get you started:
-- What problem do you want to solve this week?
-- What did you learn recently that surprised you?
-- What would you do if you had twice the time?
+### Folders
+Organise notes into folders from the sidebar. Drag notes between folders, create nested subfolders, and rename them — any **[[wikilinks]]** pointing to renamed notes update automatically.
 
-Feel free to edit or delete these sample notes whenever you're ready.
+### Callout blocks
+Use Obsidian-style callouts anywhere in your notes. All 8 types are supported:
+
+> [!NOTE]
+> General information — aliases: \`INFO\`
+
+> [!TIP]
+> Helpful hints — aliases: \`HINT\`, \`SUCCESS\`
+
+> [!IMPORTANT]
+> Key things to remember.
+
+> [!WARNING]
+> Watch out — aliases: \`CAUTION\`
+
+> [!DANGER]
+> Critical issues — aliases: \`BUG\`, \`ERROR\`
+
+> [!EXAMPLE]
+> Illustrative examples.
+
+> [!QUOTE]
+> Quotations — aliases: \`CITE\`
+
+> [!ABSTRACT]
+> Summaries — aliases: \`SUMMARY\`, \`TLDR\`
+
+You can also add a custom title after the type: \`> [!NOTE] My custom title\`
+
+### Kanban & Journal
+Built-in **Kanban boards** for task management and a **Journal** view for daily notes — no plugins needed.
 `
 
 const SAMPLE_NOTE_1_TITLE = 'Welcome to MindVault'
-const makeSampleNote1 = () => `## Two features that make MindVault different
+const makeSampleNote1 = () => `## Getting started
 
-### 1. Wikilinks — link between notes
+> [!NOTE]
+> These are sample notes to help you explore MindVault. Delete them whenever you're ready to start fresh.
 
-Type \`[[\` anywhere in a note to get an autocomplete list of your notes. Click to jump there.
+### Wikilinks — connect your notes
 
-For example, here is a link to [[${SAMPLE_NOTE_2_TITLE}]].
+Type \`[[\` anywhere to get an autocomplete list of your notes. Rename a note and every \`[[link]]\` pointing to it updates automatically — no broken links.
 
-### 2. Transclusion — embed a note inline
+Here's a link to [[${SAMPLE_NOTE_2_TITLE}]].
 
-Add \`!\` before the brackets to embed another note's full content right here:
+### Transclusion — embed a note inline
+
+Prefix with \`!\` to embed another note's content live:
 
 ![[${SAMPLE_NOTE_2_TITLE}]]
 
-The card above is live — click it to expand or open the note.
+### Command palette
+
+Press \`Ctrl+P\` (or \`Cmd+P\` on Mac) to instantly search and open **notes**, **journal entries**, **tasks**, and **settings** from anywhere in the app.
+
+### Callout blocks
+
+Use Obsidian-style callouts with \`> [!TYPE]\` syntax:
+
+> [!TIP] Supported types
+> NOTE · TIP · IMPORTANT · WARNING · DANGER · EXAMPLE · QUOTE · ABSTRACT
+> Each type has colour-coded styling and an icon. See [[${SAMPLE_NOTE_2_TITLE}]] for the full list with aliases.
+
+> [!IMPORTANT] Custom titles
+> Add text after the type to set a custom title: \`> [!WARNING] Back up first\`
+
+### Keyboard shortcuts
+
+| Action | Shortcut |
+|---|---|
+| Save note | \`Ctrl+S\` |
+| Command palette | \`Ctrl+P\` |
+| Keyboard shortcuts | \`Ctrl+/\` |
+
+> [!TIP] Customise your shortcuts
+> Go to **Settings → Keyboard** to remap any shortcut to your preference.
 
 ---
 
-**A few tips while you're here:**
-- \`Ctrl+S\` saves immediately
-- Open the sidebar and press **New** to pick a template
-- The **Journal** (calendar icon) is for daily writing
-- The **Graph** view shows how your notes connect
-
-Delete these sample notes whenever you're ready to start fresh.
+The **sidebar** is a full file explorer — create folders, drag notes, and search across everything.
 `
 
 const FEATURES = [

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Crepe } from '@milkdown/crepe'
 import { commandsCtx, editorViewCtx } from '@milkdown/core'
+import { TextSelection } from '@milkdown/prose/state'
 import { replaceAll } from '@milkdown/utils'
 import {
   addColAfterCommand, addColBeforeCommand, addRowAfterCommand, addRowBeforeCommand,
@@ -11,8 +12,12 @@ import {
 import {
   toggleEmphasisCommand, toggleInlineCodeCommand, toggleStrongCommand,
   turnIntoTextCommand, wrapInHeadingCommand,
+  wrapInBulletListCommand, wrapInOrderedListCommand, wrapInBlockquoteCommand,
+  createCodeBlockCommand, insertHrCommand,
 } from '@milkdown/preset-commonmark'
 import { wikilinkHighlightPlugin } from './wikilinkPlugin'
+import { calloutPlugin } from './calloutPlugin'
+import { linkInputRulePlugin, linkKeymapPlugin } from './linkInputRulePlugin'
 import { useWikilinkTooltip } from '../../../hooks/useWikilinkTooltip'
 import { useWikilinkAutocomplete } from '../../../hooks/useWikilinkAutocomplete'
 import { useEditorContextMenu } from '../../../hooks/useEditorContextMenu'
@@ -84,13 +89,18 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, notes, onCh
     const crepe = new Crepe({
       root: rootRef.current,
       defaultValue: initialMarkdownRef.current,
+      features: {
+        [Crepe.Feature.Toolbar]: false,
+      },
       featureConfigs: {
         [Crepe.Feature.ImageBlock]: { onUpload: fileToDataURL },
-        [Crepe.Feature.Toolbar]:    { buildToolbar: buildHeadingToolbar },
       },
     })
     crepeRef.current = crepe
     crepe.editor.use(wikilinkHighlightPlugin)
+    crepe.editor.use(calloutPlugin)
+    crepe.editor.use(linkInputRulePlugin)
+    crepe.editor.use(linkKeymapPlugin)
     crepe.on(listener => { listener.markdownUpdated((_ctx, md) => onChangeRef.current(md)) })
 
     void crepe.create().then(() => { editorReadyRef.current = true })
@@ -115,8 +125,29 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, notes, onCh
     closeMenu()
   }
 
+  function editorExec(cmd: string) {
+    crepeRef.current?.editor.action(ctx => { ctx.get(editorViewCtx).focus() })
+    document.execCommand(cmd)
+    closeMenu()
+  }
+
+  async function handleLinkClick(e: React.MouseEvent<HTMLDivElement>) {
+    const anchor = (e.target as HTMLElement).closest('a[href]') as HTMLAnchorElement | null
+    if (!anchor) return
+    const href = anchor.getAttribute('href')
+    if (!href) return
+    e.preventDefault()
+    e.stopPropagation()
+    try {
+      const { open } = await import('@tauri-apps/plugin-shell')
+      await open(href)
+    } catch {
+      window.open(href, '_blank', 'noopener,noreferrer')
+    }
+  }
+
   return (
-    <div className="relative h-full min-h-[320px]" onContextMenu={handleContextMenu}>
+    <div className="relative h-full min-h-[320px]" onContextMenu={handleContextMenu} onClick={handleLinkClick}>
       <div ref={rootRef} className="h-full min-h-[320px]" />
 
       {ac.visible && (
@@ -144,6 +175,7 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, notes, onCh
       {menu.visible && (
         <ContextMenu
           x={menu.x} y={menu.y} kind={menu.kind} rowIndex={menu.rowIndex} colIndex={menu.colIndex}
+          selectedText={menu.selectedText}
           onAddColBefore={() => runCmd(c => { c.call(selectColCommand.key, { index: Math.max(0, menu.colIndex) }); c.call(addColBeforeCommand.key) })}
           onAddColAfter={() => runCmd(c => { c.call(selectColCommand.key, { index: Math.max(0, menu.colIndex) }); c.call(addColAfterCommand.key) })}
           onRemoveCol={() => runCmd(c => { c.call(selectColCommand.key, { index: Math.max(0, menu.colIndex) }); c.call(deleteSelectedCellsCommand.key) })}
@@ -155,52 +187,86 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, notes, onCh
           onItalic={() => runCmd(c => c.call(toggleEmphasisCommand.key))}
           onInlineCode={() => runCmd(c => c.call(toggleInlineCodeCommand.key))}
           onStrikethrough={() => runCmd(c => c.call(toggleStrikethroughCommand.key))}
+          onClearFormatting={() => {
+            crepeRef.current?.editor.action(ctx => {
+              const view = ctx.get(editorViewCtx)
+              const { state } = view
+              const { from, to } = state.selection
+              // Remove every mark type in one transaction
+              const tr = Object.values(state.schema.marks).reduce(
+                (t, markType) => t.removeMark(from, to, markType),
+                state.tr,
+              )
+              view.dispatch(tr)
+              view.focus()
+            })
+            closeMenu()
+          }}
+          onBulletList={() => runCmd(c => c.call(wrapInBulletListCommand.key))}
+          onOrderedList={() => runCmd(c => c.call(wrapInOrderedListCommand.key))}
+          onTaskList={() => {
+            crepeRef.current?.editor.action(ctx => {
+              const view = ctx.get(editorViewCtx)
+              const { state } = view
+              const nodes = state.schema.nodes
+              const para = nodes['paragraph'].create()
+              const item = nodes['list_item'].create({ checked: false, listType: 'bullet', label: '•', spread: 'false' }, para)
+              const list = nodes['bullet_list'].create(null, item)
+              view.dispatch(state.tr.replaceSelectionWith(list).scrollIntoView())
+              view.focus()
+            })
+            closeMenu()
+          }}
+          onBlockquote={() => runCmd(c => c.call(wrapInBlockquoteCommand.key))}
           onInsertTable={() => runCmd(c => c.call(insertTableCommand.key, { row: 3, col: 3 }))}
+          onInsertCallout={() => {
+            crepeRef.current?.editor.action(ctx => {
+              const view = ctx.get(editorViewCtx)
+              const { state } = view
+              const nodes = state.schema.nodes
+              const titleText = state.schema.text('[!NOTE]')
+              const titlePara = nodes['paragraph'].create(null, titleText)
+              const bodyPara  = nodes['paragraph'].create(null, state.schema.text('Callout content'))
+              const bq = nodes['blockquote'].create(null, [titlePara, bodyPara])
+              view.dispatch(state.tr.replaceSelectionWith(bq).scrollIntoView())
+              view.focus()
+            })
+            closeMenu()
+          }}
+          onInsertHr={() => runCmd(c => c.call(insertHrCommand.key))}
+          onInsertCodeBlock={() => runCmd(c => c.call(createCodeBlockCommand.key))}
           onHeading={(level) => runCmd(c => c.call(wrapInHeadingCommand.key, level))}
           onTurnIntoText={() => runCmd(c => c.call(turnIntoTextCommand.key))}
+          onAddLink={() => {
+            crepeRef.current?.editor.action(ctx => {
+              const view = ctx.get(editorViewCtx)
+              view.dispatch(view.state.tr.insertText('[['))
+              view.focus()
+            })
+            closeMenu()
+          }}
+          onAddExternalLink={() => {
+            crepeRef.current?.editor.action(ctx => {
+              const view = ctx.get(editorViewCtx)
+              const { state } = view
+              const { from } = state.selection
+              // Insert []() and place cursor inside [] so user types display text first
+              const tr = state.tr.insertText('[]()')
+              const cursorPos = from + 1   // position between [ and ]
+              tr.setSelection(TextSelection.create(tr.doc, cursorPos))
+              view.dispatch(tr.scrollIntoView())
+              view.focus()
+            })
+            closeMenu()
+          }}
+          onCut={() => editorExec('cut')}
+          onCopy={() => editorExec('copy')}
+          onPaste={() => editorExec('paste')}
+          onSelectAll={() => editorExec('selectAll')}
         />
       )}
     </div>
   )
 }
 
-// ── Toolbar builder extracted to keep MarkdownEditor lean ────────────────────
-type Builder = { addGroup: (key: string, label: string) => { addItem: (key: string, item: unknown) => void } }
 
-function buildHeadingToolbar(builder: Builder) {
-  const mkH = (level: 1 | 2 | 3 | 4 | 5 | 6) => ({
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><text x="12" y="17" text-anchor="middle" font-size="12" font-weight="700" fill="currentColor">H${level}</text></svg>`,
-    active: (ctx: unknown) => {
-      try {
-        const view = (ctx as { get: (s: unknown) => { state: { selection: { $from: { parent: { type: { name: string }; attrs: { level: number } } } } } } }).get(editorViewCtx)
-        const { $from } = view.state.selection
-        return $from.parent.type.name === 'heading' && $from.parent.attrs.level === level
-      } catch { return false }
-    },
-    onRun: (ctx: unknown) => {
-      (ctx as { get: (s: unknown) => { call: (k: unknown, p: unknown) => void } }).get(commandsCtx).call(wrapInHeadingCommand.key, level)
-    },
-  })
-
-  const hGroup = builder.addGroup('headings', 'Headings')
-  hGroup.addItem('h1', mkH(1))
-  hGroup.addItem('h2', mkH(2))
-  hGroup.addItem('h3', mkH(3))
-  hGroup.addItem('h4', mkH(4))
-  hGroup.addItem('h5', mkH(5))
-  hGroup.addItem('h6', mkH(6))
-
-  const pGroup = builder.addGroup('paragraph', 'Paragraph')
-  pGroup.addItem('text', {
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><text x="12" y="17" text-anchor="middle" font-size="11" font-weight="400" fill="currentColor">¶</text></svg>`,
-    active: (ctx: unknown) => {
-      try {
-        const view = (ctx as { get: (s: unknown) => { state: { selection: { $from: { parent: { type: { name: string } } } } } } }).get(editorViewCtx)
-        return view.state.selection.$from.parent.type.name === 'paragraph'
-      } catch { return false }
-    },
-    onRun: (ctx: unknown) => {
-      (ctx as { get: (s: unknown) => { call: (k: unknown) => void } }).get(commandsCtx).call(turnIntoTextCommand.key)
-    },
-  })
-}
