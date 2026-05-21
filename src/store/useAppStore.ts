@@ -26,6 +26,7 @@ type AppState = {
   mobileSidebarOpen: boolean
   noteTagColors: Record<string, string>
   userName: string
+  newTabPage: string
   onboardingDone: boolean
   vaultStatus: VaultStatus
   lastSyncTime: string | null
@@ -33,6 +34,7 @@ type AppState = {
   folderList: string[]  // explicitly created folder paths (includes empty folders)
 
   setUserName: (name: string) => void
+  setNewTabPage: (path: string) => void
   completeOnboarding: () => void
   setVaultStatus: (status: VaultStatus) => void
 
@@ -93,6 +95,7 @@ export const useAppStore = create<AppState>()(
       fontWeight: (localStorage.getItem('mindvault.fontWeight') as FontWeight | null) ?? 'regular',
       aiUrl: 'http://localhost:11434',
       userName: '',
+      newTabPage: '/',
       onboardingDone: false,
       vaultStatus: 'loading',
       lastSyncTime: null,
@@ -100,6 +103,7 @@ export const useAppStore = create<AppState>()(
       folderList: [],
 
       setUserName: (userName) => set({ userName }),
+      setNewTabPage: (newTabPage) => set({ newTabPage }),
       completeOnboarding: () => set({ onboardingDone: true }),
       setVaultStatus: (vaultStatus) => set({ vaultStatus }),
 
@@ -424,6 +428,7 @@ export const useAppStore = create<AppState>()(
         fontWeight:      state.fontWeight,
         aiUrl:           state.aiUrl,
         userName:        state.userName,
+        newTabPage:      state.newTabPage,
         onboardingDone:  state.onboardingDone,
         keyBindings:     state.keyBindings,
       }),

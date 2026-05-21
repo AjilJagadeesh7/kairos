@@ -1,6 +1,7 @@
-import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { BookOpen, CalendarDays, SquareKanban, Network, Settings2 } from 'lucide-react'
 import { useAppStore } from '../../../store/useAppStore'
+import { useTabStore } from '../../../store/useTabStore'
 import { usePluginRegistry } from '../../../plugins/pluginContext'
 import { Button } from '../../atoms/Button'
 import { ThemeSelect } from '../../molecules/ThemeSelect'
@@ -22,11 +23,21 @@ export function Header() {
   const mobileSidebarOpen    = useAppStore((s) => s.mobileSidebarOpen)
   const setMobileSidebarOpen = useAppStore((s) => s.setMobileSidebarOpen)
   const { pages: pluginPages } = usePluginRegistry()
+  const openInNewTab         = useTabStore((s) => s.openInNewTab)
 
   const hasSidebar = location.pathname.startsWith('/notes')
     || location.pathname.startsWith('/journal')
     || location.pathname.startsWith('/settings')
     || location.pathname.startsWith('/graph')
+
+  function handleNavClick(e: React.MouseEvent, to: string, label: string) {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault()
+      openInNewTab(to, label)
+      navigate(to)
+    }
+    // normal click: let navigate happen naturally via onClick below
+  }
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-2.5 backdrop-blur sm:px-4 sm:py-3">
@@ -54,39 +65,47 @@ export function Header() {
       </div>
 
       <nav aria-label="Main navigation" className="flex items-center gap-0.5 sm:gap-1">
-        {/* Core nav — icons only on xs, icon+label on sm+ */}
-        {NAV_ITEMS.map(({ to, Icon, label }) => (
-          <NavLink key={to} to={to}>
-            {({ isActive }) => (
-              <Button
-                variant="ghost"
-                size="xs"
-                title={label}
-                className={`inline-flex items-center gap-1 px-2 sm:px-2.5 ${isActive ? 'text-[rgb(var(--accent))]' : ''}`}
-              >
-                <Icon size={14} />
-                <span className="hidden sm:inline">{label}</span>
-              </Button>
-            )}
-          </NavLink>
-        ))}
+        {/* Core nav — icons only on xs, icon+label on sm+. Ctrl/Cmd+click opens in new tab */}
+        {NAV_ITEMS.map(({ to, Icon, label }) => {
+          const isActive = location.pathname === to || location.pathname.startsWith(to + '/')
+          return (
+            <Button
+              key={to}
+              variant="ghost"
+              size="xs"
+              title={`${label} (Ctrl+click to open in new tab)`}
+              className={`inline-flex items-center gap-1 px-2 sm:px-2.5 ${isActive ? 'text-[rgb(var(--accent))]' : ''}`}
+              onClick={(e) => {
+                handleNavClick(e, to, label)
+                if (!e.ctrlKey && !e.metaKey) navigate(to)
+              }}
+            >
+              <Icon size={14} />
+              <span className="hidden sm:inline">{label}</span>
+            </Button>
+          )
+        })}
 
         {/* Plugin-registered nav items */}
-        {pluginPages.map(({ path, navLabel, navIcon: NavIcon }) => (
-          <NavLink key={path} to={path}>
-            {({ isActive }) => (
-              <Button
-                variant="ghost"
-                size="xs"
-                title={navLabel}
-                className={`inline-flex items-center gap-1 px-2 sm:px-2.5 ${isActive ? 'text-[rgb(var(--accent))]' : ''}`}
-              >
-                {NavIcon && <NavIcon size={14} />}
-                <span className="hidden sm:inline">{navLabel}</span>
-              </Button>
-            )}
-          </NavLink>
-        ))}
+        {pluginPages.map(({ path, navLabel, navIcon: NavIcon }) => {
+          const isActive = location.pathname === path || location.pathname.startsWith(path + '/')
+          return (
+            <Button
+              key={path}
+              variant="ghost"
+              size="xs"
+              title={navLabel}
+              className={`inline-flex items-center gap-1 px-2 sm:px-2.5 ${isActive ? 'text-[rgb(var(--accent))]' : ''}`}
+              onClick={(e) => {
+                handleNavClick(e, path, navLabel)
+                if (!e.ctrlKey && !e.metaKey) navigate(path)
+              }}
+            >
+              {NavIcon && <NavIcon size={14} />}
+              <span className="hidden sm:inline">{navLabel}</span>
+            </Button>
+          )
+        })}
 
         <div className="mx-0.5 h-4 w-px bg-[rgb(var(--border))] sm:mx-1" />
 

@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import {
   ChevronRight, Folder, FolderOpen, FileText,
   Plus, FolderPlus, MoreHorizontal, Pencil, Trash2,
-  Check, Copy, FolderInput,
+  Check, Copy, FolderInput, ExternalLink,
 } from 'lucide-react'
+import { useTabStore } from '../../../store/useTabStore'
 import { timeAgo } from '../../../utils/timeAgo'
 import { countNotes } from '../../../utils/folderTree'
 import type { FolderNode } from '../../../utils/folderTree'
@@ -151,6 +152,13 @@ function NoteRow({
   note, isActive, isCopied, depth, allFolderPaths,
   onOpen, onDelete, onCopyLink, onMove, onDragStart,
 }: NoteRowProps) {
+  const openInNewTab = useTabStore(s => s.openInNewTab)
+
+  function handleOpenInNewTab(e: React.MouseEvent) {
+    e.stopPropagation()
+    openInNewTab(`/notes/${note.id}`, note.title || 'Note')
+    onOpen()
+  }
   const label = note.title || 'Untitled note'
   const [showMove, setShowMove] = useState(false)
 
@@ -201,6 +209,15 @@ function NoteRow({
           {isCopied
             ? <Check size={12} className="text-green-500" aria-hidden />
             : <Copy size={12} aria-hidden />}
+        </button>
+        <button
+          type="button"
+          title="Open in new tab"
+          aria-label={`Open "${label}" in new tab`}
+          onClick={handleOpenInNewTab}
+          className="flex h-6 w-6 items-center justify-center rounded text-text3 transition hover:bg-surface hover:text-text"
+        >
+          <ExternalLink size={12} aria-hidden />
         </button>
         <button
           type="button"

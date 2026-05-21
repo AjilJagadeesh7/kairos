@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAppStore } from './store/useAppStore'
 import { useAppStartup } from './hooks/useAppStartup'
 import { Header } from './components/organisms/Header/Header'
+import { TabBar } from './components/organisms/TabBar/TabBar'
 import { AppRoutes } from './routes'
 import { LoaderBar } from './components/molecules/LoaderBar'
 import { ConfirmDialog } from './components/organisms/ConfirmDialog'
@@ -79,6 +80,7 @@ function AppInner() {
       {showCommandPalette && <CommandPalette onClose={closeCommandPalette} />}
       {showShortcuts && <ShortcutsModal onClose={closeShortcuts} />}
       <Header />
+      <TabBar />
       <div id="main-content" className="page-enter min-h-0 flex-1 overflow-hidden">
         <AppRoutes />
       </div>

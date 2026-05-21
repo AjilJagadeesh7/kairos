@@ -6,15 +6,26 @@ import { FontSelect, FONT_WEIGHTS } from '../../molecules/FontSelect'
 import { SectionCard } from '../../molecules/SectionCard'
 import type { FontOption, FontWeight } from '../../../types'
 
+const NEW_TAB_OPTIONS = [
+  { label: 'Home',     path: '/' },
+  { label: 'Notes',    path: '/notes' },
+  { label: 'Journal',  path: '/journal' },
+  { label: 'Kanban',   path: '/kanban' },
+  { label: 'Graph',    path: '/graph' },
+  { label: 'Settings', path: '/settings' },
+]
+
 export function GeneralSection() {
-  const theme         = useAppStore((s) => s.theme)
-  const setTheme      = useAppStore((s) => s.setTheme)
-  const font          = useAppStore((s) => s.font)
-  const setFont       = useAppStore((s) => s.setFont)
-  const fontWeight    = useAppStore((s) => s.fontWeight)
-  const setFontWeight = useAppStore((s) => s.setFontWeight)
-  const userName      = useAppStore((s) => s.userName)
-  const setUserName = useAppStore((s) => s.setUserName)
+  const theme          = useAppStore((s) => s.theme)
+  const setTheme       = useAppStore((s) => s.setTheme)
+  const font           = useAppStore((s) => s.font)
+  const setFont        = useAppStore((s) => s.setFont)
+  const fontWeight     = useAppStore((s) => s.fontWeight)
+  const setFontWeight  = useAppStore((s) => s.setFontWeight)
+  const userName       = useAppStore((s) => s.userName)
+  const setUserName    = useAppStore((s) => s.setUserName)
+  const newTabPage     = useAppStore((s) => s.newTabPage)
+  const setNewTabPage  = useAppStore((s) => s.setNewTabPage)
 
   const [nameInput, setNameInput] = useState(userName)
   const [nameSaved, setNameSaved] = useState(false)
@@ -77,6 +88,27 @@ export function GeneralSection() {
           >
             <RotateCcw size={12} /> Replay welcome tour
           </button>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="New tab page">
+        <p className="mb-3 text-xs text-[rgb(var(--text-2))]">
+          Choose which page opens when you create a new tab.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {NEW_TAB_OPTIONS.map(({ label, path }) => (
+            <button
+              key={path}
+              onClick={() => setNewTabPage(path)}
+              className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${
+                (newTabPage ?? '/') === path
+                  ? 'border-[rgb(var(--accent)/0.6)] bg-[rgb(var(--accent)/0.1)] text-[rgb(var(--accent))]'
+                  : 'border-[rgb(var(--border))] text-[rgb(var(--text-2))] hover:border-[rgb(var(--accent)/0.4)] hover:text-[rgb(var(--text))]'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </SectionCard>
 
