@@ -1,8 +1,11 @@
+import { createPortal } from 'react-dom'
 import { useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import { useJournalStore, todayDate } from '../store/useJournalStore'
+import { usePaneStore } from '../store/usePaneStore'
+import { usePaneId, useSidebarSlot } from '../contexts/PaneContext'
 import { eventMatchesAction } from '../hooks/useShortcutKey'
 import { JournalCalendar } from '../components/organisms/Journal/JournalCalendar'
 import { JournalEditor } from '../components/organisms/Journal/JournalEditor'
@@ -17,8 +20,12 @@ export function JournalPage() {
   const setActiveDate        = useJournalStore(s => s.setActiveDate)
   const mobileSidebarOpen    = useAppStore(s => s.mobileSidebarOpen)
   const setMobileSidebarOpen = useAppStore(s => s.setMobileSidebarOpen)
-
-  const keyBindings = useAppStore(s => s.keyBindings)
+  const keyBindings          = useAppStore(s => s.keyBindings)
+  const paneId               = usePaneId()
+  const focusedPaneId        = usePaneStore(s => s.focusedPaneId)
+  const isMultiPane          = usePaneStore(s => s.panes.length > 1)
+  const isFocused            = paneId === focusedPaneId
+  const slot                 = useSidebarSlot()
 
   useEffect(() => {
     if (!isLoaded) void loadEntries()
@@ -35,9 +42,7 @@ export function JournalPage() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [navigate, keyBindings])
 
-  useEffect(() => {
-    setActiveDate(date ?? null)
-  }, [date, setActiveDate])
+  useEffect(() => { setActiveDate(date ?? null) }, [date, setActiveDate])
 
   useEffect(() => {
     if (!date) navigate(`/journal/${todayDate()}`, { replace: true })
@@ -51,26 +56,35 @@ export function JournalPage() {
     )
   }
 
+  const calendar = <JournalCalendar activeDate={date ?? todayDate()} onClose={() => setMobileSidebarOpen(false)} />
+
   return (
     <main className="relative flex h-full flex-col overflow-hidden">
       <VaultBanner />
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
-        {mobileSidebarOpen && (
-          <div
-            className="fixed inset-0 z-20 bg-black/40 xl:hidden"
-            onClick={() => setMobileSidebarOpen(false)}
-          />
-        )}
 
-        <div
-          className={`fixed inset-y-0 left-0 z-30 w-72 transition-transform duration-300 ease-in-out xl:relative xl:inset-auto xl:z-auto xl:w-[260px] xl:translate-x-0 xl:flex-shrink-0 ${
-            mobileSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
-          }`}
-        >
-          <JournalCalendar activeDate={date ?? todayDate()} onClose={() => setMobileSidebarOpen(false)} />
-        </div>
+        {isMultiPane
+          ? isFocused && slot ? createPortal(calendar, slot) : null
+          : (
+            <>
+              {mobileSidebarOpen && (
+                <div
+                  className="fixed inset-0 z-20 bg-black/40 xl:hidden"
+                  onClick={() => setMobileSidebarOpen(false)}
+                />
+              )}
+              <div
+                className={`fixed inset-y-0 left-0 z-30 w-72 transition-transform duration-300 ease-in-out xl:relative xl:inset-auto xl:z-auto xl:w-[260px] xl:translate-x-0 xl:flex-shrink-0 ${
+                  mobileSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+                }`}
+              >
+                {calendar}
+              </div>
+            </>
+          )
+        }
 
-        <section className="flex min-w-0 flex-1 flex-col border-l border-[rgb(var(--border))]">
+        <section className={`flex min-w-0 flex-1 flex-col ${!isMultiPane ? 'border-l border-[rgb(var(--border))]' : ''}`}>
           <ErrorBoundary resetKeys={[date]}>
             {date ? (
               <JournalEditor date={date} />

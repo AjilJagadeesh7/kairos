@@ -4,7 +4,7 @@ import {
   Plus, FolderPlus, MoreHorizontal, Pencil, Trash2,
   Check, Copy, FolderInput, ExternalLink,
 } from 'lucide-react'
-import { useTabStore } from '../../../store/useTabStore'
+import { usePaneStore } from '../../../store/usePaneStore'
 import { timeAgo } from '../../../utils/timeAgo'
 import { countNotes } from '../../../utils/folderTree'
 import type { FolderNode } from '../../../utils/folderTree'
@@ -152,11 +152,10 @@ function NoteRow({
   note, isActive, isCopied, depth, allFolderPaths,
   onOpen, onDelete, onCopyLink, onMove, onDragStart,
 }: NoteRowProps) {
-  const openInNewTab = useTabStore(s => s.openInNewTab)
-
   function handleOpenInNewTab(e: React.MouseEvent) {
     e.stopPropagation()
-    openInNewTab(`/notes/${note.id}`, note.title || 'Note')
+    const { focusedPaneId, openInNewTab } = usePaneStore.getState()
+    openInNewTab(focusedPaneId, `/notes/${note.id}`, note.title || 'Note')
     onOpen()
   }
   const label = note.title || 'Untitled note'

@@ -1,7 +1,6 @@
-import { useLocation, useNavigate } from 'react-router-dom'
 import { BookOpen, CalendarDays, SquareKanban, Network, Settings2 } from 'lucide-react'
 import { useAppStore } from '../../../store/useAppStore'
-import { useTabStore } from '../../../store/useTabStore'
+import { usePaneStore } from '../../../store/usePaneStore'
 import { usePluginRegistry } from '../../../plugins/pluginContext'
 import { Button } from '../../atoms/Button'
 import { ThemeSelect } from '../../molecules/ThemeSelect'
@@ -16,27 +15,33 @@ const NAV_ITEMS = [
 ]
 
 export function Header() {
-  const navigate             = useNavigate()
-  const location             = useLocation()
   const theme                = useAppStore((s) => s.theme)
   const setTheme             = useAppStore((s) => s.setTheme)
   const mobileSidebarOpen    = useAppStore((s) => s.mobileSidebarOpen)
   const setMobileSidebarOpen = useAppStore((s) => s.setMobileSidebarOpen)
   const { pages: pluginPages } = usePluginRegistry()
-  const openInNewTab         = useTabStore((s) => s.openInNewTab)
 
-  const hasSidebar = location.pathname.startsWith('/notes')
-    || location.pathname.startsWith('/journal')
-    || location.pathname.startsWith('/settings')
-    || location.pathname.startsWith('/graph')
+  const activePath = usePaneStore(s => {
+    const pane = s.panes.find(p => p.id === s.focusedPaneId)
+    return pane?.tabs.find(t => t.id === pane.activeTabId)?.path ?? '/'
+  })
+
+  const hasSidebar = activePath.startsWith('/notes')
+    || activePath.startsWith('/journal')
+    || activePath.startsWith('/settings')
+    || activePath.startsWith('/graph')
+
+  function navigate(to: string) {
+    const { focusedPaneId, navigatePane } = usePaneStore.getState()
+    navigatePane(focusedPaneId, to)
+  }
 
   function handleNavClick(e: React.MouseEvent, to: string, label: string) {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault()
-      openInNewTab(to, label)
-      navigate(to)
+      const { focusedPaneId, openInNewTab } = usePaneStore.getState()
+      openInNewTab(focusedPaneId, to, label)
     }
-    // normal click: let navigate happen naturally via onClick below
   }
 
   return (
@@ -65,9 +70,8 @@ export function Header() {
       </div>
 
       <nav aria-label="Main navigation" className="flex items-center gap-0.5 sm:gap-1">
-        {/* Core nav — icons only on xs, icon+label on sm+. Ctrl/Cmd+click opens in new tab */}
         {NAV_ITEMS.map(({ to, Icon, label }) => {
-          const isActive = location.pathname === to || location.pathname.startsWith(to + '/')
+          const isActive = activePath === to || activePath.startsWith(to + '/')
           return (
             <Button
               key={to}
@@ -86,9 +90,8 @@ export function Header() {
           )
         })}
 
-        {/* Plugin-registered nav items */}
         {pluginPages.map(({ path, navLabel, navIcon: NavIcon }) => {
-          const isActive = location.pathname === path || location.pathname.startsWith(path + '/')
+          const isActive = activePath === path || activePath.startsWith(path + '/')
           return (
             <Button
               key={path}

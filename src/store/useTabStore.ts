@@ -26,6 +26,7 @@ type TabStore = {
   closeTab: (id: string) => void
   setActiveTab: (id: string) => void
   updateActiveTab: (path: string, title: string) => void
+  reorderTabs: (orderedIds: string[]) => void
 }
 
 const initialTab: Tab = { id: uuid(), path: '/notes', title: 'Notes', type: 'notes' }
@@ -62,6 +63,15 @@ export const useTabStore = create<TabStore>((set, get) => ({
       tabs: s.tabs.map(t =>
         t.id === s.activeId ? { ...t, path, title, type: pathToType(path) } : t,
       ),
+    }))
+  },
+
+  reorderTabs(orderedIds) {
+    set(s => ({
+      tabs: orderedIds.flatMap(id => {
+        const tab = s.tabs.find(t => t.id === id)
+        return tab ? [tab] : []
+      }),
     }))
   },
 }))

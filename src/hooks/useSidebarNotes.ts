@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
 import { useConfirmStore } from '../store/useConfirmStore'
 import { useSemanticSearch } from './useSemanticSearch'
@@ -29,7 +29,9 @@ function withinDateRange(iso: string, filter: DateFilter): boolean {
 export function useSidebarNotes(onClose?: () => void) {
   const notes          = useAppStore(s => s.notes)
   const isNotesLoaded  = useAppStore(s => s.isNotesLoaded)
-  const activeNoteId   = useAppStore(s => s.activeNoteId)
+  const { noteId: urlNoteId } = useParams<{ noteId?: string }>()
+  const storeNoteId    = useAppStore(s => s.activeNoteId)
+  const activeNoteId   = urlNoteId ?? storeNoteId
   const createNote     = useAppStore(s => s.createNote)
   const deleteNoteById = useAppStore(s => s.deleteNoteById)
   const query          = useAppStore(s => s.query)

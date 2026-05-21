@@ -59,6 +59,7 @@ type AppState = {
   loadFolders: () => Promise<void>
   createNote: (initial?: { title?: string; content?: string; folder?: string }) => Promise<string>
   updateActiveNote: (patch: Pick<Note, 'title' | 'content' | 'embedding'> & { contentHash: string }) => Promise<void>
+  updateNote: (noteId: string, patch: Pick<Note, 'title' | 'content' | 'embedding'> & { contentHash: string }) => Promise<void>
   updateNoteTags: (noteId: string, tags: string[]) => Promise<void>
   appendWikilink: (noteId: string, targetTitle: string) => Promise<void>
   deleteNoteById: (id: string) => Promise<void>
@@ -201,6 +202,12 @@ export const useAppStore = create<AppState>()(
           set(s => ({ notes: [note, ...s.notes], activeNoteId: id }))
           return id
         }, 'Creating note…')
+      },
+
+      updateNote: async (noteId, patch) => {
+        // Temporarily set activeNoteId to the target note so updateActiveNote targets the right note
+        set({ activeNoteId: noteId })
+        await get().updateActiveNote(patch)
       },
 
       updateActiveNote: async ({ title, content, embedding, contentHash }) => {

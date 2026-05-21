@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/schema'
 import { useAppStore } from '../store/useAppStore'
 import { useKanbanStore } from '../store/useKanbanStore'
+import { usePaneStore } from '../store/usePaneStore'
+import { usePaneId, useSidebarSlot } from '../contexts/PaneContext'
 import { useGraphData } from '../hooks/useGraphData'
 import { GraphSidebar } from '../components/organisms/Graph/GraphSidebar'
 import { GraphView } from '../components/organisms/Graph/GraphView'
@@ -19,6 +22,11 @@ export function GraphPage() {
   const mobileSidebarOpen    = useAppStore(s => s.mobileSidebarOpen)
   const setMobileSidebarOpen = useAppStore(s => s.setMobileSidebarOpen)
   const appendWikilink       = useAppStore(s => s.appendWikilink)
+  const paneId               = usePaneId()
+  const focusedPaneId        = usePaneStore(s => s.focusedPaneId)
+  const isMultiPane          = usePaneStore(s => s.panes.length > 1)
+  const isFocused            = paneId === focusedPaneId
+  const slot                 = useSidebarSlot()
 
   const [graphMode,      setGraphMode]      = useState<GraphMode>('links')
   const [rerenderKey,    setRerenderKey]    = useState(0)
@@ -130,40 +138,50 @@ export function GraphPage() {
     }
   }
 
+  const graphSidebar = (
+    <GraphSidebar
+      graphMode={graphMode}
+      onModeChange={handleModeChange}
+      nodes={nodes}
+      links={links}
+      wikilinkCount={wikilinkCount}
+      semanticCount={semanticCount}
+      taskNodeCount={taskNodeCount}
+      tagLegendItems={tagLegendItems}
+      tagColorMap={tagColorMap}
+      selectedNote={selectedNote}
+      selectedTaskInfo={selectedTaskInfo}
+      showTasks={showTasks}
+      onToggleTasks={() => setShowTasks(v => !v)}
+      onOpenNote={id => navigate(`/notes/${id}`)}
+      onOpenTask={handleOpenTask}
+      onClose={() => setMobileSidebarOpen(false)}
+    />
+  )
+
   return (
     <ErrorBoundary>
     <main className="relative flex h-full overflow-hidden">
-      {mobileSidebarOpen && (
-        <div
-          className="fixed inset-0 z-20 bg-black/40 xl:hidden"
-          onClick={() => setMobileSidebarOpen(false)}
-        />
-      )}
+      {isMultiPane
+        ? isFocused && slot ? createPortal(graphSidebar, slot) : null
+        : (
+          <>
+            {mobileSidebarOpen && (
+              <div
+                className="fixed inset-0 z-20 bg-black/40 xl:hidden"
+                onClick={() => setMobileSidebarOpen(false)}
+              />
+            )}
+            <div className={`fixed inset-y-0 left-0 z-30 w-72 transition-transform duration-300 ease-in-out xl:relative xl:inset-auto xl:z-auto xl:w-[280px] xl:flex-shrink-0 xl:translate-x-0 ${
+              mobileSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+            }`}>
+              {graphSidebar}
+            </div>
+          </>
+        )
+      }
 
-      <div className={`fixed inset-y-0 left-0 z-30 w-72 transition-transform duration-300 ease-in-out xl:relative xl:inset-auto xl:z-auto xl:w-[280px] xl:flex-shrink-0 xl:translate-x-0 ${
-        mobileSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
-      }`}>
-        <GraphSidebar
-          graphMode={graphMode}
-          onModeChange={handleModeChange}
-          nodes={nodes}
-          links={links}
-          wikilinkCount={wikilinkCount}
-          semanticCount={semanticCount}
-          taskNodeCount={taskNodeCount}
-          tagLegendItems={tagLegendItems}
-          tagColorMap={tagColorMap}
-          selectedNote={selectedNote}
-          selectedTaskInfo={selectedTaskInfo}
-          showTasks={showTasks}
-          onToggleTasks={() => setShowTasks(v => !v)}
-          onOpenNote={id => navigate(`/notes/${id}`)}
-          onOpenTask={handleOpenTask}
-          onClose={() => setMobileSidebarOpen(false)}
-        />
-      </div>
-
-      <section className="flex min-w-0 flex-1 flex-col border-l border-border">
+      <section className={`flex min-w-0 flex-1 flex-col ${!isMultiPane ? 'border-l border-border' : ''}`}>
         <GraphView
           nodes={nodes}
           links={links}

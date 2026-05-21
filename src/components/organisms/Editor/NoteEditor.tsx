@@ -1,16 +1,24 @@
+import { useCallback } from 'react'
+import { useParams } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { useAppStore } from '../../../store/useAppStore'
 import { EditorDraft } from './EditorDraft'
+import type { EditorDraftProps } from '../../../types'
 
 export function NoteEditor(): JSX.Element {
-  const activeNoteId = useAppStore((s) => s.activeNoteId)
-  const isNotesLoaded = useAppStore((s) => s.isNotesLoaded)
-  const notes = useAppStore((s) => s.notes)
-  const updateActiveNote = useAppStore((s) => s.updateActiveNote)
+  const { noteId }      = useParams<{ noteId?: string }>()
+  const isNotesLoaded   = useAppStore((s) => s.isNotesLoaded)
+  const notes           = useAppStore((s) => s.notes)
+  const updateNote      = useAppStore((s) => s.updateNote)
 
   const activeNote = isNotesLoaded
-    ? (activeNoteId ? (notes.find(n => n.id === activeNoteId) ?? null) : null)
+    ? (noteId ? (notes.find(n => n.id === noteId) ?? null) : null)
     : undefined
+
+  const onSave = useCallback<EditorDraftProps['onSave']>(
+    (patch) => updateNote(noteId!, patch),
+    [noteId, updateNote],
+  )
 
   if (activeNote === undefined) {
     return (
@@ -28,5 +36,5 @@ export function NoteEditor(): JSX.Element {
     )
   }
 
-  return <EditorDraft key={activeNote.id} note={activeNote} onSave={updateActiveNote} />
+  return <EditorDraft key={activeNote.id} note={activeNote} onSave={onSave} />
 }
