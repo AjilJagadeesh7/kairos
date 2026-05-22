@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import {
   DndContext, DragOverlay, PointerSensor,
   useSensor, useSensors, closestCenter,
@@ -7,6 +7,7 @@ import {
 import { arrayMove } from '@dnd-kit/sortable'
 import { usePaneStore, type PaneTab } from '../../../store/usePaneStore'
 import { useAppStore } from '../../../store/useAppStore'
+import { useSidebarResize } from '../../../hooks/useSidebarResize'
 import { PaneIdContext, SidebarSlotContext } from '../../../contexts/PaneContext'
 import { PaneTabBar, deriveTitle } from '../TabBar/PaneTabBar'
 import { CustomNavProvider } from './CustomNavProvider'
@@ -53,8 +54,18 @@ export function PaneLayout() {
   const [sidebarSlot, setSidebarSlot] = useState<HTMLDivElement | null>(null)
   const [draggingId, setDraggingId]   = useState<string | null>(null)
   const [overTarget, setOverTarget]   = useState<string | null>(null)
+  const slotContainerRef              = useRef<HTMLDivElement>(null)
 
-  const isMultiPane = panes.length > 1
+  const isMultiPane  = panes.length > 1
+  const sidebarOpen  = useAppStore(s => s.sidebarOpen)
+  const sidebarWidth = useAppStore(s => s.sidebarWidth)
+  const { startResize } = useSidebarResize(slotContainerRef)
+
+  const SIDEBAR_TYPES = new Set(['notes', 'journal', 'graph', 'settings'])
+  const focusedPane      = panes.find(p => p.id === focusedPaneId)
+  const focusedActiveTab = focusedPane?.tabs.find(t => t.id === focusedPane.activeTabId)
+  const focusedHasSidebar = focusedActiveTab ? SIDEBAR_TYPES.has(focusedActiveTab.type) : false
+  const showSlot = isMultiPane && focusedHasSidebar && sidebarOpen
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -125,10 +136,23 @@ export function PaneLayout() {
       <SidebarSlotContext.Provider value={sidebarSlot}>
         <div className="flex min-h-0 flex-1 overflow-hidden">
 
-          {/* Shared sidebar slot — only shown when multiple panes exist */}
+          {/* Shared sidebar slot — only when multi-pane + focused pane has sidebar + sidebar open */}
           {isMultiPane && (
-            <div className="relative w-[280px] shrink-0 border-r border-[rgb(var(--border))]">
-              <div ref={setSidebarSlot} className="absolute inset-0" />
+            <div
+              ref={slotContainerRef}
+              className="relative shrink-0 overflow-hidden"
+              style={{ transition: 'width 150ms ease',
+                width:           showSlot ? sidebarWidth : 0,
+                borderRight:     showSlot ? '1px solid rgb(var(--border))' : 'none',
+              }}
+            >
+              <div ref={setSidebarSlot} className="absolute inset-0" style={{ width: sidebarWidth }} />
+              {/* Drag-to-resize handle */}
+              <div
+                aria-hidden
+                className="absolute right-0 top-0 z-10 h-full w-1 cursor-col-resize opacity-0 transition-opacity hover:opacity-100 hover:bg-accent/40 active:opacity-100"
+                onMouseDown={startResize}
+              />
             </div>
           )}
 

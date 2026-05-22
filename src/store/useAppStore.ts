@@ -27,6 +27,8 @@ type AppState = {
   noteTagColors: Record<string, string>
   calloutColors: Record<string, string>
   customCallouts: CustomCallout[]
+  sidebarOpen: boolean
+  sidebarWidth: number
   userName: string
   newTabPage: string
   onboardingDone: boolean
@@ -55,6 +57,8 @@ type AppState = {
   setStorageChoices: (choices: StorageTarget[]) => void
   setNoteTagColor: (tagName: string, color: string) => void
   removeNoteTag: (tagName: string) => void
+  setSidebarOpen: (open: boolean) => void
+  setSidebarWidth: (width: number) => void
   setCalloutColor: (type: string, color: string) => void
   resetCalloutColor: (type: string) => void
   addCustomCallout: (callout: CustomCallout) => void
@@ -102,6 +106,8 @@ export const useAppStore = create<AppState>()(
       noteTagColors: {},
       calloutColors: {},
       customCallouts: [],
+      sidebarOpen: true,
+      sidebarWidth: 260,
       storageChoices: readLegacyStorageChoices(),
       theme: (localStorage.getItem('mindvault.theme') as ThemeMode | null) ?? 'light',
       font: (localStorage.getItem('mindvault.font') as FontOption | null) ?? 'manrope',
@@ -153,6 +159,8 @@ export const useAppStore = create<AppState>()(
         const { [tagName]: _, ...rest } = s.noteTagColors
         return { noteTagColors: rest }
       }),
+      setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
+      setSidebarWidth: (sidebarWidth) => set({ sidebarWidth: Math.max(180, Math.min(520, sidebarWidth)) }),
       setCalloutColor: (type, color) => set(s => ({ calloutColors: { ...s.calloutColors, [type]: color } })),
       resetCalloutColor: (type) => set(s => {
         const { [type]: _, ...rest } = s.calloutColors
@@ -463,6 +471,8 @@ export const useAppStore = create<AppState>()(
         noteTagColors:   state.noteTagColors,
         calloutColors:   state.calloutColors,
         customCallouts:  state.customCallouts,
+        sidebarOpen:     state.sidebarOpen,
+        sidebarWidth:    state.sidebarWidth,
         theme:           state.theme,
         font:            state.font,
         fontWeight:      state.fontWeight,

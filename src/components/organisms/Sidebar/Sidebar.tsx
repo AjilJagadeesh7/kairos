@@ -160,6 +160,7 @@ export function Sidebar({ onClose }: Props): JSX.Element {
               className={isRefreshing ? 'animate-spin' : undefined}
             />
           </button>
+          {/* Mobile-only close button — desktop uses ActivityBar toggle */}
           {onClose && (
             <button
               type="button"

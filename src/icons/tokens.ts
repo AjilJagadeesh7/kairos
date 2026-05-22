@@ -63,6 +63,8 @@ export type IconToken =
   | 'more-horizontal'
   | 'network'
   | 'palette'
+  | 'panel-left-close'
+  | 'panel-left-open'
   | 'pencil'
   | 'pin'
   | 'plus'

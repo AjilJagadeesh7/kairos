@@ -7,6 +7,7 @@ import { useAppStore } from '../store/useAppStore'
 import { useKanbanStore } from '../store/useKanbanStore'
 import { usePaneStore } from '../store/usePaneStore'
 import { usePaneId, useSidebarSlot } from '../contexts/PaneContext'
+import { SidebarWrapper } from '../components/organisms/Sidebar/SidebarWrapper'
 import { useGraphData } from '../hooks/useGraphData'
 import { GraphSidebar } from '../components/organisms/Graph/GraphSidebar'
 import { GraphView } from '../components/organisms/Graph/GraphView'
@@ -27,8 +28,6 @@ type GraphMode = 'links' | 'tags'
 export function GraphPage() {
   const navigate             = useNavigate()
   const notes                = useAppStore(s => s.notes)
-  const mobileSidebarOpen    = useAppStore(s => s.mobileSidebarOpen)
-  const setMobileSidebarOpen = useAppStore(s => s.setMobileSidebarOpen)
   const appendWikilink       = useAppStore(s => s.appendWikilink)
   const paneId               = usePaneId()
   const isMultiPane          = usePaneStore(s => s.panes.length > 1)
@@ -166,7 +165,6 @@ export function GraphPage() {
       onToggleTasks={() => setShowTasks(v => !v)}
       onOpenNote={id => navigate(`/notes/${id}`)}
       onOpenTask={handleOpenTask}
-      onClose={() => setMobileSidebarOpen(false)}
     />
   )
 
@@ -175,24 +173,10 @@ export function GraphPage() {
     <main className="relative flex h-full overflow-hidden">
       {isMultiPane
         ? <GraphSidebarPortal paneId={paneId} sidebar={graphSidebar} />
-        : (
-          <>
-            {mobileSidebarOpen && (
-              <div
-                className="fixed inset-0 z-20 bg-black/40 xl:hidden"
-                onClick={() => setMobileSidebarOpen(false)}
-              />
-            )}
-            <div className={`fixed inset-y-0 left-0 z-30 w-72 transition-transform duration-300 ease-in-out xl:relative xl:inset-auto xl:z-auto xl:w-[280px] xl:flex-shrink-0 xl:translate-x-0 ${
-              mobileSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
-            }`}>
-              {graphSidebar}
-            </div>
-          </>
-        )
+        : <SidebarWrapper>{graphSidebar}</SidebarWrapper>
       }
 
-      <section className={`flex min-w-0 flex-1 flex-col ${!isMultiPane ? 'border-l border-border' : ''}`}>
+      <section className="flex min-w-0 flex-1 flex-col">
         <GraphView
           nodes={nodes}
           links={links}

@@ -6,6 +6,7 @@ import { useAppStore } from '../store/useAppStore'
 import { useJournalStore, todayDate } from '../store/useJournalStore'
 import { usePaneStore } from '../store/usePaneStore'
 import { usePaneId, useSidebarSlot } from '../contexts/PaneContext'
+import { SidebarWrapper } from '../components/organisms/Sidebar/SidebarWrapper'
 import { eventMatchesAction } from '../hooks/useShortcutKey'
 import { JournalCalendar } from '../components/organisms/Journal/JournalCalendar'
 import { JournalEditor } from '../components/organisms/Journal/JournalEditor'
@@ -19,8 +20,6 @@ export function JournalPage() {
   const isLoaded             = useJournalStore(s => s.isLoaded)
   const loadEntries          = useJournalStore(s => s.loadEntries)
   const setActiveDate        = useJournalStore(s => s.setActiveDate)
-  const mobileSidebarOpen    = useAppStore(s => s.mobileSidebarOpen)
-  const setMobileSidebarOpen = useAppStore(s => s.setMobileSidebarOpen)
   const keyBindings          = useAppStore(s => s.keyBindings)
   const paneId               = usePaneId()
   const focusedPaneId        = usePaneStore(s => s.focusedPaneId)
@@ -57,7 +56,7 @@ export function JournalPage() {
     )
   }
 
-  const calendar = <JournalCalendar activeDate={date ?? todayDate()} onClose={() => setMobileSidebarOpen(false)} />
+  const calendar = <JournalCalendar activeDate={date ?? todayDate()} />
 
   return (
     <main className="relative flex h-full flex-col overflow-hidden">
@@ -66,26 +65,10 @@ export function JournalPage() {
 
         {isMultiPane
           ? isFocused && slot ? createPortal(calendar, slot) : null
-          : (
-            <>
-              {mobileSidebarOpen && (
-                <div
-                  className="fixed inset-0 z-20 bg-black/40 xl:hidden"
-                  onClick={() => setMobileSidebarOpen(false)}
-                />
-              )}
-              <div
-                className={`fixed inset-y-0 left-0 z-30 w-72 transition-transform duration-300 ease-in-out xl:relative xl:inset-auto xl:z-auto xl:w-[260px] xl:translate-x-0 xl:flex-shrink-0 ${
-                  mobileSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
-                }`}
-              >
-                {calendar}
-              </div>
-            </>
-          )
+          : <SidebarWrapper>{calendar}</SidebarWrapper>
         }
 
-        <section className={`flex min-w-0 flex-1 flex-col ${!isMultiPane ? 'border-l border-[rgb(var(--border))]' : ''}`}>
+        <section className="flex min-w-0 flex-1 flex-col">
           <ErrorBoundary resetKeys={[date]}>
             {date ? (
               <JournalEditor date={date} />

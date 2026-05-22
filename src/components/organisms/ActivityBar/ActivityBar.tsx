@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { usePaneStore } from '../../../store/usePaneStore'
+import { usePaneStore, pathToType } from '../../../store/usePaneStore'
 import { useAppStore } from '../../../store/useAppStore'
 import { usePluginRegistry } from '../../../plugins/pluginContext'
 import { SyncStatusBadge } from '../../molecules/SyncStatusBadge'
@@ -126,15 +126,22 @@ function CompactThemePicker({ value, onChange }: { value: ThemeMode; onChange: (
 
 // ─── Activity bar ─────────────────────────────────────────────────────────────
 
+const SIDEBAR_TYPES = new Set(['notes', 'journal', 'graph', 'settings'])
+
 export function ActivityBar() {
-  const theme    = useAppStore(s => s.theme)
-  const setTheme = useAppStore(s => s.setTheme)
+  const theme         = useAppStore(s => s.theme)
+  const setTheme      = useAppStore(s => s.setTheme)
+  const sidebarOpen   = useAppStore(s => s.sidebarOpen)
+  const setSidebarOpen = useAppStore(s => s.setSidebarOpen)
   const { pages: pluginPages } = usePluginRegistry()
 
   const activePath = usePaneStore(s => {
     const pane = s.panes.find(p => p.id === s.focusedPaneId)
     return pane?.tabs.find(t => t.id === pane.activeTabId)?.path ?? '/'
   })
+
+  const activeType = pathToType(activePath)
+  const focusedHasSidebar = SIDEBAR_TYPES.has(activeType)
 
   function go(to: string, label: string, e: React.MouseEvent) {
     if (e.ctrlKey || e.metaKey) {
@@ -198,15 +205,34 @@ export function ActivityBar() {
 
       <div className="h-px w-6 shrink-0 bg-border/60" />
 
+      {/* Sidebar toggle — only visible when focused page has a sidebar */}
+      {focusedHasSidebar && (
+        <Tooltip label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}>
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className={`relative flex h-9 w-12 items-center justify-center transition-colors ${
+              sidebarOpen ? 'text-accent' : 'text-text3 hover:text-text'
+            }`}
+          >
+            <Icon name={sidebarOpen ? 'panel-left-close' : 'panel-left-open'} size={18} strokeWidth={1.75} />
+          </button>
+        </Tooltip>
+      )}
+
       {/* Primary nav */}
       <nav className="flex flex-1 flex-col items-center py-1">
         {TOP_NAV.map(item => <NavBtn key={item.to} {...item} />)}
 
-        {pluginPages.map(({ path, navLabel, navIcon: NavIconComponent }) =>
-          NavIconComponent
-            ? <NavBtn key={path} to={path} label={navLabel} NavIconComponent={NavIconComponent} />
-            : null
-        )}
+        {pluginPages.map(({ path, navLabel, navIcon: NavIconComponent }) => (
+          <NavBtn
+            key={path}
+            to={path}
+            label={navLabel}
+            NavIconComponent={NavIconComponent ?? undefined}
+            iconName={NavIconComponent ? undefined : 'bar-chart-2'}
+          />
+        ))}
       </nav>
 
       {/* Bottom: sync + theme + settings */}

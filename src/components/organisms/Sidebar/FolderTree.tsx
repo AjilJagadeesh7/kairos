@@ -4,7 +4,6 @@ import { usePaneStore } from '../../../store/usePaneStore'
 import { useAppStore } from '../../../store/useAppStore'
 import { useIconRules, resolveNoteIcon, resolveFolderIcon } from '../../../plugins/pluginContext'
 import { timeAgo } from '../../../utils/timeAgo'
-import { countNotes } from '../../../utils/folderTree'
 import type { FolderNode } from '../../../utils/folderTree'
 import type { Note, TagRecord } from '../../../types'
 import { Icon } from '../../../icons/Icon'
@@ -221,7 +220,7 @@ function NoteRow({
       <span className="min-w-0 flex-1 truncate">{label}</span>
 
       {/* Hover actions */}
-      <div className="relative ml-auto flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+      <div className="absolute right-1 top-0 flex h-full items-center opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
         <span className="mr-1.5 text-[11px] text-text3">{timeAgo(note.updatedAt)}</span>
         <button
           type="button"
@@ -327,7 +326,6 @@ function FolderRow({
   const iconRules = useIconRules()
   const iconRule  = resolveFolderIcon(node.name, iconRules)
 
-  const totalCount = countNotes(node)
   const isOver = localDragOver || isDragOver
 
   function commitRename() {
@@ -411,15 +409,8 @@ function FolderRow({
           )}
         </button>
 
-        {/* Note count */}
-        {totalCount > 0 && (
-          <span className="shrink-0 text-[10px] text-text3 opacity-50 group-hover:opacity-0">
-            {totalCount}
-          </span>
-        )}
-
         {/* Hover actions */}
-        <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="absolute right-1 top-0 flex h-full items-center opacity-0 transition-opacity group-hover:opacity-100">
           <button
             type="button"
             title="New note"
