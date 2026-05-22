@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { useLoaderStore } from './useLoaderStore'
 import { normalizeBoard, DEFAULT_FILTERS, type KanbanState } from './kanban/helpers'
 import { makeBoardActions } from './kanban/boardActions'
 import { makeTaskActions } from './kanban/taskActions'
@@ -22,14 +23,16 @@ export const useKanbanStore = create<KanbanState>()(
       loadBoards: async () => {
         const { readAllBoards, isPlainFolderConnected } = await import('../sync/plainFolder')
         if (!isPlainFolderConnected()) { set({ isLoaded: true }); return }
-        try {
-          const boards = (await readAllBoards()).map(normalizeBoard)
-          boards.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-          set({ boards, isLoaded: true })
-        } catch (err) {
-          console.warn('[kanban] loadBoards failed:', err)
-          set({ isLoaded: true })
-        }
+        await useLoaderStore.getState().run('load-boards', async () => {
+          try {
+            const boards = (await readAllBoards()).map(normalizeBoard)
+            boards.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+            set({ boards, isLoaded: true })
+          } catch (err) {
+            console.warn('[kanban] loadBoards failed:', err)
+            set({ isLoaded: true })
+          }
+        })
       },
 
       setActiveBoardId: (activeBoardId) => set({ activeBoardId }),

@@ -91,11 +91,15 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
   }, [note.id, onSave])
 
   const handleRestore = (restoredContent: string, restoredTitle?: string) => {
-    if (restoredTitle) setTitle(restoredTitle)
+    const newTitle = restoredTitle ?? titleRef.current
+    // Update refs immediately so saveNote reads the restored values
+    titleRef.current   = newTitle
+    contentRef.current = restoredContent
+    if (restoredTitle) setTitle(newTitle)
     setContent(restoredContent)
-    setRestoreKey(k => k + 1)   // remounts MarkdownEditor with restored initialMarkdown
-    setSaveStatus('dirty')
+    setRestoreKey(k => k + 1)
     setShowHistory(false)
+    void saveNote()
   }
 
   const saveTags = async (newTags: string[]) => {

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { JournalEntry } from '../types'
+import { useLoaderStore } from './useLoaderStore'
 
 type JournalState = {
   entries: Record<string, JournalEntry>   // keyed by YYYY-MM-DD
@@ -23,15 +24,17 @@ export const useJournalStore = create<JournalState>()((set, get) => ({
       set({ isLoaded: true })
       return
     }
-    try {
-      const list = await readAllJournalEntries()
-      const map: Record<string, JournalEntry> = {}
-      for (const e of list) map[e.date] = e
-      set({ entries: map, isLoaded: true })
-    } catch (err) {
-      console.warn('[loadEntries] failed:', err)
-      set({ isLoaded: true })
-    }
+    await useLoaderStore.getState().run('load-journal', async () => {
+      try {
+        const list = await readAllJournalEntries()
+        const map: Record<string, JournalEntry> = {}
+        for (const e of list) map[e.date] = e
+        set({ entries: map, isLoaded: true })
+      } catch (err) {
+        console.warn('[loadEntries] failed:', err)
+        set({ isLoaded: true })
+      }
+    })
   },
 
   setActiveDate: (activeDate) => set({ activeDate }),

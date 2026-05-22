@@ -34,11 +34,14 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, notes, read
   const initialMarkdownRef   = useRef(initialMarkdown)
   const onChangeRef          = useRef(onChange)
   const onWikilinkClickRef   = useRef(onWikilinkClick)
+  const readOnlyRef          = useRef(readOnly)
 
   useEffect(() => { onChangeRef.current = onChange }, [onChange])
   useEffect(() => { onWikilinkClickRef.current = onWikilinkClick }, [onWikilinkClick])
 
+  // Sync readOnly changes after the editor is ready
   useEffect(() => {
+    readOnlyRef.current = readOnly
     if (!editorReadyRef.current || !crepeRef.current) return
     crepeRef.current.editor.action(ctx => {
       ctx.get(editorViewCtx).setProps({ editable: () => !readOnly })
@@ -110,7 +113,14 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, notes, read
     crepe.editor.use(linkKeymapPlugin)
     crepe.on(listener => { listener.markdownUpdated((_ctx, md) => onChangeRef.current(md)) })
 
-    void crepe.create().then(() => { editorReadyRef.current = true })
+    void crepe.create().then(() => {
+      editorReadyRef.current = true
+      if (readOnlyRef.current) {
+        crepe.editor.action(ctx => {
+          ctx.get(editorViewCtx).setProps({ editable: () => false })
+        })
+      }
+    })
 
     const detachTooltip = attachTooltip()
 

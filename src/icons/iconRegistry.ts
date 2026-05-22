@@ -1,5 +1,5 @@
 import { builtinPack } from './builtinPack'
-import type { IconPack, IconToken, IconComponent } from './tokens'
+import type { IconPack, IconToken, IconSource } from './tokens'
 
 let _patches: Partial<IconPack>[] = []
 const _subs: Array<() => void> = []
@@ -29,6 +29,6 @@ export function subscribeIconPack(fn: () => void): () => void {
   }
 }
 
-export function getIconComponent(name: IconToken): IconComponent {
+export function getIconSource(name: IconToken): IconSource {
   return getIconPack()[name]
 }

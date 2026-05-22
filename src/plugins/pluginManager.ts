@@ -20,7 +20,7 @@ import type {
   NoteWriteData,
   IconRule,
 } from './types'
-import type { IconPack } from '../icons/tokens'
+import type { IconToken } from '../icons/tokens'
 
 // ─── Module-level registry ────────────────────────────────────────────────────
 // Not in Zustand — plugin setup() runs outside React's render cycle and mutating
@@ -89,7 +89,7 @@ function buildPluginAPI(manifest: PluginManifest): MindVaultPluginAPI {
       notifyRegistry()
     },
 
-    registerIconPack(pack: Partial<IconPack>) {
+    registerIconPack(pack: Partial<Record<IconToken, string>>) {
       gate(manifest, 'ui:icons', 'registerIconPack')
       applyIconPackPatch(pack)
     },

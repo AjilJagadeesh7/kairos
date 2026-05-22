@@ -158,16 +158,17 @@ export const useAppStore = create<AppState>()(
           set({ isNotesLoaded: true })
           return
         }
-        try {
-          const notes = await readAllNotes()
-          // Sort by updatedAt desc
-          notes.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-          buildIndex(notes)
-          set({ notes, isNotesLoaded: true })
-        } catch (err) {
-          console.warn('[loadNotes] failed:', err)
-          set({ isNotesLoaded: true })
-        }
+        await useLoaderStore.getState().run('load-notes', async () => {
+          try {
+            const notes = await readAllNotes()
+            notes.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+            buildIndex(notes)
+            set({ notes, isNotesLoaded: true })
+          } catch (err) {
+            console.warn('[loadNotes] failed:', err)
+            set({ isNotesLoaded: true })
+          }
+        })
       },
 
       loadFolders: async () => {

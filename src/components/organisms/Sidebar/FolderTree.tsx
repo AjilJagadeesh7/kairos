@@ -382,7 +382,7 @@ function FolderRow({
             {/* Chevron overlaps into the padding zone — doesn't push icon right */}
             <Icon name="chevron-right"
               size={16}
-              className={`absolute -left-2 text-text3 transition-transform duration-150 ${expanded ? 'rotate-90' : ''}`}
+              className={`absolute -left-3.5 text-text3 transition-transform duration-150 ${expanded ? 'rotate-90' : ''}`}
             />
             {iconRule
               ? <span className="text-[12px] leading-none">{iconRule.emoji}</span>

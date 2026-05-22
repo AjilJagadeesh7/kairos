@@ -38,6 +38,7 @@ export type IconToken =
   | 'file-json'
   | 'file-text'
   | 'flask-conical'
+  | 'folder'
   | 'folder-input'
   | 'folder-open'
   | 'folder-plus'
@@ -100,4 +101,8 @@ export interface IconProps {
 
 export type IconComponent = React.ComponentType<IconProps>
 
-export type IconPack = Record<IconToken, IconComponent>
+// Plugin-supplied icons are SVG strings (inline <svg>…</svg>) or URLs.
+// Builtin icons remain React components (Lucide).
+export type IconSource = IconComponent | string
+
+export type IconPack = Record<IconToken, IconSource>

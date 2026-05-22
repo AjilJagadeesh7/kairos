@@ -1,4 +1,5 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useLoaderStore } from '../../../store/useLoaderStore'
 import { useNavigate } from 'react-router-dom'
 
 import { useAppStore } from '../../../store/useAppStore'
@@ -31,6 +32,7 @@ export function Sidebar({ onClose }: Props): JSX.Element {
   const deleteNoteById  = useAppStore(s => s.deleteNoteById)
   const pinnedNoteIds   = useAppStore(s => s.pinnedNoteIds)
   const loadNotes       = useAppStore(s => s.loadNotes)
+  const isRefreshing    = useLoaderStore(s => Boolean(s.tasks['load-notes']))
   const navigate        = useNavigate()
 
   const {
@@ -38,6 +40,15 @@ export function Sidebar({ onClose }: Props): JSX.Element {
     tagMap, visible, copiedId,
     openNote, handleDelete, copyLink,
   } = useSidebarNotes(onClose)
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const q = (e as CustomEvent<{ query: string }>).detail?.query
+      if (q) setQuery(q)
+    }
+    window.addEventListener('mv:search', handler)
+    return () => window.removeEventListener('mv:search', handler)
+  }, [setQuery])
 
   // Only show tree when not searching
   const isSearching = query.trim().length > 0
@@ -139,9 +150,15 @@ export function Sidebar({ onClose }: Props): JSX.Element {
             title="Refresh"
             aria-label="Refresh notes"
             onClick={() => void loadNotes()}
-            className="flex h-6 w-6 items-center justify-center rounded text-text3 transition hover:bg-surface3 hover:text-text"
+            disabled={isRefreshing}
+            className="flex h-6 w-6 items-center justify-center rounded text-text3 transition hover:bg-surface3 hover:text-text disabled:pointer-events-none"
           >
-            <Icon name="refresh-cw" size={14} aria-hidden />
+            <Icon
+              name="refresh-cw"
+              size={14}
+              aria-hidden
+              className={isRefreshing ? 'animate-spin' : undefined}
+            />
           </button>
           {onClose && (
             <button
