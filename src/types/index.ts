@@ -14,6 +14,7 @@ export type { EdgeKind, GraphEdge, GNode, GLink, GraphPopover } from './graph.ty
 export type { Section, CustomCallout } from './settings.types'
 export type { SettingRecord, EmbeddingRecord } from './db.types'
 export type { JournalEntry } from './journal.types'
+export type { Canvas, CanvasNode, CanvasEdge, CanvasNodeType, CanvasNodeData, CanvasTextData, CanvasNoteData, CanvasWebData } from './canvas.types'
 export type { ContentVersion, VersionHistory } from './history.types'
 export type {
   Board,

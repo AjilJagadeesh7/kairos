@@ -54,6 +54,7 @@ export type IconToken =
   | 'info'
   | 'keyboard'
   | 'layers'
+  | 'layout-dashboard'
   | 'layout-list'
   | 'lightbulb'
   | 'link'

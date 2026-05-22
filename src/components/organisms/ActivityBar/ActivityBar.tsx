@@ -12,10 +12,11 @@ import type { ThemeMode } from '../../../types'
 // ─── Nav items ────────────────────────────────────────────────────────────────
 
 const TOP_NAV: Array<{ to: string; iconName: IconToken; label: string }> = [
-  { to: '/notes',   iconName: 'book-open',     label: 'Notes'   },
-  { to: '/journal', iconName: 'calendar-days', label: 'Journal' },
-  { to: '/kanban',  iconName: 'square-kanban', label: 'Kanban'  },
-  { to: '/graph',   iconName: 'network',       label: 'Graph'   },
+  { to: '/notes',   iconName: 'book-open',        label: 'Notes'   },
+  { to: '/journal', iconName: 'calendar-days',    label: 'Journal' },
+  { to: '/kanban',  iconName: 'square-kanban',    label: 'Kanban'  },
+  { to: '/canvas',  iconName: 'layout-dashboard', label: 'Canvas'  },
+  { to: '/graph',   iconName: 'network',          label: 'Graph'   },
 ]
 
 // ─── Custom tooltip ───────────────────────────────────────────────────────────
@@ -126,7 +127,7 @@ function CompactThemePicker({ value, onChange }: { value: ThemeMode; onChange: (
 
 // ─── Activity bar ─────────────────────────────────────────────────────────────
 
-const SIDEBAR_TYPES = new Set(['notes', 'journal', 'graph', 'settings'])
+const SIDEBAR_TYPES = new Set(['notes', 'journal', 'canvas', 'graph', 'settings'])
 
 export function ActivityBar() {
   const theme         = useAppStore(s => s.theme)

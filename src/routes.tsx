@@ -5,6 +5,7 @@ import { SettingsPage } from './pages/SettingsPage'
 import { LandingPage } from './pages/LandingPage'
 import { GraphPage } from './pages/GraphPage'
 import { KanbanPage } from './pages/KanbanPage'
+import { CanvasPage } from './pages/CanvasPage'
 import { JournalPage } from './pages/JournalPage'
 import { usePluginRegistry } from './plugins/pluginContext'
 import { ErrorBoundary } from './components/common/ErrorBoundary'
@@ -22,6 +23,8 @@ export function AppRoutes() {
       <Route path="/journal/:date" element={<JournalPage />} />
       <Route path="/kanban" element={<KanbanPage />} />
       <Route path="/kanban/:boardId" element={<KanbanPage />} />
+      <Route path="/canvas" element={<CanvasPage />} />
+      <Route path="/canvas/:canvasId" element={<CanvasPage />} />
       <Route path="/settings" element={<SettingsPage />} />
 
       {/* Plugin-registered routes */}

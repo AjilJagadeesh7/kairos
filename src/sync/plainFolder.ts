@@ -14,6 +14,7 @@ import { isDesktop } from '../utils/platform'
 import { serializeNote, deserializeNote, noteIdToPath } from '../adapters/storage/noteSerializer'
 import type { Note, JournalEntry, ContentVersion } from '../types'
 import type { Board } from '../types/kanban.types'
+import type { Canvas } from '../types/canvas.types'
 
 const TAURI_KEY = 'mindvault_plain_folder_path'
 
@@ -157,10 +158,11 @@ async function _ensureVaultDirs(): Promise<void> {
     _subdirPath('kanban'),
     _subdirPath('config'),
     _subdirPath('journal'),
+    _subdirPath('canvas'),
   ]).catch(() => { /* best-effort */ })
 }
 
-async function _subdirPath(name: 'notes' | 'kanban' | 'config' | 'journal'): Promise<string> {
+async function _subdirPath(name: 'notes' | 'kanban' | 'config' | 'journal' | 'canvas'): Promise<string> {
   if (isDesktop()) {
     if (!_tauriPath) throw new Error('Plain folder not connected')
     const { mkdir } = await import('@tauri-apps/plugin-fs')
@@ -575,4 +577,69 @@ export async function deletePluginFolder(pluginId: string): Promise<void> {
     return
   }
   await mobileRmdir(`MindVault/plugins/${pluginId}`)
+}
+
+// ---------------------------------------------------------------------------
+// Canvas — vault/canvas/*.json
+// ---------------------------------------------------------------------------
+
+export async function writePlainCanvas(canvas: Canvas): Promise<void> {
+  const content  = JSON.stringify(canvas, null, 2)
+  const fileName = `${canvas.id}.json`
+  const dir      = await _subdirPath('canvas')
+
+  if (isDesktop()) {
+    const { writeTextFile } = await import('@tauri-apps/plugin-fs')
+    await writeTextFile(`${dir}/${fileName}`, content)
+    return
+  }
+  await mobileWrite(`${dir}/${fileName}`, content)
+}
+
+export async function deletePlainCanvas(canvasId: string): Promise<void> {
+  const fileName = `${canvasId}.json`
+
+  if (isDesktop()) {
+    if (!_tauriPath) return
+    const { remove } = await import('@tauri-apps/plugin-fs')
+    try { await remove(`${_tauriPath}/canvas/${fileName}`) } catch { /* already gone */ }
+    return
+  }
+  await mobileDelete(`MindVault/canvas/${fileName}`)
+}
+
+export async function readAllCanvases(): Promise<Canvas[]> {
+  if (isDesktop()) {
+    if (!_tauriPath) return []
+    const { readDir, readTextFile, mkdir } = await import('@tauri-apps/plugin-fs')
+    const canvasPath = `${_tauriPath}/canvas`
+    try { await mkdir(canvasPath, { recursive: true }) } catch { /* exists */ }
+    const entries = await readDir(canvasPath)
+    const canvases: Canvas[] = []
+    for (const entry of entries) {
+      if (!entry.name?.endsWith('.json')) continue
+      try {
+        canvases.push(JSON.parse(await readTextFile(`${canvasPath}/${entry.name}`)) as Canvas)
+      } catch { /* skip malformed */ }
+    }
+    return canvases
+  }
+
+  const canvasPath = 'MindVault/canvas'
+  await mobileMkdir(canvasPath)
+  const { Filesystem, Directory } = await import('@capacitor/filesystem')
+  try {
+    const result = await Filesystem.readdir({ path: canvasPath, directory: Directory.Documents })
+    const canvases: Canvas[] = []
+    for (const entry of result.files) {
+      if (!entry.name.endsWith('.json')) continue
+      const raw = await mobileRead(`${canvasPath}/${entry.name}`)
+      if (raw) {
+        try { canvases.push(JSON.parse(raw) as Canvas) } catch {}
+      }
+    }
+    return canvases
+  } catch {
+    return []
+  }
 }

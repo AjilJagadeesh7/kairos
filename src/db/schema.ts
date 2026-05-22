@@ -1,6 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type { Note, SettingRecord, SyncMeta, TagRecord, JournalEntry } from '../types'
 import type { Board } from '../types/kanban.types'
+import type { Canvas } from '../types/canvas.types'
 
 type EmbeddingRecord = {
   noteId: string
@@ -16,6 +17,7 @@ export class MindVaultDB extends Dexie {
   tags!: EntityTable<TagRecord, 'name'>
   boards!: EntityTable<Board, 'id'>
   journal!: EntityTable<JournalEntry, 'date'>
+  canvases!: EntityTable<Canvas, 'id'>
 
   constructor() {
     super('mindvault')
@@ -105,6 +107,17 @@ export class MindVaultDB extends Dexie {
       boards: 'id, title, updatedAt',
       journal: 'date, updatedAt',
     })
+    // Version 9: add canvases table
+    this.version(9).stores({
+      notes: 'id, title, *tags, createdAt, updatedAt',
+      settings: 'key',
+      syncMeta: 'noteId, lastSynced, driveFileId',
+      embeddings: 'noteId',
+      tags: 'name',
+      boards: 'id, title, updatedAt',
+      journal: 'date, updatedAt',
+      canvases: 'id, title, updatedAt',
+    })
   }
 }
 
@@ -180,4 +193,16 @@ export async function upsertJournalEntry(entry: JournalEntry): Promise<void> {
 
 export async function deleteJournalEntryFromDB(date: string): Promise<void> {
   await db.journal.delete(date)
+}
+
+export async function getAllCanvases(): Promise<Canvas[]> {
+  return db.canvases.orderBy('updatedAt').reverse().toArray()
+}
+
+export async function upsertCanvas(canvas: Canvas): Promise<void> {
+  await db.canvases.put(canvas)
+}
+
+export async function deleteCanvasFromDB(id: string): Promise<void> {
+  await db.canvases.delete(id)
 }
