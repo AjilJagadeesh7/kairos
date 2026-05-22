@@ -32,6 +32,7 @@ export type MarkdownEditorProps = {
   initialMarkdown: string
   noteTitle: string
   notes: Note[]
+  readOnly?: boolean
   onChange: (markdown: string) => void
   onWikilinkClick?: (title: string) => void
 }

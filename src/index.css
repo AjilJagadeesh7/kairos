@@ -956,3 +956,25 @@ body {
 :root.dark .milkdown .ProseMirror blockquote.callout-example   > p:first-child { color: rgb(165 180 252); }
 :root.dark .milkdown .ProseMirror blockquote.callout-quote     > p:first-child { color: rgb(203 213 225); }
 :root.dark .milkdown .ProseMirror blockquote.callout-abstract  > p:first-child { color: rgb(94 234 212);  }
+
+/* ─── READING VIEW ────────────────────────────────────────────────────────── */
+/* Suppresses editor chrome when the note is in reading (preview) mode.       */
+.reading-view .milkdown {
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  padding: 0;
+}
+/* Remove ProseMirror's large built-in horizontal padding — the outer p-4
+   container already provides breathing room, so we only need vertical space. */
+.reading-view .milkdown .ProseMirror {
+  padding: 8px 0 !important;
+  cursor: default;
+  user-select: text;
+  caret-color: transparent;
+  outline: none !important;
+}
+/* Hide slash-menu and other edit-only widgets */
+.reading-view .milkdown .milkdown-slash-menu {
+  display: none !important;
+}

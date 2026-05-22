@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, FileDown, History, Save, Trash2 } from 'lucide-react'
+import { Check, FileDown, History, Pencil, Eye, Save, Trash2 } from 'lucide-react'
 import { embedText } from '../../../utils/embeddingClient'
 import { useAppStore } from '../../../store/useAppStore'
 import { useConfirmStore } from '../../../store/useConfirmStore'
@@ -31,6 +31,7 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
   const [tags, setTags]             = useState<string[]>(note.tags)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
   const [showHistory, setShowHistory] = useState(false)
+  const [readingMode, setReadingMode] = useState(false)
   const [restoreKey, setRestoreKey]   = useState(0)   // bump to force MarkdownEditor remount on restore
   const deleteNoteById    = useAppStore(s => s.deleteNoteById)
   const updateNoteTags    = useAppStore(s => s.updateNoteTags)
@@ -103,7 +104,9 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (eventMatchesAction(e, 'save-note', keyBindings)) {
+      if (e.key === 'Escape' && readingMode) {
+        setReadingMode(false)
+      } else if (eventMatchesAction(e, 'save-note', keyBindings)) {
         e.preventDefault()
         if (saveStatus === 'dirty') void saveNote()
       } else if (eventMatchesAction(e, 'delete-note', keyBindings)) {
@@ -116,7 +119,7 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [saveStatus, saveNote, keyBindings])
+  }, [saveStatus, saveNote, keyBindings, readingMode])
 
   useEffect(() => {
     if (title === note.title && content === note.content) return
@@ -136,97 +139,168 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
           }}
         />
       )}
-      <div className="flex h-full flex-col p-4">
-      <div className="mb-2 flex items-center gap-2">
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="min-w-0 flex-1 rounded-md border border-border bg-surface px-3 py-2 text-lg font-bold text-text outline-none placeholder:text-text3 focus:border-text2"
-          placeholder="Note title"
-        />
 
-        <span className={`hidden shrink-0 text-xs transition-all sm:inline-flex items-center gap-1 ${
-          saveStatus === 'idle' ? 'opacity-0 pointer-events-none' : 'opacity-100'
-        } ${saveStatus === 'saved' ? 'text-green-500' : 'text-text3'}`}>
-          {saveStatus === 'saving' && 'Saving…'}
-          {saveStatus === 'saved'  && <><Check size={11} /> Saved</>}
-          {saveStatus === 'dirty'  && 'Unsaved'}
-        </span>
-
-        <button
-          type="button"
-          onClick={() => void saveNote()}
-          disabled={saveStatus === 'saving' || saveStatus === 'idle'}
-          title={saveStatus === 'dirty' ? 'Save now (⌘S)' : 'No unsaved changes'}
-          className={`flex h-[38px] shrink-0 items-center gap-1.5 rounded-md border px-3 text-sm font-medium transition ${
-            saveStatus === 'dirty'
-              ? 'border-accent/40 bg-accent/10 text-accent hover:bg-accent/20'
-              : 'cursor-default border-border bg-surface text-text3 opacity-40'
-          }`}
-        >
-          <Save size={14} />
-          <span className="hidden sm:inline">Save</span>
-        </button>
-
-        <button
-          type="button"
-          title="Export as PDF"
-          onClick={() => exportPDF(editorRootRef.current, titleRef.current || 'Untitled note')}
-          className="flex h-[38px] shrink-0 items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-sm font-medium text-text3 transition hover:border-accent/50 hover:text-accent"
-        >
-          <FileDown size={14} />
-          <span className="hidden sm:inline">PDF</span>
-        </button>
-
-        <button
-          type="button"
-          title="Version history"
-          onClick={() => setShowHistory(h => !h)}
-          className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-md border transition ${
-            showHistory
-              ? 'border-accent/40 bg-accent/10 text-accent'
-              : 'border-border bg-surface text-text3 hover:border-accent/50 hover:text-accent'
-          }`}
-        >
-          <History size={15} />
-        </button>
-
-        <button
-          type="button"
-          title="Delete note"
-          onClick={handleDeleteNote}
-          className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-md border border-border bg-surface text-text3 transition hover:border-red-400/50 hover:text-red-400"
-        >
-          <Trash2 size={15} />
-        </button>
-      </div>
-
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <TagSelector
-          selectedTags={tags}
-          onTagsChange={saveTags}
-          onTagCreate={(name, color) => setNoteTagColor(name, color)}
-          availableTags={allTags}
-        />
-        {tags.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {tags.map((tagName) => {
-              const tag = tagMap.get(tagName)
-              return tag ? (
-                <TagBadge key={tagName} tag={tag} onRemove={() => void saveTags(tags.filter((t) => t !== tagName))} variant="md" />
-              ) : null
-            })}
+      {readingMode ? (
+        /* ── Reading mode ─────────────────────────────────────────── */
+        <div className="flex h-full flex-col overflow-hidden">
+          {/* Minimal reading toolbar */}
+          <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-2">
+            <div className="flex flex-wrap gap-1">
+              {tags.map((tagName) => {
+                const tag = tagMap.get(tagName)
+                return tag ? <TagBadge key={tagName} tag={tag} variant="md" /> : null
+              })}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                title="Export as PDF"
+                onClick={() => exportPDF(editorRootRef.current, titleRef.current || 'Untitled note')}
+                className="flex h-[32px] items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 text-xs font-medium text-text3 transition hover:border-accent/50 hover:text-accent"
+              >
+                <FileDown size={13} />
+                <span>PDF</span>
+              </button>
+              <button
+                type="button"
+                title="Switch to edit mode (Esc)"
+                onClick={() => setReadingMode(false)}
+                className="flex h-[32px] items-center gap-1.5 rounded-md border border-accent/40 bg-accent/10 px-2.5 text-xs font-medium text-accent transition hover:bg-accent/20"
+              >
+                <Pencil size={13} />
+                <span>Edit</span>
+              </button>
+            </div>
           </div>
-        )}
-      </div>
 
-      <div ref={editorRootRef} className="min-h-0 flex-1 rounded-md border border-border bg-surface">
-        <MarkdownEditor key={restoreKey} noteId={note.id} initialMarkdown={content} noteTitle={title} notes={notes} onChange={setContent} onWikilinkClick={(t) => handleWikilinkClick(t)} />
-      </div>
+          {/* Reading content */}
+          <div ref={editorRootRef} className="min-h-0 flex-1 overflow-y-auto p-4">
+            <h1 className="mb-4 text-2xl font-bold leading-tight text-text">{title || 'Untitled note'}</h1>
+            <div className="reading-view">
+              <MarkdownEditor
+                key={restoreKey}
+                noteId={note.id}
+                initialMarkdown={content}
+                noteTitle={title}
+                notes={notes}
+                readOnly
+                onChange={setContent}
+                onWikilinkClick={(t) => handleWikilinkClick(t)}
+              />
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* ── Edit mode ────────────────────────────────────────────── */
+        <div className="flex h-full flex-col p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="min-w-0 flex-1 rounded-md border border-border bg-surface px-3 py-2 text-lg font-bold text-text outline-none placeholder:text-text3 focus:border-text2"
+              placeholder="Note title"
+            />
 
-      <BacklinksPanel noteTitle={title} />
-      <NoteInfoPanel note={note} content={content} />
-      </div>
+            <span className={`hidden shrink-0 text-xs transition-all sm:inline-flex items-center gap-1 ${
+              saveStatus === 'idle' ? 'opacity-0 pointer-events-none' : 'opacity-100'
+            } ${saveStatus === 'saved' ? 'text-green-500' : 'text-text3'}`}>
+              {saveStatus === 'saving' && 'Saving…'}
+              {saveStatus === 'saved'  && <><Check size={11} /> Saved</>}
+              {saveStatus === 'dirty'  && 'Unsaved'}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => void saveNote()}
+              disabled={saveStatus === 'saving' || saveStatus === 'idle'}
+              title={saveStatus === 'dirty' ? 'Save now (⌘S)' : 'No unsaved changes'}
+              className={`flex h-[38px] shrink-0 items-center gap-1.5 rounded-md border px-3 text-sm font-medium transition ${
+                saveStatus === 'dirty'
+                  ? 'border-accent/40 bg-accent/10 text-accent hover:bg-accent/20'
+                  : 'cursor-default border-border bg-surface text-text3 opacity-40'
+              }`}
+            >
+              <Save size={14} />
+              <span className="hidden sm:inline">Save</span>
+            </button>
+
+            <button
+              type="button"
+              title="Export as PDF"
+              onClick={() => exportPDF(editorRootRef.current, titleRef.current || 'Untitled note')}
+              className="flex h-[38px] shrink-0 items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-sm font-medium text-text3 transition hover:border-accent/50 hover:text-accent"
+            >
+              <FileDown size={14} />
+              <span className="hidden sm:inline">PDF</span>
+            </button>
+
+            <button
+              type="button"
+              title="Reading mode"
+              onClick={() => setReadingMode(true)}
+              className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-md border border-border bg-surface text-text3 transition hover:border-accent/50 hover:text-accent"
+            >
+              <Eye size={15} />
+            </button>
+
+            <button
+              type="button"
+              title="Version history"
+              onClick={() => setShowHistory(h => !h)}
+              className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-md border transition ${
+                showHistory
+                  ? 'border-accent/40 bg-accent/10 text-accent'
+                  : 'border-border bg-surface text-text3 hover:border-accent/50 hover:text-accent'
+              }`}
+            >
+              <History size={15} />
+            </button>
+
+            <button
+              type="button"
+              title="Delete note"
+              onClick={handleDeleteNote}
+              className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-md border border-border bg-surface text-text3 transition hover:border-red-400/50 hover:text-red-400"
+            >
+              <Trash2 size={15} />
+            </button>
+          </div>
+
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <TagSelector
+              selectedTags={tags}
+              onTagsChange={saveTags}
+              onTagCreate={(name, color) => setNoteTagColor(name, color)}
+              availableTags={allTags}
+            />
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {tags.map((tagName) => {
+                  const tag = tagMap.get(tagName)
+                  return tag ? (
+                    <TagBadge key={tagName} tag={tag} onRemove={() => void saveTags(tags.filter((t) => t !== tagName))} variant="md" />
+                  ) : null
+                })}
+              </div>
+            )}
+          </div>
+
+          <div ref={editorRootRef} className="min-h-0 flex-1 rounded-md border border-border bg-surface">
+            <MarkdownEditor
+              key={restoreKey}
+              noteId={note.id}
+              initialMarkdown={content}
+              noteTitle={title}
+              notes={notes}
+              onChange={setContent}
+              onWikilinkClick={(t) => handleWikilinkClick(t)}
+            />
+          </div>
+
+          <BacklinksPanel noteTitle={title} />
+          <NoteInfoPanel note={note} content={content} />
+        </div>
+      )}
 
       {showHistory && (
         <HistoryPanel

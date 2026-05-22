@@ -26,7 +26,7 @@ import { NotePreviewPopover } from '../../common/NotePreviewPopover'
 import { WikilinkDropdown } from './WikilinkDropdown'
 import type { MarkdownEditorProps, TableCommandRunner } from '../../../types'
 
-export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, notes, onChange, onWikilinkClick }: MarkdownEditorProps): JSX.Element {
+export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, notes, readOnly = false, onChange, onWikilinkClick }: MarkdownEditorProps): JSX.Element {
   const rootRef              = useRef<HTMLDivElement | null>(null)
   const crepeRef             = useRef<Crepe | null>(null)
   const editorReadyRef       = useRef(false)
@@ -37,6 +37,13 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, notes, onCh
 
   useEffect(() => { onChangeRef.current = onChange }, [onChange])
   useEffect(() => { onWikilinkClickRef.current = onWikilinkClick }, [onWikilinkClick])
+
+  useEffect(() => {
+    if (!editorReadyRef.current || !crepeRef.current) return
+    crepeRef.current.editor.action(ctx => {
+      ctx.get(editorViewCtx).setProps({ editable: () => !readOnly })
+    })
+  }, [readOnly])
 
   const navigate = useNavigate()
 
@@ -147,7 +154,12 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, notes, onCh
   }
 
   return (
-    <div className="relative h-full min-h-[320px]" onContextMenu={handleContextMenu} onClick={handleLinkClick}>
+    <div
+      className="relative h-full min-h-[320px]"
+      data-readonly={readOnly || undefined}
+      onContextMenu={readOnly ? undefined : handleContextMenu}
+      onClick={handleLinkClick}
+    >
       <div ref={rootRef} className="h-full min-h-[320px]" />
 
       {ac.visible && (
