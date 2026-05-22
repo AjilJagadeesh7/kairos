@@ -1,5 +1,7 @@
-import { Check, Copy, Trash2 } from 'lucide-react'
+import { Check, Copy, FileText, Pin, Trash2 } from 'lucide-react'
 import { TagBadge } from '../atoms/TagBadge'
+import { useAppStore } from '../../store/useAppStore'
+import { useIconRules, resolveNoteIcon } from '../../plugins/pluginContext'
 import { timeAgo } from '../../utils/timeAgo'
 import type { Note, TagRecord } from '../../types'
 
@@ -14,6 +16,11 @@ interface Props {
 }
 
 export function NoteListItem({ note, isActive, isCopied, tagMap, onOpen, onDelete, onCopyLink }: Props) {
+  const isPinned  = useAppStore(s => s.pinnedNoteIds.includes(note.id))
+  const pinNote   = useAppStore(s => s.pinNote)
+  const unpinNote = useAppStore(s => s.unpinNote)
+  const iconRules = useIconRules()
+  const iconRule  = resolveNoteIcon(note.title, note.tags, iconRules)
   const label = note.title || 'Untitled note'
 
   return (
@@ -27,22 +34,27 @@ export function NoteListItem({ note, isActive, isCopied, tagMap, onOpen, onDelet
       onKeyDown={e => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen() }
       }}
-      className={`group sidebar-note-card flex cursor-pointer select-none items-center gap-2 rounded-lg border px-2 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 ${
+      className={`group flex cursor-pointer select-none items-center gap-2 rounded-md px-2 py-[5px] text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 ${
         isActive
-          ? 'active border-accent/20 bg-surface shadow-sm'
-          : 'border-border bg-surface2 hover:border-accent/30 hover:bg-surface'
+          ? 'bg-accent/12 text-text font-medium'
+          : 'text-text2 hover:bg-surface3 hover:text-text'
       }`}
     >
+      {iconRule
+        ? <span className="shrink-0 text-[13px] leading-none" style={iconRule.color ? { color: iconRule.color } : undefined}>{iconRule.emoji}</span>
+        : isPinned
+          ? <Pin size={12} className="shrink-0 text-accent" aria-hidden />
+          : <FileText size={12} className={`shrink-0 ${isActive ? 'text-accent/60' : 'text-text3'}`} aria-hidden />
+      }
+
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <h3 className="note-title min-w-0 truncate text-[11px] font-semibold text-text">
-            {label}
-          </h3>
-          <span className="note-meta whitespace-nowrap text-[10px] text-text3">{timeAgo(note.updatedAt)}</span>
+        <div className="flex items-baseline gap-2">
+          <span className="min-w-0 truncate leading-snug">{label}</span>
+          <span className="shrink-0 text-[10px] text-text3 opacity-60">{timeAgo(note.updatedAt)}</span>
         </div>
         {note.tags.length > 0 && (
-          <div className="mt-1 flex flex-wrap gap-1">
-            {note.tags.slice(0, 2).map(tagName => {
+          <div className="mt-0.5 flex flex-wrap gap-1">
+            {note.tags.slice(0, 3).map(tagName => {
               const tag = tagMap.get(tagName)
               return tag ? <TagBadge key={tagName} tag={tag} variant="sm" /> : null
             })}
@@ -50,25 +62,36 @@ export function NoteListItem({ note, isActive, isCopied, tagMap, onOpen, onDelet
         )}
       </div>
 
-      {/* Actions — always accessible, visually hidden until hover/focus */}
-      <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+      {/* Actions */}
+      <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+        <button
+          type="button"
+          title={isPinned ? 'Unpin' : 'Pin'}
+          aria-label={isPinned ? `Unpin "${label}"` : `Pin "${label}"`}
+          onClick={e => { e.stopPropagation(); isPinned ? unpinNote(note.id) : pinNote(note.id) }}
+          className={`flex h-6 w-6 items-center justify-center rounded transition active:scale-95 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 ${
+            isPinned ? 'text-accent hover:text-accent/70' : 'text-text3 hover:bg-surface hover:text-text'
+          }`}
+        >
+          <Pin size={11} aria-hidden className={isPinned ? 'fill-accent' : ''} />
+        </button>
         <button
           type="button"
           title="Copy wikilink"
           aria-label={`Copy link to "${label}"`}
           onClick={onCopyLink}
-          className="flex h-8 w-8 items-center justify-center rounded-md text-text3 transition hover:bg-surface2 hover:text-text active:scale-95 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+          className="flex h-6 w-6 items-center justify-center rounded text-text3 transition hover:bg-surface hover:text-text active:scale-95 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
         >
-          {isCopied ? <Check size={14} className="text-green-500" aria-hidden /> : <Copy size={14} aria-hidden />}
+          {isCopied ? <Check size={11} className="text-green-500" aria-hidden /> : <Copy size={11} aria-hidden />}
         </button>
         <button
           type="button"
-          title="Delete note"
+          title="Delete"
           aria-label={`Delete "${label}"`}
           onClick={onDelete}
-          className="flex h-8 w-8 items-center justify-center rounded-md text-text3 transition hover:bg-surface2 hover:text-red-400 active:scale-95 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
+          className="flex h-6 w-6 items-center justify-center rounded text-text3 transition hover:bg-surface hover:text-red-400 active:scale-95 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
         >
-          <Trash2 size={14} aria-hidden />
+          <Trash2 size={11} aria-hidden />
         </button>
       </div>
     </div>

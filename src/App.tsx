@@ -3,7 +3,7 @@ import { Toaster } from 'sonner'
 import { useAppStore } from './store/useAppStore'
 import { usePaneStore } from './store/usePaneStore'
 import { useAppStartup } from './hooks/useAppStartup'
-import { Header } from './components/organisms/Header/Header'
+import { ActivityBar } from './components/organisms/ActivityBar/ActivityBar'
 import { PaneLayout } from './components/organisms/SplitLayout/PaneLayout'
 import { LoaderBar } from './components/molecules/LoaderBar'
 import { ConfirmDialog } from './components/organisms/ConfirmDialog'
@@ -65,7 +65,7 @@ function AppInner() {
   }, [keyBindings, createNote, notes])
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-bg text-text">
+    <div className="flex h-screen overflow-hidden bg-bg text-text">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[99999] focus:rounded-lg focus:bg-[rgb(var(--accent))] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-[rgb(var(--accent-fg))] focus:shadow-lg"
@@ -77,8 +77,8 @@ function AppInner() {
       {!onboardingDone && <OnboardingModal />}
       {showCommandPalette && <CommandPalette onClose={closeCommandPalette} />}
       {showShortcuts && <ShortcutsModal onClose={closeShortcuts} />}
-      <Header />
-      <div id="main-content" className="flex min-h-0 flex-1 overflow-hidden">
+      <ActivityBar />
+      <div id="main-content" className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <PaneLayout />
       </div>
       <Toaster

@@ -32,6 +32,7 @@ type AppState = {
   lastSyncTime: string | null
   keyBindings: Record<string, string>
   folderList: string[]  // explicitly created folder paths (includes empty folders)
+  pinnedNoteIds: string[]
 
   setUserName: (name: string) => void
   setNewTabPage: (path: string) => void
@@ -54,6 +55,8 @@ type AppState = {
   removeNoteTag: (tagName: string) => void
   setKeyBinding: (id: string, key: string) => void
   resetKeyBinding: (id: string) => void
+  pinNote: (id: string) => void
+  unpinNote: (id: string) => void
 
   loadNotes: () => Promise<void>
   loadFolders: () => Promise<void>
@@ -102,6 +105,7 @@ export const useAppStore = create<AppState>()(
       lastSyncTime: null,
       keyBindings: {},
       folderList: [],
+      pinnedNoteIds: [],
 
       setUserName: (userName) => set({ userName }),
       setNewTabPage: (newTabPage) => set({ newTabPage }),
@@ -145,6 +149,8 @@ export const useAppStore = create<AppState>()(
         const { [id]: _, ...rest } = s.keyBindings
         return { keyBindings: rest }
       }),
+      pinNote: (id) => set(s => ({ pinnedNoteIds: s.pinnedNoteIds.includes(id) ? s.pinnedNoteIds : [...s.pinnedNoteIds, id] })),
+      unpinNote: (id) => set(s => ({ pinnedNoteIds: s.pinnedNoteIds.filter(x => x !== id) })),
 
       loadNotes: async () => {
         const { readAllNotes, isPlainFolderConnected } = await import('../sync/plainFolder')
@@ -438,6 +444,7 @@ export const useAppStore = create<AppState>()(
         newTabPage:      state.newTabPage,
         onboardingDone:  state.onboardingDone,
         keyBindings:     state.keyBindings,
+        pinnedNoteIds:   state.pinnedNoteIds,
       }),
     },
   ),

@@ -1,10 +1,9 @@
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Loader2, Plus, Search, X } from 'lucide-react'
+import { FolderPlus, Loader2, Plus, RefreshCw, Search, X } from 'lucide-react'
 import { useAppStore } from '../../../store/useAppStore'
 import { useSidebarNotes } from '../../../hooks/useSidebarNotes'
 import { buildFolderTree, getAllFolderPaths } from '../../../utils/folderTree'
-import { Button } from '../../atoms/Button'
 import { SearchModePills } from '../../molecules/SearchModePills'
 import { NoteListItem } from '../../molecules/NoteListItem'
 import { NoteTemplateModal } from '../Notes/NoteTemplateModal'
@@ -20,6 +19,7 @@ export function Sidebar({ onClose }: Props): JSX.Element {
   const listRef = useRef<HTMLUListElement>(null)
   const [showTemplates, setShowTemplates] = useState(false)
   const [templateFolder, setTemplateFolder] = useState<string | undefined>()
+  const [creatingRootFolder, setCreatingRootFolder] = useState(false)
 
   const createNote      = useAppStore(s => s.createNote)
   const folderList      = useAppStore(s => s.folderList)
@@ -28,6 +28,8 @@ export function Sidebar({ onClose }: Props): JSX.Element {
   const renameFolder    = useAppStore(s => s.renameFolder)
   const deleteFolder    = useAppStore(s => s.deleteFolder)
   const deleteNoteById  = useAppStore(s => s.deleteNoteById)
+  const pinnedNoteIds   = useAppStore(s => s.pinnedNoteIds)
+  const loadNotes       = useAppStore(s => s.loadNotes)
   const navigate        = useNavigate()
 
   const {
@@ -45,6 +47,21 @@ export function Sidebar({ onClose }: Props): JSX.Element {
   )
 
   const allFolderPaths = useMemo(() => getAllFolderPaths(folderTree), [folderTree])
+
+  const pinnedNotes = useMemo(
+    () => pinnedNoteIds.map(id => notes.find(n => n.id === id)).filter(Boolean) as typeof notes,
+    [pinnedNoteIds, notes],
+  )
+
+  // In search results, surface pinned notes first
+  const sortedVisible = useMemo(
+    () => [...visible].sort((a, b) => {
+      const ap = pinnedNoteIds.includes(a.id) ? 0 : 1
+      const bp = pinnedNoteIds.includes(b.id) ? 0 : 1
+      return ap - bp
+    }),
+    [visible, pinnedNoteIds],
+  )
 
   function openNewNoteTemplates(folder?: string) {
     setTemplateFolder(folder)
@@ -96,25 +113,43 @@ export function Sidebar({ onClose }: Props): JSX.Element {
         className="flex h-full w-full flex-col border-r border-border bg-surface2"
       >
         {/* ── Header ── */}
-        <div className="sidebar-header flex items-center gap-2 border-b border-border px-3 py-3">
+        <div className="sidebar-header flex items-center gap-1 border-b border-border px-3 py-3">
           <span className="flex-1 text-xs font-semibold uppercase tracking-widest text-text3">Files</span>
-          <Button
-            variant="primary"
-            size="xs"
-            onClick={() => openNewNoteTemplates()}
+          <button
+            type="button"
+            title="New note"
             aria-label="New note"
-            className="inline-flex items-center gap-1"
+            onClick={() => openNewNoteTemplates()}
+            className="flex h-6 w-6 items-center justify-center rounded text-text3 transition hover:bg-surface3 hover:text-text"
           >
-            <Plus size={13} aria-hidden /> New
-          </Button>
+            <Plus size={14} aria-hidden />
+          </button>
+          <button
+            type="button"
+            title="New folder"
+            aria-label="New folder"
+            onClick={() => setCreatingRootFolder(true)}
+            className="flex h-6 w-6 items-center justify-center rounded text-text3 transition hover:bg-surface3 hover:text-text"
+          >
+            <FolderPlus size={14} aria-hidden />
+          </button>
+          <button
+            type="button"
+            title="Refresh"
+            aria-label="Refresh notes"
+            onClick={() => void loadNotes()}
+            className="flex h-6 w-6 items-center justify-center rounded text-text3 transition hover:bg-surface3 hover:text-text"
+          >
+            <RefreshCw size={14} aria-hidden />
+          </button>
           {onClose && (
             <button
               type="button"
               aria-label="Close sidebar"
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-md text-text2 transition hover:bg-surface3 hover:text-text xl:hidden"
+              className="flex h-6 w-6 items-center justify-center rounded-md text-text2 transition hover:bg-surface3 hover:text-text xl:hidden"
             >
-              <X size={16} aria-hidden />
+              <X size={14} aria-hidden />
             </button>
           )}
         </div>
@@ -170,32 +205,29 @@ export function Sidebar({ onClose }: Props): JSX.Element {
               aria-label="Search results"
               aria-live="polite"
               onKeyDown={onListKeyDown}
-              className="space-y-1 px-2"
+              className="px-1"
             >
-              {visible.length === 0 ? (
+              {sortedVisible.length === 0 ? (
                 <li className="py-8 text-center text-xs text-text3" role="option" aria-selected={false}>
                   No notes match &ldquo;{query}&rdquo;
                 </li>
               ) : (
-                visible.map(note => (
-                  <li key={note.id} role="option" aria-selected={activeNoteId === note.id}>
-                    {/* Folder path badge under title */}
-                    <div className="group relative">
-                      <NoteListItem
-                        note={note}
-                        isActive={activeNoteId === note.id}
-                        isCopied={copiedId === note.id}
-                        tagMap={tagMap}
-                        onOpen={() => openNote(note.id)}
-                        onDelete={e => handleDelete(e, note)}
-                        onCopyLink={e => copyLink(e, note)}
-                      />
-                      {note.folder && (
-                        <span className="pointer-events-none absolute bottom-1 right-10 text-[10px] text-text3">
-                          {note.folder}
-                        </span>
-                      )}
-                    </div>
+                sortedVisible.map(note => (
+                  <li key={note.id} role="option" aria-selected={activeNoteId === note.id} className="relative">
+                    <NoteListItem
+                      note={note}
+                      isActive={activeNoteId === note.id}
+                      isCopied={copiedId === note.id}
+                      tagMap={tagMap}
+                      onOpen={() => openNote(note.id)}
+                      onDelete={e => handleDelete(e, note)}
+                      onCopyLink={e => copyLink(e, note)}
+                    />
+                    {note.folder && (
+                      <span className="pointer-events-none absolute bottom-[5px] right-24 text-[10px] text-text3/50">
+                        {note.folder}
+                      </span>
+                    )}
                   </li>
                 ))
               )}
@@ -209,6 +241,9 @@ export function Sidebar({ onClose }: Props): JSX.Element {
                 copiedId={copiedId}
                 tagMap={tagMap}
                 allFolderPaths={allFolderPaths}
+                pinnedNotes={pinnedNotes}
+                creatingRootFolder={creatingRootFolder}
+                onCreatingRootFolderChange={setCreatingRootFolder}
                 onOpenNote={id => { navigate(`/notes/${id}`); onClose?.() }}
                 onDeleteNote={handleDeleteNote}
                 onCopyLink={note => {

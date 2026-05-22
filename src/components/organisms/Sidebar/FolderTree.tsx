@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  ChevronRight, Folder, FolderOpen, FileText,
+  ChevronRight, FileText, Folder, FolderOpen,
   Plus, FolderPlus, MoreHorizontal, Pencil, Trash2,
-  Check, Copy, FolderInput, ExternalLink,
+  Check, Copy, FolderInput, ExternalLink, Pin,
 } from 'lucide-react'
 import { usePaneStore } from '../../../store/usePaneStore'
+import { useAppStore } from '../../../store/useAppStore'
+import { useIconRules, resolveNoteIcon, resolveFolderIcon } from '../../../plugins/pluginContext'
 import { timeAgo } from '../../../utils/timeAgo'
 import { countNotes } from '../../../utils/folderTree'
 import type { FolderNode } from '../../../utils/folderTree'
 import type { Note, TagRecord } from '../../../types'
 
-// ─── Types ──────────────────────────────────────────────────────────────────
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface FolderTreeProps {
   root: FolderNode
@@ -18,6 +20,9 @@ interface FolderTreeProps {
   copiedId: string | null
   tagMap: Map<string, TagRecord>
   allFolderPaths: string[]
+  pinnedNotes: Note[]
+  creatingRootFolder: boolean
+  onCreatingRootFolderChange: (v: boolean) => void
   onOpenNote: (noteId: string) => void
   onDeleteNote: (note: Note) => void
   onCopyLink: (note: Note) => void
@@ -28,11 +33,26 @@ interface FolderTreeProps {
   onDeleteFolder: (path: string) => void
 }
 
-interface DragState {
-  noteId: string
+interface DragState { noteId: string }
+
+// ─── Indent guides ────────────────────────────────────────────────────────────
+
+function IndentGuides({ depth }: { depth: number }) {
+  if (depth === 0) return null
+  return (
+    <>
+      {Array.from({ length: depth }, (_, i) => (
+        <span
+          key={i}
+          className="pointer-events-none absolute bottom-0 top-0 w-px bg-border/35"
+          style={{ left: `${16 + i * 16}px` }}
+        />
+      ))}
+    </>
+  )
 }
 
-// ─── Folder context menu ─────────────────────────────────────────────────────
+// ─── Folder context menu ──────────────────────────────────────────────────────
 
 interface FolderMenuProps {
   onNewNote: () => void
@@ -60,10 +80,10 @@ function FolderMenu({ onNewNote, onNewSubfolder, onRename, onDelete, onClose }: 
       className="absolute right-0 top-full z-50 mt-1 min-w-[160px] overflow-hidden rounded-lg border border-border bg-surface shadow-lg"
     >
       {([
-        { icon: Plus,         label: 'New note',       action: onNewNote,      danger: false },
-        { icon: FolderPlus,   label: 'New subfolder',  action: onNewSubfolder, danger: false },
-        { icon: Pencil,       label: 'Rename',         action: onRename,       danger: false },
-        { icon: Trash2,       label: 'Delete folder',  action: onDelete,       danger: true  },
+        { icon: Plus,       label: 'New note',       action: onNewNote,      danger: false },
+        { icon: FolderPlus, label: 'New subfolder',  action: onNewSubfolder, danger: false },
+        { icon: Pencil,     label: 'Rename',         action: onRename,       danger: false },
+        { icon: Trash2,     label: 'Delete folder',  action: onDelete,       danger: true  },
       ] as const).map(({ icon: Icon, label, action, danger }) => (
         <button
           key={label}
@@ -71,7 +91,7 @@ function FolderMenu({ onNewNote, onNewSubfolder, onRename, onDelete, onClose }: 
           role="menuitem"
           onClick={(e) => { e.stopPropagation(); action() }}
           className={`flex w-full items-center gap-2 px-3 py-2 text-xs transition hover:bg-surface2 ${
-            danger ? 'text-red-400 hover:text-red-400' : 'text-text'
+            danger ? 'text-red-400' : 'text-text'
           }`}
         >
           <Icon size={13} aria-hidden />
@@ -82,7 +102,7 @@ function FolderMenu({ onNewNote, onNewSubfolder, onRename, onDelete, onClose }: 
   )
 }
 
-// ─── Move-to-folder popover ──────────────────────────────────────────────────
+// ─── Move-to-folder popover ───────────────────────────────────────────────────
 
 interface MovePopoverProps {
   allFolderPaths: string[]
@@ -133,7 +153,7 @@ function MovePopover({ allFolderPaths, currentFolder, onMove, onClose }: MovePop
   )
 }
 
-// ─── Single note row ─────────────────────────────────────────────────────────
+// ─── Single note row ──────────────────────────────────────────────────────────
 
 interface NoteRowProps {
   note: Note
@@ -152,14 +172,20 @@ function NoteRow({
   note, isActive, isCopied, depth, allFolderPaths,
   onOpen, onDelete, onCopyLink, onMove, onDragStart,
 }: NoteRowProps) {
+  const label = note.title || 'Untitled note'
+  const [showMove, setShowMove] = useState(false)
+  const isPinned  = useAppStore(s => s.pinnedNoteIds.includes(note.id))
+  const pinNote   = useAppStore(s => s.pinNote)
+  const unpinNote = useAppStore(s => s.unpinNote)
+  const iconRules = useIconRules()
+  const iconRule  = resolveNoteIcon(note.title, note.tags, iconRules)
+
   function handleOpenInNewTab(e: React.MouseEvent) {
     e.stopPropagation()
     const { focusedPaneId, openInNewTab } = usePaneStore.getState()
     openInNewTab(focusedPaneId, `/notes/${note.id}`, note.title || 'Note')
     onOpen()
   }
-  const label = note.title || 'Untitled note'
-  const [showMove, setShowMove] = useState(false)
 
   return (
     <div
@@ -177,65 +203,82 @@ function NoteRow({
       onClick={onOpen}
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen() } }}
       style={{ paddingLeft: `${8 + depth * 16}px` }}
-      className={`group relative flex cursor-pointer select-none items-center gap-1.5 rounded-md py-1.5 pr-2 text-[12px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 ${
+      className={`group relative flex h-[26px] cursor-pointer select-none items-center gap-1.5 pr-1 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-accent/50 ${
         isActive
-          ? 'bg-accent/15 text-text font-medium'
+          ? 'bg-accent/15 text-text'
           : 'text-text2 hover:bg-surface3 hover:text-text'
       }`}
     >
-      <FileText size={13} className="shrink-0 text-text3" aria-hidden />
-      <span className="min-w-0 flex-1 truncate">{label}</span>
-      <span className="shrink-0 text-[10px] text-text3 opacity-0 group-hover:opacity-100">{timeAgo(note.updatedAt)}</span>
+      <IndentGuides depth={depth} />
 
-      {/* Hover action buttons */}
-      <div className="relative flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+      {/* Fixed-width icon zone — aligns with folder icons */}
+      <span className="relative flex w-5 shrink-0 items-center justify-center" aria-hidden style={iconRule?.color ? { color: iconRule.color } : undefined}>
+        {iconRule
+          ? <span className="text-[12px] leading-none">{iconRule.emoji}</span>
+          : isPinned
+            ? <Pin size={11} className="text-accent" />
+            : <FileText size={11} className={isActive ? 'text-accent/60' : 'text-text3'} />
+        }
+      </span>
+
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+
+      {/* Hover actions */}
+      <div className="relative ml-auto flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+        <span className="mr-1.5 text-[11px] text-text3">{timeAgo(note.updatedAt)}</span>
         <button
           type="button"
-          title="Move to folder"
-          aria-label="Move to folder"
-          onClick={e => { e.stopPropagation(); setShowMove(v => !v) }}
-          className="flex h-6 w-6 items-center justify-center rounded text-text3 transition hover:bg-surface hover:text-text"
+          title={isPinned ? 'Unpin' : 'Pin'}
+          aria-label={isPinned ? `Unpin "${label}"` : `Pin "${label}"`}
+          onClick={e => { e.stopPropagation(); isPinned ? unpinNote(note.id) : pinNote(note.id) }}
+          className={`flex h-5 w-5 items-center justify-center rounded transition ${
+            isPinned ? 'text-accent' : 'text-text3 hover:text-text'
+          }`}
         >
-          <FolderInput size={12} aria-hidden />
+          <Pin size={10} className={isPinned ? 'fill-accent' : ''} aria-hidden />
         </button>
+        <div className="relative">
+          <button
+            type="button"
+            title="Move to folder"
+            onClick={e => { e.stopPropagation(); setShowMove(v => !v) }}
+            className="flex h-5 w-5 items-center justify-center rounded text-text3 transition hover:text-text"
+          >
+            <FolderInput size={10} aria-hidden />
+          </button>
+          {showMove && (
+            <MovePopover
+              allFolderPaths={allFolderPaths}
+              currentFolder={note.folder}
+              onMove={onMove}
+              onClose={() => setShowMove(false)}
+            />
+          )}
+        </div>
         <button
           type="button"
           title="Copy wikilink"
-          aria-label={`Copy link to "${label}"`}
           onClick={e => { e.stopPropagation(); onCopyLink() }}
-          className="flex h-6 w-6 items-center justify-center rounded text-text3 transition hover:bg-surface hover:text-text"
+          className="flex h-5 w-5 items-center justify-center rounded text-text3 transition hover:text-text"
         >
-          {isCopied
-            ? <Check size={12} className="text-green-500" aria-hidden />
-            : <Copy size={12} aria-hidden />}
+          {isCopied ? <Check size={10} className="text-green-500" aria-hidden /> : <Copy size={10} aria-hidden />}
         </button>
         <button
           type="button"
           title="Open in new tab"
-          aria-label={`Open "${label}" in new tab`}
           onClick={handleOpenInNewTab}
-          className="flex h-6 w-6 items-center justify-center rounded text-text3 transition hover:bg-surface hover:text-text"
+          className="flex h-5 w-5 items-center justify-center rounded text-text3 transition hover:text-text"
         >
-          <ExternalLink size={12} aria-hidden />
+          <ExternalLink size={10} aria-hidden />
         </button>
         <button
           type="button"
-          title="Delete note"
-          aria-label={`Delete "${label}"`}
+          title="Delete"
           onClick={e => { e.stopPropagation(); onDelete() }}
-          className="flex h-6 w-6 items-center justify-center rounded text-text3 transition hover:bg-surface hover:text-red-400"
+          className="flex h-5 w-5 items-center justify-center rounded text-text3 transition hover:text-red-400"
         >
-          <Trash2 size={12} aria-hidden />
+          <Trash2 size={10} aria-hidden />
         </button>
-
-        {showMove && (
-          <MovePopover
-            allFolderPaths={allFolderPaths}
-            currentFolder={note.folder}
-            onMove={onMove}
-            onClose={() => setShowMove(false)}
-          />
-        )}
       </div>
     </div>
   )
@@ -284,9 +327,11 @@ function FolderRow({
   const [newFolderName, setNewFolderName] = useState('')
   const dragCounter = useRef(0)
   const [localDragOver, setLocalDragOver] = useState(false)
+  const iconRules = useIconRules()
+  const iconRule  = resolveFolderIcon(node.name, iconRules)
 
   const totalCount = countNotes(node)
-  const Icon = expanded ? FolderOpen : Folder
+  const isOver = localDragOver || isDragOver
 
   function commitRename() {
     const trimmed = renameValue.trim()
@@ -305,57 +350,51 @@ function FolderRow({
     onFinishCreatingChild()
   }
 
-  const isOver = localDragOver || isDragOver
-
   return (
     <div>
       {/* Folder header row */}
       <div
         style={{ paddingLeft: `${8 + depth * 16}px` }}
-        onDragEnter={e => {
-          e.preventDefault()
-          dragCounter.current++
-          setLocalDragOver(true)
-        }}
+        onDragEnter={e => { e.preventDefault(); dragCounter.current++; setLocalDragOver(true) }}
         onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }}
-        onDragLeave={() => {
-          dragCounter.current--
-          if (dragCounter.current === 0) setLocalDragOver(false)
-        }}
+        onDragLeave={() => { dragCounter.current--; if (dragCounter.current === 0) setLocalDragOver(false) }}
         onDrop={e => {
-          e.preventDefault()
-          dragCounter.current = 0
-          setLocalDragOver(false)
+          e.preventDefault(); dragCounter.current = 0; setLocalDragOver(false)
           const noteId = e.dataTransfer.getData('mindvault/noteId')
           if (noteId) onDrop(node.path)
         }}
-        className={`group relative flex cursor-pointer select-none items-center gap-1.5 rounded-md py-1 pr-2 text-[12px] font-medium transition-colors ${
-          isOver
-            ? 'bg-accent/20 ring-1 ring-accent/40'
-            : 'text-text hover:bg-surface3'
+        className={`group relative flex h-[26px] cursor-pointer select-none items-center gap-1 pr-1 text-[13px] font-medium transition-colors ${
+          isOver ? 'bg-accent/20 ring-1 ring-inset ring-accent/30' : 'text-text hover:bg-surface3'
         }`}
       >
-        {/* Expand / collapse chevron */}
-        <button
-          type="button"
-          aria-label={expanded ? 'Collapse folder' : 'Expand folder'}
-          onClick={e => { e.stopPropagation(); onToggle() }}
-          className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-text3 hover:text-text"
-        >
-          <ChevronRight
-            size={12}
-            aria-hidden
-            className={`transition-transform ${expanded ? 'rotate-90' : ''}`}
-          />
-        </button>
+        <IndentGuides depth={depth} />
 
-        {/* Folder icon + name */}
+        {/* Toggle button: chevron + icon + name all in one hit target */}
         <button
           type="button"
           onClick={onToggle}
-          className="flex min-w-0 flex-1 items-center gap-1.5"
+          aria-label={expanded ? 'Collapse folder' : 'Expand folder'}
+          className="flex min-w-0 flex-1 items-center gap-1 text-left"
         >
-          <Icon size={13} className="shrink-0 text-accent/70" aria-hidden />
+          {/* Fixed-width icon zone — same width as NoteRow icon zone so names align */}
+          <span
+            className="relative flex w-5 shrink-0 items-center justify-center"
+            style={iconRule?.color ? { color: iconRule.color } : undefined}
+            aria-hidden
+          >
+            {/* Chevron overlaps into the padding zone — doesn't push icon right */}
+            <ChevronRight
+              size={16}
+              className={`absolute -left-2 text-text3 transition-transform duration-150 ${expanded ? 'rotate-90' : ''}`}
+            />
+            {iconRule
+              ? <span className="text-[12px] leading-none">{iconRule.emoji}</span>
+              : expanded
+                ? <FolderOpen size={11} className="shrink-0 text-accent/80" />
+                : <Folder size={11} className="shrink-0 text-accent/80" />
+            }
+          </span>
+
           {isRenaming ? (
             <input
               autoFocus
@@ -368,40 +407,38 @@ function FolderRow({
                 if (e.key === 'Escape') { setRenameValue(node.name); onFinishRenaming() }
                 e.stopPropagation()
               }}
-              className="min-w-0 flex-1 rounded border border-accent bg-surface px-1 py-0.5 text-[12px] outline-none"
+              className="min-w-0 flex-1 rounded border border-accent bg-surface px-1 py-0 text-[12px] outline-none"
             />
           ) : (
-            <span className="min-w-0 flex-1 truncate">{node.name}</span>
+            <span className="min-w-0 flex-1 truncate font-medium text-[13px]">{node.name}</span>
           )}
         </button>
 
-        {/* Note count badge */}
+        {/* Note count */}
         {totalCount > 0 && (
-          <span className="shrink-0 rounded-full bg-surface3 px-1.5 py-0.5 text-[10px] text-text3 opacity-60">
+          <span className="shrink-0 text-[10px] text-text3 opacity-50 group-hover:opacity-0">
             {totalCount}
           </span>
         )}
 
-        {/* Actions — hover only */}
-        <div className="relative flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+        {/* Hover actions */}
+        <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100">
           <button
             type="button"
-            title="New note in folder"
-            aria-label="New note in folder"
+            title="New note"
             onClick={e => { e.stopPropagation(); onCreateNote(node.path) }}
-            className="flex h-6 w-6 items-center justify-center rounded text-text3 transition hover:bg-surface hover:text-text"
+            className="flex h-5 w-5 items-center justify-center rounded text-text3 transition hover:text-text"
           >
-            <Plus size={12} aria-hidden />
+            <Plus size={11} aria-hidden />
           </button>
           <div className="relative">
             <button
               type="button"
               title="Folder options"
-              aria-label="Folder options"
               onClick={e => { e.stopPropagation(); setShowMenu(v => !v) }}
-              className="flex h-6 w-6 items-center justify-center rounded text-text3 transition hover:bg-surface hover:text-text"
+              className="flex h-5 w-5 items-center justify-center rounded text-text3 transition hover:text-text"
             >
-              <MoreHorizontal size={12} aria-hidden />
+              <MoreHorizontal size={11} aria-hidden />
             </button>
             {showMenu && (
               <FolderMenu
@@ -419,10 +456,9 @@ function FolderRow({
       {/* Expanded children */}
       {expanded && (
         <div>
-          {/* New subfolder input */}
           {isCreatingChild && (
-            <div style={{ paddingLeft: `${8 + (depth + 1) * 16}px` }} className="flex items-center gap-1.5 py-1 pr-2">
-              <FolderPlus size={13} className="shrink-0 text-accent/70" aria-hidden />
+            <div style={{ paddingLeft: `${8 + (depth + 1) * 16}px` }} className="flex h-[26px] items-center gap-1.5 pr-2">
+              <FolderPlus size={12} className="shrink-0 text-accent/70" aria-hidden />
               <input
                 autoFocus
                 value={newFolderName}
@@ -433,12 +469,11 @@ function FolderRow({
                   if (e.key === 'Enter') { e.preventDefault(); commitNewFolder() }
                   if (e.key === 'Escape') { setNewFolderName(''); onFinishCreatingChild() }
                 }}
-                className="min-w-0 flex-1 rounded border border-accent bg-surface px-1.5 py-0.5 text-[12px] outline-none placeholder:text-text3"
+                className="min-w-0 flex-1 rounded border border-accent bg-surface px-1.5 py-0 text-[12px] outline-none placeholder:text-text3"
               />
             </div>
           )}
 
-          {/* Subfolder nodes */}
           {node.children.map(child => (
             <ConnectedFolderRow
               key={child.path}
@@ -462,7 +497,6 @@ function FolderRow({
             />
           ))}
 
-          {/* Notes in this folder */}
           {node.notes.map(note => (
             <NoteRow
               key={note.id}
@@ -479,11 +513,10 @@ function FolderRow({
             />
           ))}
 
-          {/* Empty folder placeholder */}
           {node.notes.length === 0 && node.children.length === 0 && !isCreatingChild && (
             <p
               style={{ paddingLeft: `${8 + (depth + 1) * 16}px` }}
-              className="py-1 pr-2 text-[11px] italic text-text3"
+              className="py-0.5 pr-2 text-[11px] italic text-text3/50"
             >
               Empty
             </p>
@@ -494,7 +527,7 @@ function FolderRow({
   )
 }
 
-// ─── Stateful wrapper for FolderRow (manages expand / rename / create-child) ──
+// ─── Stateful wrapper for FolderRow ──────────────────────────────────────────
 
 interface ConnectedFolderRowProps {
   node: FolderNode
@@ -540,12 +573,7 @@ function ConnectedFolderRow(props: ConnectedFolderRowProps) {
 
 // ─── Root drop zone ───────────────────────────────────────────────────────────
 
-interface RootDropZoneProps {
-  drag: DragState | null
-  onDrop: () => void
-}
-
-function RootDropZone({ drag, onDrop }: RootDropZoneProps) {
+function RootDropZone({ drag, onDrop }: { drag: DragState | null; onDrop: () => void }) {
   const [over, setOver] = useState(false)
   const counter = useRef(0)
   if (!drag) return null
@@ -566,20 +594,15 @@ function RootDropZone({ drag, onDrop }: RootDropZoneProps) {
 
 // ─── Root new-folder input ────────────────────────────────────────────────────
 
-interface RootNewFolderInputProps {
-  onCommit: (name: string) => void
-  onCancel: () => void
-}
-
-function RootNewFolderInput({ onCommit, onCancel }: RootNewFolderInputProps) {
+function RootNewFolderInput({ onCommit, onCancel }: { onCommit: (name: string) => void; onCancel: () => void }) {
   const [value, setValue] = useState('')
   function commit() {
     if (value.trim()) onCommit(value.trim())
     else onCancel()
   }
   return (
-    <div className="flex items-center gap-1.5 px-2 py-1">
-      <FolderPlus size={13} className="shrink-0 text-accent/70" aria-hidden />
+    <div className="flex h-[26px] items-center gap-1.5 px-2">
+      <FolderPlus size={12} className="shrink-0 text-accent/70" aria-hidden />
       <input
         autoFocus
         value={value}
@@ -590,7 +613,7 @@ function RootNewFolderInput({ onCommit, onCancel }: RootNewFolderInputProps) {
           if (e.key === 'Enter') { e.preventDefault(); commit() }
           if (e.key === 'Escape') { onCancel() }
         }}
-        className="min-w-0 flex-1 rounded border border-accent bg-surface px-1.5 py-0.5 text-[12px] outline-none placeholder:text-text3"
+        className="min-w-0 flex-1 rounded border border-accent bg-surface px-1.5 py-0 text-[12px] outline-none placeholder:text-text3"
       />
     </div>
   )
@@ -599,56 +622,60 @@ function RootNewFolderInput({ onCommit, onCancel }: RootNewFolderInputProps) {
 // ─── Main FolderTree ──────────────────────────────────────────────────────────
 
 export function FolderTree({
-  root, activeNoteId, copiedId, tagMap, allFolderPaths,
+  root, activeNoteId, copiedId, tagMap, allFolderPaths, pinnedNotes,
+  creatingRootFolder, onCreatingRootFolderChange,
   onOpenNote, onDeleteNote, onCopyLink, onMoveNote,
   onCreateNote, onCreateFolder, onRenameFolder, onDeleteFolder,
 }: FolderTreeProps) {
   const [drag, setDrag] = useState<DragState | null>(null)
-  const [creatingRootFolder, setCreatingRootFolder] = useState(false)
 
   function handleDrop(folder: string) {
-    if (drag) {
-      onMoveNote(drag.noteId, folder)
-      setDrag(null)
-    }
+    if (drag) { onMoveNote(drag.noteId, folder); setDrag(null) }
   }
 
   const hasContent = root.notes.length > 0 || root.children.length > 0
 
   return (
-    <div
-      className="select-none"
-      onDragEnd={() => setDrag(null)}
-    >
-      {/* Root-level drop zone (move to root) */}
-      <RootDropZone drag={drag} onDrop={() => handleDrop('')} />
+    <div className="select-none" onDragEnd={() => setDrag(null)}>
 
-      {/* New folder at root */}
+      {/* ── Pinned section ─────────────────────────────────────────────────── */}
+      {pinnedNotes.length > 0 && (
+        <div className="mb-1">
+          <div className="flex items-center gap-1.5 px-2 pb-0.5 pt-1">
+            <Pin size={9} className="fill-accent text-accent" aria-hidden />
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-text3">Pinned</span>
+          </div>
+          <div className="mx-1 overflow-hidden rounded border border-accent/10 bg-accent/[0.04] py-0.5">
+            {pinnedNotes.map(note => (
+              <NoteRow
+                key={`pinned-${note.id}`}
+                note={note}
+                isActive={activeNoteId === note.id}
+                isCopied={copiedId === note.id}
+                depth={0}
+                allFolderPaths={allFolderPaths}
+                onOpen={() => onOpenNote(note.id)}
+                onDelete={() => onDeleteNote(note)}
+                onCopyLink={() => onCopyLink(note)}
+                onMove={folder => onMoveNote(note.id, folder)}
+                onDragStart={noteId => setDrag({ noteId })}
+              />
+            ))}
+          </div>
+          <div className="mx-2 mt-1.5 border-t border-border/50" />
+        </div>
+      )}
+
+      {/* ── Drop zone + new folder input ───────────────────────────────────── */}
+      <RootDropZone drag={drag} onDrop={() => handleDrop('')} />
       {creatingRootFolder && (
         <RootNewFolderInput
-          onCommit={name => { onCreateFolder('', name); setCreatingRootFolder(false) }}
-          onCancel={() => setCreatingRootFolder(false)}
+          onCommit={name => { onCreateFolder('', name); onCreatingRootFolderChange(false) }}
+          onCancel={() => onCreatingRootFolderChange(false)}
         />
       )}
 
-      {/* Root-level notes (no folder) */}
-      {root.notes.map(note => (
-        <NoteRow
-          key={note.id}
-          note={note}
-          isActive={activeNoteId === note.id}
-          isCopied={copiedId === note.id}
-          depth={0}
-          allFolderPaths={allFolderPaths}
-          onOpen={() => onOpenNote(note.id)}
-          onDelete={() => onDeleteNote(note)}
-          onCopyLink={() => onCopyLink(note)}
-          onMove={folder => onMoveNote(note.id, folder)}
-          onDragStart={noteId => setDrag({ noteId })}
-        />
-      ))}
-
-      {/* Top-level folders */}
+      {/* ── Top-level folders first ────────────────────────────────────────── */}
       {root.children.map(child => (
         <ConnectedFolderRow
           key={child.path}
@@ -672,23 +699,30 @@ export function FolderTree({
         />
       ))}
 
-      {/* Empty state */}
+      {/* ── Root-level notes (loose files, after folders) ─────────────────── */}
+      {root.notes.map(note => (
+        <NoteRow
+          key={note.id}
+          note={note}
+          isActive={activeNoteId === note.id}
+          isCopied={copiedId === note.id}
+          depth={0}
+          allFolderPaths={allFolderPaths}
+          onOpen={() => onOpenNote(note.id)}
+          onDelete={() => onDeleteNote(note)}
+          onCopyLink={() => onCopyLink(note)}
+          onMove={folder => onMoveNote(note.id, folder)}
+          onDragStart={noteId => setDrag({ noteId })}
+        />
+      ))}
+
+      {/* ── Empty state ────────────────────────────────────────────────────── */}
       {!hasContent && !creatingRootFolder && (
         <div className="flex flex-col items-center gap-2 py-10 text-center">
           <FileText size={28} className="text-text3" aria-hidden />
           <p className="text-xs text-text3">No notes yet</p>
         </div>
       )}
-
-      {/* New folder button at root level */}
-      <button
-        type="button"
-        onClick={() => setCreatingRootFolder(true)}
-        className="mt-1 flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-text3 transition hover:bg-surface3 hover:text-text"
-      >
-        <FolderPlus size={12} aria-hidden />
-        New folder
-      </button>
     </div>
   )
 }

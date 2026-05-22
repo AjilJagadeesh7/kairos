@@ -17,6 +17,7 @@ import type {
   NoteListItem,
   NoteView,
   NoteWriteData,
+  IconRule,
 } from './types'
 
 // ─── Module-level registry ────────────────────────────────────────────────────
@@ -24,7 +25,7 @@ import type {
 // Zustand during async startup causes tearing. Subscribers are notified after
 // each mutation so React can re-render via PluginProvider.
 
-let _registry: PluginRegistry = { pages: [], settings: [] }
+let _registry: PluginRegistry = { pages: [], settings: [], iconRules: [] }
 let _subs: Array<() => void> = []
 
 export function getRegistry(): PluginRegistry {
@@ -77,6 +78,12 @@ function buildPluginAPI(manifest: PluginManifest): MindVaultPluginAPI {
     registerSettingsSection(reg: Omit<PluginSettingsRegistration, 'pluginId'>) {
       gate(manifest, 'ui:settings', 'registerSettingsSection')
       _registry = { ..._registry, settings: [..._registry.settings, { ...reg, pluginId: id }] }
+      notifyRegistry()
+    },
+
+    registerIconRules(rules: IconRule[]) {
+      gate(manifest, 'ui:icons', 'registerIconRules')
+      _registry = { ..._registry, iconRules: [..._registry.iconRules, ...rules] }
       notifyRegistry()
     },
 

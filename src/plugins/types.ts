@@ -20,7 +20,19 @@ export type PluginPermission =
   | 'ui:page'
   | 'ui:settings'
   | 'ui:header'
+  | 'ui:icons'
   | 'events'
+
+// ─── Icon rules ───────────────────────────────────────────────────────────────
+// Plugins with 'ui:icons' can call api.registerIconRules(rules) to
+// map note titles, folder names, or tags to custom emoji icons.
+export interface IconRule {
+  titleMatch?: string   // regex pattern tested against note.title (case-insensitive)
+  folder?: string       // regex pattern tested against folder name (case-insensitive)
+  tag?: string          // exact tag name match
+  emoji: string         // emoji character to display as the icon
+  color?: string        // optional CSS color for the icon emoji wrapper
+}
 
 // ─── App events plugins can subscribe to ──────────────────────────────────────
 export type AppEvent =
@@ -52,6 +64,7 @@ export interface PluginSettingsRegistration {
 export interface PluginRegistry {
   pages: PluginPageRegistration[]
   settings: PluginSettingsRegistration[]
+  iconRules: IconRule[]
 }
 
 // ─── Narrow data types exposed to plugins ────────────────────────────────────
@@ -93,9 +106,10 @@ export interface MindVaultPluginAPI {
   readonly pluginId: string
   readonly manifest: PluginManifest
 
-  // UI registration — requires 'ui:page' / 'ui:settings'
+  // UI registration — requires 'ui:page' / 'ui:settings' / 'ui:icons'
   registerPage(reg: Omit<PluginPageRegistration, 'pluginId'>): void
   registerSettingsSection(reg: Omit<PluginSettingsRegistration, 'pluginId'>): void
+  registerIconRules(rules: IconRule[]): void
 
   // Event bus — requires 'events'
   on(event: AppEvent, handler: (payload: unknown) => void): void
