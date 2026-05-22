@@ -14,6 +14,7 @@ import { ShortcutsModal } from './components/organisms/ShortcutsModal'
 import { CommandPalette } from './components/organisms/CommandPalette'
 import { SHORTCUT_REGISTRY, matchesBinding, bindingHasModifier } from './shortcuts/registry'
 import { todayDate } from './store/useJournalStore'
+import { useCalloutStyles } from './hooks/useCalloutStyles'
 
 const DARK_THEMES = new Set(['dark', 'cyberpunk', 'dracula', 'nord', 'catppuccin'])
 
@@ -26,6 +27,7 @@ function AppInner() {
   const [showShortcuts, setShowShortcuts]           = useState(false)
   const [showCommandPalette, setShowCommandPalette] = useState(false)
   useAppStartup()
+  useCalloutStyles()
 
   const closeShortcuts      = useCallback(() => setShowShortcuts(false), [])
   const closeCommandPalette = useCallback(() => setShowCommandPalette(false), [])

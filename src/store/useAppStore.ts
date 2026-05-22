@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware'
 import { v4 as uuidv4 } from 'uuid'
 import { upsertEmbedding } from '../db/schema'
 import { useLoaderStore } from './useLoaderStore'
-import type { Note, SearchMode, SyncStatus, ThemeMode, StorageTarget, FontOption, FontWeight, VaultStatus } from '../types'
+import type { Note, SearchMode, SyncStatus, ThemeMode, StorageTarget, FontOption, FontWeight, VaultStatus, CustomCallout } from '../types'
 import type { S3Config } from '../sync/s3'
 import type { WebDAVConfig } from '../sync/webdav'
 import { parseTags, rewriteWikilinksInContent } from '../utils/wikilinks'
@@ -25,6 +25,8 @@ type AppState = {
   webdavConfig: WebDAVConfig | null
   mobileSidebarOpen: boolean
   noteTagColors: Record<string, string>
+  calloutColors: Record<string, string>
+  customCallouts: CustomCallout[]
   userName: string
   newTabPage: string
   onboardingDone: boolean
@@ -53,6 +55,11 @@ type AppState = {
   setStorageChoices: (choices: StorageTarget[]) => void
   setNoteTagColor: (tagName: string, color: string) => void
   removeNoteTag: (tagName: string) => void
+  setCalloutColor: (type: string, color: string) => void
+  resetCalloutColor: (type: string) => void
+  addCustomCallout: (callout: CustomCallout) => void
+  removeCustomCallout: (type: string) => void
+  updateCustomCallout: (type: string, patch: Partial<Omit<CustomCallout, 'type'>>) => void
   setKeyBinding: (id: string, key: string) => void
   resetKeyBinding: (id: string) => void
   pinNote: (id: string) => void
@@ -93,6 +100,8 @@ export const useAppStore = create<AppState>()(
       webdavConfig: null,
       mobileSidebarOpen: false,
       noteTagColors: {},
+      calloutColors: {},
+      customCallouts: [],
       storageChoices: readLegacyStorageChoices(),
       theme: (localStorage.getItem('mindvault.theme') as ThemeMode | null) ?? 'light',
       font: (localStorage.getItem('mindvault.font') as FontOption | null) ?? 'manrope',
@@ -144,6 +153,21 @@ export const useAppStore = create<AppState>()(
         const { [tagName]: _, ...rest } = s.noteTagColors
         return { noteTagColors: rest }
       }),
+      setCalloutColor: (type, color) => set(s => ({ calloutColors: { ...s.calloutColors, [type]: color } })),
+      resetCalloutColor: (type) => set(s => {
+        const { [type]: _, ...rest } = s.calloutColors
+        return { calloutColors: rest }
+      }),
+      addCustomCallout: (callout) => set(s => {
+        if (s.customCallouts.some(c => c.type === callout.type)) return s
+        return { customCallouts: [...s.customCallouts, callout] }
+      }),
+      removeCustomCallout: (type) => set(s => ({
+        customCallouts: s.customCallouts.filter(c => c.type !== type),
+      })),
+      updateCustomCallout: (type, patch) => set(s => ({
+        customCallouts: s.customCallouts.map(c => c.type === type ? { ...c, ...patch } : c),
+      })),
       setKeyBinding: (id, key) => set(s => ({ keyBindings: { ...s.keyBindings, [id]: key } })),
       resetKeyBinding: (id) => set(s => {
         const { [id]: _, ...rest } = s.keyBindings
@@ -437,6 +461,8 @@ export const useAppStore = create<AppState>()(
         webdavConfig:    state.webdavConfig,
         storageChoices:  state.storageChoices,
         noteTagColors:   state.noteTagColors,
+        calloutColors:   state.calloutColors,
+        customCallouts:  state.customCallouts,
         theme:           state.theme,
         font:            state.font,
         fontWeight:      state.fontWeight,

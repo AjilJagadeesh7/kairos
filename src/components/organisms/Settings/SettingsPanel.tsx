@@ -3,6 +3,7 @@ import { ErrorBoundary } from '../../common/ErrorBoundary'
 import { GeneralSection } from './GeneralSection'
 import { SyncSection } from './SyncSection'
 import { TagsSection } from './TagsSection'
+import { CalloutsSection } from './CalloutsSection'
 import { AboutSection } from './AboutSection'
 import { KeyboardSection } from './KeyboardSection'
 import { LogsSection } from './LogsSection'
@@ -29,6 +30,7 @@ export function SettingsPanel({ section }: SettingsPanelProps) {
         {section === 'general'      && <GeneralSection />}
         {section === 'storage-sync' && <SyncSection />}
         {section === 'tags'         && <TagsSection />}
+        {section === 'callouts'     && <CalloutsSection />}
         {section === 'keyboard'     && <KeyboardSection />}
         {section === 'plugins'      && <PluginsSection />}
         {section === 'logs'         && <LogsSection />}

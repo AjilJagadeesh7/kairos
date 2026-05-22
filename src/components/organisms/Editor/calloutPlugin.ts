@@ -13,6 +13,7 @@ import { $prose } from '@milkdown/utils'
 import { Plugin, PluginKey } from '@milkdown/prose/state'
 import { Decoration, DecorationSet } from '@milkdown/prose/view'
 import type { Node } from '@milkdown/prose/model'
+import { dynamicTypeMap } from './calloutRegistry'
 
 // Maps every recognised alias to a canonical type used as a CSS class suffix
 const TYPE_MAP: Record<string, string> = {
@@ -29,7 +30,9 @@ const TYPE_MAP: Record<string, string> = {
 // [!TYPE] or [!TYPE Custom title here]
 const CALLOUT_RE = /^\[!([A-Za-z]+)(?:\s.*)?\]/
 
-const ALL_CALLOUT_CLASSES = ['callout', ...Object.values(TYPE_MAP).map(t => `callout-${t}`)]
+function resolveType(raw: string): string | null {
+  return TYPE_MAP[raw] ?? dynamicTypeMap[raw] ?? null
+}
 
 function getCalloutType(bq: Element): string | null {
   const firstP = bq.querySelector(':scope > p:first-child')
@@ -37,7 +40,7 @@ function getCalloutType(bq: Element): string | null {
   const text = (firstP.textContent ?? '').trimStart()
   const match = CALLOUT_RE.exec(text)
   if (!match) return null
-  return TYPE_MAP[match[1].toLowerCase()] ?? 'note'
+  return resolveType(match[1].toLowerCase())
 }
 
 /** Directly stamp callout classes on blockquote DOM elements. */
@@ -46,8 +49,10 @@ function stampCallouts(editorDom: Element) {
   for (const p of editorDom.querySelectorAll('.callout-title')) p.classList.remove('callout-title')
 
   for (const bq of editorDom.querySelectorAll('blockquote')) {
-    // Remove any stale callout classes
-    for (const cls of ALL_CALLOUT_CLASSES) bq.classList.remove(cls)
+    // Remove any existing callout-* classes (handles both builtin and custom)
+    for (const cls of [...bq.classList]) {
+      if (cls === 'callout' || cls.startsWith('callout-')) bq.classList.remove(cls)
+    }
     delete (bq as HTMLElement).dataset.callout
 
     const canonical = getCalloutType(bq)
@@ -74,7 +79,7 @@ function buildDecorations(doc: Node): DecorationSet {
     const match = CALLOUT_RE.exec(trimmed)
     if (!match) return
 
-    const canonical = TYPE_MAP[match[1].toLowerCase()] ?? 'note'
+    const canonical = resolveType(match[1].toLowerCase()) ?? 'note'
 
     decos.push(
       Decoration.node(pos, pos + node.nodeSize, {

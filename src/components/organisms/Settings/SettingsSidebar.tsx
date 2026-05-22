@@ -13,6 +13,7 @@ const CORE_NAV: Array<{ id: Section; label: string; iconName: IconToken }> = [
   { id: 'general',      label: 'General',          iconName: 'settings-2'  },
   { id: 'storage-sync', label: 'Storage & Sync',   iconName: 'folder-sync' },
   { id: 'tags',         label: 'Tags',             iconName: 'tag'         },
+  { id: 'callouts',     label: 'Callouts',         iconName: 'brackets'    },
   { id: 'keyboard',     label: 'Keyboard',         iconName: 'keyboard'    },
   { id: 'plugins',      label: 'Plugins',          iconName: 'puzzle'      },
   { id: 'marketplace',  label: 'Marketplace',      iconName: 'store'       },
