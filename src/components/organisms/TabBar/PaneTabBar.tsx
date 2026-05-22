@@ -44,16 +44,17 @@ function tabIcon(type: PaneTab['type'], size = 13) {
 // ── Sortable tab item ──────────────────────────────────────────────────────────
 
 interface SortableTabProps {
-  paneId:   string
-  tab:      PaneTab
-  isActive: boolean
-  title:    string
-  isDragging: boolean
-  onClose: (e: React.MouseEvent) => void
-  onClick:  () => void
+  paneId:         string
+  tab:            PaneTab
+  isActive:       boolean
+  isFocusedPane:  boolean
+  title:          string
+  isDragging:     boolean
+  onClose:        (e: React.MouseEvent) => void
+  onClick:        () => void
 }
 
-function SortableTab({ paneId, tab, isActive, title, isDragging: _outer, onClose, onClick }: SortableTabProps) {
+function SortableTab({ paneId, tab, isActive, title, isDragging: _outer, onClose, onClick, isFocusedPane }: SortableTabProps) {
   const {
     attributes, listeners, setNodeRef,
     transform, transition, isDragging,
@@ -75,7 +76,7 @@ function SortableTab({ paneId, tab, isActive, title, isDragging: _outer, onClose
         }`}
     >
       {isActive && (
-        <span className="pointer-events-none absolute inset-x-0 top-0 h-[2px] rounded-b-full bg-accent" />
+        <span className={`pointer-events-none absolute inset-x-0 top-0 h-[3px] rounded-b-full ${isFocusedPane ? 'bg-accent' : 'bg-accent/40'}`} />
       )}
       <button
         {...listeners}
@@ -174,8 +175,10 @@ export function PaneTabBar({ paneId, draggingTabId, overDropTarget }: PaneTabBar
   const tabIds = pane.tabs.map(t => `${paneId}:${t.id}`)
 
   return (
-    <div className={`flex min-h-0 shrink-0 items-stretch border-b border-[rgb(var(--border))] ${
-      isFocused ? 'bg-bg' : 'bg-surface'
+    <div className={`flex min-h-0 shrink-0 items-stretch ${
+      isFocused
+        ? 'bg-bg border-b-2 border-b-[rgb(var(--accent))]'
+        : 'bg-surface border-b border-[rgb(var(--border))]'
     }`}>
       <SortableContext items={tabIds} strategy={horizontalListSortingStrategy}>
         <div
@@ -191,6 +194,7 @@ export function PaneTabBar({ paneId, draggingTabId, overDropTarget }: PaneTabBar
                 paneId={paneId}
                 tab={tab}
                 isActive={isActive}
+                isFocusedPane={isFocused}
                 title={title}
                 isDragging={draggingTabId === `${paneId}:${tab.id}`}
                 onClick={() => setActiveTab(paneId, tab.id)}

@@ -1,7 +1,23 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
 import { Crosshair, RefreshCw } from 'lucide-react'
 import type { GNode, GLink } from '../../../types'
+
+// Survives component unmount/remount (tab switches). Keyed by "mode:nodeId".
+const posCache = new Map<string, { x: number; y: number }>()
+
+function savePositions(nodes: GNode[], mode: string) {
+  for (const n of nodes) {
+    if (n.x != null && n.y != null) posCache.set(`${mode}:${n.id}`, { x: n.x, y: n.y })
+  }
+}
+
+function seedPositions(nodes: GNode[], mode: string) {
+  for (const n of nodes) {
+    const p = posCache.get(`${mode}:${n.id}`)
+    if (p) { n.x = p.x; n.y = p.y }
+  }
+}
 
 type GraphMode = 'links' | 'tags'
 
@@ -72,6 +88,17 @@ export function GraphView({
   const [textColor, setTextColor] = useState('rgba(255,255,255,0.75)')
 
   useEffect(() => { selectedIdRef.current = selectedNoteId }, [selectedNoteId])
+
+  // Clear cache when user explicitly requests a relayout so nodes scatter fresh
+  const prevRerenderKey = useRef(rerenderKey)
+  useEffect(() => {
+    if (rerenderKey !== prevRerenderKey.current) {
+      for (const key of posCache.keys()) {
+        if (key.startsWith(`${graphMode}:`)) posCache.delete(key)
+      }
+      prevRerenderKey.current = rerenderKey
+    }
+  }, [rerenderKey, graphMode])
 
   useEffect(() => {
     const readTheme = () => {
@@ -217,7 +244,20 @@ export function GraphView({
     ctx.globalAlpha = 1
   }, [selectedNoteId, isFocused, neighborIds, focusedNodeId, textColor])
 
-  const graphData = { nodes, links }
+  // Seed cached positions so nodes don't scatter on remount (tab switch)
+  const graphData = useMemo(() => {
+    seedPositions(nodes, graphMode)
+    return { nodes, links }
+  }, [nodes, links, graphMode])
+
+  // Save positions on unmount (tab switch away) and periodically via onEngineStop
+  useEffect(() => {
+    return () => { savePositions(nodes, graphMode) }
+  }, [nodes, graphMode])
+
+  const handleEngineStop = useCallback(() => {
+    savePositions(nodes, graphMode)
+  }, [nodes, graphMode])
 
   return (
     <div className="flex h-full flex-col" style={{ background: bgColor }}>
@@ -247,7 +287,7 @@ export function GraphView({
       <div ref={canvasWrapRef} className="relative flex-1" style={{ overflow: 'hidden' }}>
         {dims && nodes.length > 0 && (
           <ForceGraph2D
-            key={`${rerenderKey}-${dims.w}-${dims.h}-${nodes.length}-${graphMode}`}
+            key={`${rerenderKey}-${nodes.length}-${graphMode}`}
             ref={fgRef}
             graphData={graphData}
             backgroundColor={bgColor}
@@ -294,10 +334,11 @@ export function GraphView({
             d3AlphaDecay={0.035}
             d3VelocityDecay={0.6}
             cooldownTicks={200}
-            warmupTicks={60}
+            warmupTicks={nodes.some(n => posCache.has(`${graphMode}:${n.id}`)) ? 0 : 60}
             enableNodeDrag
             onNodeHover={handleNodeHover}
             onNodeDragEnd={handleNodeDragEnd}
+            onEngineStop={handleEngineStop}
           />
         )}
 

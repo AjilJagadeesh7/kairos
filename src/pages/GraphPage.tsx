@@ -14,6 +14,14 @@ import { GraphContextMenu } from '../components/organisms/Graph/GraphContextMenu
 import { ErrorBoundary } from '../components/common/ErrorBoundary'
 import type { RightClickTarget } from '../components/organisms/Graph/GraphView'
 
+// Isolated so that focusedPaneId changes never re-render GraphPage/GraphView
+function GraphSidebarPortal({ paneId, sidebar }: { paneId: string; sidebar: React.ReactNode }) {
+  const focusedPaneId = usePaneStore(s => s.focusedPaneId)
+  const slot          = useSidebarSlot()
+  if (focusedPaneId !== paneId || !slot) return null
+  return createPortal(sidebar, slot)
+}
+
 type GraphMode = 'links' | 'tags'
 
 export function GraphPage() {
@@ -23,10 +31,7 @@ export function GraphPage() {
   const setMobileSidebarOpen = useAppStore(s => s.setMobileSidebarOpen)
   const appendWikilink       = useAppStore(s => s.appendWikilink)
   const paneId               = usePaneId()
-  const focusedPaneId        = usePaneStore(s => s.focusedPaneId)
   const isMultiPane          = usePaneStore(s => s.panes.length > 1)
-  const isFocused            = paneId === focusedPaneId
-  const slot                 = useSidebarSlot()
 
   const [graphMode,      setGraphMode]      = useState<GraphMode>('links')
   const [rerenderKey,    setRerenderKey]    = useState(0)
@@ -45,8 +50,14 @@ export function GraphPage() {
 
   const baseNodes = graphMode === 'links' ? linksNodes : tagsNodes
   const baseLinks = graphMode === 'links' ? linksLinks : tagsLinks
-  const nodes = showTasks ? [...baseNodes, ...taskNodes] : baseNodes
-  const links = showTasks ? [...baseLinks, ...taskLinks] : baseLinks
+  const nodes = useMemo(
+    () => showTasks ? [...baseNodes, ...taskNodes] : baseNodes,
+    [showTasks, baseNodes, taskNodes],
+  )
+  const links = useMemo(
+    () => showTasks ? [...baseLinks, ...taskLinks] : baseLinks,
+    [showTasks, baseLinks, taskLinks],
+  )
 
   const wikilinkCount = linksLinks.filter(l => l.kind === 'wikilink').length
   const semanticCount = linksLinks.filter(l => l.kind === 'semantic').length
@@ -163,7 +174,7 @@ export function GraphPage() {
     <ErrorBoundary>
     <main className="relative flex h-full overflow-hidden">
       {isMultiPane
-        ? isFocused && slot ? createPortal(graphSidebar, slot) : null
+        ? <GraphSidebarPortal paneId={paneId} sidebar={graphSidebar} />
         : (
           <>
             {mobileSidebarOpen && (
