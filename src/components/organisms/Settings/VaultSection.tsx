@@ -32,6 +32,7 @@ export function VaultSection() {
         await writeFolderList(store.folderList).catch(() => {})
       }
 
+      store.setVaultStatus('ok')
       await store.loadNotes()
       await store.loadFolders()
       const { useKanbanStore } = await import('../../../store/useKanbanStore')
@@ -46,6 +47,7 @@ export function VaultSection() {
     await disconnectPlainFolder()
     setVaultConnected(false)
     setVaultName(null)
+    useAppStore.getState().setVaultStatus('none')
   }
 
   return (

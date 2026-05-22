@@ -15,6 +15,7 @@ import {
   wrapInBulletListCommand, wrapInOrderedListCommand, wrapInBlockquoteCommand,
   createCodeBlockCommand, insertHrCommand,
 } from '@milkdown/preset-commonmark'
+import { math } from '@milkdown/plugin-math'
 import { wikilinkHighlightPlugin } from './wikilinkPlugin'
 import { calloutPlugin } from './calloutPlugin'
 import { linkInputRulePlugin, linkKeymapPlugin } from './linkInputRulePlugin'
@@ -111,6 +112,7 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, notes, read
     crepe.editor.use(calloutPlugin)
     crepe.editor.use(linkInputRulePlugin)
     crepe.editor.use(linkKeymapPlugin)
+    crepe.editor.use(math)
     crepe.on(listener => { listener.markdownUpdated((_ctx, md) => onChangeRef.current(md)) })
 
     void crepe.create().then(() => {
@@ -146,6 +148,31 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, notes, read
     crepeRef.current?.editor.action(ctx => { ctx.get(editorViewCtx).focus() })
     document.execCommand(cmd)
     closeMenu()
+  }
+
+  function handlePaste() {
+    closeMenu()
+    const crepe = crepeRef.current
+    if (!crepe) return
+
+    function dispatchPaste(text: string) {
+      if (!text) return
+      const dt = new DataTransfer()
+      dt.setData('text/plain', text)
+      const event = new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true })
+      crepe.editor.action(ctx => { ctx.get(editorViewCtx).dom.dispatchEvent(event) })
+    }
+
+    // Tauri native clipboard bypasses WebView isolation (works for system clipboard)
+    import('@tauri-apps/plugin-clipboard-manager')
+      .then(({ readText }) => readText())
+      .then(dispatchPaste)
+      .catch(() => {
+        // Fallback for web/PWA: browser clipboard API
+        navigator.clipboard.readText().then(dispatchPaste).catch(() => {
+          crepe.editor.action(ctx => { ctx.get(editorViewCtx).focus() })
+        })
+      })
   }
 
   async function handleLinkClick(e: React.MouseEvent<HTMLDivElement>) {
@@ -283,7 +310,7 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, notes, read
           }}
           onCut={() => editorExec('cut')}
           onCopy={() => editorExec('copy')}
-          onPaste={() => editorExec('paste')}
+          onPaste={handlePaste}
           onSelectAll={() => editorExec('selectAll')}
         />
       )}
