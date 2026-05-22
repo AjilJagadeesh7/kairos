@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, FileDown, History, Pencil, Eye, Save, Trash2 } from 'lucide-react'
+
 import { embedText } from '../../../utils/embeddingClient'
 import { useAppStore } from '../../../store/useAppStore'
 import { useConfirmStore } from '../../../store/useConfirmStore'
@@ -16,6 +16,7 @@ import { ConflictBanner } from './ConflictBanner'
 import { useConflictStore } from '../../../store/useConflictStore'
 import { eventMatchesAction } from '../../../hooks/useShortcutKey'
 import type { EditorDraftProps, TagRecord } from '../../../types'
+import { Icon } from '../../../icons/Icon'
 
 type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved'
 
@@ -158,7 +159,7 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
                 onClick={() => exportPDF(editorRootRef.current, titleRef.current || 'Untitled note')}
                 className="flex h-[32px] items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 text-xs font-medium text-text3 transition hover:border-accent/50 hover:text-accent"
               >
-                <FileDown size={13} />
+                <Icon name="file-down" size={13} />
                 <span>PDF</span>
               </button>
               <button
@@ -167,7 +168,7 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
                 onClick={() => setReadingMode(false)}
                 className="flex h-[32px] items-center gap-1.5 rounded-md border border-accent/40 bg-accent/10 px-2.5 text-xs font-medium text-accent transition hover:bg-accent/20"
               >
-                <Pencil size={13} />
+                <Icon name="pencil" size={13} />
                 <span>Edit</span>
               </button>
             </div>
@@ -205,7 +206,7 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
               saveStatus === 'idle' ? 'opacity-0 pointer-events-none' : 'opacity-100'
             } ${saveStatus === 'saved' ? 'text-green-500' : 'text-text3'}`}>
               {saveStatus === 'saving' && 'Saving…'}
-              {saveStatus === 'saved'  && <><Check size={11} /> Saved</>}
+              {saveStatus === 'saved'  && <><Icon name="check" size={11} /> Saved</>}
               {saveStatus === 'dirty'  && 'Unsaved'}
             </span>
 
@@ -220,7 +221,7 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
                   : 'cursor-default border-border bg-surface text-text3 opacity-40'
               }`}
             >
-              <Save size={14} />
+              <Icon name="save" size={14} />
               <span className="hidden sm:inline">Save</span>
             </button>
 
@@ -230,7 +231,7 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
               onClick={() => exportPDF(editorRootRef.current, titleRef.current || 'Untitled note')}
               className="flex h-[38px] shrink-0 items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-sm font-medium text-text3 transition hover:border-accent/50 hover:text-accent"
             >
-              <FileDown size={14} />
+              <Icon name="file-down" size={14} />
               <span className="hidden sm:inline">PDF</span>
             </button>
 
@@ -240,7 +241,7 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
               onClick={() => setReadingMode(true)}
               className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-md border border-border bg-surface text-text3 transition hover:border-accent/50 hover:text-accent"
             >
-              <Eye size={15} />
+              <Icon name="eye" size={15} />
             </button>
 
             <button
@@ -253,7 +254,7 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
                   : 'border-border bg-surface text-text3 hover:border-accent/50 hover:text-accent'
               }`}
             >
-              <History size={15} />
+              <Icon name="history" size={15} />
             </button>
 
             <button
@@ -262,7 +263,7 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
               onClick={handleDeleteNote}
               className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-md border border-border bg-surface text-text3 transition hover:border-red-400/50 hover:text-red-400"
             >
-              <Trash2 size={15} />
+              <Icon name="trash-2" size={15} />
             </button>
           </div>
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { X } from 'lucide-react'
+
 import { useAppStore } from '../../../store/useAppStore'
 import { Button } from '../../atoms/Button'
 import { SectionCard } from '../../molecules/SectionCard'
@@ -7,6 +7,7 @@ import { Field } from '../../molecules/Field'
 import { StatusPill } from '../../molecules/StatusPill'
 import { isWebDAVConnected, setWebDAVConfig, testWebDAVConnection } from '../../../sync/webdav'
 import type { WebDAVConfig } from '../../../sync/webdav'
+import { Icon } from '../../../icons/Icon'
 
 interface Props {
   onConnectionChange?: (connected: boolean) => void
@@ -59,7 +60,7 @@ export function WebDAVSection({ onConnectionChange }: Props) {
         <div className="flex items-center justify-between">
           <StatusPill connected label={storedDAV?.username ?? 'Connected'} />
           <Button variant="ghost" size="xs" onClick={() => void onDisconnect()}>
-            <X size={11} className="mr-1" /> Disconnect
+            <Icon name="x" size={11} className="mr-1" /> Disconnect
           </Button>
         </div>
       ) : (

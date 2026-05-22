@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { GripVertical, Plus, Trash2 } from 'lucide-react'
+
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -9,6 +9,7 @@ import { ColorPicker } from '../../../molecules/ColorPicker'
 import { AddColumnModal } from '../BoardView/AddColumnModal'
 import { DEFAULT_COLUMN_COLORS } from '../../../../utils/kanban'
 import type { Board, KanbanColumn } from '../../../../types/kanban.types'
+import { Icon } from '../../../../icons/Icon'
 
 interface ColumnRowProps {
   column: KanbanColumn
@@ -49,7 +50,7 @@ function ColumnRow({ column, board }: ColumnRowProps): JSX.Element {
     <div ref={setNodeRef} style={style} className="group flex flex-col gap-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] p-3">
       <div className="flex items-center gap-2">
         <div {...attributes} {...listeners} className="cursor-grab text-[rgb(var(--text-3))]">
-          <GripVertical size={14} />
+          <Icon name="grip-vertical" size={14} />
         </div>
         <button
           className="h-5 w-5 flex-shrink-0 rounded-full border-2 border-white/20"
@@ -68,7 +69,7 @@ function ColumnRow({ column, board }: ColumnRowProps): JSX.Element {
           onClick={handleDelete}
           className="text-[rgb(var(--text-3))] opacity-0 transition hover:text-red-500 group-hover:opacity-100"
         >
-          <Trash2 size={14} />
+          <Icon name="trash-2" size={14} />
         </button>
       </div>
       {showColors && (
@@ -123,7 +124,7 @@ export function ColumnManager({ board }: ColumnManagerProps): JSX.Element {
           onClick={() => setShowModal(true)}
           className="flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-[rgb(var(--border))] py-2 text-sm text-[rgb(var(--text-3))] transition hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--accent))]"
         >
-          <Plus size={14} /> Add column
+          <Icon name="plus" size={14} /> Add column
         </button>
       </div>
 

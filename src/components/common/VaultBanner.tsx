@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
-import { FolderOpen, AlertTriangle } from 'lucide-react'
+
 import { useAppStore } from '../../store/useAppStore'
+import { Icon } from '../../icons/Icon'
 
 export function VaultBanner() {
   const vaultStatus = useAppStore(s => s.vaultStatus)
@@ -17,8 +18,8 @@ export function VaultBanner() {
         : 'border-[rgb(var(--accent)/0.2)] bg-[rgb(var(--accent)/0.05)] text-[rgb(var(--accent))]'
     }`}>
       {isMissing
-        ? <AlertTriangle size={15} className="shrink-0" />
-        : <FolderOpen size={15} className="shrink-0" />
+        ? <Icon name="alert-triangle" size={15} className="shrink-0" />
+        : <Icon name="folder-open" size={15} className="shrink-0" />
       }
       <span className="flex-1 text-xs">
         {isMissing

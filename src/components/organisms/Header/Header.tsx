@@ -1,17 +1,18 @@
-import { BookOpen, CalendarDays, SquareKanban, Network, Settings2 } from 'lucide-react'
 import { useAppStore } from '../../../store/useAppStore'
 import { usePaneStore } from '../../../store/usePaneStore'
 import { usePluginRegistry } from '../../../plugins/pluginContext'
 import { Button } from '../../atoms/Button'
 import { ThemeSelect } from '../../molecules/ThemeSelect'
 import { SyncStatusBadge } from '../../molecules/SyncStatusBadge'
+import { Icon } from '../../../icons/Icon'
+import type { IconToken } from '../../../icons/tokens'
 
-const NAV_ITEMS = [
-  { to: '/journal',  Icon: CalendarDays, label: 'Journal' },
-  { to: '/notes',    Icon: BookOpen,     label: 'Notes' },
-  { to: '/kanban',   Icon: SquareKanban, label: 'Kanban' },
-  { to: '/graph',    Icon: Network,      label: 'Graph' },
-  { to: '/settings', Icon: Settings2,    label: 'Settings' },
+const NAV_ITEMS: Array<{ to: string; iconName: IconToken; label: string }> = [
+  { to: '/journal',  iconName: 'calendar-days', label: 'Journal' },
+  { to: '/notes',    iconName: 'book-open',     label: 'Notes' },
+  { to: '/kanban',   iconName: 'square-kanban', label: 'Kanban' },
+  { to: '/graph',    iconName: 'network',       label: 'Graph' },
+  { to: '/settings', iconName: 'settings-2',   label: 'Settings' },
 ]
 
 export function Header() {
@@ -70,7 +71,7 @@ export function Header() {
       </div>
 
       <nav aria-label="Main navigation" className="flex items-center gap-0.5 sm:gap-1">
-        {NAV_ITEMS.map(({ to, Icon, label }) => {
+        {NAV_ITEMS.map(({ to, iconName, label }) => {
           const isActive = activePath === to || activePath.startsWith(to + '/')
           return (
             <Button
@@ -84,7 +85,7 @@ export function Header() {
                 if (!e.ctrlKey && !e.metaKey) navigate(to)
               }}
             >
-              <Icon size={14} />
+              <Icon name={iconName} size={14} />
               <span className="hidden sm:inline">{label}</span>
             </Button>
           )

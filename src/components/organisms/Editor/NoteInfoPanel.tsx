@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
-import { Info } from 'lucide-react'
+
 import { parseWikilinks } from '../../../utils/wikilinks'
 import type { Note } from '../../../types'
+import { Icon } from '../../../icons/Icon'
 
 interface NoteInfoPanelProps {
   note: Note
@@ -26,7 +27,7 @@ export function NoteInfoPanel({ note, content }: NoteInfoPanelProps) {
   return (
     <details className="group mt-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]">
       <summary className="flex cursor-pointer select-none items-center gap-2 px-3 py-2 text-xs font-semibold text-[rgb(var(--text-2))] transition hover:text-[rgb(var(--text))]">
-        <Info size={13} className="text-[rgb(var(--accent))]" />
+        <Icon name="info" size={13} className="text-[rgb(var(--accent))]" />
         Note info
         <span className="ml-auto text-[10px] font-normal text-[rgb(var(--text-3))] group-open:hidden">
           {stats.words} words

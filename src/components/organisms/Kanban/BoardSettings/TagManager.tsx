@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+
 import { useKanbanStore } from '../../../../store/useKanbanStore'
 import { useConfirmStore } from '../../../../store/useConfirmStore'
 import { ColorPicker } from '../../../molecules/ColorPicker'
 import { nextTagColor } from '../../../../utils/kanban'
 import type { Board } from '../../../../types/kanban.types'
+import { Icon } from '../../../../icons/Icon'
 
 interface TagManagerProps {
   board: Board
@@ -83,7 +84,7 @@ export function TagManager({ board }: TagManagerProps): JSX.Element {
               onClick={() => handleDelete(tag.name)}
               className="text-[rgb(var(--text-3))] opacity-0 transition hover:text-red-500 group-hover:opacity-100"
             >
-              <Trash2 size={13} />
+              <Icon name="trash-2" size={13} />
             </button>
           </div>
           <ColorPicker
@@ -106,7 +107,7 @@ export function TagManager({ board }: TagManagerProps): JSX.Element {
           disabled={!newName.trim()}
           className="flex items-center gap-1.5 rounded-lg bg-[rgb(var(--accent))] px-3 py-2 text-sm font-medium text-[rgb(var(--accent-fg))] transition hover:opacity-90 disabled:opacity-40"
         >
-          <Plus size={14} /> Add
+          <Icon name="plus" size={14} /> Add
         </button>
       </div>
     </div>

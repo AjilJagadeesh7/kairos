@@ -1,11 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  FileText, Search, CornerDownLeft, FolderOpen,
-  CalendarDays, LayoutList, Settings,
-  Network, BookOpen, Plus,
-  CheckSquare,
-} from 'lucide-react'
+import type { IconToken } from '../../icons/tokens'
 import { useAppStore } from '../../store/useAppStore'
 import { useJournalStore } from '../../store/useJournalStore'
 import { useKanbanStore } from '../../store/useKanbanStore'
@@ -15,6 +10,7 @@ import {
 import type { Note, JournalEntry } from '../../types'
 import type { KanbanTask, Board } from '../../types/kanban.types'
 import { todayDate } from '../../store/useJournalStore'
+import { Icon } from '../../icons/Icon'
 
 // ─── Static navigation / settings items ──────────────────────────────────────
 
@@ -23,27 +19,27 @@ interface NavItem {
   id: string
   label: string
   hint: string
-  icon: React.ElementType
+  iconName: IconToken
   path?: string
   action?: () => void
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { kind: 'nav', id: 'nav-notes',     label: 'Notes',              hint: 'Open Notes',                   icon: FileText,     path: '/notes' },
-  { kind: 'nav', id: 'nav-journal',   label: 'Journal',            hint: "Open today's journal",          icon: CalendarDays, path: `/journal/${todayDate()}` },
-  { kind: 'nav', id: 'nav-kanban',    label: 'Kanban',             hint: 'Open Kanban boards',            icon: LayoutList,   path: '/kanban' },
-  { kind: 'nav', id: 'nav-graph',     label: 'Knowledge Graph',    hint: 'Open Knowledge Graph',          icon: Network,      path: '/graph' },
-  { kind: 'nav', id: 'nav-settings',  label: 'Settings',           hint: 'Open Settings',                 icon: Settings,     path: '/settings' },
-  { kind: 'nav', id: 'nav-new-note',  label: 'New note',           hint: 'Create a blank note',           icon: Plus,         path: undefined },
+  { kind: 'nav', id: 'nav-notes',       label: 'Notes',                   hint: 'Open Notes',                      iconName: 'file-text',    path: '/notes' },
+  { kind: 'nav', id: 'nav-journal',     label: 'Journal',                 hint: "Open today's journal",             iconName: 'calendar-days',path: `/journal/${todayDate()}` },
+  { kind: 'nav', id: 'nav-kanban',      label: 'Kanban',                  hint: 'Open Kanban boards',               iconName: 'layout-list',  path: '/kanban' },
+  { kind: 'nav', id: 'nav-graph',       label: 'Knowledge Graph',         hint: 'Open Knowledge Graph',             iconName: 'network',      path: '/graph' },
+  { kind: 'nav', id: 'nav-settings',    label: 'Settings',                hint: 'Open Settings',                    iconName: 'settings',     path: '/settings' },
+  { kind: 'nav', id: 'nav-new-note',    label: 'New note',                hint: 'Create a blank note',              iconName: 'plus',         path: undefined },
   // Settings sections
-  { kind: 'nav', id: 'nav-s-general',   label: 'Settings → General',    hint: 'Appearance, font, theme',     icon: Settings, path: '/settings?section=general' },
-  { kind: 'nav', id: 'nav-s-vault',     label: 'Settings → Vault',      hint: 'Connect or change vault folder', icon: BookOpen, path: '/settings?section=vault' },
-  { kind: 'nav', id: 'nav-s-sync',      label: 'Settings → Sync',       hint: 'S3, WebDAV, Drive sync',      icon: Settings, path: '/settings?section=storage-sync' },
-  { kind: 'nav', id: 'nav-s-ai',        label: 'Settings → AI',         hint: 'Semantic search, Ollama',     icon: Settings, path: '/settings?section=ai' },
-  { kind: 'nav', id: 'nav-s-plugins',   label: 'Settings → Plugins',    hint: 'Manage installed plugins',    icon: Settings, path: '/settings?section=plugins' },
-  { kind: 'nav', id: 'nav-s-keyboard',  label: 'Settings → Keyboard',   hint: 'Customize key bindings',      icon: Settings, path: '/settings?section=keyboard' },
-  { kind: 'nav', id: 'nav-s-tags',      label: 'Settings → Tags',       hint: 'Tag colors and management',   icon: Settings, path: '/settings?section=tags' },
-  { kind: 'nav', id: 'nav-s-logs',      label: 'Settings → Logs',       hint: 'View error logs',             icon: Settings, path: '/settings?section=logs' },
+  { kind: 'nav', id: 'nav-s-general',   label: 'Settings → General',      hint: 'Appearance, font, theme',          iconName: 'settings',     path: '/settings?section=general' },
+  { kind: 'nav', id: 'nav-s-vault',     label: 'Settings → Vault',        hint: 'Connect or change vault folder',   iconName: 'book-open',    path: '/settings?section=vault' },
+  { kind: 'nav', id: 'nav-s-sync',      label: 'Settings → Sync',         hint: 'S3, WebDAV, Drive sync',           iconName: 'settings',     path: '/settings?section=storage-sync' },
+  { kind: 'nav', id: 'nav-s-ai',        label: 'Settings → AI',           hint: 'Semantic search, Ollama',          iconName: 'settings',     path: '/settings?section=ai' },
+  { kind: 'nav', id: 'nav-s-plugins',   label: 'Settings → Plugins',      hint: 'Manage installed plugins',         iconName: 'settings',     path: '/settings?section=plugins' },
+  { kind: 'nav', id: 'nav-s-keyboard',  label: 'Settings → Keyboard',     hint: 'Customize key bindings',           iconName: 'settings',     path: '/settings?section=keyboard' },
+  { kind: 'nav', id: 'nav-s-tags',      label: 'Settings → Tags',         hint: 'Tag colors and management',        iconName: 'settings',     path: '/settings?section=tags' },
+  { kind: 'nav', id: 'nav-s-logs',      label: 'Settings → Logs',         hint: 'View error logs',                  iconName: 'settings',     path: '/settings?section=logs' },
 ]
 
 // ─── Result item union ────────────────────────────────────────────────────────
@@ -112,16 +108,16 @@ function ResultRow({ item, isActive, onHover, onClick }: RowProps) {
         onClick={onClick}
         className={`flex cursor-pointer items-center gap-3 px-4 py-2 transition-colors ${bg}`}
       >
-        <FileText size={14} className={`shrink-0 ${isActive ? 'text-accent' : 'text-text3'}`} aria-hidden />
+        <Icon name="file-text" size={14} className={`shrink-0 ${isActive ? 'text-accent' : 'text-text3'}`} aria-hidden />
         <div className="min-w-0 flex-1">
           <p className="truncate text-[13px] font-medium text-text">{note.title || 'Untitled note'}</p>
           {note.folder && (
             <p className="flex items-center gap-1 truncate text-[11px] text-text3">
-              <FolderOpen size={10} aria-hidden />{note.folder}
+              <Icon name="folder-open" size={10} aria-hidden />{note.folder}
             </p>
           )}
         </div>
-        {isActive && <CornerDownLeft size={12} className="shrink-0 text-text3" aria-hidden />}
+        {isActive && <Icon name="corner-down-left" size={12} className="shrink-0 text-text3" aria-hidden />}
       </li>
     )
   }
@@ -137,12 +133,12 @@ function ResultRow({ item, isActive, onHover, onClick }: RowProps) {
         onClick={onClick}
         className={`flex cursor-pointer items-center gap-3 px-4 py-2 transition-colors ${bg}`}
       >
-        <CalendarDays size={14} className={`shrink-0 ${isActive ? 'text-accent' : 'text-text3'}`} aria-hidden />
+        <Icon name="calendar-days" size={14} className={`shrink-0 ${isActive ? 'text-accent' : 'text-text3'}`} aria-hidden />
         <div className="min-w-0 flex-1">
           <p className="truncate text-[13px] font-medium text-text">{formatJournalDate(entry.date)}</p>
           {ex && <p className="truncate text-[11px] text-text3">{ex}</p>}
         </div>
-        {isActive && <CornerDownLeft size={12} className="shrink-0 text-text3" aria-hidden />}
+        {isActive && <Icon name="corner-down-left" size={12} className="shrink-0 text-text3" aria-hidden />}
       </li>
     )
   }
@@ -157,18 +153,17 @@ function ResultRow({ item, isActive, onHover, onClick }: RowProps) {
         onClick={onClick}
         className={`flex cursor-pointer items-center gap-3 px-4 py-2 transition-colors ${bg}`}
       >
-        <CheckSquare size={14} className={`shrink-0 ${isActive ? 'text-accent' : 'text-text3'}`} aria-hidden />
+        <Icon name="check-square" size={14} className={`shrink-0 ${isActive ? 'text-accent' : 'text-text3'}`} aria-hidden />
         <div className="min-w-0 flex-1">
           <p className="truncate text-[13px] font-medium text-text">{task.title}</p>
           <p className="truncate text-[11px] text-text3">{board.title}</p>
         </div>
-        {isActive && <CornerDownLeft size={12} className="shrink-0 text-text3" aria-hidden />}
+        {isActive && <Icon name="corner-down-left" size={12} className="shrink-0 text-text3" aria-hidden />}
       </li>
     )
   }
 
   // nav item
-  const Icon = item.icon
   return (
     <li
       role="option"
@@ -177,12 +172,12 @@ function ResultRow({ item, isActive, onHover, onClick }: RowProps) {
       onClick={onClick}
       className={`flex cursor-pointer items-center gap-3 px-4 py-2 transition-colors ${bg}`}
     >
-      <Icon size={14} className={`shrink-0 ${isActive ? 'text-accent' : 'text-text3'}`} aria-hidden />
+      <Icon name={item.iconName} size={14} className={`shrink-0 ${isActive ? 'text-accent' : 'text-text3'}`} aria-hidden />
       <div className="min-w-0 flex-1">
         <p className="truncate text-[13px] font-medium text-text">{item.label}</p>
         <p className="truncate text-[11px] text-text3">{item.hint}</p>
       </div>
-      {isActive && <CornerDownLeft size={12} className="shrink-0 text-text3" aria-hidden />}
+      {isActive && <Icon name="corner-down-left" size={12} className="shrink-0 text-text3" aria-hidden />}
     </li>
   )
 }
@@ -376,7 +371,7 @@ export function CommandPalette({ onClose }: Props) {
       >
         {/* ── Search input ── */}
         <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-          <Search size={16} className="shrink-0 text-text3" aria-hidden />
+          <Icon name="search" size={16} className="shrink-0 text-text3" aria-hidden />
           <input
             ref={inputRef}
             value={query}

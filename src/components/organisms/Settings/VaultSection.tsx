@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { CheckCircle2, Circle, FolderOpen, X } from 'lucide-react'
+
 import { useAppStore } from '../../../store/useAppStore'
 import { Button } from '../../atoms/Button'
 import { SectionCard } from '../../molecules/SectionCard'
+import { Icon } from '../../../icons/Icon'
 
 export function VaultSection() {
   const [vaultConnected, setVaultConnected] = useState(false)
@@ -60,7 +61,7 @@ export function VaultSection() {
       {vaultConnected ? (
         <div className="flex items-center justify-between rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] px-3 py-2.5">
           <div className="flex items-center gap-2">
-            <CheckCircle2 size={15} className="shrink-0 text-green-500" />
+            <Icon name="check-circle-2" size={15} className="shrink-0 text-green-500" />
             <div>
               <p className="text-sm font-medium text-[rgb(var(--text))]">{vaultName ?? 'Connected'}</p>
               <p className="text-[10px] text-[rgb(var(--text-3))]">notes/ · kanban/ · config/</p>
@@ -68,16 +69,16 @@ export function VaultSection() {
           </div>
           <div className="flex gap-2">
             <Button variant="ghost" size="xs" onClick={() => void onConnectVault()}>
-              <FolderOpen size={12} className="mr-1" /> Change…
+              <Icon name="folder-open" size={12} className="mr-1" /> Change…
             </Button>
             <Button variant="ghost" size="xs" onClick={() => void onDisconnectVault()}>
-              <X size={11} className="mr-1" /> Disconnect
+              <Icon name="x" size={11} className="mr-1" /> Disconnect
             </Button>
           </div>
         </div>
       ) : (
         <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-[rgb(var(--border))] p-8 text-center">
-          <Circle size={24} className="text-[rgb(var(--text-3))]" />
+          <Icon name="circle" size={24} className="text-[rgb(var(--text-3))]" />
           <div>
             <p className="text-sm font-medium text-[rgb(var(--text))]">No vault folder selected</p>
             <p className="mt-0.5 text-xs text-[rgb(var(--text-3))]">
@@ -85,7 +86,7 @@ export function VaultSection() {
             </p>
           </div>
           <Button variant="primary" size="sm" onClick={() => void onConnectVault()}>
-            <FolderOpen size={13} className="mr-1.5" /> Choose Folder…
+            <Icon name="folder-open" size={13} className="mr-1.5" /> Choose Folder…
           </Button>
         </div>
       )}

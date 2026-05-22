@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Copy, Trash2, X } from 'lucide-react'
+
 import { useNavigate } from 'react-router-dom'
 import { useKanbanStore } from '../../../../store/useKanbanStore'
 import { useConfirmStore } from '../../../../store/useConfirmStore'
@@ -8,6 +8,7 @@ import { ColumnManager } from './ColumnManager'
 import { TagManager } from './TagManager'
 import { ExportOptions } from './ExportOptions'
 import type { Board } from '../../../../types/kanban.types'
+import { Icon } from '../../../../icons/Icon'
 
 type Tab = 'general' | 'columns' | 'tags' | 'export'
 
@@ -72,7 +73,7 @@ export function BoardSettings({ board, onClose }: BoardSettingsProps): JSX.Eleme
         <div className="flex flex-shrink-0 items-center justify-between border-b border-[rgb(var(--border))] px-5 py-4">
           <h2 className="text-lg font-semibold text-[rgb(var(--text))]">Board Settings</h2>
           <Button variant="ghost" size="xs" className="h-7 w-7 p-0" onClick={onClose}>
-            <X size={14} />
+            <Icon name="x" size={14} />
           </Button>
         </div>
 
@@ -124,13 +125,13 @@ export function BoardSettings({ board, onClose }: BoardSettingsProps): JSX.Eleme
                     onClick={handleDuplicate}
                     className="flex items-center gap-2 rounded-lg border border-[rgb(var(--border))] px-3 py-2 text-sm text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--text))]"
                   >
-                    <Copy size={14} /> Duplicate board
+                    <Icon name="copy" size={14} /> Duplicate board
                   </button>
                   <button
                     onClick={handleDelete}
                     className="flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm text-red-500 transition hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/30"
                   >
-                    <Trash2 size={14} /> Delete board
+                    <Icon name="trash-2" size={14} /> Delete board
                   </button>
                 </div>
               </div>

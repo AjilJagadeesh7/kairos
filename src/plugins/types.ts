@@ -1,4 +1,5 @@
 import type React from 'react'
+import type { IconPack } from '../icons/tokens'
 
 // ─── Manifest ─────────────────────────────────────────────────────────────────
 export interface PluginManifest {
@@ -110,6 +111,7 @@ export interface MindVaultPluginAPI {
   registerPage(reg: Omit<PluginPageRegistration, 'pluginId'>): void
   registerSettingsSection(reg: Omit<PluginSettingsRegistration, 'pluginId'>): void
   registerIconRules(rules: IconRule[]): void
+  registerIconPack(pack: Partial<IconPack>): void
 
   // Event bus — requires 'events'
   on(event: AppEvent, handler: (payload: unknown) => void): void

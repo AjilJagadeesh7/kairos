@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { X } from 'lucide-react'
+
 import { useAppStore } from '../../../store/useAppStore'
 import { Button } from '../../atoms/Button'
 import { SectionCard } from '../../molecules/SectionCard'
@@ -7,6 +7,7 @@ import { Field } from '../../molecules/Field'
 import { StatusPill } from '../../molecules/StatusPill'
 import { isS3Connected, setS3Config, testS3Connection } from '../../../sync/s3'
 import type { S3Config } from '../../../sync/s3'
+import { Icon } from '../../../icons/Icon'
 
 interface Props {
   onConnectionChange?: (connected: boolean) => void
@@ -66,7 +67,7 @@ export function S3Section({ onConnectionChange }: Props) {
         <div className="flex items-center justify-between">
           <StatusPill connected label={storedS3?.bucket ?? 'Connected'} />
           <Button variant="ghost" size="xs" onClick={() => void onDisconnect()}>
-            <X size={11} className="mr-1" /> Disconnect
+            <Icon name="x" size={11} className="mr-1" /> Disconnect
           </Button>
         </div>
       ) : (

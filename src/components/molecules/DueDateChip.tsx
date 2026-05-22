@@ -1,5 +1,6 @@
-import { Calendar } from 'lucide-react'
+
 import { getDueState, formatDateShort } from '../../utils/kanban'
+import { Icon } from '../../icons/Icon'
 
 interface DueDateChipProps {
   due: string
@@ -18,7 +19,7 @@ export function DueDateChip({ due, className = '' }: DueDateChipProps): JSX.Elem
   const colorClass = STATE_STYLES[state]
   return (
     <span className={`inline-flex items-center gap-1 text-xs ${colorClass} ${className}`}>
-      <Calendar size={11} />
+      <Icon name="calendar" size={11} />
       {formatDateShort(due)}
     </span>
   )

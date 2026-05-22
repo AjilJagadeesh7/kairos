@@ -6,6 +6,7 @@ import * as sharedComponents from './sharedComponents'
 import { gate, PermissionError } from './permissionGate'
 import { indexNote } from '../search/noteIndex'
 import { logger } from '../logger/logger'
+import { applyIconPackPatch } from '../icons/iconRegistry'
 import type {
   PluginManifest,
   PluginRegistry,
@@ -19,6 +20,7 @@ import type {
   NoteWriteData,
   IconRule,
 } from './types'
+import type { IconPack } from '../icons/tokens'
 
 // ─── Module-level registry ────────────────────────────────────────────────────
 // Not in Zustand — plugin setup() runs outside React's render cycle and mutating
@@ -85,6 +87,11 @@ function buildPluginAPI(manifest: PluginManifest): MindVaultPluginAPI {
       gate(manifest, 'ui:icons', 'registerIconRules')
       _registry = { ..._registry, iconRules: [..._registry.iconRules, ...rules] }
       notifyRegistry()
+    },
+
+    registerIconPack(pack: Partial<IconPack>) {
+      gate(manifest, 'ui:icons', 'registerIconPack')
+      applyIconPackPatch(pack)
     },
 
     // ── Event bus ──────────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
-import { Check } from 'lucide-react'
+
 import { TAG_COLOR_PALETTE } from '../../utils/kanban'
+import { Icon } from '../../icons/Icon'
 
 interface ColorPickerProps {
   value: string
@@ -25,7 +26,7 @@ export function ColorPicker({ value, onChange, palette = TAG_COLOR_PALETTE, clas
           aria-label={`Select color ${color}`}
           aria-pressed={value === color}
         >
-          {value === color && <Check size={11} color="white" strokeWidth={3} />}
+          {value === color && <Icon name="check" size={11} color="white" strokeWidth={3} />}
         </button>
       ))}
     </div>

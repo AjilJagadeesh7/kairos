@@ -1,4 +1,4 @@
-import { FileText, Link2 } from 'lucide-react'
+
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useKanbanStore } from '../../../../store/useKanbanStore'
@@ -7,6 +7,7 @@ import { ProgressBar } from '../../../atoms/ProgressBar'
 import { DueDateChip } from '../../../molecules/DueDateChip'
 import { calcTaskProgress } from '../../../../utils/kanban'
 import type { Board, KanbanTask } from '../../../../types/kanban.types'
+import { Icon } from '../../../../icons/Icon'
 
 interface TaskCardProps {
   task: KanbanTask
@@ -105,12 +106,12 @@ export function TaskCard({ task, board, isOverlay = false }: TaskCardProps): JSX
         <div className="mt-2 flex items-center gap-2">
           {task.linkedNotes.length > 0 && (
             <span className="flex items-center gap-0.5 text-[10px] text-[rgb(var(--text-3))]">
-              <FileText size={10} /> {task.linkedNotes.length}
+              <Icon name="file-text" size={10} /> {task.linkedNotes.length}
             </span>
           )}
           {task.linkedTasks.length > 0 && (
             <span className="flex items-center gap-0.5 text-[10px] text-[rgb(var(--text-3))]">
-              <Link2 size={10} /> {task.linkedTasks.length}
+              <Icon name="link-2" size={10} /> {task.linkedTasks.length}
             </span>
           )}
         </div>

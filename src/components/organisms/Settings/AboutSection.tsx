@@ -1,39 +1,40 @@
-import { BrainCircuit, FolderSync, Network, StickyNote, SquareKanban, ShieldCheck, ExternalLink, CalendarDays, History, GitFork } from 'lucide-react'
 import { SectionCard } from '../../molecules/SectionCard'
+import { Icon } from '../../../icons/Icon'
+import type { IconToken } from '../../../icons/tokens'
 
-const FEATURES = [
+const FEATURES: Array<{ iconName: IconToken; title: string; desc: string }> = [
   {
-    icon: StickyNote,
+    iconName: 'sticky-note',
     title: 'Notes',
     desc: 'Markdown editor with wikilinks ([[title]]), transclusion (![[title]]), tags, backlinks, full-text & semantic search, version history, PDF export, and 11 note templates.',
   },
   {
-    icon: CalendarDays,
+    iconName: 'calendar-days',
     title: 'Journal',
     desc: 'Daily entries with a calendar sidebar, full-text search across all entries, version history per entry, and auto-save.',
   },
   {
-    icon: SquareKanban,
+    iconName: 'square-kanban',
     title: 'Kanban',
     desc: 'Multi-board task management with drag-and-drop columns, subtasks, checkpoints, priorities, due dates, and labels.',
   },
   {
-    icon: Network,
+    iconName: 'network',
     title: 'Knowledge Graph',
     desc: 'Force-directed 3D graph of note connections via wikilinks. Tag clusters, neighbourhood focus, and right-click link creation.',
   },
   {
-    icon: History,
+    iconName: 'history',
     title: 'Version History',
     desc: 'Every save creates a snapshot. Browse previous versions of any note or journal entry and restore with one click.',
   },
   {
-    icon: FolderSync,
+    iconName: 'folder-sync',
     title: 'Sync',
     desc: 'Optional S3-compatible and WebDAV sync. Notes are encrypted on-device before upload — the server never sees plaintext.',
   },
   {
-    icon: BrainCircuit,
+    iconName: 'brain-circuit',
     title: 'Local AI',
     desc: 'Semantic search and embeddings via a local Ollama endpoint. No data leaves your device to any cloud AI service.',
   },
@@ -76,7 +77,7 @@ export function AboutSection() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 rounded-full bg-[rgb(var(--surface-2))] px-2.5 py-1 font-mono text-xs text-[rgb(var(--accent))] transition hover:underline"
             >
-              <GitFork size={11} /> GitHub <ExternalLink size={10} />
+              <Icon name="git-fork" size={11} /> GitHub <Icon name="external-link" size={10} />
             </a>
           </div>
         </div>
@@ -98,7 +99,7 @@ export function AboutSection() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] px-2.5 py-1 text-xs text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent)/0.5)] hover:text-[rgb(var(--accent))]"
               >
-                <GitFork size={11} /> @AjilJagadeesh7
+                <Icon name="git-fork" size={11} /> @AjilJagadeesh7
               </a>
               <a
                 href="mailto:ajiljagadeesh7@gmail.com"
@@ -114,10 +115,10 @@ export function AboutSection() {
       {/* Features */}
       <SectionCard title="Features">
         <ul className="space-y-3">
-          {FEATURES.map(({ icon: Icon, title, desc }) => (
+          {FEATURES.map(({ iconName, title, desc }) => (
             <li key={title} className="flex gap-3">
               <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--accent))]/10 text-[rgb(var(--accent))]">
-                <Icon size={14} />
+                <Icon name={iconName} size={14} />
               </span>
               <div>
                 <p className="text-sm font-medium text-[rgb(var(--text))]">{title}</p>
@@ -132,7 +133,7 @@ export function AboutSection() {
       <SectionCard title="Privacy Notice">
         <div className="space-y-3">
           <div className="flex items-start gap-2.5 rounded-lg border border-[rgb(var(--accent))]/20 bg-[rgb(var(--accent))]/5 px-3 py-2.5">
-            <ShieldCheck size={15} className="mt-0.5 shrink-0 text-[rgb(var(--accent))]" />
+            <Icon name="shield-check" size={15} className="mt-0.5 shrink-0 text-[rgb(var(--accent))]" />
             <p className="text-xs leading-relaxed text-[rgb(var(--text-2))]">
               MindVault is designed to keep your data yours. Here is exactly what we do and do not do.
             </p>

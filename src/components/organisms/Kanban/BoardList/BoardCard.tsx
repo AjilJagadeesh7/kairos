@@ -1,11 +1,12 @@
 import { useNavigate } from 'react-router-dom'
-import { Copy, MoreHorizontal, Trash2 } from 'lucide-react'
+
 import { useKanbanStore } from '../../../../store/useKanbanStore'
 import { useConfirmStore } from '../../../../store/useConfirmStore'
 import { timeAgo } from '../../../../utils/timeAgo'
 import { Button } from '../../../atoms/Button'
 import { Dropdown } from '../../../molecules/Dropdown'
 import type { Board } from '../../../../types/kanban.types'
+import { Icon } from '../../../../icons/Icon'
 
 interface BoardCardProps {
   board: Board
@@ -52,7 +53,7 @@ export function BoardCard({ board }: BoardCardProps): JSX.Element {
           <Dropdown
             trigger={
               <Button variant="ghost" size="xs" className="h-7 w-7 p-0">
-                <MoreHorizontal size={14} />
+                <Icon name="more-horizontal" size={14} />
               </Button>
             }
           >
@@ -60,13 +61,13 @@ export function BoardCard({ board }: BoardCardProps): JSX.Element {
               className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-[rgb(var(--text-2))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]"
               onClick={handleDuplicate}
             >
-              <Copy size={13} /> Duplicate
+              <Icon name="copy" size={13} /> Duplicate
             </button>
             <button
               className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
               onClick={handleDelete}
             >
-              <Trash2 size={13} /> Delete
+              <Icon name="trash-2" size={13} /> Delete
             </button>
           </Dropdown>
         </div>

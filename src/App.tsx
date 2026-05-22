@@ -8,6 +8,7 @@ import { PaneLayout } from './components/organisms/SplitLayout/PaneLayout'
 import { LoaderBar } from './components/molecules/LoaderBar'
 import { ConfirmDialog } from './components/organisms/ConfirmDialog'
 import { PluginProvider } from './plugins/pluginContext'
+import { IconProvider } from './icons/IconContext'
 import { OnboardingModal } from './components/organisms/Onboarding/OnboardingModal'
 import { ShortcutsModal } from './components/organisms/ShortcutsModal'
 import { CommandPalette } from './components/organisms/CommandPalette'
@@ -93,9 +94,11 @@ function AppInner() {
 
 function App() {
   return (
-    <PluginProvider>
-      <AppInner />
-    </PluginProvider>
+    <IconProvider>
+      <PluginProvider>
+        <AppInner />
+      </PluginProvider>
+    </IconProvider>
   )
 }
 

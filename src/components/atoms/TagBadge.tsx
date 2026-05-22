@@ -1,5 +1,6 @@
-import { X } from 'lucide-react'
+
 import type { TagRecord } from '../../types'
+import { Icon } from '../../icons/Icon'
 
 interface TagBadgeProps {
   tag: TagRecord
@@ -27,7 +28,7 @@ export function TagBadge({ tag, onRemove, variant = 'sm' }: TagBadgeProps): JSX.
           className="ml-0.5 flex items-center justify-center rounded transition hover:opacity-75 active:scale-95"
           title="Remove tag"
         >
-          <X size={iconSize} />
+          <Icon name="x" size={iconSize} />
         </button>
       )}
     </div>

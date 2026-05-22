@@ -1,8 +1,9 @@
 import { useState, useRef } from 'react'
-import { X, Download, Image as ImageIcon } from 'lucide-react'
+
 import { useKanbanStore } from '../../../../store/useKanbanStore'
 import type { KanbanTask } from '../../../../types/kanban.types'
 import { v4 as uuidv4 } from 'uuid'
+import { Icon } from '../../../../icons/Icon'
 
 interface TaskAttachmentsProps {
   boardId: string
@@ -89,14 +90,14 @@ export function TaskAttachments({ boardId, task }: TaskAttachmentsProps): JSX.El
                   className="opacity-0 group-hover:opacity-100 transition-opacity rounded-md bg-white/90 p-1 hover:bg-white"
                   title="Download"
                 >
-                  <Download size={12} className="text-black" />
+                  <Icon name="download" size={12} className="text-black" />
                 </a>
                 <button
                   onClick={() => deleteAttachment(boardId, task.id, attachment.id)}
                   className="opacity-0 group-hover:opacity-100 transition-opacity rounded-md bg-white/90 p-1 hover:bg-white"
                   title="Delete"
                 >
-                  <X size={12} className="text-black" />
+                  <Icon name="x" size={12} className="text-black" />
                 </button>
               </div>
               <p className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] px-1 py-0.5 truncate">
@@ -130,7 +131,7 @@ export function TaskAttachments({ boardId, task }: TaskAttachmentsProps): JSX.El
           onClick={() => fileInputRef.current?.click()}
           className="flex items-center justify-center gap-2 mx-auto text-xs text-[rgb(var(--text-2))] hover:text-[rgb(var(--text))] transition-colors"
         >
-          <ImageIcon size={14} />
+          <Icon name="image" size={14} />
           <span>Click to upload or drag image</span>
         </button>
         <p className="mt-1 text-[10px] text-[rgb(var(--text-3))]">

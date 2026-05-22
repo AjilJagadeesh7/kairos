@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
-import { BookOpen, Network, ShieldCheck, SquareKanban, ArrowRight, Check, Link2, Layers, CalendarDays } from 'lucide-react'
 import { useAppStore } from '../../../store/useAppStore'
+import { Icon } from '../../../icons/Icon'
+import type { IconToken } from '../../../icons/tokens'
 
 const SAMPLE_NOTE_2_TITLE = 'MindVault Features'
 const SAMPLE_NOTE_2 = `## What makes MindVault different
@@ -93,29 +94,29 @@ Use Obsidian-style callouts with \`> [!TYPE]\` syntax:
 The **sidebar** is a full file explorer — create folders, drag notes, and search across everything.
 `
 
-const FEATURES = [
+const FEATURES: Array<{ iconName: IconToken; title: string; desc: string }> = [
   {
-    icon: BookOpen,
+    iconName: 'book-open',
     title: 'Notes',
     desc: 'Markdown editor with wikilinks, tags, backlinks, and semantic search.',
   },
   {
-    icon: CalendarDays,
+    iconName: 'calendar-days',
     title: 'Journal',
     desc: 'Daily entries with a calendar view. Never lose a thought.',
   },
   {
-    icon: SquareKanban,
+    iconName: 'square-kanban',
     title: 'Kanban',
     desc: 'Multi-board task management with drag-and-drop, priorities, and due dates.',
   },
   {
-    icon: Network,
+    iconName: 'network',
     title: 'Graph',
     desc: 'Force-directed knowledge graph that maps note connections visually.',
   },
   {
-    icon: ShieldCheck,
+    iconName: 'shield-check',
     title: 'Private by default',
     desc: 'No accounts, no telemetry. Everything stays on your device.',
   },
@@ -169,7 +170,7 @@ export function OnboardingModal() {
           {step === 0 && (
             <div className="px-8 pb-8 pt-12 text-center">
               <div className="mb-5 inline-flex items-center justify-center rounded-2xl bg-[rgb(var(--accent)/0.1)] p-4">
-                <BookOpen size={32} className="text-[rgb(var(--accent))]" strokeWidth={1.5} />
+                <Icon name="book-open" size={32} className="text-[rgb(var(--accent))]" strokeWidth={1.5} />
               </div>
               <h1 className="mb-2 text-2xl font-black tracking-tight text-[rgb(var(--text))]">
                 Welcome to MindVault
@@ -196,7 +197,7 @@ export function OnboardingModal() {
                 onClick={() => setStep(1)}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[rgb(var(--accent))] px-6 py-3 text-sm font-semibold text-[rgb(var(--accent-fg))] transition hover:opacity-90 active:scale-[0.98]"
               >
-                Continue <ArrowRight size={16} />
+                Continue <Icon name="arrow-right" size={16} />
               </button>
             </div>
           )}
@@ -211,14 +212,14 @@ export function OnboardingModal() {
                 Everything works offline, on your device.
               </p>
               <div className="mb-8 grid grid-cols-2 gap-3">
-                {FEATURES.map(({ icon: Icon, title, desc }) => (
+                {FEATURES.map(({ iconName, title, desc }) => (
                   <div
                     key={title}
                     className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--bg))] p-4 transition hover:border-[rgb(var(--accent)/0.4)]"
                   >
                     <div className="mb-2 flex items-center gap-2">
                       <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[rgb(var(--accent)/0.1)]">
-                        <Icon size={15} className="text-[rgb(var(--accent))]" />
+                        <Icon name={iconName} size={15} className="text-[rgb(var(--accent))]" />
                       </div>
                       <span className="text-sm font-semibold text-[rgb(var(--text))]">{title}</span>
                     </div>
@@ -237,7 +238,7 @@ export function OnboardingModal() {
                   onClick={() => setStep(2)}
                   className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-[rgb(var(--accent))] px-6 py-3 text-sm font-semibold text-[rgb(var(--accent-fg))] transition hover:opacity-90 active:scale-[0.98]"
                 >
-                  Next <ArrowRight size={15} />
+                  Next <Icon name="arrow-right" size={15} />
                 </button>
               </div>
             </div>
@@ -258,7 +259,7 @@ export function OnboardingModal() {
                 <div className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--bg))] p-4">
                   <div className="mb-2 flex items-center gap-2">
                     <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[rgb(var(--accent)/0.1)]">
-                      <Link2 size={13} className="text-[rgb(var(--accent))]" />
+                      <Icon name="link-2" size={13} className="text-[rgb(var(--accent))]" />
                     </div>
                     <span className="text-sm font-semibold text-[rgb(var(--text))]">Wikilinks — link between notes</span>
                   </div>
@@ -278,7 +279,7 @@ export function OnboardingModal() {
                 <div className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--bg))] p-4">
                   <div className="mb-2 flex items-center gap-2">
                     <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[rgb(var(--accent)/0.1)]">
-                      <Layers size={13} className="text-[rgb(var(--accent))]" />
+                      <Icon name="layers" size={13} className="text-[rgb(var(--accent))]" />
                     </div>
                     <span className="text-sm font-semibold text-[rgb(var(--text))]">Transclusion — embed note content</span>
                   </div>
@@ -317,7 +318,7 @@ export function OnboardingModal() {
                   onClick={finish}
                   className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-[rgb(var(--accent))] px-6 py-3 text-sm font-semibold text-[rgb(var(--accent-fg))] transition hover:opacity-90 active:scale-[0.98]"
                 >
-                  <Check size={15} /> Start writing
+                  <Icon name="check" size={15} /> Start writing
                 </button>
               </div>
             </div>

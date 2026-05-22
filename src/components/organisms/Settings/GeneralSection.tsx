@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Check, RotateCcw } from 'lucide-react'
+
 import { useAppStore } from '../../../store/useAppStore'
 import { ThemeSelect } from '../../molecules/ThemeSelect'
 import { FontSelect, FONT_WEIGHTS } from '../../molecules/FontSelect'
 import { SectionCard } from '../../molecules/SectionCard'
 import type { FontOption, FontWeight } from '../../../types'
+import { Icon } from '../../../icons/Icon'
 
 const NEW_TAB_OPTIONS = [
   { label: 'Home',     path: '/' },
@@ -77,7 +78,7 @@ export function GeneralSection() {
                 : 'bg-[rgb(var(--accent))] text-[rgb(var(--accent-fg))] hover:opacity-90'
             }`}
           >
-            {nameSaved ? <><Check size={14} /> Saved</> : 'Save'}
+            {nameSaved ? <><Icon name="check" size={14} /> Saved</> : 'Save'}
           </button>
         </div>
 
@@ -86,7 +87,7 @@ export function GeneralSection() {
             onClick={replayTour}
             className="inline-flex items-center gap-1.5 rounded-lg border border-[rgb(var(--border))] px-3 py-1.5 text-xs text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent)/0.5)] hover:text-[rgb(var(--text))]"
           >
-            <RotateCcw size={12} /> Replay welcome tour
+            <Icon name="rotate-ccw" size={12} /> Replay welcome tour
           </button>
         </div>
       </SectionCard>

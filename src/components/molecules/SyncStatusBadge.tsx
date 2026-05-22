@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, Cloud, CloudOff, Loader2, X } from 'lucide-react'
+
 import { useAppStore } from '../../store/useAppStore'
 import { useConflictStore } from '../../store/useConflictStore'
 import { anySyncProviderConnected } from '../../sync/syncOrchestrator'
 import { useClickOutside } from '../../hooks/useClickOutside'
+import { Icon } from '../../icons/Icon'
 
 const STATUS_LABEL: Record<string, string> = {
   idle:    'Sync is idle — auto-syncs on save and startup',
@@ -57,9 +58,9 @@ export function SyncStatusBadge(): JSX.Element {
       >
         {connected
           ? syncStatus === 'syncing'
-            ? <Loader2 size={13} className="animate-spin" aria-hidden />
-            : <Cloud size={13} aria-hidden />
-          : <CloudOff size={13} aria-hidden />
+            ? <Icon name="loader-2" size={13} className="animate-spin" aria-hidden />
+            : <Icon name="cloud" size={13} aria-hidden />
+          : <Icon name="cloud-off" size={13} aria-hidden />
         }
         <span className={`h-1.5 w-1.5 rounded-full ${dotColor}`} aria-hidden />
         {conflictCount > 0 && (
@@ -114,7 +115,7 @@ export function SyncStatusBadge(): JSX.Element {
           {conflictCount > 0 && (
             <div className="border-t border-[rgb(var(--border))] bg-amber-50/60 px-4 py-2.5 dark:bg-amber-950/20">
               <div className="flex items-center gap-1.5">
-                <AlertTriangle size={12} className="text-amber-500" aria-hidden />
+                <Icon name="alert-triangle" size={12} className="text-amber-500" aria-hidden />
                 <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400">
                   {conflictCount} conflict{conflictCount > 1 ? 's' : ''} to resolve
                 </span>
@@ -140,7 +141,7 @@ export function SyncStatusBadge(): JSX.Element {
               aria-label="Close"
               className="rounded p-1.5 text-[rgb(var(--text-3))] hover:text-[rgb(var(--text))]"
             >
-              <X size={13} aria-hidden />
+              <Icon name="x" size={13} aria-hidden />
             </button>
           </div>
         </div>

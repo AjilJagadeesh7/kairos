@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Trash2, Send } from 'lucide-react'
+
 import { useKanbanStore } from '../../../../store/useKanbanStore'
 import { formatDate } from '../../../../utils/kanban'
 import type { KanbanTask } from '../../../../types/kanban.types'
+import { Icon } from '../../../../icons/Icon'
 
 interface TaskCommentsProps {
   boardId: string
@@ -66,7 +67,7 @@ export function TaskComments({ boardId, task }: TaskCommentsProps): JSX.Element 
                 className="mt-0.5 flex-shrink-0 rounded p-1 text-[rgb(var(--text-3))] opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
                 title="Delete comment"
               >
-                <Trash2 size={11} />
+                <Icon name="trash-2" size={11} />
               </button>
             </div>
           ))
@@ -89,7 +90,7 @@ export function TaskComments({ boardId, task }: TaskCommentsProps): JSX.Element 
           className="mb-1.5 mr-1.5 flex-shrink-0 rounded-md p-1.5 text-[rgb(var(--accent))] hover:bg-[rgb(var(--accent))]/10 disabled:opacity-30 disabled:cursor-not-allowed"
           title="Send (Ctrl+Enter)"
         >
-          <Send size={15} />
+          <Icon name="send" size={15} />
         </button>
       </div>
     </section>

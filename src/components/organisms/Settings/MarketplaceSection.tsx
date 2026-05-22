@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react'
-import { WifiOff } from 'lucide-react'
+
 import { useAppStore } from '../../../store/useAppStore'
 import { installPlugin } from '../../../plugins/installPlugin'
 import type { PluginInstallRequest } from '../../../plugins/types'
+import { Icon } from '../../../icons/Icon'
 
 const MARKETPLACE_URL = import.meta.env.VITE_MARKETPLACE_URL as string | undefined
 
@@ -59,7 +60,7 @@ export function MarketplaceSection() {
   if (!MARKETPLACE_URL) {
     return (
       <div className="flex flex-col items-center gap-3 rounded-xl border border-[rgb(var(--border))] py-16 text-center">
-        <WifiOff size={28} className="text-[rgb(var(--text-3))]" />
+        <Icon name="wifi-off" size={28} className="text-[rgb(var(--text-3))]" />
         <p className="text-sm text-[rgb(var(--text-2))]">Marketplace not configured.</p>
         <p className="text-xs text-[rgb(var(--text-3))]">
           Set <code className="rounded bg-[rgb(var(--surface-2))] px-1">VITE_MARKETPLACE_URL</code> at build time.

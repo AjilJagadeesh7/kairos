@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, Plus } from 'lucide-react'
+
 import { useAppStore } from '../../../store/useAppStore'
 import { timeAgo } from '../../../utils/timeAgo'
 import { TAG_COLOR_PALETTE } from '../../../utils/kanban'
@@ -9,6 +9,7 @@ import { Button } from '../../atoms/Button'
 import { NoteTemplateModal } from './NoteTemplateModal'
 import type { NoteTemplate } from './NoteTemplateModal'
 import type { TagRecord } from '../../../types'
+import { Icon } from '../../../icons/Icon'
 
 function tagColor(name: string): string {
   let h = 5381
@@ -50,14 +51,14 @@ export function NotesHome() {
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <BookOpen size={18} className="text-[rgb(var(--accent))]" />
+            <Icon name="book-open" size={18} className="text-[rgb(var(--accent))]" />
             <h1 className="text-xl font-bold text-[rgb(var(--text))]">Notes</h1>
             <span className="rounded-full bg-[rgb(var(--surface-2))] px-2 py-0.5 text-xs text-[rgb(var(--text-3))]">
               {notes.length}
             </span>
           </div>
           <Button variant="primary" size="sm" onClick={handleNew} className="inline-flex items-center gap-1.5">
-            <Plus size={14} /> New note
+            <Icon name="plus" size={14} /> New note
           </Button>
         </div>
 
@@ -67,7 +68,7 @@ export function NotesHome() {
             onClick={handleNew}
             className="flex w-full flex-col items-center gap-3 rounded-xl border-2 border-dashed border-[rgb(var(--border))] p-16 text-center text-[rgb(var(--text-3))] transition hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--accent))]"
           >
-            <BookOpen size={28} />
+            <Icon name="book-open" size={28} />
             <div>
               <p className="font-medium">No notes yet</p>
               <p className="mt-1 text-sm">Click to create your first note</p>

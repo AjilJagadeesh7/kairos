@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { RefreshCw } from 'lucide-react'
+
 import { useAppStore } from '../../../store/useAppStore'
 import { Button } from '../../atoms/Button'
 import { syncAllProviders } from '../../../sync/syncOrchestrator'
 import { VaultSection } from './VaultSection'
 import { S3Section } from './S3Section'
 import { WebDAVSection } from './WebDAVSection'
+import { Icon } from '../../../icons/Icon'
 
 export function SyncSection() {
   const syncStatus    = useAppStore((s) => s.syncStatus)
@@ -52,7 +53,7 @@ export function SyncSection() {
           </div>
           <Button variant="primary" size="sm" onClick={() => void onSyncNow()} disabled={syncing}
             className="inline-flex items-center gap-1.5 shrink-0">
-            <RefreshCw size={13} className={syncing ? 'animate-spin' : ''} />
+            <Icon name="refresh-cw" size={13} className={syncing ? 'animate-spin' : ''} />
             {syncing ? 'Syncing…' : 'Sync Now'}
           </Button>
         </div>

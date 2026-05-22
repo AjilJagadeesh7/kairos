@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { X } from 'lucide-react'
+
 import { ColorPicker } from '../../../molecules/ColorPicker'
+import { Icon } from '../../../../icons/Icon'
 
 const PALETTE = [
   '#ef4444', '#f97316', '#f59e0b', '#eab308',
@@ -41,7 +42,7 @@ export function AddColumnModal({ onConfirm, onClose, defaultColor }: AddColumnMo
             onClick={onClose}
             className="rounded p-1 text-[rgb(var(--text-3))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]"
           >
-            <X size={14} />
+            <Icon name="x" size={14} />
           </button>
         </div>
 

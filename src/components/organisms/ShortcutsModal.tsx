@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
-import { Keyboard, X } from 'lucide-react'
+
 import { useAppStore } from '../../store/useAppStore'
 import { SHORTCUT_REGISTRY, displayKey } from '../../shortcuts/registry'
 import type { ShortcutContext } from '../../shortcuts/registry'
+import { Icon } from '../../icons/Icon'
 
 interface ShortcutsModalProps {
   onClose: () => void
@@ -37,14 +38,14 @@ export function ShortcutsModal({ onClose }: ShortcutsModalProps) {
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 border-b border-[rgb(var(--border))] px-5 py-4">
-          <Keyboard size={16} className="text-[rgb(var(--accent))]" />
+          <Icon name="keyboard" size={16} className="text-[rgb(var(--accent))]" />
           <h2 className="flex-1 text-sm font-semibold text-[rgb(var(--text))]">Keyboard shortcuts</h2>
           <button
             onClick={onClose}
             className="flex h-7 w-7 items-center justify-center rounded-md text-[rgb(var(--text-3))] transition hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]"
             aria-label="Close"
           >
-            <X size={14} />
+            <Icon name="x" size={14} />
           </button>
         </div>
 

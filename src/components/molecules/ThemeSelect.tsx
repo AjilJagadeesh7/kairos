@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+
 import { THEME_REGISTRY } from '../../themes/registry'
 import type { ThemeMode } from '../../types'
+import { Icon } from '../../icons/Icon'
 
 interface ThemeSelectProps {
   value: ThemeMode
@@ -33,7 +34,7 @@ export function ThemeSelect({ value, onChange }: ThemeSelectProps): JSX.Element 
       >
         <ThemeSwatch bg={current.swatchBg} accent={current.swatchAccent} />
         {current.label}
-        <ChevronDown size={12} className={`ml-auto transition-transform ${open ? 'rotate-180' : ''}`} />
+        <Icon name="chevron-down" size={12} className={`ml-auto transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (

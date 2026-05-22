@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { History, RotateCcw, X } from 'lucide-react'
+
 import { timeAgo } from '../../../utils/timeAgo'
 import { stripMarkdown } from '../../../utils/stripMarkdown'
 import type { ContentVersion } from '../../../types'
+import { Icon } from '../../../icons/Icon'
 
 interface HistoryPanelProps {
   id: string
@@ -44,7 +45,7 @@ export function HistoryPanel({ id, type, onRestore, onClose }: HistoryPanelProps
       {/* Header */}
       <div className="flex shrink-0 items-center justify-between border-b border-[rgb(var(--border))] px-4 py-3">
         <div className="flex items-center gap-2">
-          <History size={14} className="text-[rgb(var(--accent))]" />
+          <Icon name="history" size={14} className="text-[rgb(var(--accent))]" />
           <span className="text-sm font-semibold text-[rgb(var(--text))]">Version History</span>
         </div>
         <button
@@ -52,7 +53,7 @@ export function HistoryPanel({ id, type, onRestore, onClose }: HistoryPanelProps
           className="rounded p-1 text-[rgb(var(--text-3))] transition hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]"
           aria-label="Close history"
         >
-          <X size={14} />
+          <Icon name="x" size={14} />
         </button>
       </div>
 
@@ -62,7 +63,7 @@ export function HistoryPanel({ id, type, onRestore, onClose }: HistoryPanelProps
         </div>
       ) : versions.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
-          <History size={28} className="text-[rgb(var(--text-3))] opacity-40" />
+          <Icon name="history" size={28} className="text-[rgb(var(--text-3))] opacity-40" />
           <p className="text-sm text-[rgb(var(--text-3))]">No saved versions yet.</p>
           <p className="text-xs text-[rgb(var(--text-3))] opacity-70">Versions are saved automatically each time you write.</p>
         </div>
@@ -126,7 +127,7 @@ export function HistoryPanel({ id, type, onRestore, onClose }: HistoryPanelProps
                   onClick={handleRestore}
                   className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-[rgb(var(--accent)/0.1)] px-3 py-2 text-xs font-semibold text-[rgb(var(--accent))] transition hover:bg-[rgb(var(--accent)/0.18)]"
                 >
-                  <RotateCcw size={12} />
+                  <Icon name="rotate-ccw" size={12} />
                   Restore this version
                 </button>
               </div>

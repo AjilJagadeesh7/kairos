@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ArrowRight, FileText, X } from 'lucide-react'
+
 import { useAppStore } from '../../store/useAppStore'
 import { stripMarkdown } from '../../utils/stripMarkdown'
 import type { Note } from '../../types'
+import { Icon } from '../../icons/Icon'
 
 interface NotePreviewPopoverProps {
   title?: string
@@ -78,7 +79,7 @@ export function NotePreviewPopover({
       onClick={(e) => e.stopPropagation()}
     >
       <div className="flex items-start gap-2 p-3 pb-2.5">
-        <FileText size={14} className="mt-0.5 shrink-0 text-accent" />
+        <Icon name="file-text" size={14} className="mt-0.5 shrink-0 text-accent" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-text">{displayTitle}</p>
 
@@ -109,7 +110,7 @@ export function NotePreviewPopover({
           aria-label="Close"
           className="shrink-0 rounded p-0.5 text-text3 transition hover:bg-surface2 hover:text-text"
         >
-          <X size={13} />
+          <Icon name="x" size={13} />
         </button>
       </div>
 
@@ -120,7 +121,7 @@ export function NotePreviewPopover({
             onClick={() => { onNavigate(); onClose() }}
             className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent transition hover:bg-accent/20"
           >
-            Open note <ArrowRight size={11} />
+            Open note <Icon name="arrow-right" size={11} />
           </button>
         </div>
       )}

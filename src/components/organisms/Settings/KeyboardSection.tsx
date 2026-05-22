@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, RotateCcw, Trash2, X } from 'lucide-react'
+
 import { useAppStore } from '../../../store/useAppStore'
 import {
   DEFAULT_SHORTCUTS, EXTRA_SHORTCUTS, SHORTCUT_REGISTRY,
@@ -7,6 +7,7 @@ import {
 } from '../../../shortcuts/registry'
 import { SectionCard } from '../../molecules/SectionCard'
 import type { ShortcutContext } from '../../../shortcuts/registry'
+import { Icon } from '../../../icons/Icon'
 
 const CONTEXT_ORDER: ShortcutContext[] = ['Global', 'Notes', 'Kanban', 'Journal']
 
@@ -58,7 +59,7 @@ function BuiltinRow({ def }: { def: typeof DEFAULT_SHORTCUTS[number] }) {
         {isCustom && (
           <button type="button" onClick={() => resetKeyBinding(def.id)} title="Reset to default"
             className="flex h-6 w-6 items-center justify-center rounded text-[rgb(var(--text-3))] transition hover:text-[rgb(var(--accent))]">
-            <RotateCcw size={12} />
+            <Icon name="rotate-ccw" size={12} />
           </button>
         )}
         {recording ? (
@@ -108,7 +109,7 @@ function CustomRow({ id }: { id: string }) {
         )}
         <button type="button" onClick={() => resetKeyBinding(id)} title="Remove shortcut"
           className="flex h-6 w-6 items-center justify-center rounded text-[rgb(var(--text-3))] transition hover:text-red-400">
-          <Trash2 size={12} />
+          <Icon name="trash-2" size={12} />
         </button>
       </div>
     </div>
@@ -145,7 +146,7 @@ function AddPicker({ onClose }: AddPickerProps) {
       <div className="rounded-lg border border-[rgb(var(--accent)/0.3)] bg-[rgb(var(--accent)/0.04)] p-4">
         <div className="mb-3 flex items-center gap-2">
           <button type="button" onClick={() => setSelected(null)} className="text-[rgb(var(--text-3))] hover:text-[rgb(var(--text))]">
-            <X size={14} />
+            <Icon name="x" size={14} />
           </button>
           <span className="text-xs text-[rgb(var(--text-2))]">
             Press a key for <span className="font-medium text-[rgb(var(--text))]">{def.label}</span>
@@ -161,7 +162,7 @@ function AddPicker({ onClose }: AddPickerProps) {
       <div className="flex items-center justify-between border-b border-[rgb(var(--border))] px-4 py-2">
         <span className="text-xs font-medium text-[rgb(var(--text))]">Pick an action</span>
         <button type="button" onClick={onClose} className="text-[rgb(var(--text-3))] hover:text-[rgb(var(--text))]">
-          <X size={14} />
+          <Icon name="x" size={14} />
         </button>
       </div>
       {available.length === 0 ? (
@@ -239,7 +240,7 @@ export function KeyboardSection() {
             onClick={() => setShowPicker(true)}
             className="flex items-center gap-2 rounded-lg border border-dashed border-[rgb(var(--border))] px-4 py-2.5 text-sm text-[rgb(var(--text-3))] transition hover:border-[rgb(var(--accent)/0.5)] hover:text-[rgb(var(--accent))]"
           >
-            <Plus size={14} />
+            <Icon name="plus" size={14} />
             Add shortcut
           </button>
         )}

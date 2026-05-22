@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+
 import { Button } from '../../../atoms/Button'
 import { BoardCard } from './BoardCard'
 import { NewBoardModal } from './NewBoardModal'
 import type { Board } from '../../../../types/kanban.types'
+import { Icon } from '../../../../icons/Icon'
 
 interface BoardListProps {
   boards: Board[]
@@ -23,7 +24,7 @@ export function BoardList({ boards }: BoardListProps): JSX.Element {
             </p>
           </div>
           <Button variant="primary" size="sm" className="inline-flex items-center gap-1.5" onClick={() => setShowModal(true)}>
-            <Plus size={14} /> New Board
+            <Icon name="plus" size={14} /> New Board
           </Button>
         </div>
 
@@ -31,7 +32,7 @@ export function BoardList({ boards }: BoardListProps): JSX.Element {
           <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[rgb(var(--border))] p-16 text-center">
             <p className="mb-4 text-[rgb(var(--text-2))]">No boards yet. Create your first board to get started.</p>
             <Button variant="primary" size="sm" className="inline-flex items-center gap-1.5" onClick={() => setShowModal(true)}>
-              <Plus size={14} /> Create Board
+              <Icon name="plus" size={14} /> Create Board
             </Button>
           </div>
         ) : (
@@ -43,7 +44,7 @@ export function BoardList({ boards }: BoardListProps): JSX.Element {
               className="flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[rgb(var(--border))] text-[rgb(var(--text-3))] transition hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--accent))]"
               onClick={() => setShowModal(true)}
             >
-              <Plus size={20} />
+              <Icon name="plus" size={20} />
               <span className="text-sm font-medium">New Board</span>
             </button>
           </div>

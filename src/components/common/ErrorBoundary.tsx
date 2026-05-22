@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
-import { AlertTriangle, RefreshCw } from 'lucide-react'
+
 import { logger } from '../../logger/logger'
+import { Icon } from '../../icons/Icon'
 
 interface Props {
   children: ReactNode
@@ -49,7 +50,7 @@ export class ErrorBoundary extends Component<Props, State> {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 p-8 text-center">
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10">
-          <AlertTriangle size={22} className="text-red-400" />
+          <Icon name="alert-triangle" size={22} className="text-red-400" />
         </div>
         <div>
           <p className="text-sm font-semibold text-[rgb(var(--text))]">Something went wrong</p>
@@ -61,7 +62,7 @@ export class ErrorBoundary extends Component<Props, State> {
           onClick={() => this.reset()}
           className="inline-flex items-center gap-1.5 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-1.5 text-xs font-medium text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent)/0.5)] hover:text-[rgb(var(--accent))]"
         >
-          <RefreshCw size={12} /> Try again
+          <Icon name="refresh-cw" size={12} /> Try again
         </button>
         <details className="max-w-sm text-left">
           <summary className="cursor-pointer text-[11px] text-[rgb(var(--text-3))] hover:text-[rgb(var(--text-2))]">

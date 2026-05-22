@@ -1,10 +1,11 @@
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, CalendarDays, Network, Settings2, SquareKanban } from 'lucide-react'
+
 import { useAppStore } from '../store/useAppStore'
 import { useKanbanStore } from '../store/useKanbanStore'
 import { useJournalStore, todayDate } from '../store/useJournalStore'
 import { timeAgo } from '../utils/timeAgo'
 import { getDueState } from '../utils/kanban'
+import { Icon } from '../icons/Icon'
 
 function greeting(name: string): string {
   const h = new Date().getHours()
@@ -53,7 +54,7 @@ export function LandingPage() {
           <section>
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <CalendarDays size={16} className="text-[rgb(var(--accent))]" />
+                <Icon name="calendar-days" size={16} className="text-[rgb(var(--accent))]" />
                 <h2 className="text-sm font-semibold text-[rgb(var(--text))]">Journal</h2>
                 <span className="rounded-full bg-[rgb(var(--surface-2))] px-1.5 py-0.5 text-[10px] text-[rgb(var(--text-3))]">
                   {Object.keys(dailyNotes).length}
@@ -77,7 +78,7 @@ export function LandingPage() {
                     : 'border-2 border-dashed border-[rgb(var(--border))] hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--accent))]'
                 }`}
               >
-                <CalendarDays size={15} className="shrink-0 text-[rgb(var(--accent))]" />
+                <Icon name="calendar-days" size={15} className="shrink-0 text-[rgb(var(--accent))]" />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-[rgb(var(--text))]">Today</p>
                   {dailyNotes[today] ? (
@@ -126,7 +127,7 @@ export function LandingPage() {
           <section>
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <BookOpen size={16} className="text-[rgb(var(--accent))]" />
+                <Icon name="book-open" size={16} className="text-[rgb(var(--accent))]" />
                 <h2 className="text-sm font-semibold text-[rgb(var(--text))]">Notes</h2>
                 <span className="rounded-full bg-[rgb(var(--surface-2))] px-1.5 py-0.5 text-[10px] text-[rgb(var(--text-3))]">
                   {notes.length}
@@ -146,7 +147,7 @@ export function LandingPage() {
                   onClick={() => navigate('/notes')}
                   className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-[rgb(var(--border))] p-8 text-center text-[rgb(var(--text-3))] transition hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--accent))]"
                 >
-                  <BookOpen size={20} />
+                  <Icon name="book-open" size={20} />
                   <span className="text-sm">Start taking notes</span>
                 </button>
               ) : (
@@ -185,7 +186,7 @@ export function LandingPage() {
           <section>
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <SquareKanban size={16} className="text-[rgb(var(--accent))]" />
+                <Icon name="square-kanban" size={16} className="text-[rgb(var(--accent))]" />
                 <h2 className="text-sm font-semibold text-[rgb(var(--text))]">Kanban</h2>
                 <span className="rounded-full bg-[rgb(var(--surface-2))] px-1.5 py-0.5 text-[10px] text-[rgb(var(--text-3))]">
                   {boards.length}
@@ -205,7 +206,7 @@ export function LandingPage() {
                   onClick={() => navigate('/kanban')}
                   className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-[rgb(var(--border))] p-8 text-center text-[rgb(var(--text-3))] transition hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--accent))]"
                 >
-                  <SquareKanban size={20} />
+                  <Icon name="square-kanban" size={20} />
                   <span className="text-sm">Create your first board</span>
                 </button>
               ) : (
@@ -256,19 +257,19 @@ export function LandingPage() {
             onClick={() => navigate(`/journal/${today}`)}
             className="flex items-center gap-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-2.5 text-sm text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--text))]"
           >
-            <CalendarDays size={15} className="text-[rgb(var(--accent))]" /> Today's entry
+            <Icon name="calendar-days" size={15} className="text-[rgb(var(--accent))]" /> Today's entry
           </button>
           <button
             onClick={() => navigate('/graph')}
             className="flex items-center gap-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-2.5 text-sm text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--text))]"
           >
-            <Network size={15} className="text-[rgb(var(--accent))]" /> Graph view
+            <Icon name="network" size={15} className="text-[rgb(var(--accent))]" /> Graph view
           </button>
           <button
             onClick={() => navigate('/settings')}
             className="flex items-center gap-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-2.5 text-sm text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--text))]"
           >
-            <Settings2 size={15} className="text-[rgb(var(--accent))]" /> Settings
+            <Icon name="settings-2" size={15} className="text-[rgb(var(--accent))]" /> Settings
           </button>
         </div>
       </div>

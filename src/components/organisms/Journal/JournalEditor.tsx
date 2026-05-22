@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, ChevronLeft, ChevronRight, History, Save, Trash2 } from 'lucide-react'
+
 import { useJournalStore, todayDate } from '../../../store/useJournalStore'
 import { useConfirmStore } from '../../../store/useConfirmStore'
 import { MarkdownEditor } from '../Editor/MarkdownEditor'
 import { HistoryPanel } from '../Editor/HistoryPanel'
 import { useAppStore } from '../../../store/useAppStore'
+import { Icon } from '../../../icons/Icon'
 
 type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved'
 
@@ -118,7 +119,7 @@ export function JournalEditor({ date }: JournalEditorProps) {
             className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent)/0.5)] hover:text-[rgb(var(--accent))]"
             title="Previous day"
           >
-            <ChevronLeft size={14} />
+            <Icon name="chevron-left" size={14} />
           </button>
 
           <div className="min-w-0 flex-1">
@@ -134,14 +135,14 @@ export function JournalEditor({ date }: JournalEditorProps) {
             className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent)/0.5)] hover:text-[rgb(var(--accent))] disabled:cursor-not-allowed disabled:opacity-30"
             title="Next day"
           >
-            <ChevronRight size={14} />
+            <Icon name="chevron-right" size={14} />
           </button>
 
           <span className={`hidden shrink-0 items-center gap-1 text-xs transition-all sm:inline-flex ${
             saveStatus === 'idle' ? 'pointer-events-none opacity-0' : 'opacity-100'
           } ${saveStatus === 'saved' ? 'text-green-500' : 'text-[rgb(var(--text-3))]'}`}>
             {saveStatus === 'saving' && 'Saving…'}
-            {saveStatus === 'saved'  && <><Check size={11} /> Saved</>}
+            {saveStatus === 'saved'  && <><Icon name="check" size={11} /> Saved</>}
             {saveStatus === 'dirty'  && 'Unsaved'}
           </span>
 
@@ -156,7 +157,7 @@ export function JournalEditor({ date }: JournalEditorProps) {
                 : 'cursor-default border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--text-3))] opacity-40'
             }`}
           >
-            <Save size={14} />
+            <Icon name="save" size={14} />
             <span className="hidden sm:inline">Save</span>
           </button>
 
@@ -170,7 +171,7 @@ export function JournalEditor({ date }: JournalEditorProps) {
                 : 'border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--text-2))] hover:border-[rgb(var(--accent)/0.5)] hover:text-[rgb(var(--accent))]'
             }`}
           >
-            <History size={14} />
+            <Icon name="history" size={14} />
           </button>
 
           {existing && (
@@ -180,7 +181,7 @@ export function JournalEditor({ date }: JournalEditorProps) {
               onClick={handleDelete}
               className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--text-3))] transition hover:border-red-400/50 hover:text-red-400"
             >
-              <Trash2 size={14} />
+              <Icon name="trash-2" size={14} />
             </button>
           )}
         </div>

@@ -12,21 +12,19 @@ import { PaneTabBar, deriveTitle } from '../TabBar/PaneTabBar'
 import { CustomNavProvider } from './CustomNavProvider'
 import { AppRoutes } from '../../../routes'
 import { ErrorBoundary } from '../../common/ErrorBoundary'
-import {
-  BookOpen, CalendarDays, SquareKanban, Network, Settings2, Home,
-} from 'lucide-react'
 import { pathToType } from '../../../store/usePaneStore'
+import { Icon } from '../../../icons/Icon'
 
 // ── Tiny drag overlay ──────────────────────────────────────────────────────────
 
 function tabIcon(type: PaneTab['type'], size = 13) {
   switch (type) {
-    case 'notes':    return <BookOpen    size={size} />
-    case 'journal':  return <CalendarDays size={size} />
-    case 'kanban':   return <SquareKanban size={size} />
-    case 'graph':    return <Network      size={size} />
-    case 'settings': return <Settings2    size={size} />
-    default:         return <Home         size={size} />
+    case 'notes':    return <Icon name="book-open"    size={size} />
+    case 'journal':  return <Icon name="calendar-days" size={size} />
+    case 'kanban':   return <Icon name="square-kanban" size={size} />
+    case 'graph':    return <Icon name="network"      size={size} />
+    case 'settings': return <Icon name="settings-2"    size={size} />
+    default:         return <Icon name="home"        size={size} />
   }
 }
 

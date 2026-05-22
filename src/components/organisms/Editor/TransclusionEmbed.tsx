@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react'
-import { ChevronDown, ChevronRight, ExternalLink, FileText, Unlink } from 'lucide-react'
+
 import { useAppStore } from '../../../store/useAppStore'
 import { stripMarkdown } from '../../../utils/stripMarkdown'
+import { Icon } from '../../../icons/Icon'
 
 interface TransclusionEmbedProps {
   title: string
@@ -43,10 +44,10 @@ export function TransclusionEmbed({ title }: TransclusionEmbedProps) {
         onClick={toggle}
       >
         <span className="shrink-0 text-[rgb(var(--accent))]">
-          {collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
+          {collapsed ? <Icon name="chevron-right" size={13} /> : <Icon name="chevron-down" size={13} />}
         </span>
 
-        <FileText size={13} className="shrink-0 text-[rgb(var(--accent))] opacity-70" />
+        <Icon name="file-text" size={13} className="shrink-0 text-[rgb(var(--accent))] opacity-70" />
 
         <span className="flex-1 min-w-0 truncate text-sm font-semibold text-[rgb(var(--accent))]">
           {title}
@@ -59,7 +60,7 @@ export function TransclusionEmbed({ title }: TransclusionEmbedProps) {
             title="Open note"
             className="shrink-0 rounded p-0.5 text-[rgb(var(--accent)/0.6)] hover:text-[rgb(var(--accent))] transition-colors"
           >
-            <ExternalLink size={12} />
+            <Icon name="external-link" size={12} />
           </button>
         )}
       </div>
@@ -73,7 +74,7 @@ export function TransclusionEmbed({ title }: TransclusionEmbedProps) {
 
           {note === null && (
             <div className="flex items-center gap-1.5 text-xs text-[rgb(var(--text-3))] italic">
-              <Unlink size={11} />
+              <Icon name="unlink" size={11} />
               <span>Note not found: <strong className="font-medium">{title}</strong></span>
             </div>
           )}
@@ -106,7 +107,7 @@ export function TransclusionEmbed({ title }: TransclusionEmbedProps) {
                 onClick={navigateToNote}
                 className="mt-2.5 flex items-center gap-1 text-xs font-medium text-[rgb(var(--accent))] hover:underline"
               >
-                Open full note <ExternalLink size={10} />
+                Open full note <Icon name="external-link" size={10} />
               </button>
             </>
           )}

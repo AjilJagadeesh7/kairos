@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Brackets, FileText, Link2 } from 'lucide-react'
+
 import type { Note } from '../../../types'
+import { Icon } from '../../../icons/Icon'
 
 interface WikilinkDropdownProps {
   x: number
@@ -59,8 +60,8 @@ export function WikilinkDropdown({ x, y, query, suggestions, isTransclusion = fa
     >
       <div className="flex items-center gap-1.5 border-b border-[rgb(var(--border))] px-3 py-1.5">
         {isTransclusion
-          ? <Brackets size={11} className="text-[rgb(var(--accent))]" />
-          : <Link2    size={11} className="text-[rgb(var(--accent))]" />
+          ? <Icon name="brackets" size={11} className="text-[rgb(var(--accent))]" />
+          : <Icon name="link-2"    size={11} className="text-[rgb(var(--accent))]" />
         }
         <span className="text-[10px] font-semibold uppercase tracking-wide text-[rgb(var(--text-3))]">
           {isTransclusion ? 'Embed note' : 'Link to note'}
@@ -85,7 +86,7 @@ export function WikilinkDropdown({ x, y, query, suggestions, isTransclusion = fa
                     : 'text-[rgb(var(--text-2))] hover:bg-[rgb(var(--surface-2))]'
                 }`}
               >
-                <FileText size={13} className="shrink-0 text-[rgb(var(--accent))]" />
+                <Icon name="file-text" size={13} className="shrink-0 text-[rgb(var(--accent))]" />
                 <span className="min-w-0 flex-1 truncate text-sm">
                   {highlight(note.title, query)}
                 </span>

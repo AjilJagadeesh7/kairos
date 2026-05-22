@@ -1,8 +1,9 @@
-import { ArrowRight, FileText, Network, SquareKanban, Tag, X } from 'lucide-react'
+
 import { stripMarkdown } from '../../../utils/stripMarkdown'
 import { useKanbanStore } from '../../../store/useKanbanStore'
 import type { GNode, GLink } from '../../../types'
 import type { Note } from '../../../types'
+import { Icon } from '../../../icons/Icon'
 
 type GraphMode = 'links' | 'tags'
 
@@ -55,7 +56,7 @@ export function GraphSidebar({
             onClick={onClose}
             className="flex h-8 w-8 items-center justify-center rounded-md text-text2 transition hover:bg-surface3 hover:text-text xl:hidden"
           >
-            <X size={16} />
+            <Icon name="x" size={16} />
           </button>
         )}
       </div>
@@ -76,7 +77,7 @@ export function GraphSidebar({
                   color:      graphMode === mode ? 'rgb(var(--text))'      : 'rgb(var(--text-3))',
                 }}
               >
-                {mode === 'links' ? <Network size={13} /> : <Tag size={13} />}
+                {mode === 'links' ? <Icon name="network" size={13} /> : <Icon name="tag" size={13} />}
                 {mode === 'links' ? 'Links' : 'Tags'}
               </button>
             ))}
@@ -88,7 +89,7 @@ export function GraphSidebar({
           <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-text3">Options</p>
           <label className="flex cursor-pointer items-center justify-between rounded-lg px-2 py-1.5 transition hover:bg-surface3">
             <span className="flex items-center gap-2 text-xs text-text2">
-              <SquareKanban size={13} /> Include Tasks
+              <Icon name="square-kanban" size={13} /> Include Tasks
             </span>
             <button
               type="button"
@@ -152,7 +153,7 @@ export function GraphSidebar({
         {selectedNote && (
           <section className="rounded-xl border border-border bg-surface3 p-3">
             <div className="mb-1.5 flex items-start gap-1.5">
-              <FileText size={12} className="mt-0.5 shrink-0 text-text3" />
+              <Icon name="file-text" size={12} className="mt-0.5 shrink-0 text-text3" />
               <p className="text-xs font-semibold leading-snug text-text">
                 {selectedNote.title || 'Untitled'}
               </p>
@@ -184,7 +185,7 @@ export function GraphSidebar({
               onClick={() => onOpenNote(selectedNote.id)}
               className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-surface2 px-2 py-1.5 text-[10px] font-semibold text-text transition hover:opacity-80"
             >
-              Open note <ArrowRight size={10} />
+              Open note <Icon name="arrow-right" size={10} />
             </button>
           </section>
         )}
@@ -193,7 +194,7 @@ export function GraphSidebar({
         {selectedTaskInfo && !selectedNote && (
           <section className="rounded-xl border border-border bg-surface3 p-3">
             <div className="mb-1.5 flex items-start gap-1.5">
-              <SquareKanban size={12} className="mt-0.5 shrink-0 text-text3" />
+              <Icon name="square-kanban" size={12} className="mt-0.5 shrink-0 text-text3" />
               <p className="text-xs font-semibold leading-snug text-text">
                 {selectedTaskInfo.label}
               </p>
@@ -205,7 +206,7 @@ export function GraphSidebar({
               onClick={() => onOpenTask(selectedTaskInfo.nodeId)}
               className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-surface2 px-2 py-1.5 text-[10px] font-semibold text-text transition hover:opacity-80"
             >
-              Open task <ArrowRight size={10} />
+              Open task <Icon name="arrow-right" size={10} />
             </button>
           </section>
         )}

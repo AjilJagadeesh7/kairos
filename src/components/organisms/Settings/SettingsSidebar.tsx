@@ -1,5 +1,6 @@
-import { FolderSync, Info, Keyboard, Puzzle, ScrollText, Settings2, Store, Tag, X } from 'lucide-react'
 import { usePluginRegistry } from '../../../plugins/pluginContext'
+import { Icon } from '../../../icons/Icon'
+import type { IconToken } from '../../../icons/tokens'
 import type { Section } from '../../../types'
 
 interface SettingsSidebarProps {
@@ -8,28 +9,19 @@ interface SettingsSidebarProps {
   onClose?: () => void
 }
 
-const CORE_NAV: Array<{ id: Section; label: string; icon: React.ElementType }> = [
-  { id: 'general',      label: 'General',          icon: Settings2    },
-  { id: 'storage-sync', label: 'Storage & Sync',   icon: FolderSync   },
-  { id: 'tags',         label: 'Tags',             icon: Tag          },
-  { id: 'keyboard',     label: 'Keyboard',         icon: Keyboard     },
-  { id: 'plugins',      label: 'Plugins',          icon: Puzzle       },
-  { id: 'marketplace',  label: 'Marketplace',      icon: Store        },
-  { id: 'logs',         label: 'Logs',             icon: ScrollText   },
-  { id: 'about',        label: 'About',            icon: Info         },
+const CORE_NAV: Array<{ id: Section; label: string; iconName: IconToken }> = [
+  { id: 'general',      label: 'General',          iconName: 'settings-2'  },
+  { id: 'storage-sync', label: 'Storage & Sync',   iconName: 'folder-sync' },
+  { id: 'tags',         label: 'Tags',             iconName: 'tag'         },
+  { id: 'keyboard',     label: 'Keyboard',         iconName: 'keyboard'    },
+  { id: 'plugins',      label: 'Plugins',          iconName: 'puzzle'      },
+  { id: 'marketplace',  label: 'Marketplace',      iconName: 'store'       },
+  { id: 'logs',         label: 'Logs',             iconName: 'scroll-text' },
+  { id: 'about',        label: 'About',            iconName: 'info'        },
 ]
 
 export function SettingsSidebar({ section, onSectionChange, onClose }: SettingsSidebarProps) {
   const { settings: pluginSettings } = usePluginRegistry()
-
-  const allNav = [
-    ...CORE_NAV,
-    ...pluginSettings.map(s => ({
-      id: s.id as Section,
-      label: s.label,
-      icon: s.icon ?? Puzzle,
-    })),
-  ]
 
   return (
     <aside className="flex h-full w-full flex-col border-r border-border bg-surface2">
@@ -44,13 +36,13 @@ export function SettingsSidebar({ section, onSectionChange, onClose }: SettingsS
             onClick={onClose}
             className="flex h-8 w-8 items-center justify-center rounded-md text-text2 transition hover:bg-surface3 hover:text-text xl:hidden"
           >
-            <X size={16} />
+            <Icon name="x" size={16} />
           </button>
         )}
       </div>
 
       <nav className="flex flex-col gap-0.5 p-2">
-        {allNav.map(({ id, label, icon: Icon }) => (
+        {CORE_NAV.map(({ id, label, iconName }) => (
           <button
             key={id}
             type="button"
@@ -61,10 +53,32 @@ export function SettingsSidebar({ section, onSectionChange, onClose }: SettingsS
                 : 'text-text2 hover:bg-surface2 hover:text-text'
             }`}
           >
-            <Icon size={15} className="shrink-0" />
+            <Icon name={iconName} size={15} className="shrink-0" />
             <span>{label}</span>
           </button>
         ))}
+
+        {pluginSettings.map(s => {
+          const PluginIcon = s.icon
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => { onSectionChange(s.id as Section); onClose?.() }}
+              className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                section === s.id
+                  ? 'bg-surface3 font-medium text-text'
+                  : 'text-text2 hover:bg-surface2 hover:text-text'
+              }`}
+            >
+              {PluginIcon
+                ? <PluginIcon size={15} className="shrink-0" />
+                : <Icon name="puzzle" size={15} className="shrink-0" />
+              }
+              <span>{s.label}</span>
+            </button>
+          )
+        })}
       </nav>
     </aside>
   )

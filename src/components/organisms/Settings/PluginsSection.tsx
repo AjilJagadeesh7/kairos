@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { BookOpen, ChevronDown, ChevronRight, Code2, ExternalLink, FolderOpen, Puzzle, Store, Zap } from 'lucide-react'
+import type { IconToken } from '../../../icons/tokens'
 import { usePluginStore } from '../../../plugins/usePluginStore'
 import { uninstallPlugin } from '../../../plugins/installPlugin'
 import { SectionCard } from '../../molecules/SectionCard'
 import { Button } from '../../atoms/Button'
+import { Icon } from '../../../icons/Icon'
 
 // ─── Installed plugins list ───────────────────────────────────────────────────
 
@@ -15,7 +16,7 @@ function InstalledPlugins() {
     return (
       <SectionCard title="Installed Plugins">
         <div className="flex flex-col items-center gap-3 py-6 text-center">
-          <Store size={28} className="text-[rgb(var(--text-3))]" />
+          <Icon name="store" size={28} className="text-[rgb(var(--text-3))]" />
           <p className="text-sm text-[rgb(var(--text-2))]">No plugins installed yet.</p>
           <p className="text-xs text-[rgb(var(--text-3))]">
             Go to the <strong className="text-[rgb(var(--text-2))]">Marketplace</strong> tab to discover plugins.
@@ -103,9 +104,9 @@ function InlineCode({ children }: { children: string }) {
 
 // ─── Collapsible section ──────────────────────────────────────────────────────
 
-function Collapsible({ title, icon: Icon, defaultOpen = false, children }: {
+function Collapsible({ title, iconName, defaultOpen = false, children }: {
   title: string
-  icon: React.ElementType
+  iconName: IconToken
   defaultOpen?: boolean
   children: React.ReactNode
 }) {
@@ -117,11 +118,11 @@ function Collapsible({ title, icon: Icon, defaultOpen = false, children }: {
         onClick={() => setOpen(o => !o)}
         className="flex w-full items-center gap-2.5 px-4 py-3 text-left transition hover:bg-[rgb(var(--surface-2))]"
       >
-        <Icon size={14} className="shrink-0 text-[rgb(var(--accent))]" />
+        <Icon name={iconName} size={14} className="shrink-0 text-[rgb(var(--accent))]" />
         <span className="flex-1 text-sm font-medium text-[rgb(var(--text))]">{title}</span>
         {open
-          ? <ChevronDown size={14} className="shrink-0 text-[rgb(var(--text-3))]" />
-          : <ChevronRight size={14} className="shrink-0 text-[rgb(var(--text-3))]" />
+          ? <Icon name="chevron-down" size={14} className="shrink-0 text-[rgb(var(--text-3))]" />
+          : <Icon name="chevron-right" size={14} className="shrink-0 text-[rgb(var(--text-3))]" />
         }
       </button>
       {open && (
@@ -145,7 +146,7 @@ function DeveloperGuide() {
       <div className="space-y-3">
 
         {/* Vault structure */}
-        <Collapsible title="Vault folder structure" icon={FolderOpen} defaultOpen>
+        <Collapsible title="Vault folder structure" iconName="folder-open" defaultOpen>
           <p className="text-xs text-[rgb(var(--text-2))]">
             Each plugin lives in its own subfolder inside <InlineCode>{'{vault}/plugins/'}</InlineCode>:
           </p>
@@ -163,7 +164,7 @@ function DeveloperGuide() {
         </Collapsible>
 
         {/* manifest.json */}
-        <Collapsible title="manifest.json — required fields" icon={BookOpen}>
+        <Collapsible title="manifest.json — required fields" iconName="book-open">
           <Code>{`
 {
   "id": "my-plugin",
@@ -199,7 +200,7 @@ function DeveloperGuide() {
         </Collapsible>
 
         {/* index.js */}
-        <Collapsible title="index.js — plugin entry point" icon={Code2}>
+        <Collapsible title="index.js — plugin entry point" iconName="code-2">
           <p className="text-xs text-[rgb(var(--text-2))]">
             Your entry point must export a default function that receives the <InlineCode>api</InlineCode> object:
           </p>
@@ -245,7 +246,7 @@ export default function setup(api) {
         </Collapsible>
 
         {/* Full API reference */}
-        <Collapsible title="Full API reference" icon={Zap}>
+        <Collapsible title="Full API reference" iconName="zap">
           <div className="space-y-4 text-xs">
 
             <div>
@@ -324,7 +325,7 @@ const unsub = api.getAppStore().subscribe(
         </Collapsible>
 
         {/* Install methods */}
-        <Collapsible title="How users install your plugin" icon={Store}>
+        <Collapsible title="How users install your plugin" iconName="store">
           <div className="space-y-3 text-xs text-[rgb(var(--text-2))]">
             <div>
               <p className="font-medium text-[rgb(var(--text))]">1. Manual (local)</p>
@@ -356,7 +357,7 @@ const unsub = api.getAppStore().subscribe(
         </Collapsible>
 
         <div className="flex items-center gap-2 rounded-lg border border-[rgb(var(--accent))]/20 bg-[rgb(var(--accent))]/5 px-3 py-2.5">
-          <ExternalLink size={13} className="shrink-0 text-[rgb(var(--accent))]" />
+          <Icon name="external-link" size={13} className="shrink-0 text-[rgb(var(--accent))]" />
           <p className="text-xs text-[rgb(var(--text-2))]">
             Full docs and an example plugin are available at{' '}
             <a

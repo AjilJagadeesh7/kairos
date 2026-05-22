@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
-import { Crosshair, RefreshCw } from 'lucide-react'
+
 import type { GNode, GLink } from '../../../types'
+import { Icon } from '../../../icons/Icon'
 
 // Survives component unmount/remount (tab switches). Keyed by "mode:nodeId".
 const posCache = new Map<string, { x: number; y: number }>()
@@ -273,14 +274,14 @@ export function GraphView({
               : 'text-[rgb(var(--text-3))] hover:bg-[rgb(var(--surface-3))] hover:text-[rgb(var(--text))] disabled:opacity-30'
           }`}
         >
-          <Crosshair size={13} />
+          <Icon name="crosshair" size={13} />
         </button>
         <button
           title="Re-layout"
           onClick={onRelayout}
           className="rounded-md p-1.5 text-[rgb(var(--text-3))] transition hover:bg-[rgb(var(--surface-3))] hover:text-[rgb(var(--text))]"
         >
-          <RefreshCw size={13} />
+          <Icon name="refresh-cw" size={13} />
         </button>
       </div>
 

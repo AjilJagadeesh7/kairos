@@ -1,15 +1,12 @@
 import { useEffect } from 'react'
 import {
-  BookOpen, CalendarDays, SquareKanban, Network, Settings2,
-  Home, Plus, X, Columns2,
-} from 'lucide-react'
-import {
   SortableContext, useSortable, horizontalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { useDroppable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { usePaneStore, pathToType, type PaneTab } from '../../../store/usePaneStore'
 import { useAppStore } from '../../../store/useAppStore'
+import { Icon } from '../../../icons/Icon'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -32,12 +29,12 @@ export function deriveTitle(path: string, notes: { id: string; title: string }[]
 
 function tabIcon(type: PaneTab['type'], size = 13) {
   switch (type) {
-    case 'notes':    return <BookOpen    size={size} />
-    case 'journal':  return <CalendarDays size={size} />
-    case 'kanban':   return <SquareKanban size={size} />
-    case 'graph':    return <Network      size={size} />
-    case 'settings': return <Settings2    size={size} />
-    default:         return <Home         size={size} />
+    case 'notes':    return <Icon name="book-open"    size={size} />
+    case 'journal':  return <Icon name="calendar-days" size={size} />
+    case 'kanban':   return <Icon name="square-kanban" size={size} />
+    case 'graph':    return <Icon name="network"      size={size} />
+    case 'settings': return <Icon name="settings-2"    size={size} />
+    default:         return <Icon name="home"       size={size} />
   }
 }
 
@@ -95,7 +92,7 @@ function SortableTab({ paneId, tab, isActive, title, isDragging: _outer, onClose
         onClick={onClose}
         className="mr-1 flex h-4 w-4 shrink-0 items-center justify-center rounded opacity-0 transition-all group-hover:opacity-100 hover:bg-surface3 hover:text-text"
       >
-        <X size={10} />
+        <Icon name="x" size={10} />
       </button>
     </div>
   )
@@ -209,7 +206,7 @@ export function PaneTabBar({ paneId, draggingTabId, overDropTarget }: PaneTabBar
             className="flex shrink-0 items-center self-center mx-1 h-5 w-5 justify-center rounded text-text3 transition-colors hover:bg-surface2 hover:text-text2"
             aria-label="New tab"
           >
-            <Plus size={13} />
+            <Icon name="plus" size={13} />
           </button>
 
           {/* Drop zone for receiving tabs from other panes — visible while dragging from elsewhere */}
@@ -228,7 +225,7 @@ export function PaneTabBar({ paneId, draggingTabId, overDropTarget }: PaneTabBar
           className="flex items-center justify-center px-2 text-text3 transition-colors hover:bg-surface2 hover:text-text2"
           title="Split pane"
         >
-          <Columns2 size={13} />
+          <Icon name="columns-2" size={13} />
         </button>
         {paneCount > 1 && (
           <button
@@ -236,7 +233,7 @@ export function PaneTabBar({ paneId, draggingTabId, overDropTarget }: PaneTabBar
             className="flex items-center justify-center px-1.5 text-text3 transition-colors hover:bg-surface2 hover:text-text2"
             title="Close pane"
           >
-            <X size={13} />
+            <Icon name="x" size={13} />
           </button>
         )}
       </div>

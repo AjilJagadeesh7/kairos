@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { FileText, Plus, X } from 'lucide-react'
+
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../../../../store/useAppStore'
 import { useKanbanStore } from '../../../../store/useKanbanStore'
 import type { KanbanTask } from '../../../../types/kanban.types'
+import { Icon } from '../../../../icons/Icon'
 
 interface LinkedNotesProps {
   boardId: string
@@ -42,7 +43,7 @@ export function LinkedNotes({ boardId, task }: LinkedNotesProps): JSX.Element {
     <div className="flex flex-col gap-2">
       {linkedNoteObjects.map(note => (
         <div key={note.id} className="group flex items-center gap-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] px-3 py-2">
-          <FileText size={13} className="flex-shrink-0 text-[rgb(var(--accent))]" />
+          <Icon name="file-text" size={13} className="flex-shrink-0 text-[rgb(var(--accent))]" />
           <span className="flex-1 truncate text-sm text-[rgb(var(--text))]">{note.title || 'Untitled'}</span>
           <button
             onClick={() => navigate(`/notes/${note.id}`)}
@@ -54,7 +55,7 @@ export function LinkedNotes({ boardId, task }: LinkedNotesProps): JSX.Element {
             onClick={() => unlinkNote(note.id)}
             className="hidden text-[rgb(var(--text-3))] hover:text-red-500 group-hover:block"
           >
-            <X size={13} />
+            <Icon name="x" size={13} />
           </button>
         </div>
       ))}
@@ -77,7 +78,7 @@ export function LinkedNotes({ boardId, task }: LinkedNotesProps): JSX.Element {
                   onClick={() => linkNote(note.id)}
                   className="flex w-full items-center gap-2 px-3 py-2 text-sm text-[rgb(var(--text))] hover:bg-[rgb(var(--surface-2))]"
                 >
-                  <FileText size={12} className="flex-shrink-0 text-[rgb(var(--text-3))]" />
+                  <Icon name="file-text" size={12} className="flex-shrink-0 text-[rgb(var(--text-3))]" />
                   <span className="truncate">{note.title || 'Untitled'}</span>
                 </button>
               ))}
@@ -92,7 +93,7 @@ export function LinkedNotes({ boardId, task }: LinkedNotesProps): JSX.Element {
           onClick={() => setSearching(true)}
           className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-[rgb(var(--text-3))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--accent))]"
         >
-          <Plus size={12} /> Link note
+          <Icon name="plus" size={12} /> Link note
         </button>
       )}
     </div>

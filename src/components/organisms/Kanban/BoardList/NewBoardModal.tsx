@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { X } from 'lucide-react'
+
 import { useNavigate } from 'react-router-dom'
 import { useKanbanStore } from '../../../../store/useKanbanStore'
 import { Button } from '../../../atoms/Button'
+import { Icon } from '../../../../icons/Icon'
 
 interface NewBoardModalProps {
   onClose: () => void
@@ -40,7 +41,7 @@ export function NewBoardModal({ onClose }: NewBoardModalProps): JSX.Element {
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-[rgb(var(--text))]">New Board</h2>
           <Button variant="ghost" size="xs" className="h-7 w-7 p-0" onClick={onClose}>
-            <X size={14} />
+            <Icon name="x" size={14} />
           </Button>
         </div>
 

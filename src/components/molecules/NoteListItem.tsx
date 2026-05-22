@@ -1,9 +1,10 @@
-import { Check, Copy, FileText, Pin, Trash2 } from 'lucide-react'
+
 import { TagBadge } from '../atoms/TagBadge'
 import { useAppStore } from '../../store/useAppStore'
 import { useIconRules, resolveNoteIcon } from '../../plugins/pluginContext'
 import { timeAgo } from '../../utils/timeAgo'
 import type { Note, TagRecord } from '../../types'
+import { Icon } from '../../icons/Icon'
 
 interface Props {
   note: Note
@@ -43,8 +44,8 @@ export function NoteListItem({ note, isActive, isCopied, tagMap, onOpen, onDelet
       {iconRule
         ? <span className="shrink-0 text-[13px] leading-none" style={iconRule.color ? { color: iconRule.color } : undefined}>{iconRule.emoji}</span>
         : isPinned
-          ? <Pin size={12} className="shrink-0 text-accent" aria-hidden />
-          : <FileText size={12} className={`shrink-0 ${isActive ? 'text-accent/60' : 'text-text3'}`} aria-hidden />
+          ? <Icon name="pin" size={12} className="shrink-0 text-accent" aria-hidden />
+          : <Icon name="file-text" size={12} className={`shrink-0 ${isActive ? 'text-accent/60' : 'text-text3'}`} aria-hidden />
       }
 
       <div className="min-w-0 flex-1">
@@ -73,7 +74,7 @@ export function NoteListItem({ note, isActive, isCopied, tagMap, onOpen, onDelet
             isPinned ? 'text-accent hover:text-accent/70' : 'text-text3 hover:bg-surface hover:text-text'
           }`}
         >
-          <Pin size={11} aria-hidden className={isPinned ? 'fill-accent' : ''} />
+          <Icon name="pin" size={11} aria-hidden className={isPinned ? 'fill-accent' : ''} />
         </button>
         <button
           type="button"
@@ -82,7 +83,7 @@ export function NoteListItem({ note, isActive, isCopied, tagMap, onOpen, onDelet
           onClick={onCopyLink}
           className="flex h-6 w-6 items-center justify-center rounded text-text3 transition hover:bg-surface hover:text-text active:scale-95 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
         >
-          {isCopied ? <Check size={11} className="text-green-500" aria-hidden /> : <Copy size={11} aria-hidden />}
+          {isCopied ? <Icon name="check" size={11} className="text-green-500" aria-hidden /> : <Icon name="copy" size={11} aria-hidden />}
         </button>
         <button
           type="button"
@@ -91,7 +92,7 @@ export function NoteListItem({ note, isActive, isCopied, tagMap, onOpen, onDelet
           onClick={onDelete}
           className="flex h-6 w-6 items-center justify-center rounded text-text3 transition hover:bg-surface hover:text-red-400 active:scale-95 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
         >
-          <Trash2 size={11} aria-hidden />
+          <Icon name="trash-2" size={11} aria-hidden />
         </button>
       </div>
     </div>

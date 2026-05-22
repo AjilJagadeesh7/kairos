@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Link2, Plus, X } from 'lucide-react'
+
 import { useKanbanStore } from '../../../../store/useKanbanStore'
 import { PriorityDot } from '../../../atoms/PriorityDot'
 import type { Board, KanbanTask } from '../../../../types/kanban.types'
+import { Icon } from '../../../../icons/Icon'
 
 interface LinkedTasksProps {
   boardId: string
@@ -47,7 +48,7 @@ export function LinkedTasks({ boardId, board, task }: LinkedTasksProps): JSX.Ele
     <div className="flex flex-col gap-2">
       {linkedTaskObjects.map(({ task: linked, colTitle }) => (
         <div key={linked.id} className="group flex items-center gap-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] px-3 py-2">
-          <Link2 size={13} className="flex-shrink-0 text-[rgb(var(--text-3))]" />
+          <Icon name="link-2" size={13} className="flex-shrink-0 text-[rgb(var(--text-3))]" />
           <div className="flex flex-1 items-center gap-1.5 overflow-hidden">
             <PriorityDot priority={linked.priority} size={6} />
             <span className="truncate text-sm text-[rgb(var(--text))]">{linked.title}</span>
@@ -63,7 +64,7 @@ export function LinkedTasks({ boardId, board, task }: LinkedTasksProps): JSX.Ele
             onClick={() => unlinkTask(linked.id)}
             className="hidden text-[rgb(var(--text-3))] hover:text-red-500 group-hover:block"
           >
-            <X size={13} />
+            <Icon name="x" size={13} />
           </button>
         </div>
       ))}
@@ -101,7 +102,7 @@ export function LinkedTasks({ boardId, board, task }: LinkedTasksProps): JSX.Ele
           onClick={() => setSearching(true)}
           className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-[rgb(var(--text-3))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--accent))]"
         >
-          <Plus size={12} /> Link task
+          <Icon name="plus" size={12} /> Link task
         </button>
       )}
     </div>

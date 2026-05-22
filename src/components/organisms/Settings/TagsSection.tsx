@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
-import { Plus, RotateCcw, Trash2 } from 'lucide-react'
+
 import { useAppStore } from '../../../store/useAppStore'
 import { TAG_COLOR_PALETTE } from '../../../utils/kanban'
 import { ColorPicker } from '../../molecules/ColorPicker'
 import { SectionCard } from '../../molecules/SectionCard'
 import { Button } from '../../atoms/Button'
+import { Icon } from '../../../icons/Icon'
 
 function hashColor(name: string): string {
   let h = 5381
@@ -82,7 +83,7 @@ export function TagsSection() {
             disabled={!newName.trim()}
             className="inline-flex items-center gap-1.5"
           >
-            <Plus size={13} /> Add Tag
+            <Icon name="plus" size={13} /> Add Tag
           </Button>
         </form>
       </SectionCard>
@@ -119,7 +120,7 @@ export function TagsSection() {
                       onClick={() => { removeNoteTag(tag.name); setEditingTag(null) }}
                       className="text-[rgb(var(--text-3))] opacity-0 transition hover:text-[rgb(var(--text))] group-hover:opacity-100 [li:hover_&]:opacity-100"
                     >
-                      <RotateCcw size={12} />
+                      <Icon name="rotate-ccw" size={12} />
                     </button>
                   )}
                   {/* Delete pre-registered unused tag */}
@@ -130,7 +131,7 @@ export function TagsSection() {
                       onClick={() => { removeNoteTag(tag.name); setEditingTag(null) }}
                       className="text-[rgb(var(--text-3))] opacity-0 transition hover:text-red-400 [li:hover_&]:opacity-100"
                     >
-                      <Trash2 size={12} />
+                      <Icon name="trash-2" size={12} />
                     </button>
                   )}
                 </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronRight } from 'lucide-react'
+import { Icon } from '../../icons/Icon'
 
 // ── Primitives ────────────────────────────────────────────────────────────────
 
@@ -43,7 +43,7 @@ function Sub({ label, children }: { label: string; children: React.ReactNode }) 
         onMouseDown={(e) => e.preventDefault()}
       >
         <span>{label}</span>
-        <ChevronRight size={13} className="ml-4 shrink-0 text-text3" />
+        <Icon name="chevron-right" size={13} className="ml-4 shrink-0 text-text3" />
       </button>
       {open && (
         <div className="absolute left-full top-0 z-50 min-w-[190px] rounded-md border border-border bg-surface p-1 shadow-soft">

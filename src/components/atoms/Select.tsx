@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ChevronDown } from 'lucide-react'
+import { Icon } from '../../icons/Icon'
 
 export interface SelectOption<T extends string = string> {
   value: T
@@ -58,7 +58,7 @@ export function Select<T extends string = string>({ value, options, onChange, cl
         aria-expanded={open}
       >
         {current?.label ?? value}
-        <ChevronDown size={10} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+        <Icon name="chevron-down" size={10} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && createPortal(

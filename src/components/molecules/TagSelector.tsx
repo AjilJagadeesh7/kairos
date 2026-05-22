@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { Plus, X } from 'lucide-react'
+
 import { Button } from '../atoms/Button'
 import { ColorPicker } from './ColorPicker'
 import { TAG_COLOR_PALETTE } from '../../utils/kanban'
 import type { TagRecord } from '../../types'
+import { Icon } from '../../icons/Icon'
 
 interface TagSelectorProps {
   selectedTags: string[]
@@ -68,7 +69,7 @@ export function TagSelector({ selectedTags, onTagsChange, onTagCreate, available
         onClick={() => setIsOpen(!isOpen)}
         className="inline-flex items-center gap-1"
       >
-        <Plus size={13} /> Tag
+        <Icon name="plus" size={13} /> Tag
       </Button>
 
       {isOpen && (
@@ -88,7 +89,7 @@ export function TagSelector({ selectedTags, onTagsChange, onTagCreate, available
                     style={{ backgroundColor: tag.color }}
                   >
                     #{tag.name}
-                    {selectedTags.includes(tag.name) && <X size={10} />}
+                    {selectedTags.includes(tag.name) && <Icon name="x" size={10} />}
                   </button>
                 ))}
               </div>

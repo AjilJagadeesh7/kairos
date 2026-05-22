@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ArrowUpRight, Link2, Search, X } from 'lucide-react'
+
 import { useAppStore } from '../../../store/useAppStore'
 import type { NodeType } from '../../../types/graph.types'
+import { Icon } from '../../../icons/Icon'
 
 interface Props {
   x: number
@@ -50,7 +51,7 @@ export function GraphContextMenu({
             {nodeLabel}
           </span>
           <button onClick={onClose} className="text-[rgb(var(--text-3))] hover:text-[rgb(var(--text))]">
-            <X size={13} />
+            <Icon name="x" size={13} />
           </button>
         </div>
 
@@ -61,7 +62,7 @@ export function GraphContextMenu({
                 onClick={() => { onOpenNote(nodeId); onClose() }}
                 className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-[rgb(var(--text))] hover:bg-[rgb(var(--surface-2))]"
               >
-                <ArrowUpRight size={14} className="shrink-0 text-[rgb(var(--text-3))]" />
+                <Icon name="arrow-up-right" size={14} className="shrink-0 text-[rgb(var(--text-3))]" />
                 Open note
               </button>
             )}
@@ -70,7 +71,7 @@ export function GraphContextMenu({
                 onClick={() => { onOpenTask(nodeId); onClose() }}
                 className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-[rgb(var(--text))] hover:bg-[rgb(var(--surface-2))]"
               >
-                <ArrowUpRight size={14} className="shrink-0 text-[rgb(var(--text-3))]" />
+                <Icon name="arrow-up-right" size={14} className="shrink-0 text-[rgb(var(--text-3))]" />
                 Open task
               </button>
             )}
@@ -78,14 +79,14 @@ export function GraphContextMenu({
               onClick={() => setShowPicker(true)}
               className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-[rgb(var(--text))] hover:bg-[rgb(var(--surface-2))]"
             >
-              <Link2 size={14} className="shrink-0 text-[rgb(var(--text-3))]" />
+              <Icon name="link-2" size={14} className="shrink-0 text-[rgb(var(--text-3))]" />
               {nodeType === 'note' ? 'Connect to note…' : 'Link to note…'}
             </button>
           </div>
         ) : (
           <div className="flex flex-col">
             <div className="relative border-b border-[rgb(var(--border))] px-3 py-2">
-              <Search size={12} className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-[rgb(var(--text-3))]" />
+              <Icon name="search" size={12} className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-[rgb(var(--text-3))]" />
               <input
                 autoFocus
                 value={search}
@@ -104,7 +105,7 @@ export function GraphContextMenu({
                       onClick={() => { onLinkToNote(nodeId, note.id); onClose() }}
                       className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[rgb(var(--text))] hover:bg-[rgb(var(--surface-2))]"
                     >
-                      <Link2 size={11} className="shrink-0 text-[rgb(var(--accent))]" />
+                      <Icon name="link-2" size={11} className="shrink-0 text-[rgb(var(--accent))]" />
                       <span className="truncate">{note.title || 'Untitled note'}</span>
                     </button>
                   </li>

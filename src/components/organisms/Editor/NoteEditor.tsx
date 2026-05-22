@@ -1,9 +1,10 @@
 import { useCallback } from 'react'
 import { useParams } from 'react-router-dom'
-import { Loader2 } from 'lucide-react'
+
 import { useAppStore } from '../../../store/useAppStore'
 import { EditorDraft } from './EditorDraft'
 import type { EditorDraftProps } from '../../../types'
+import { Icon } from '../../../icons/Icon'
 
 export function NoteEditor(): JSX.Element {
   const { noteId }      = useParams<{ noteId?: string }>()
@@ -23,7 +24,7 @@ export function NoteEditor(): JSX.Element {
   if (activeNote === undefined) {
     return (
       <div className="flex h-full items-center justify-center text-text3">
-        <Loader2 size={20} className="animate-spin" />
+        <Icon name="loader-2" size={20} className="animate-spin" />
       </div>
     )
   }

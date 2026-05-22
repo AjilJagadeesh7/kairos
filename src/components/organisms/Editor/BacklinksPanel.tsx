@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronDown, ChevronRight, Link } from 'lucide-react'
+
 import { useAppStore } from '../../../store/useAppStore'
 import { useBacklinks } from '../../../hooks/useBacklinks'
+import { Icon } from '../../../icons/Icon'
 
 interface Props {
   noteTitle: string
@@ -25,8 +26,8 @@ export function BacklinksPanel({ noteTitle }: Props) {
         onClick={() => setOpen(v => !v)}
         className="flex w-full items-center gap-2 px-1 py-2 text-xs font-semibold uppercase tracking-widest text-text3 hover:text-text2 transition-colors"
       >
-        {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-        <Link size={11} />
+        {open ? <Icon name="chevron-down" size={12} /> : <Icon name="chevron-right" size={12} />}
+        <Icon name="link" size={11} />
         Backlinks
         <span className="ml-1 rounded-full bg-surface2 px-1.5 py-0.5 text-[10px] font-normal normal-case tracking-normal">
           {backlinks.length}

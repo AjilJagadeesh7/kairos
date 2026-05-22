@@ -1,9 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import {
-  ChevronRight, FileText, Folder, FolderOpen,
-  Plus, FolderPlus, MoreHorizontal, Pencil, Trash2,
-  Check, Copy, FolderInput, ExternalLink, Pin,
-} from 'lucide-react'
+import type { IconToken } from '../../../icons/tokens'
 import { usePaneStore } from '../../../store/usePaneStore'
 import { useAppStore } from '../../../store/useAppStore'
 import { useIconRules, resolveNoteIcon, resolveFolderIcon } from '../../../plugins/pluginContext'
@@ -11,6 +7,7 @@ import { timeAgo } from '../../../utils/timeAgo'
 import { countNotes } from '../../../utils/folderTree'
 import type { FolderNode } from '../../../utils/folderTree'
 import type { Note, TagRecord } from '../../../types'
+import { Icon } from '../../../icons/Icon'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -80,11 +77,11 @@ function FolderMenu({ onNewNote, onNewSubfolder, onRename, onDelete, onClose }: 
       className="absolute right-0 top-full z-50 mt-1 min-w-[160px] overflow-hidden rounded-lg border border-border bg-surface shadow-lg"
     >
       {([
-        { icon: Plus,       label: 'New note',       action: onNewNote,      danger: false },
-        { icon: FolderPlus, label: 'New subfolder',  action: onNewSubfolder, danger: false },
-        { icon: Pencil,     label: 'Rename',         action: onRename,       danger: false },
-        { icon: Trash2,     label: 'Delete folder',  action: onDelete,       danger: true  },
-      ] as const).map(({ icon: Icon, label, action, danger }) => (
+        { iconName: 'plus'        as IconToken, label: 'New note',       action: onNewNote,      danger: false },
+        { iconName: 'folder-plus' as IconToken, label: 'New subfolder',  action: onNewSubfolder, danger: false },
+        { iconName: 'pencil'      as IconToken, label: 'Rename',         action: onRename,       danger: false },
+        { iconName: 'trash-2'     as IconToken, label: 'Delete folder',  action: onDelete,       danger: true  },
+      ]).map(({ iconName, label, action, danger }) => (
         <button
           key={label}
           type="button"
@@ -94,7 +91,7 @@ function FolderMenu({ onNewNote, onNewSubfolder, onRename, onDelete, onClose }: 
             danger ? 'text-red-400' : 'text-text'
           }`}
         >
-          <Icon size={13} aria-hidden />
+          <Icon name={iconName} size={13} aria-hidden />
           {label}
         </button>
       ))}
@@ -144,7 +141,7 @@ function MovePopover({ allFolderPaths, currentFolder, onMove, onClose }: MovePop
             onClick={(e) => { e.stopPropagation(); onMove(o.value); onClose() }}
             className="flex w-full items-center gap-2 px-3 py-2 text-xs text-text transition hover:bg-surface2"
           >
-            <Folder size={12} aria-hidden />
+            <Icon name="folder" size={12} aria-hidden />
             {o.label}
           </button>
         ))
@@ -216,8 +213,8 @@ function NoteRow({
         {iconRule
           ? <span className="text-[12px] leading-none">{iconRule.emoji}</span>
           : isPinned
-            ? <Pin size={11} className="text-accent" />
-            : <FileText size={11} className={isActive ? 'text-accent/60' : 'text-text3'} />
+            ? <Icon name="pin" size={11} className="text-accent" />
+            : <Icon name="file-text" size={11} className={isActive ? 'text-accent/60' : 'text-text3'} />
         }
       </span>
 
@@ -235,7 +232,7 @@ function NoteRow({
             isPinned ? 'text-accent' : 'text-text3 hover:text-text'
           }`}
         >
-          <Pin size={10} className={isPinned ? 'fill-accent' : ''} aria-hidden />
+          <Icon name="pin" size={10} className={isPinned ? 'fill-accent' : ''} aria-hidden />
         </button>
         <div className="relative">
           <button
@@ -244,7 +241,7 @@ function NoteRow({
             onClick={e => { e.stopPropagation(); setShowMove(v => !v) }}
             className="flex h-5 w-5 items-center justify-center rounded text-text3 transition hover:text-text"
           >
-            <FolderInput size={10} aria-hidden />
+            <Icon name="folder-input" size={10} aria-hidden />
           </button>
           {showMove && (
             <MovePopover
@@ -261,7 +258,7 @@ function NoteRow({
           onClick={e => { e.stopPropagation(); onCopyLink() }}
           className="flex h-5 w-5 items-center justify-center rounded text-text3 transition hover:text-text"
         >
-          {isCopied ? <Check size={10} className="text-green-500" aria-hidden /> : <Copy size={10} aria-hidden />}
+          {isCopied ? <Icon name="check" size={10} className="text-green-500" aria-hidden /> : <Icon name="copy" size={10} aria-hidden />}
         </button>
         <button
           type="button"
@@ -269,7 +266,7 @@ function NoteRow({
           onClick={handleOpenInNewTab}
           className="flex h-5 w-5 items-center justify-center rounded text-text3 transition hover:text-text"
         >
-          <ExternalLink size={10} aria-hidden />
+          <Icon name="external-link" size={10} aria-hidden />
         </button>
         <button
           type="button"
@@ -277,7 +274,7 @@ function NoteRow({
           onClick={e => { e.stopPropagation(); onDelete() }}
           className="flex h-5 w-5 items-center justify-center rounded text-text3 transition hover:text-red-400"
         >
-          <Trash2 size={10} aria-hidden />
+          <Icon name="trash-2" size={10} aria-hidden />
         </button>
       </div>
     </div>
@@ -383,15 +380,15 @@ function FolderRow({
             aria-hidden
           >
             {/* Chevron overlaps into the padding zone — doesn't push icon right */}
-            <ChevronRight
+            <Icon name="chevron-right"
               size={16}
               className={`absolute -left-2 text-text3 transition-transform duration-150 ${expanded ? 'rotate-90' : ''}`}
             />
             {iconRule
               ? <span className="text-[12px] leading-none">{iconRule.emoji}</span>
               : expanded
-                ? <FolderOpen size={11} className="shrink-0 text-accent/80" />
-                : <Folder size={11} className="shrink-0 text-accent/80" />
+                ? <Icon name="folder-open" size={11} className="shrink-0 text-accent/80" />
+                : <Icon name="folder" size={11} className="shrink-0 text-accent/80" />
             }
           </span>
 
@@ -429,7 +426,7 @@ function FolderRow({
             onClick={e => { e.stopPropagation(); onCreateNote(node.path) }}
             className="flex h-5 w-5 items-center justify-center rounded text-text3 transition hover:text-text"
           >
-            <Plus size={11} aria-hidden />
+            <Icon name="plus" size={11} aria-hidden />
           </button>
           <div className="relative">
             <button
@@ -438,7 +435,7 @@ function FolderRow({
               onClick={e => { e.stopPropagation(); setShowMenu(v => !v) }}
               className="flex h-5 w-5 items-center justify-center rounded text-text3 transition hover:text-text"
             >
-              <MoreHorizontal size={11} aria-hidden />
+              <Icon name="more-horizontal" size={11} aria-hidden />
             </button>
             {showMenu && (
               <FolderMenu
@@ -458,7 +455,7 @@ function FolderRow({
         <div>
           {isCreatingChild && (
             <div style={{ paddingLeft: `${8 + (depth + 1) * 16}px` }} className="flex h-[26px] items-center gap-1.5 pr-2">
-              <FolderPlus size={12} className="shrink-0 text-accent/70" aria-hidden />
+              <Icon name="folder-plus" size={12} className="shrink-0 text-accent/70" aria-hidden />
               <input
                 autoFocus
                 value={newFolderName}
@@ -602,7 +599,7 @@ function RootNewFolderInput({ onCommit, onCancel }: { onCommit: (name: string) =
   }
   return (
     <div className="flex h-[26px] items-center gap-1.5 px-2">
-      <FolderPlus size={12} className="shrink-0 text-accent/70" aria-hidden />
+      <Icon name="folder-plus" size={12} className="shrink-0 text-accent/70" aria-hidden />
       <input
         autoFocus
         value={value}
@@ -642,7 +639,7 @@ export function FolderTree({
       {pinnedNotes.length > 0 && (
         <div className="mb-1">
           <div className="flex items-center gap-1.5 px-2 pb-0.5 pt-1">
-            <Pin size={9} className="fill-accent text-accent" aria-hidden />
+            <Icon name="pin" size={9} className="fill-accent text-accent" aria-hidden />
             <span className="text-[10px] font-semibold uppercase tracking-wider text-text3">Pinned</span>
           </div>
           <div className="mx-1 overflow-hidden rounded border border-accent/10 bg-accent/[0.04] py-0.5">
@@ -719,7 +716,7 @@ export function FolderTree({
       {/* ── Empty state ────────────────────────────────────────────────────── */}
       {!hasContent && !creatingRootFolder && (
         <div className="flex flex-col items-center gap-2 py-10 text-center">
-          <FileText size={28} className="text-text3" aria-hidden />
+          <Icon name="file-text" size={28} className="text-text3" aria-hidden />
           <p className="text-xs text-text3">No notes yet</p>
         </div>
       )}

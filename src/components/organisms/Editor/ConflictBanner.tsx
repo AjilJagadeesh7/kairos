@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { AlertTriangle, ChevronDown, ChevronUp, GitMerge, X } from 'lucide-react'
+
 import { useConflictStore } from '../../../store/useConflictStore'
 import { useAppStore } from '../../../store/useAppStore'
 import type { Conflict } from '../../../store/useConflictStore'
+import { Icon } from '../../../icons/Icon'
 
 interface ConflictBannerProps {
   conflict: Conflict
@@ -64,7 +65,7 @@ export function ConflictBanner({ conflict, onApplyRemote }: ConflictBannerProps)
     >
       {/* Header row */}
       <div className="flex items-start gap-2.5 px-3 py-2.5">
-        <AlertTriangle size={15} className="mt-0.5 shrink-0 text-amber-500" aria-hidden />
+        <Icon name="alert-triangle" size={15} className="mt-0.5 shrink-0 text-amber-500" aria-hidden />
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
             Sync conflict detected
@@ -79,7 +80,7 @@ export function ConflictBanner({ conflict, onApplyRemote }: ConflictBannerProps)
           aria-label={expanded ? 'Collapse details' : 'Expand details'}
           className="shrink-0 rounded p-1 text-amber-600 transition hover:bg-amber-100 dark:hover:bg-amber-900"
         >
-          {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          {expanded ? <Icon name="chevron-up" size={14} /> : <Icon name="chevron-down" size={14} />}
         </button>
       </div>
 
@@ -129,7 +130,7 @@ export function ConflictBanner({ conflict, onApplyRemote }: ConflictBannerProps)
           onClick={() => void keepBoth()}
           className="inline-flex items-center gap-1 rounded-lg border border-amber-400/60 bg-amber-100/80 px-3 py-1.5 text-[11px] font-semibold text-amber-900 transition hover:bg-amber-200/80 disabled:opacity-50 dark:border-amber-600/40 dark:bg-amber-800/40 dark:text-amber-200 dark:hover:bg-amber-700/60"
         >
-          <GitMerge size={12} aria-hidden /> Merge both
+          <Icon name="git-merge" size={12} aria-hidden /> Merge both
         </button>
         <button
           type="button"
@@ -137,7 +138,7 @@ export function ConflictBanner({ conflict, onApplyRemote }: ConflictBannerProps)
           aria-label="Dismiss conflict"
           className="ml-auto rounded p-1.5 text-amber-600/70 transition hover:text-amber-800 dark:text-amber-500 dark:hover:text-amber-300"
         >
-          <X size={13} aria-hidden />
+          <Icon name="x" size={13} aria-hidden />
         </button>
       </div>
     </div>

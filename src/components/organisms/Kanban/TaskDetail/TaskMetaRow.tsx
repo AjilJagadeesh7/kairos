@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Calendar, ChevronDown, Trash2 } from 'lucide-react'
+
 import { useKanbanStore } from '../../../../store/useKanbanStore'
 import { useConfirmStore } from '../../../../store/useConfirmStore'
 import { PriorityDot } from '../../../atoms/PriorityDot'
 import { formatDate } from '../../../../utils/kanban'
 import type { Board, KanbanTask, Priority } from '../../../../types/kanban.types'
+import { Icon } from '../../../../icons/Icon'
 
 const PRIORITIES: Array<Priority | null> = [null, 'low', 'medium', 'high', 'urgent']
 const PRIORITY_LABELS: Record<string, string> = { low: 'Low', medium: 'Medium', high: 'High', urgent: 'Urgent' }
@@ -49,7 +50,7 @@ export function TaskMetaRow({ task, board }: Props) {
         >
           <span className="h-2 w-2 rounded-full" style={{ backgroundColor: currentColumn?.color ?? '#888' }} />
           {currentColumn?.title ?? 'Unknown'}
-          <ChevronDown size={11} />
+          <Icon name="chevron-down" size={11} />
         </button>
         {showColumnMenu && (
           <div className="absolute left-0 top-full z-20 mt-1 min-w-[160px] rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-lg">
@@ -78,7 +79,7 @@ export function TaskMetaRow({ task, board }: Props) {
             ? <><PriorityDot priority={task.priority} size={6} /> {PRIORITY_LABELS[task.priority]}</>
             : 'No priority'
           }
-          <ChevronDown size={11} />
+          <Icon name="chevron-down" size={11} />
         </button>
         {showPriorityMenu && (
           <div className="absolute left-0 top-full z-20 mt-1 min-w-[140px] rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-lg">
@@ -99,7 +100,7 @@ export function TaskMetaRow({ task, board }: Props) {
 
       {/* Due date */}
       <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] px-2.5 py-1.5 text-xs font-medium text-[rgb(var(--text-2))] hover:border-[rgb(var(--accent))]">
-        <Calendar size={11} />
+        <Icon name="calendar" size={11} />
         {task.due ? formatDate(task.due) : 'Due date'}
         <input
           type="date"
@@ -115,7 +116,7 @@ export function TaskMetaRow({ task, board }: Props) {
         className="ml-auto flex items-center gap-1 rounded-lg border border-transparent px-2 py-1.5 text-xs text-red-500 hover:border-red-200 hover:bg-red-50 dark:hover:border-red-900 dark:hover:bg-red-950/30"
         title="Delete task"
       >
-        <Trash2 size={13} />
+        <Icon name="trash-2" size={13} />
       </button>
     </div>
   )

@@ -1,20 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
-import { BookOpen, CalendarDays, SquareKanban, Network, Settings2, Palette } from 'lucide-react'
 import { usePaneStore } from '../../../store/usePaneStore'
 import { useAppStore } from '../../../store/useAppStore'
 import { usePluginRegistry } from '../../../plugins/pluginContext'
 import { SyncStatusBadge } from '../../molecules/SyncStatusBadge'
 import { THEME_REGISTRY } from '../../../themes/registry'
 import { todayDate } from '../../../store/useJournalStore'
+import { Icon } from '../../../icons/Icon'
+import type { IconToken } from '../../../icons/tokens'
 import type { ThemeMode } from '../../../types'
 
 // ─── Nav items ────────────────────────────────────────────────────────────────
 
-const TOP_NAV = [
-  { to: '/notes',   Icon: BookOpen,     label: 'Notes'   },
-  { to: '/journal', Icon: CalendarDays, label: 'Journal' },
-  { to: '/kanban',  Icon: SquareKanban, label: 'Kanban'  },
-  { to: '/graph',   Icon: Network,      label: 'Graph'   },
+const TOP_NAV: Array<{ to: string; iconName: IconToken; label: string }> = [
+  { to: '/notes',   iconName: 'book-open',     label: 'Notes'   },
+  { to: '/journal', iconName: 'calendar-days', label: 'Journal' },
+  { to: '/kanban',  iconName: 'square-kanban', label: 'Kanban'  },
+  { to: '/graph',   iconName: 'network',       label: 'Graph'   },
 ]
 
 // ─── Custom tooltip ───────────────────────────────────────────────────────────
@@ -84,7 +85,7 @@ function CompactThemePicker({ value, onChange }: { value: ThemeMode; onChange: (
             open ? 'text-text' : 'text-text3 hover:text-text'
           }`}
         >
-          <Palette size={20} strokeWidth={1.75} />
+          <Icon name="palette" size={20} strokeWidth={1.75} />
           {/* Current theme color indicator dot */}
           <ThemeSwatchDot bg={current.swatchBg} accent={current.swatchAccent} />
         </button>
@@ -145,7 +146,12 @@ export function ActivityBar() {
     }
   }
 
-  function NavBtn({ to, Icon, label }: { to: string; Icon: React.ElementType; label: string }) {
+  function NavBtn({ to, iconName, label, NavIconComponent }: {
+    to: string
+    label: string
+    iconName?: IconToken
+    NavIconComponent?: React.ElementType
+  }) {
     const dest = to === '/journal' ? `/journal/${todayDate()}` : to
     const isActive = activePath === to || activePath.startsWith(to + '/')
     return (
@@ -160,7 +166,12 @@ export function ActivityBar() {
           {isActive && (
             <span className="absolute inset-y-1 left-0 w-0.5 rounded-r-full bg-accent" />
           )}
-          <Icon size={20} strokeWidth={isActive ? 2 : 1.75} />
+          {iconName
+            ? <Icon name={iconName} size={20} strokeWidth={isActive ? 2 : 1.75} />
+            : NavIconComponent
+              ? <NavIconComponent size={20} strokeWidth={isActive ? 2 : 1.75} />
+              : null
+          }
         </button>
       </Tooltip>
     )
@@ -191,8 +202,10 @@ export function ActivityBar() {
       <nav className="flex flex-1 flex-col items-center py-1">
         {TOP_NAV.map(item => <NavBtn key={item.to} {...item} />)}
 
-        {pluginPages.map(({ path, navLabel, navIcon: NavIcon }) =>
-          NavIcon ? <NavBtn key={path} to={path} Icon={NavIcon} label={navLabel} /> : null
+        {pluginPages.map(({ path, navLabel, navIcon: NavIconComponent }) =>
+          NavIconComponent
+            ? <NavBtn key={path} to={path} label={navLabel} NavIconComponent={NavIconComponent} />
+            : null
         )}
       </nav>
 
@@ -202,7 +215,7 @@ export function ActivityBar() {
           <SyncStatusBadge />
         </div>
         <CompactThemePicker value={theme} onChange={setTheme} />
-        <NavBtn to="/settings" Icon={Settings2} label="Settings" />
+        <NavBtn to="/settings" iconName="settings-2" label="Settings" />
       </div>
     </aside>
   )

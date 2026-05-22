@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FileText, Link2, List, X } from 'lucide-react'
+
 import { useKanbanStore } from '../../../../store/useKanbanStore'
 import { ProgressBar } from '../../../atoms/ProgressBar'
 import { SubtaskList } from './SubtaskList'
@@ -12,6 +12,7 @@ import { TaskTitleEditor } from './TaskTitleEditor'
 import { TaskMetaRow } from './TaskMetaRow'
 import { calcTaskProgress, formatDate } from '../../../../utils/kanban'
 import type { Board, KanbanTask } from '../../../../types/kanban.types'
+import { Icon } from '../../../../icons/Icon'
 
 interface Props {
   task: KanbanTask
@@ -59,7 +60,7 @@ export function TaskDetailPanel({ task, board, onClose }: Props): JSX.Element {
           onClick={onClose}
           className="rounded-lg p-1 text-[rgb(var(--text-3))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]"
         >
-          <X size={16} />
+          <Icon name="x" size={16} />
         </button>
       </div>
 
@@ -97,21 +98,21 @@ export function TaskDetailPanel({ task, board, onClose }: Props): JSX.Element {
 
         <section className="mb-5">
           <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[rgb(var(--text-3))]">
-            <List size={12} /> Subtasks
+            <Icon name="list" size={12} /> Subtasks
           </h3>
           <SubtaskList boardId={board.id} task={task} />
         </section>
 
         <section className="mb-5">
           <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[rgb(var(--text-3))]">
-            <FileText size={12} /> Linked Notes
+            <Icon name="file-text" size={12} /> Linked Notes
           </h3>
           <LinkedNotes boardId={board.id} task={task} />
         </section>
 
         <section className="mb-5">
           <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[rgb(var(--text-3))]">
-            <Link2 size={12} /> Linked Tasks
+            <Icon name="link-2" size={12} /> Linked Tasks
           </h3>
           <LinkedTasks boardId={board.id} board={board} task={task} />
         </section>

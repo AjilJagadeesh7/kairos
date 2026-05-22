@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Search, X } from 'lucide-react'
+
 import { useJournalStore, todayDate } from '../../../store/useJournalStore'
+import { Icon } from '../../../icons/Icon'
 
 const DAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 const MONTHS = [
@@ -96,7 +97,7 @@ export function JournalCalendar({ activeDate, onClose }: JournalCalendarProps) {
       {/* Search */}
       <div className="border-b border-[rgb(var(--border))] px-3 py-2">
         <div className="relative">
-          <Search size={12} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[rgb(var(--text-3))]" />
+          <Icon name="search" size={12} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[rgb(var(--text-3))]" />
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
@@ -108,7 +109,7 @@ export function JournalCalendar({ activeDate, onClose }: JournalCalendarProps) {
               onClick={() => setQuery('')}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-[rgb(var(--text-3))] hover:text-[rgb(var(--text))]"
             >
-              <X size={12} />
+              <Icon name="x" size={12} />
             </button>
           )}
         </div>
@@ -119,7 +120,7 @@ export function JournalCalendar({ activeDate, onClose }: JournalCalendarProps) {
         <div className="flex-1 overflow-y-auto">
           {searchResults.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-              <Search size={20} className="text-[rgb(var(--text-3))] opacity-40" />
+              <Icon name="search" size={20} className="text-[rgb(var(--text-3))] opacity-40" />
               <p className="text-xs text-[rgb(var(--text-3))]">No entries match "{query}"</p>
             </div>
           ) : (
@@ -158,7 +159,7 @@ export function JournalCalendar({ activeDate, onClose }: JournalCalendarProps) {
               className="flex h-7 w-7 items-center justify-center rounded-md text-[rgb(var(--text-2))] transition hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]"
               aria-label="Previous month"
             >
-              <ChevronLeft size={15} />
+              <Icon name="chevron-left" size={15} />
             </button>
             <span className="text-sm font-medium text-[rgb(var(--text))]">
               {MONTHS[viewMonth]} {viewYear}
@@ -168,7 +169,7 @@ export function JournalCalendar({ activeDate, onClose }: JournalCalendarProps) {
               className="flex h-7 w-7 items-center justify-center rounded-md text-[rgb(var(--text-2))] transition hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]"
               aria-label="Next month"
             >
-              <ChevronRight size={15} />
+              <Icon name="chevron-right" size={15} />
             </button>
           </div>
 

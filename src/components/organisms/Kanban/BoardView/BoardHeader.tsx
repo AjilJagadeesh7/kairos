@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { ArrowLeft, Plus, Redo2, Settings, Undo2, X } from 'lucide-react'
+
 import { useNavigate } from 'react-router-dom'
 import { useKanbanStore } from '../../../../store/useKanbanStore'
 import { Button } from '../../../atoms/Button'
 import { Select } from '../../../atoms/Select'
 import { AddColumnModal } from './AddColumnModal'
 import type { Board, DueFilter, Priority, SortMode } from '../../../../types/kanban.types'
+import { Icon } from '../../../../icons/Icon'
 
 const PRIORITIES: Priority[] = ['urgent', 'high', 'medium', 'low']
 const PRIORITY_LABELS: Record<Priority, string> = { urgent: 'Urgent', high: 'High', medium: 'Medium', low: 'Low' }
@@ -68,7 +69,7 @@ export function BoardHeader({ board, onOpenSettings }: BoardHeaderProps): JSX.El
         onClick={() => navigate('/kanban')}
         className="flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-[rgb(var(--text-3))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]"
       >
-        <ArrowLeft size={13} /> Boards
+        <Icon name="arrow-left" size={13} /> Boards
       </button>
 
       <div className="h-4 w-px bg-[rgb(var(--border))]" />
@@ -106,7 +107,7 @@ export function BoardHeader({ board, onOpenSettings }: BoardHeaderProps): JSX.El
             onClick={clearFilters}
             className="flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[11px] text-[rgb(var(--text-3))] hover:text-red-400"
           >
-            <X size={10} /> Clear
+            <Icon name="x" size={10} /> Clear
           </button>
         )}
       </div>
@@ -124,7 +125,7 @@ export function BoardHeader({ board, onOpenSettings }: BoardHeaderProps): JSX.El
         {/* Add column */}
         <Button variant="ghost" size="xs" onClick={() => setShowAddCol(true)}
           className="inline-flex items-center gap-1 text-xs">
-          <Plus size={12} /> Add column
+          <Icon name="plus" size={12} /> Add column
         </Button>
 
         <div className="mx-1 h-4 w-px bg-[rgb(var(--border))]" />
@@ -132,19 +133,19 @@ export function BoardHeader({ board, onOpenSettings }: BoardHeaderProps): JSX.El
         <Button variant="ghost" size="xs" onClick={() => undo(board.id)}
           disabled={!canUndo} title="Undo (Ctrl+Z)"
           className="h-6 w-6 p-0 disabled:opacity-30">
-          <Undo2 size={12} />
+          <Icon name="undo-2" size={12} />
         </Button>
         <Button variant="ghost" size="xs" onClick={() => redo(board.id)}
           disabled={!canRedo} title="Redo (Ctrl+Shift+Z)"
           className="h-6 w-6 p-0 disabled:opacity-30">
-          <Redo2 size={12} />
+          <Icon name="redo-2" size={12} />
         </Button>
 
         <div className="mx-1 h-4 w-px bg-[rgb(var(--border))]" />
 
         <Button variant="ghost" size="xs" onClick={onOpenSettings}
           className="inline-flex items-center gap-1 text-xs">
-          <Settings size={12} /> Settings
+          <Icon name="settings" size={12} /> Settings
         </Button>
       </div>
     </div>

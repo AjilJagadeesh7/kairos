@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { Icon } from '../../icons/Icon'
 
 interface DropdownProps {
   children: ReactNode
@@ -63,7 +63,7 @@ export function Dropdown({ children, trigger, className = '', onOpenChange }: Dr
           className="flex w-full items-center justify-between rounded-md border border-border bg-surface px-2 py-2 text-xs text-text outline-none hover:bg-surface2 focus:border-accent"
         >
           {resolvedTrigger}
-          <ChevronDown size={12} className={`text-text3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          <Icon name="chevron-down" size={12} className={`text-text3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         </button>
       )}
 

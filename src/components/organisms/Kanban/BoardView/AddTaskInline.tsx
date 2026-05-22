@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Plus, X } from 'lucide-react'
+
 import { useKanbanStore } from '../../../../store/useKanbanStore'
+import { Icon } from '../../../../icons/Icon'
 
 interface AddTaskInlineProps {
   boardId: string
@@ -44,7 +45,7 @@ export function AddTaskInline({ boardId, columnId }: AddTaskInlineProps): JSX.El
         className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-[rgb(var(--text-3))] transition hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text-2))]"
         onClick={() => setIsOpen(true)}
       >
-        <Plus size={13} /> Add task
+        <Icon name="plus" size={13} /> Add task
       </button>
     )
   }
@@ -72,7 +73,7 @@ export function AddTaskInline({ boardId, columnId }: AddTaskInlineProps): JSX.El
           onClick={() => { setIsOpen(false); setTitle('') }}
           className="rounded-md p-1 text-[rgb(var(--text-3))] transition hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]"
         >
-          <X size={13} />
+          <Icon name="x" size={13} />
         </button>
       </div>
     </div>

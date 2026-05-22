@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { BookOpen, CheckSquare, Lightbulb, Users, X, Zap, FileText, BarChart2, FlaskConical, GraduationCap, Bug, Globe } from 'lucide-react'
+
 import { Button } from '../../atoms/Button'
+import { Icon } from '../../../icons/Icon'
 
 export interface NoteTemplate {
   id: string
@@ -22,7 +23,7 @@ function makeTemplates(): NoteTemplate[] {
     id: 'blank',
     name: 'Blank',
     description: 'Start with an empty note',
-    icon: <FileText size={18} />,
+    icon: <Icon name="file-text" size={18} />,
     title: '',
     content: '',
   },
@@ -30,7 +31,7 @@ function makeTemplates(): NoteTemplate[] {
     id: 'meeting',
     name: 'Meeting Notes',
     description: 'Attendees, agenda, decisions, actions',
-    icon: <Users size={18} />,
+    icon: <Icon name="users" size={18} />,
     title: 'Meeting — ',
     content: `## Date & Attendees
 **Date:** ${longDate}
@@ -41,7 +42,6 @@ function makeTemplates(): NoteTemplate[] {
 2.
 
 ## Discussion & Decisions
-
 
 ## Action Items
 | Task | Owner | Due |
@@ -55,7 +55,7 @@ function makeTemplates(): NoteTemplate[] {
     id: 'project',
     name: 'Project Plan',
     description: 'Goal, milestones, tasks, risks',
-    icon: <BarChart2 size={18} />,
+    icon: <Icon name="bar-chart-2" size={18} />,
     title: 'Project: ',
     content: `## Overview
 **Goal:**
@@ -78,7 +78,6 @@ function makeTemplates(): NoteTemplate[] {
 
 ## Resources & Links
 
-
 ## Notes
 `,
   },
@@ -86,10 +85,9 @@ function makeTemplates(): NoteTemplate[] {
     id: 'brainstorm',
     name: 'Brainstorm',
     description: 'Capture ideas, evaluate, decide',
-    icon: <Lightbulb size={18} />,
+    icon: <Icon name="lightbulb" size={18} />,
     title: 'Brainstorm: ',
     content: `## Problem / Question
-
 
 ## Constraints
 -
@@ -112,7 +110,7 @@ function makeTemplates(): NoteTemplate[] {
     id: 'book',
     name: 'Book Notes',
     description: 'Summary, key ideas, quotes, takeaways',
-    icon: <BookOpen size={18} />,
+    icon: <Icon name="book-open" size={18} />,
     title: 'Book: ',
     content: `## Metadata
 **Title:**
@@ -121,7 +119,6 @@ function makeTemplates(): NoteTemplate[] {
 **Rating:** ⭐⭐⭐⭐⭐
 
 ## In One Sentence
-
 
 ## Key Ideas
 1.
@@ -144,7 +141,7 @@ function makeTemplates(): NoteTemplate[] {
     id: 'todo',
     name: 'To-Do List',
     description: 'Prioritised task checklist',
-    icon: <CheckSquare size={18} />,
+    icon: <Icon name="check-square" size={18} />,
     title: 'To-Do: ',
     content: `## High priority
 - [ ]
@@ -164,7 +161,7 @@ function makeTemplates(): NoteTemplate[] {
     id: 'standup',
     name: 'Daily Standup',
     description: 'Yesterday, today, blockers',
-    icon: <Zap size={18} />,
+    icon: <Icon name="zap" size={18} />,
     title: `Standup ${shortDate}`,
     content: `## Yesterday
 -
@@ -182,13 +179,11 @@ function makeTemplates(): NoteTemplate[] {
     id: 'research',
     name: 'Research Note',
     description: 'Topic, sources, findings, gaps',
-    icon: <FlaskConical size={18} />,
+    icon: <Icon name="flask-conical" size={18} />,
     title: 'Research: ',
     content: `## Topic
 
-
 ## Background
-
 
 ## Sources
 | Source | Key Finding | Credibility |
@@ -196,7 +191,6 @@ function makeTemplates(): NoteTemplate[] {
 | | | |
 
 ## Findings
-
 
 ## Open Questions
 -
@@ -208,17 +202,14 @@ function makeTemplates(): NoteTemplate[] {
     id: 'learning',
     name: 'Study Notes',
     description: 'Concept, examples, review questions',
-    icon: <GraduationCap size={18} />,
+    icon: <Icon name="graduation-cap" size={18} />,
     title: 'Notes: ',
     content: `## Topic
-
 
 ## Core Concepts
 ### Concept 1
 
-
 ### Concept 2
-
 
 ## Examples
 \`\`\`
@@ -232,7 +223,6 @@ function makeTemplates(): NoteTemplate[] {
 
 ## Summary
 
-
 ## Review Questions
 1.
 2.
@@ -243,10 +233,9 @@ function makeTemplates(): NoteTemplate[] {
     id: 'bug',
     name: 'Bug Report',
     description: 'Steps to reproduce, expected vs actual',
-    icon: <Bug size={18} />,
+    icon: <Icon name="bug" size={18} />,
     title: 'Bug: ',
     content: `## Summary
-
 
 ## Environment
 **Version:**
@@ -259,15 +248,11 @@ function makeTemplates(): NoteTemplate[] {
 
 ## Expected Behaviour
 
-
 ## Actual Behaviour
-
 
 ## Root Cause
 
-
 ## Fix / Workaround
-
 
 ## Related Issues
 -
@@ -277,7 +262,7 @@ function makeTemplates(): NoteTemplate[] {
     id: 'weekly',
     name: 'Weekly Review',
     description: 'Wins, lessons, goals for next week',
-    icon: <Globe size={18} />,
+    icon: <Icon name="globe" size={18} />,
     title: `Week of ${shortDateYear}`,
     content: `## Wins this week
 -
@@ -299,7 +284,6 @@ function makeTemplates(): NoteTemplate[] {
 - [ ]
 
 ## Energy & mood
-
 
 ## Notes
 `,
@@ -359,7 +343,7 @@ export function NoteTemplateModal({ onSelect, onClose }: NoteTemplateModalProps)
             onClick={onClose}
             className="rounded-md p-1.5 text-[rgb(var(--text-3))] transition hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]"
           >
-            <X size={15} />
+            <Icon name="x" size={15} />
           </button>
         </div>
 

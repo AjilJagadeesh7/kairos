@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { GripVertical } from 'lucide-react'
+
 import { useKanbanStore } from '../../../../store/useKanbanStore'
 import { ColorPicker } from '../../../molecules/ColorPicker'
 import type { Board, KanbanColumn } from '../../../../types/kanban.types'
+import { Icon } from '../../../../icons/Icon'
 
 const PALETTE = [
   // Reds / pinks
@@ -65,7 +66,7 @@ export function ColumnHeader({ column, board, taskCount, dragHandleProps }: Colu
         {...dragHandleProps}
         className="flex-shrink-0 cursor-grab text-[rgb(var(--text-3))] opacity-0 transition group-hover:opacity-100 active:cursor-grabbing"
       >
-        <GripVertical size={14} />
+        <Icon name="grip-vertical" size={14} />
       </div>
 
       {/* Clickable color dot */}

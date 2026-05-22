@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FolderPlus, Loader2, Plus, RefreshCw, Search, X } from 'lucide-react'
+
 import { useAppStore } from '../../../store/useAppStore'
 import { useSidebarNotes } from '../../../hooks/useSidebarNotes'
 import { buildFolderTree, getAllFolderPaths } from '../../../utils/folderTree'
@@ -10,6 +10,7 @@ import { NoteTemplateModal } from '../Notes/NoteTemplateModal'
 import { FolderTree } from './FolderTree'
 import type { NoteTemplate } from '../Notes/NoteTemplateModal'
 import type { Note } from '../../../types'
+import { Icon } from '../../../icons/Icon'
 
 interface Props {
   onClose?: () => void
@@ -122,7 +123,7 @@ export function Sidebar({ onClose }: Props): JSX.Element {
             onClick={() => openNewNoteTemplates()}
             className="flex h-6 w-6 items-center justify-center rounded text-text3 transition hover:bg-surface3 hover:text-text"
           >
-            <Plus size={14} aria-hidden />
+            <Icon name="plus" size={14} aria-hidden />
           </button>
           <button
             type="button"
@@ -131,7 +132,7 @@ export function Sidebar({ onClose }: Props): JSX.Element {
             onClick={() => setCreatingRootFolder(true)}
             className="flex h-6 w-6 items-center justify-center rounded text-text3 transition hover:bg-surface3 hover:text-text"
           >
-            <FolderPlus size={14} aria-hidden />
+            <Icon name="folder-plus" size={14} aria-hidden />
           </button>
           <button
             type="button"
@@ -140,7 +141,7 @@ export function Sidebar({ onClose }: Props): JSX.Element {
             onClick={() => void loadNotes()}
             className="flex h-6 w-6 items-center justify-center rounded text-text3 transition hover:bg-surface3 hover:text-text"
           >
-            <RefreshCw size={14} aria-hidden />
+            <Icon name="refresh-cw" size={14} aria-hidden />
           </button>
           {onClose && (
             <button
@@ -149,7 +150,7 @@ export function Sidebar({ onClose }: Props): JSX.Element {
               onClick={onClose}
               className="flex h-6 w-6 items-center justify-center rounded-md text-text2 transition hover:bg-surface3 hover:text-text xl:hidden"
             >
-              <X size={14} aria-hidden />
+              <Icon name="x" size={14} aria-hidden />
             </button>
           )}
         </div>
@@ -157,7 +158,7 @@ export function Sidebar({ onClose }: Props): JSX.Element {
         {/* ── Search input ── */}
         <div className="border-b border-border px-3 py-3">
           <div className="relative mb-3">
-            <Search size={13} aria-hidden className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-text3" />
+            <Icon name="search" size={13} aria-hidden className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-text3" />
             <input
               value={query}
               onChange={e => setQuery(e.target.value)}
@@ -172,7 +173,7 @@ export function Sidebar({ onClose }: Props): JSX.Element {
                 onClick={() => setQuery('')}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text3 transition hover:text-text"
               >
-                <X size={13} aria-hidden />
+                <Icon name="x" size={13} aria-hidden />
               </button>
             )}
           </div>
@@ -195,7 +196,7 @@ export function Sidebar({ onClose }: Props): JSX.Element {
         <div className="flex-1 overflow-y-auto pb-4 pt-2">
           {!isNotesLoaded ? (
             <div className="flex items-center justify-center py-10 text-text3">
-              <Loader2 size={20} className="animate-spin" aria-label="Loading notes" />
+              <Icon name="loader-2" size={20} className="animate-spin" aria-label="Loading notes" />
             </div>
           ) : isSearching ? (
             // Flat search results

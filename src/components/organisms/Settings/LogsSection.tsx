@@ -1,7 +1,8 @@
-import { ClipboardCopy, ScrollText, Trash2 } from 'lucide-react'
+
 import { useState } from 'react'
 import { SectionCard } from '../../molecules/SectionCard'
 import { logger } from '../../../logger/logger'
+import { Icon } from '../../../icons/Icon'
 
 export function LogsSection() {
   const [copied, setCopied] = useState(false)
@@ -44,7 +45,7 @@ export function LogsSection() {
           </p>
 
           <div className="flex items-center gap-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] px-3 py-2">
-            <ScrollText size={13} className="shrink-0 text-[rgb(var(--text-3))]" />
+            <Icon name="scroll-text" size={13} className="shrink-0 text-[rgb(var(--text-3))]" />
             <span className="flex-1 text-xs text-[rgb(var(--text-2))]">
               {entries.length} entries this session
               {errorCount > 0 && (
@@ -62,7 +63,7 @@ export function LogsSection() {
               onClick={handleCopy}
               className="inline-flex items-center gap-1.5 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-1.5 text-xs font-medium text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent)/0.4)] hover:text-[rgb(var(--accent))]"
             >
-              <ClipboardCopy size={12} />
+              <Icon name="clipboard-copy" size={12} />
               {copied ? 'Copied!' : 'Copy log'}
             </button>
             <button
@@ -77,7 +78,7 @@ export function LogsSection() {
               onClick={handleClear}
               className="inline-flex items-center gap-1.5 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-1.5 text-xs font-medium text-[rgb(var(--text-2))] transition hover:border-red-500/40 hover:text-red-400"
             >
-              <Trash2 size={12} />
+              <Icon name="trash-2" size={12} />
               {cleared ? 'Cleared' : 'Clear'}
             </button>
           </div>

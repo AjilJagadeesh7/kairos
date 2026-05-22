@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, ChevronDown, ChevronRight, GripVertical, Plus, Trash2 } from 'lucide-react'
+
 import {
   DndContext,
   closestCenter,
@@ -12,6 +12,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } 
 import { CSS } from '@dnd-kit/utilities'
 import { useKanbanStore } from '../../../../store/useKanbanStore'
 import type { KanbanTask, Subtask, Checkpoint } from '../../../../types/kanban.types'
+import { Icon } from '../../../../icons/Icon'
 
 interface SubtaskListProps {
   boardId: string
@@ -32,7 +33,7 @@ function CheckpointRow({ cp, boardId, taskId, subtaskId }: {
   return (
     <div ref={setNodeRef} style={style} className="group flex items-center gap-1.5 pl-4">
       <div {...attributes} {...listeners} className="cursor-grab text-[rgb(var(--text-3))] opacity-0 transition group-hover:opacity-100">
-        <GripVertical size={12} />
+        <Icon name="grip-vertical" size={12} />
       </div>
       <button
         onClick={() => toggleCheckpoint(boardId, taskId, subtaskId, cp.id)}
@@ -42,7 +43,7 @@ function CheckpointRow({ cp, boardId, taskId, subtaskId }: {
             : 'border-[rgb(var(--border))] hover:border-[rgb(var(--accent))]'
         }`}
       >
-        {cp.done && <Check size={10} strokeWidth={3} />}
+        {cp.done && <Icon name="check" size={10} strokeWidth={3} />}
       </button>
       <span className={`flex-1 text-xs ${cp.done ? 'text-[rgb(var(--text-3))] line-through' : 'text-[rgb(var(--text-2))]'}`}>
         {cp.label}
@@ -51,7 +52,7 @@ function CheckpointRow({ cp, boardId, taskId, subtaskId }: {
         onClick={() => deleteCheckpoint(boardId, taskId, subtaskId, cp.id)}
         className="hidden text-[rgb(var(--text-3))] transition hover:text-red-500 group-hover:block"
       >
-        <Trash2 size={11} />
+        <Icon name="trash-2" size={11} />
       </button>
     </div>
   )
@@ -93,7 +94,7 @@ function SubtaskRow({ sub, boardId, taskId }: { sub: Subtask; boardId: string; t
     <div ref={setNodeRef} style={style} className="group rounded-lg border border-transparent hover:border-[rgb(var(--border))]">
       <div className="flex items-center gap-1.5 p-1">
         <div {...attributes} {...listeners} className="cursor-grab text-[rgb(var(--text-3))] opacity-0 transition group-hover:opacity-100">
-          <GripVertical size={12} />
+          <Icon name="grip-vertical" size={12} />
         </div>
         <button
           onClick={() => updateSubtask(boardId, taskId, sub.id, { done: !sub.done })}
@@ -103,7 +104,7 @@ function SubtaskRow({ sub, boardId, taskId }: { sub: Subtask; boardId: string; t
               : 'border-[rgb(var(--border))] hover:border-[rgb(var(--accent))]'
           }`}
         >
-          {sub.done && <Check size={10} strokeWidth={3} />}
+          {sub.done && <Icon name="check" size={10} strokeWidth={3} />}
         </button>
         <span className={`flex-1 text-sm ${sub.done ? 'text-[rgb(var(--text-3))] line-through' : 'text-[rgb(var(--text))]'}`}>
           {sub.title}
@@ -115,13 +116,13 @@ function SubtaskRow({ sub, boardId, taskId }: { sub: Subtask; boardId: string; t
           onClick={() => setOpen(v => !v)}
           className="rounded p-0.5 text-[rgb(var(--text-3))] hover:text-[rgb(var(--text))]"
         >
-          {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+          {open ? <Icon name="chevron-down" size={12} /> : <Icon name="chevron-right" size={12} />}
         </button>
         <button
           onClick={() => deleteSubtask(boardId, taskId, sub.id)}
           className="hidden rounded p-0.5 text-[rgb(var(--text-3))] hover:text-red-500 group-hover:block"
         >
-          <Trash2 size={12} />
+          <Icon name="trash-2" size={12} />
         </button>
       </div>
 
@@ -152,7 +153,7 @@ function SubtaskRow({ sub, boardId, taskId }: { sub: Subtask; boardId: string; t
               onClick={() => setAddingCp(true)}
               className="ml-6 flex items-center gap-1 text-xs text-[rgb(var(--text-3))] hover:text-[rgb(var(--accent))]"
             >
-              <Plus size={11} /> Add checkpoint
+              <Icon name="plus" size={11} /> Add checkpoint
             </button>
           )}
         </div>
@@ -211,7 +212,7 @@ export function SubtaskList({ boardId, task }: SubtaskListProps): JSX.Element {
           onClick={() => setIsAdding(true)}
           className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-[rgb(var(--text-3))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--accent))]"
         >
-          <Plus size={12} /> Add subtask
+          <Icon name="plus" size={12} /> Add subtask
         </button>
       )}
     </div>

@@ -1,11 +1,12 @@
 import { useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Loader2 } from 'lucide-react'
+
 import { useKanbanStore } from '../store/useKanbanStore'
 import { BoardList } from '../components/organisms/Kanban/BoardList/BoardList'
 import { BoardView } from '../components/organisms/Kanban/BoardView/BoardView'
 import { ErrorBoundary } from '../components/common/ErrorBoundary'
 import { VaultBanner } from '../components/common/VaultBanner'
+import { Icon } from '../icons/Icon'
 
 export function KanbanPage(): JSX.Element {
   const { boardId } = useParams<{ boardId?: string }>()
@@ -36,7 +37,7 @@ export function KanbanPage(): JSX.Element {
   if (!isLoaded) {
     return (
       <main className="flex h-full items-center justify-center">
-        <Loader2 size={24} className="animate-spin text-[rgb(var(--text-3))]" />
+        <Icon name="loader-2" size={24} className="animate-spin text-[rgb(var(--text-3))]" />
       </main>
     )
   }
