@@ -1,3 +1,4 @@
+use tauri::{AppHandle, WebviewUrl, WebviewWindowBuilder};
 use tauri::http::{Request, Response};
 
 // Headers that must be stripped from proxied responses so the browser
@@ -82,9 +83,29 @@ async fn proxy_fetch(request: Request<Vec<u8>>) -> Response<Vec<u8>> {
     }
 }
 
+// Open any URL in a standalone in-app browser window (no iframe restrictions).
+#[tauri::command]
+fn open_app_browser(app: AppHandle, url: String) -> Result<(), String> {
+    let parsed = url.parse::<reqwest::Url>().map_err(|e| e.to_string())?;
+    let label = format!("appbrowser-{}", std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis());
+
+    WebviewWindowBuilder::new(&app, label, WebviewUrl::External(parsed))
+        .title("MindVault — Browser")
+        .inner_size(1100.0, 760.0)
+        .resizable(true)
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![open_app_browser])
         .register_asynchronous_uri_scheme_protocol("mvproxy", |_app, request, responder| {
             tauri::async_runtime::spawn(async move {
                 responder.respond(proxy_fetch(request).await);

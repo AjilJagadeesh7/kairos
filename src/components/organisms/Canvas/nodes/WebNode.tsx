@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react'
+import { invoke } from '@tauri-apps/api/core'
 import { Icon } from '../../../../icons/Icon'
 import type { CanvasWebData } from '../../../../types'
 
@@ -203,12 +204,19 @@ export function WebNode({ id, data, selected }: NodeProps & { data: WebNodeData 
                 <Icon name="shield-check" size={28} className="text-[rgb(var(--text-3))]" />
                 <p className="text-[13px] font-medium text-[rgb(var(--text))]">This site blocks embedding</p>
                 <p className="text-[11px] leading-relaxed text-[rgb(var(--text-3))]">
-                  This site uses JavaScript to detect and refuse iframe embedding.
+                  This site uses security headers or JavaScript to refuse iframe embedding.
                 </p>
+                {IS_TAURI && (
+                  <button type="button" onPointerDown={e => e.stopPropagation()}
+                    onClick={() => invoke('open_app_browser', { url: liveUrl }).catch(() => {})}
+                    className="nodrag nopan inline-flex items-center gap-1.5 rounded-lg bg-[rgb(var(--accent))] px-3 py-1.5 text-[12px] font-medium text-white transition hover:opacity-90">
+                    <Icon name="globe" size={12} /> Open in app browser
+                  </button>
+                )}
                 <a href={liveUrl} target="_blank" rel="noreferrer"
                   onPointerDown={e => e.stopPropagation()}
                   className="nodrag nopan inline-flex items-center gap-1.5 rounded-lg border border-[rgb(var(--border))] px-3 py-1.5 text-[12px] text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--accent))]">
-                  <Icon name="external-link" size={12} /> Open in browser
+                  <Icon name="external-link" size={12} /> Open in system browser
                 </a>
                 <button type="button" onPointerDown={e => e.stopPropagation()} onClick={startEdit}
                   className="nodrag nopan text-[11px] text-[rgb(var(--text-3))] underline hover:text-[rgb(var(--text))]">
