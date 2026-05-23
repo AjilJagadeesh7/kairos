@@ -57,9 +57,12 @@ export function GraphPage() {
     return result
   }, [showTasks, showCanvas, baseNodes, taskNodes, canvasNodes])
   const links = useMemo(() => {
-    let result = [...baseLinks]
-    if (showTasks)  result = [...result, ...taskLinks]
-    if (showCanvas) result = [...result, ...canvasLinks]
+    // Shallow-clone every link object so react-force-graph-2d's in-place mutation
+    // (replacing source/target string IDs with node object refs) never bleeds into
+    // the next render cycle, preventing stale references on graph remount.
+    let result = baseLinks.map(l => ({ ...l }))
+    if (showTasks)  result = [...result, ...taskLinks.map(l => ({ ...l }))]
+    if (showCanvas) result = [...result, ...canvasLinks.map(l => ({ ...l }))]
     return result
   }, [showTasks, showCanvas, baseLinks, taskLinks, canvasLinks])
 
