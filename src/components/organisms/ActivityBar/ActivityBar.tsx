@@ -15,7 +15,7 @@ const TOP_NAV: Array<{ to: string; iconName: IconToken; label: string }> = [
   { to: '/notes',   iconName: 'book-open',        label: 'Notes'   },
   { to: '/journal', iconName: 'calendar-days',    label: 'Journal' },
   { to: '/kanban',  iconName: 'square-kanban',    label: 'Kanban'  },
-  { to: '/canvas',  iconName: 'layout-dashboard', label: 'Canvas'  },
+  { to: '/canvas',  iconName: 'pen-tool',          label: 'Canvas'  },
   { to: '/graph',   iconName: 'network',          label: 'Graph'   },
 ]
 
@@ -206,21 +206,6 @@ export function ActivityBar() {
 
       <div className="h-px w-6 shrink-0 bg-border/60" />
 
-      {/* Sidebar toggle — only visible when focused page has a sidebar */}
-      {focusedHasSidebar && (
-        <Tooltip label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}>
-          <button
-            type="button"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className={`relative flex h-9 w-12 items-center justify-center transition-colors ${
-              sidebarOpen ? 'text-accent' : 'text-text3 hover:text-text'
-            }`}
-          >
-            <Icon name={sidebarOpen ? 'panel-left-close' : 'panel-left-open'} size={18} strokeWidth={1.75} />
-          </button>
-        </Tooltip>
-      )}
-
       {/* Primary nav */}
       <nav className="flex flex-1 flex-col items-center py-1">
         {TOP_NAV.map(item => <NavBtn key={item.to} {...item} />)}
@@ -236,11 +221,22 @@ export function ActivityBar() {
         ))}
       </nav>
 
-      {/* Bottom: sync + theme + settings */}
+      {/* Bottom: sidebar toggle + sync + theme + settings */}
       <div className="flex flex-col items-center pb-1">
-        <div className="mb-1">
-          <SyncStatusBadge />
-        </div>
+        {focusedHasSidebar && (
+          <Tooltip label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}>
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className={`relative flex h-9 w-12 items-center justify-center transition-colors ${
+                sidebarOpen ? 'text-accent' : 'text-text3 hover:text-text'
+              }`}
+            >
+              <Icon name={sidebarOpen ? 'panel-left-close' : 'panel-left-open'} size={18} strokeWidth={1.75} />
+            </button>
+          </Tooltip>
+        )}
+        <SyncStatusBadge />
         <CompactThemePicker value={theme} onChange={setTheme} />
         <NavBtn to="/settings" iconName="settings-2" label="Settings" />
       </div>

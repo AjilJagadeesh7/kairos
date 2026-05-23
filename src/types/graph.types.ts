@@ -1,4 +1,4 @@
-export type EdgeKind = 'wikilink' | 'semantic' | 'tag' | 'task-note' | 'task-task'
+export type EdgeKind = 'wikilink' | 'semantic' | 'tag' | 'task-note' | 'task-task' | 'canvas'
 
 export type NodeType = 'note' | 'task'
 

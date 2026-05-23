@@ -26,6 +26,24 @@ import { NoteNode } from './nodes/NoteNode'
 import { WebNode } from './nodes/WebNode'
 import type { Canvas, CanvasNode, CanvasEdge } from '../../../types'
 
+// ─── Detect dark vs light from CSS --bg variable (matches app theme) ─────────
+
+function getBgLuminance() {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()
+  const parts = raw.split(' ').map(Number)
+  return parts.length === 3 ? (parts[0] + parts[1] + parts[2]) / 3 : 0
+}
+
+function useColorMode(): 'dark' | 'light' {
+  const [isDark, setIsDark] = useState(() => getBgLuminance() < 128)
+  useEffect(() => {
+    const obs = new MutationObserver(() => setIsDark(getBgLuminance() < 128))
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme', 'style'] })
+    return () => obs.disconnect()
+  }, [])
+  return isDark ? 'dark' : 'light'
+}
+
 // ─── Node types (stable reference — must be outside component) ────────────────
 
 const NODE_TYPES = { text: TextNode, note: NoteNode, web: WebNode } as const
@@ -138,6 +156,7 @@ function CanvasInner({ canvas }: { canvas: Canvas }) {
   const navigate    = useNavigate()
   const updateNodes = useCanvasStore(s => s.updateNodes)
   const updateEdges = useCanvasStore(s => s.updateEdges)
+  const colorMode   = useColorMode()
 
   const [showMinimap,    setShowMinimap]    = useState(false)
   const [showNotePicker, setShowNotePicker] = useState(false)
@@ -287,7 +306,7 @@ function CanvasInner({ canvas }: { canvas: Canvas }) {
         connectionMode={ConnectionMode.Loose}
         isValidConnection={() => true}
         proOptions={{ hideAttribution: true }}
-        colorMode="dark"
+        colorMode={colorMode}
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="rgba(128,128,128,0.3)" />
         <Controls showZoom showFitView showInteractive={false}

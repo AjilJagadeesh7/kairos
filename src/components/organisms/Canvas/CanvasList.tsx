@@ -20,7 +20,7 @@ export function CanvasList() {
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Icon name="layout-dashboard" size={18} className="text-[rgb(var(--accent))]" />
+            <Icon name="pen-tool" size={18} className="text-[rgb(var(--accent))]" />
             <h1 className="text-xl font-bold text-[rgb(var(--text))]">Canvas</h1>
             <span className="rounded-full bg-[rgb(var(--surface-2))] px-2 py-0.5 text-xs text-[rgb(var(--text-3))]">
               {canvases.length}
@@ -43,7 +43,7 @@ export function CanvasList() {
             onClick={handleNew}
             className="flex w-full flex-col items-center gap-3 rounded-xl border-2 border-dashed border-[rgb(var(--border))] p-16 text-center text-[rgb(var(--text-3))] transition hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--accent))]"
           >
-            <Icon name="layout-dashboard" size={32} />
+            <Icon name="pen-tool" size={32} />
             <div>
               <p className="font-medium">No canvases yet</p>
               <p className="mt-1 text-sm">Create an infinite board for notes, links, and web pages</p>
@@ -68,7 +68,7 @@ export function CanvasList() {
                         <div key={i} className="h-8 w-12 rounded bg-[rgb(var(--accent))]" style={{ opacity: 0.3 + i * 0.14 }} />
                       ))}
                       {canvas.nodes.length === 0 && (
-                        <Icon name="layout-dashboard" size={28} className="text-[rgb(var(--text-3))]" />
+                        <Icon name="pen-tool" size={28} className="text-[rgb(var(--text-3))]" />
                       )}
                     </div>
                   </div>

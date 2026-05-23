@@ -4,6 +4,7 @@ import { cosineSimilarity } from '../utils/similarity'
 import { colorForIndex } from '../utils/colorForIndex'
 import { TAG_COLOR_PALETTE } from '../utils/kanban'
 import { useKanbanStore } from '../store/useKanbanStore'
+import { useCanvasStore } from '../store/useCanvasStore'
 import type { Note, GNode, GLink } from '../types'
 
 function hashTagColor(tag: string): string {
@@ -19,7 +20,8 @@ export function useGraphData(
   selectedNoteId: string | null,
   showTasks: boolean,
 ) {
-  const boards = useKanbanStore(s => s.boards)
+  const boards   = useKanbanStore(s => s.boards)
+  const canvases = useCanvasStore(s => s.canvases)
 
   const tagColorMap = useMemo(() => {
     const map = new Map<string, string>()
@@ -64,6 +66,28 @@ export function useGraphData(
         }
       }
     }
+    // Canvas edges: connect note nodes whose canvas edge endpoints are both note-type nodes
+    for (const canvas of canvases) {
+      const noteNodeMap = new Map<string, string>() // canvasNodeId → noteId
+      for (const node of canvas.nodes) {
+        if (node.type === 'note' && 'noteId' in node.data) {
+          noteNodeMap.set(node.id, (node.data as { noteId: string }).noteId)
+        }
+      }
+      for (const edge of canvas.edges) {
+        const srcNoteId = noteNodeMap.get(edge.source)
+        const tgtNoteId = noteNodeMap.get(edge.target)
+        if (srcNoteId && tgtNoteId && srcNoteId !== tgtNoteId) {
+          const key = [srcNoteId, tgtNoteId].sort().join('|')
+          if (!linksSeen.has(key)) {
+            linksSeen.add(key)
+            linksLinks.push({ source: srcNoteId, target: tgtNoteId, kind: 'canvas' })
+            linksInc(srcNoteId); linksInc(tgtNoteId)
+          }
+        }
+      }
+    }
+
     const linksNodes: GNode[] = notes.map((n, i) => ({
       id:       n.id,
       label:    n.title || 'Untitled',
@@ -102,7 +126,7 @@ export function useGraphData(
 
     return { linksNodes, linksLinks, tagsNodes, tagsLinks }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notes, embeddingMap, rerenderKey])
+  }, [notes, embeddingMap, rerenderKey, canvases])
 
   // Task nodes and edges (only when showTasks=true)
   const { taskNodes, taskLinks } = useMemo(() => {

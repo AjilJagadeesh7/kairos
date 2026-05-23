@@ -54,7 +54,7 @@ export function SyncStatusBadge(): JSX.Element {
         aria-label={`Sync status: ${syncStatus}${conflictCount > 0 ? `, ${conflictCount} conflict${conflictCount > 1 ? 's' : ''}` : ''}`}
         aria-expanded={open}
         aria-haspopup="true"
-        className="inline-flex items-center gap-1.5 rounded px-2 py-1 text-xs text-[rgb(var(--text-2))] transition hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]"
+        className="flex h-11 w-12 items-center justify-center gap-1 text-[rgb(var(--text-3))] transition hover:text-[rgb(var(--text))]"
       >
         {connected
           ? syncStatus === 'syncing'

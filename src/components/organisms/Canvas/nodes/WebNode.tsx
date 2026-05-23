@@ -126,15 +126,18 @@ export function WebNode({ id, data, selected }: NodeProps & { data: WebNodeData 
   const iframeSrc = liveUrl ? toIframeSrc(liveUrl) : ''
 
   return (
-    <div className={`relative flex h-full min-h-[240px] min-w-[320px] flex-col overflow-hidden rounded-xl border bg-[rgb(var(--surface))] shadow-md transition-shadow ${
+    <div className={`relative flex h-full min-h-[240px] min-w-[320px] flex-col rounded-xl border shadow-md transition-shadow ${
       selected ? 'border-[rgb(var(--accent))] shadow-[0_0_0_2px_rgba(var(--accent),0.2)]' : 'border-[rgb(var(--border))]'
     }`}>
-      <NodeResizer minWidth={320} minHeight={240} isVisible={selected} lineStyle={{ borderColor: 'rgb(var(--accent))' }} handleStyle={{ borderColor: 'rgb(var(--accent))' }} />
+      <NodeResizer minWidth={320} minHeight={240} isVisible={selected} lineStyle={{ borderColor: 'rgb(var(--accent))' }} handleStyle={{ borderColor: 'rgb(var(--accent))', zIndex: 20 }} />
 
       <Handle type="source" position={Position.Top}    id="t" style={HANDLE_STYLE} />
       <Handle type="source" position={Position.Bottom} id="b" style={HANDLE_STYLE} />
       <Handle type="source" position={Position.Left}   id="l" style={HANDLE_STYLE} />
       <Handle type="source" position={Position.Right}  id="r" style={HANDLE_STYLE} />
+
+      {/* Inner wrapper clips content to rounded corners without clipping resize handles */}
+      <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-[rgb(var(--surface))]">
 
       {/* Drag handle + URL bar */}
       <div className="drag-handle flex h-8 shrink-0 cursor-grab select-none items-center gap-1.5 border-b border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] px-2 active:cursor-grabbing">
@@ -183,6 +186,11 @@ export function WebNode({ id, data, selected }: NodeProps & { data: WebNodeData 
 
       {/* Content */}
       <div className="nodrag nopan relative flex-1 overflow-hidden">
+        {/* When selected, cover the iframe so resize handles can capture pointer events.
+            Without this the iframe steals mousedown and dragging the resize border breaks. */}
+        {selected && liveUrl && !editing && (
+          <div className="pointer-events-auto absolute inset-0 z-10" />
+        )}
         {liveUrl && !editing ? (
           <>
             <iframe
@@ -239,6 +247,7 @@ export function WebNode({ id, data, selected }: NodeProps & { data: WebNodeData 
             )}
           </div>
         )}
+      </div>
       </div>
     </div>
   )

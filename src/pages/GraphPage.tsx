@@ -35,7 +35,7 @@ export function GraphPage() {
   const [graphMode,      setGraphMode]      = useState<GraphMode>('links')
   const [rerenderKey,    setRerenderKey]    = useState(0)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
-  const [showTasks,      setShowTasks]      = useState(false)
+  const [showTasks,      setShowTasks]      = useState(true)
   const [focusMode,      setFocusMode]      = useState(false)
   const [contextMenu,    setContextMenu]    = useState<RightClickTarget | null>(null)
 

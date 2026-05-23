@@ -316,6 +316,7 @@ export function GraphView({
               if (lnk.kind === 'semantic')   return `rgba(129,140,248,${baseAlpha ?? 0.25})`
               if (lnk.kind === 'task-note')  return `rgba(251,146,60,${baseAlpha ?? 0.5})`
               if (lnk.kind === 'task-task')  return `rgba(192,132,252,${baseAlpha ?? 0.4})`
+              if (lnk.kind === 'canvas')     return `rgba(34,197,94,${baseAlpha ?? 0.5})`
               const hex = lnk.sharedTags?.[0] ? tagColorMap.get(lnk.sharedTags[0]) : undefined
               return hex ? hexToRgba(hex, baseAlpha ?? 0.45) : `rgba(251,191,36,${baseAlpha ?? 0.4})`
             }}
