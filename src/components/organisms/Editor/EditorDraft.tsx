@@ -34,6 +34,7 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
   const [showHistory, setShowHistory] = useState(false)
   const [readingMode, setReadingMode] = useState(false)
   const [restoreKey, setRestoreKey]   = useState(0)   // bump to force MarkdownEditor remount on restore
+  const [exportingPDF, setExportingPDF] = useState(false)
   const deleteNoteById    = useAppStore(s => s.deleteNoteById)
   const updateNoteTags    = useAppStore(s => s.updateNoteTags)
   const keyBindings       = useAppStore(s => s.keyBindings)
@@ -65,6 +66,15 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
   const contentRef = useRef(content)
   useEffect(() => { titleRef.current = title }, [title])
   useEffect(() => { contentRef.current = content }, [content])
+
+  const handleExportPDF = async () => {
+    setExportingPDF(true)
+    try {
+      await exportPDF(editorRootRef.current, titleRef.current || 'Untitled note')
+    } finally {
+      setExportingPDF(false)
+    }
+  }
 
   const handleDeleteNote = () => {
     void useConfirmStore.getState()
@@ -160,11 +170,12 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
               <button
                 type="button"
                 title="Export as PDF"
-                onClick={() => exportPDF(editorRootRef.current, titleRef.current || 'Untitled note')}
-                className="flex h-[32px] items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 text-xs font-medium text-text3 transition hover:border-accent/50 hover:text-accent"
+                onClick={() => void handleExportPDF()}
+                disabled={exportingPDF}
+                className="flex h-[32px] items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 text-xs font-medium text-text3 transition hover:border-accent/50 hover:text-accent disabled:opacity-50"
               >
-                <Icon name="file-down" size={13} />
-                <span>PDF</span>
+                <Icon name={exportingPDF ? 'loader-2' : 'file-down'} size={13} className={exportingPDF ? 'animate-spin' : ''} />
+                <span>{exportingPDF ? 'Exporting…' : 'PDF'}</span>
               </button>
               <button
                 type="button"
@@ -232,11 +243,12 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
             <button
               type="button"
               title="Export as PDF"
-              onClick={() => exportPDF(editorRootRef.current, titleRef.current || 'Untitled note')}
-              className="flex h-[38px] shrink-0 items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-sm font-medium text-text3 transition hover:border-accent/50 hover:text-accent"
+              onClick={() => void handleExportPDF()}
+              disabled={exportingPDF}
+              className="flex h-[38px] shrink-0 items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-sm font-medium text-text3 transition hover:border-accent/50 hover:text-accent disabled:opacity-50"
             >
-              <Icon name="file-down" size={14} />
-              <span className="hidden sm:inline">PDF</span>
+              <Icon name={exportingPDF ? 'loader-2' : 'file-down'} size={14} className={exportingPDF ? 'animate-spin' : ''} />
+              <span className="hidden sm:inline">{exportingPDF ? 'Exporting…' : 'PDF'}</span>
             </button>
 
             <button
