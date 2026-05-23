@@ -10,7 +10,7 @@ import { TaskComments } from './TaskComments'
 import { TaskAttachments } from './TaskAttachments'
 import { TaskTitleEditor } from './TaskTitleEditor'
 import { TaskMetaRow } from './TaskMetaRow'
-import { calcTaskProgress, formatDate } from '../../../../utils/kanban'
+import { calcTaskProgress, formatDate, tagTextColor } from '../../../../utils/kanban'
 import type { Board, KanbanTask } from '../../../../types/kanban.types'
 import { Icon } from '../../../../icons/Icon'
 
@@ -76,8 +76,8 @@ export function TaskDetailPanel({ task, board, onClose }: Props): JSX.Element {
             {task.tags.map(tag => (
               <span
                 key={tag}
-                className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-white"
-                style={{ backgroundColor: getTagColor(tag) }}
+                className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium"
+                style={{ backgroundColor: getTagColor(tag), color: tagTextColor(getTagColor(tag)) }}
               >
                 {tag}
                 <button onClick={() => removeTag(tag)} className="ml-0.5 opacity-70 hover:opacity-100 leading-none">×</button>

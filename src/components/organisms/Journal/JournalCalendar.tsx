@@ -194,7 +194,7 @@ export function JournalCalendar({ activeDate, onClose }: JournalCalendarProps) {
                   onClick={() => selectDay(date)}
                   className={`relative flex h-8 w-full flex-col items-center justify-center rounded-md text-xs font-medium transition ${
                     isActive
-                      ? 'bg-[rgb(var(--accent))] text-white'
+                      ? 'bg-[rgb(var(--accent))] text-[rgb(var(--accent-fg))]'
                       : isToday
                         ? 'bg-[rgb(var(--accent)/0.15)] font-bold text-[rgb(var(--accent))]'
                         : 'text-[rgb(var(--text-2))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]'

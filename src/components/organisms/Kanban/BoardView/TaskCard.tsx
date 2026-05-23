@@ -5,7 +5,7 @@ import { useKanbanStore } from '../../../../store/useKanbanStore'
 import { PriorityDot } from '../../../atoms/PriorityDot'
 import { ProgressBar } from '../../../atoms/ProgressBar'
 import { DueDateChip } from '../../../molecules/DueDateChip'
-import { calcTaskProgress } from '../../../../utils/kanban'
+import { calcTaskProgress, tagTextColor } from '../../../../utils/kanban'
 import type { Board, KanbanTask } from '../../../../types/kanban.types'
 import { Icon } from '../../../../icons/Icon'
 
@@ -75,8 +75,8 @@ export function TaskCard({ task, board, isOverlay = false }: TaskCardProps): JSX
           {visibleTags.map(tag => (
             <span
               key={tag}
-              className="inline-block rounded-full px-1.5 py-0.5 text-[10px] font-medium text-white"
-              style={{ backgroundColor: getTagColor(tag) }}
+              className="inline-block rounded-full px-1.5 py-0.5 text-[10px] font-medium"
+              style={{ backgroundColor: getTagColor(tag), color: tagTextColor(getTagColor(tag)) }}
             >
               {tag}
             </span>

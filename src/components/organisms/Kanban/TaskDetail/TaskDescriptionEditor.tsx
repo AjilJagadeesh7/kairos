@@ -43,7 +43,7 @@ export function TaskDescriptionEditor({ boardId, task }: TaskDescriptionEditorPr
           <div className="flex gap-2 border-t border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] p-2 flex-shrink-0">
             <button
               onClick={handleSave}
-              className="flex-1 rounded-lg border border-[rgb(var(--accent))] bg-[rgb(var(--accent))] px-3 py-1.5 text-xs font-medium text-white hover:bg-[rgb(var(--accent))]/90"
+              className="flex-1 rounded-lg border border-[rgb(var(--accent))] bg-[rgb(var(--accent))] px-3 py-1.5 text-xs font-medium text-[rgb(var(--accent-fg))] hover:bg-[rgb(var(--accent))]/90"
             >
               Save
             </button>

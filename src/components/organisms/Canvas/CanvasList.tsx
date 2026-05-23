@@ -29,7 +29,7 @@ export function CanvasList() {
           <button
             type="button"
             onClick={handleNew}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[rgb(var(--accent))] px-3 py-1.5 text-[13px] font-medium text-white transition hover:opacity-90"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[rgb(var(--accent))] px-3 py-1.5 text-[13px] font-medium text-[rgb(var(--accent-fg))] transition hover:opacity-90"
           >
             <Icon name="plus" size={14} />
             New canvas

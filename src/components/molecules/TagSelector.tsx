@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '../atoms/Button'
 import { ColorPicker } from './ColorPicker'
-import { TAG_COLOR_PALETTE } from '../../utils/kanban'
+import { TAG_COLOR_PALETTE, tagTextColor } from '../../utils/kanban'
 import type { TagRecord } from '../../types'
 import { Icon } from '../../icons/Icon'
 
@@ -83,10 +83,10 @@ export function TagSelector({ selectedTags, onTagsChange, onTagCreate, available
                     key={tag.name}
                     type="button"
                     onClick={() => handleSelectTag(tag.name)}
-                    className={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium text-white transition ${
+                    className={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium transition ${
                       selectedTags.includes(tag.name) ? 'ring-2 ring-offset-2 ring-offset-surface2' : 'opacity-80 hover:opacity-100'
                     }`}
-                    style={{ backgroundColor: tag.color }}
+                    style={{ backgroundColor: tag.color, color: tagTextColor(tag.color) }}
                   >
                     #{tag.name}
                     {selectedTags.includes(tag.name) && <Icon name="x" size={10} />}

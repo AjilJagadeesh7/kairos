@@ -217,7 +217,7 @@ export function WebNode({ id, data, selected }: NodeProps & { data: WebNodeData 
                 {IS_TAURI && (
                   <button type="button" onPointerDown={e => e.stopPropagation()}
                     onClick={() => invoke('open_app_browser', { url: liveUrl }).catch(() => {})}
-                    className="nodrag nopan inline-flex items-center gap-1.5 rounded-lg bg-[rgb(var(--accent))] px-3 py-1.5 text-[12px] font-medium text-white transition hover:opacity-90">
+                    className="nodrag nopan inline-flex items-center gap-1.5 rounded-lg bg-[rgb(var(--accent))] px-3 py-1.5 text-[12px] font-medium text-[rgb(var(--accent-fg))] transition hover:opacity-90">
                     <Icon name="globe" size={12} /> Open in app browser
                   </button>
                 )}

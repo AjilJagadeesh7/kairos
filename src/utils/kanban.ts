@@ -19,6 +19,14 @@ export const TAG_COLOR_PALETTE = [
 
 export const DEFAULT_COLUMN_COLORS = ['#e8ff00', '#00ffaa', '#ff6b35', '#888888']
 
+/** Returns black or white depending on which contrasts better with the hex background. */
+export function tagTextColor(hexBg: string): string {
+  const r = parseInt(hexBg.slice(1, 3), 16)
+  const g = parseInt(hexBg.slice(3, 5), 16)
+  const b = parseInt(hexBg.slice(5, 7), 16)
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 140 ? '#111111' : '#ffffff'
+}
+
 export function nextTagColor(existingTags: KanbanTag[]): string {
   const used = new Set(existingTags.map(t => t.color))
   return TAG_COLOR_PALETTE.find(c => !used.has(c)) ?? TAG_COLOR_PALETTE[existingTags.length % TAG_COLOR_PALETTE.length]

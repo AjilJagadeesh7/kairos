@@ -1,6 +1,7 @@
 
 import type { TagRecord } from '../../types'
 import { Icon } from '../../icons/Icon'
+import { tagTextColor } from '../../utils/kanban'
 
 interface TagBadgeProps {
   tag: TagRecord
@@ -14,8 +15,8 @@ export function TagBadge({ tag, onRemove, variant = 'sm' }: TagBadgeProps): JSX.
 
   return (
     <div
-      className={`inline-flex items-center gap-1 rounded-full font-medium text-white ${sizeClass}`}
-      style={{ backgroundColor: tag.color }}
+      className={`inline-flex items-center gap-1 rounded-full font-medium ${sizeClass}`}
+      style={{ backgroundColor: tag.color, color: tagTextColor(tag.color) }}
     >
       #{tag.name}
       {onRemove && (

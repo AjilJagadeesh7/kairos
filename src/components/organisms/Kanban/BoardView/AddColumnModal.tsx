@@ -94,7 +94,7 @@ export function AddColumnModal({ onConfirm, onClose, defaultColor }: AddColumnMo
             <button
               type="submit"
               disabled={!name.trim()}
-              className="flex-1 rounded-lg bg-[rgb(var(--accent))] px-3 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex-1 rounded-lg bg-[rgb(var(--accent))] px-3 py-2 text-sm font-medium text-[rgb(var(--accent-fg))] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Add column
             </button>
