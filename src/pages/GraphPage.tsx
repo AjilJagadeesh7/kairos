@@ -36,6 +36,7 @@ export function GraphPage() {
   const [rerenderKey,    setRerenderKey]    = useState(0)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [showTasks,      setShowTasks]      = useState(true)
+  const [showCanvas,     setShowCanvas]     = useState(true)
   const [focusMode,      setFocusMode]      = useState(false)
   const [contextMenu,    setContextMenu]    = useState<RightClickTarget | null>(null)
 
@@ -44,23 +45,28 @@ export function GraphPage() {
     return new Map<string, number[]>(embeddings.map(e => [e.noteId, e.data]))
   }, [embeddings])
 
-  const { tagColorMap, linksNodes, linksLinks, tagsNodes, tagsLinks, taskNodes, taskLinks, tagLegendItems, selectedNote } =
+  const { tagColorMap, linksNodes, linksLinks, tagsNodes, tagsLinks, taskNodes, taskLinks, canvasNodes, canvasLinks, tagLegendItems, selectedNote } =
     useGraphData(notes, embeddingMap, rerenderKey, selectedNodeId, showTasks)
 
   const baseNodes = graphMode === 'links' ? linksNodes : tagsNodes
   const baseLinks = graphMode === 'links' ? linksLinks : tagsLinks
-  const nodes = useMemo(
-    () => showTasks ? [...baseNodes, ...taskNodes] : baseNodes,
-    [showTasks, baseNodes, taskNodes],
-  )
-  const links = useMemo(
-    () => showTasks ? [...baseLinks, ...taskLinks] : baseLinks,
-    [showTasks, baseLinks, taskLinks],
-  )
+  const nodes = useMemo(() => {
+    let result = [...baseNodes]
+    if (showTasks)  result = [...result, ...taskNodes]
+    if (showCanvas) result = [...result, ...canvasNodes]
+    return result
+  }, [showTasks, showCanvas, baseNodes, taskNodes, canvasNodes])
+  const links = useMemo(() => {
+    let result = [...baseLinks]
+    if (showTasks)  result = [...result, ...taskLinks]
+    if (showCanvas) result = [...result, ...canvasLinks]
+    return result
+  }, [showTasks, showCanvas, baseLinks, taskLinks, canvasLinks])
 
-  const wikilinkCount = linksLinks.filter(l => l.kind === 'wikilink').length
-  const semanticCount = linksLinks.filter(l => l.kind === 'semantic').length
-  const taskNodeCount = taskNodes.length
+  const wikilinkCount  = linksLinks.filter(l => l.kind === 'wikilink').length
+  const semanticCount  = linksLinks.filter(l => l.kind === 'semantic').length
+  const taskNodeCount  = taskNodes.length
+  const canvasNodeCount = canvasNodes.length
 
   // Neighborhood: all node IDs directly connected to the selected node
   const neighborIds = useMemo(() => {
@@ -157,12 +163,15 @@ export function GraphPage() {
       wikilinkCount={wikilinkCount}
       semanticCount={semanticCount}
       taskNodeCount={taskNodeCount}
+      canvasNodeCount={canvasNodeCount}
       tagLegendItems={tagLegendItems}
       tagColorMap={tagColorMap}
       selectedNote={selectedNote}
       selectedTaskInfo={selectedTaskInfo}
       showTasks={showTasks}
+      showCanvas={showCanvas}
       onToggleTasks={() => setShowTasks(v => !v)}
+      onToggleCanvas={() => setShowCanvas(v => !v)}
       onOpenNote={id => navigate(`/notes/${id}`)}
       onOpenTask={handleOpenTask}
     />
@@ -188,6 +197,7 @@ export function GraphPage() {
           focusMode={focusMode}
           onSelectNode={handleSelectNode}
           onOpenNote={id => navigate(`/notes/${id}`)}
+          onOpenCanvas={id => navigate(`/canvas/${id}`)}
           onRightClickNode={setContextMenu}
           onToggleFocus={handleToggleFocus}
           rerenderKey={rerenderKey}

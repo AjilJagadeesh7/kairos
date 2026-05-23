@@ -1,6 +1,6 @@
-export type EdgeKind = 'wikilink' | 'semantic' | 'tag' | 'task-note' | 'task-task' | 'canvas'
+export type EdgeKind = 'wikilink' | 'semantic' | 'tag' | 'task-note' | 'task-task' | 'canvas' | 'canvas-note'
 
-export type NodeType = 'note' | 'task'
+export type NodeType = 'note' | 'task' | 'canvas'
 
 export type GraphEdge = {
   id?: string
@@ -19,6 +19,7 @@ export type GNode = {
   nodeType: NodeType
   taskId?: string
   boardId?: string
+  canvasId?: string
   x?: number; y?: number; fx?: number; fy?: number
 }
 

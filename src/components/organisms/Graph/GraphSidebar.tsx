@@ -23,12 +23,15 @@ interface GraphSidebarProps {
   wikilinkCount: number
   semanticCount: number
   taskNodeCount: number
+  canvasNodeCount: number
   tagLegendItems: { shown: string[]; total: number }
   tagColorMap: Map<string, string>
   selectedNote: Note | null
   selectedTaskInfo: SelectedTaskInfo | null
   showTasks: boolean
+  showCanvas: boolean
   onToggleTasks: () => void
+  onToggleCanvas: () => void
   onOpenNote: (noteId: string) => void
   onOpenTask: (nodeId: string) => void
   onClose?: () => void
@@ -37,10 +40,11 @@ interface GraphSidebarProps {
 export function GraphSidebar({
   graphMode, onModeChange,
   nodes, links,
-  wikilinkCount, semanticCount, taskNodeCount,
+  wikilinkCount, semanticCount, taskNodeCount, canvasNodeCount,
   tagLegendItems, tagColorMap,
   selectedNote, selectedTaskInfo,
-  showTasks, onToggleTasks,
+  showTasks, showCanvas,
+  onToggleTasks, onToggleCanvas,
   onOpenNote, onOpenTask, onClose,
 }: GraphSidebarProps): JSX.Element {
   const noteCount = nodes.filter(n => n.nodeType === 'note').length
@@ -84,27 +88,14 @@ export function GraphSidebar({
           </div>
         </section>
 
-        {/* Include tasks toggle */}
+        {/* Node type filters */}
         <section>
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-text3">Options</p>
-          <label className="flex cursor-pointer items-center justify-between rounded-lg px-2 py-1.5 transition hover:bg-surface3">
-            <span className="flex items-center gap-2 text-xs text-text2">
-              <Icon name="square-kanban" size={13} /> Include Tasks
-            </span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={showTasks}
-              onClick={onToggleTasks}
-              className={`relative inline-flex h-4 w-8 shrink-0 items-center rounded-full transition-colors ${
-                showTasks ? 'bg-[rgb(var(--accent))]' : 'bg-[rgb(var(--surface-3))]'
-              }`}
-            >
-              <span className={`inline-block h-3 w-3 translate-x-0.5 rounded-full bg-white shadow transition-transform ${
-                showTasks ? 'translate-x-[17px]' : ''
-              }`} />
-            </button>
-          </label>
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-text3">Node Types</p>
+          <div className="flex flex-col gap-0.5">
+            <FilterRow icon="file-text"    label="Notes"   count={noteCount}        on={true}       onToggle={undefined} dot="#818cf8" />
+            <FilterRow icon="square-kanban" label="Tasks"  count={taskNodeCount}    on={showTasks}  onToggle={onToggleTasks} dot="#fb923c" />
+            <FilterRow icon="pen-tool"      label="Canvas" count={canvasNodeCount}  on={showCanvas} onToggle={onToggleCanvas} dot="#f59e0b" />
+          </div>
         </section>
 
         {/* Stats */}
@@ -112,7 +103,8 @@ export function GraphSidebar({
           <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-text3">Stats</p>
           <div className="flex flex-col gap-0.5 text-xs text-text2">
             <span>{noteCount} note{noteCount !== 1 ? 's' : ''}</span>
-            {showTasks && <span>{taskNodeCount} task{taskNodeCount !== 1 ? 's' : ''}</span>}
+            {showTasks  && <span>{taskNodeCount}   task{taskNodeCount   !== 1 ? 's' : ''}</span>}
+            {showCanvas && <span>{canvasNodeCount} canvas{canvasNodeCount !== 1 ? 'es' : ''}</span>}
             <span>{links.length} connection{links.length !== 1 ? 's' : ''}</span>
           </div>
         </section>
@@ -127,6 +119,10 @@ export function GraphSidebar({
               {showTasks && <>
                 <LegendLine color="#fb923c" label="Task → Note" arrow />
                 <LegendLine color="#c084fc" label="Task → Task" />
+              </>}
+              {showCanvas && <>
+                <LegendLine color="#f59e0b" label="Canvas → Note" />
+                <LegendLine color="#22c55e" label="Note ↔ Note (canvas)" />
               </>}
             </div>
           ) : tagLegendItems.total > 0 ? (
@@ -212,6 +208,40 @@ export function GraphSidebar({
         )}
       </div>
     </aside>
+  )
+}
+
+function FilterRow({ icon, label, count, on, onToggle, dot }: {
+  icon: Parameters<typeof Icon>[0]['name']
+  label: string
+  count: number
+  on: boolean
+  onToggle: (() => void) | undefined
+  dot: string
+}) {
+  return (
+    <div className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${onToggle ? 'cursor-pointer hover:bg-surface3' : ''} transition`}
+      onClick={onToggle}>
+      <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: dot, opacity: on ? 1 : 0.3 }} />
+      <Icon name={icon} size={12} className={on ? 'text-text2' : 'text-text3'} />
+      <span className={`flex-1 text-xs ${on ? 'text-text2' : 'text-text3'}`}>{label}</span>
+      <span className="text-[10px] text-text3">{count}</span>
+      {onToggle && (
+        <button
+          type="button"
+          role="switch"
+          aria-checked={on}
+          onClick={e => { e.stopPropagation(); onToggle() }}
+          className={`relative inline-flex h-4 w-8 shrink-0 items-center rounded-full transition-colors ${
+            on ? 'bg-[rgb(var(--accent))]' : 'bg-[rgb(var(--surface-3))]'
+          }`}
+        >
+          <span className={`inline-block h-3 w-3 translate-x-0.5 rounded-full bg-white shadow transition-transform ${
+            on ? 'translate-x-[17px]' : ''
+          }`} />
+        </button>
+      )}
+    </div>
   )
 }
 

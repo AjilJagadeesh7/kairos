@@ -38,6 +38,7 @@ interface GraphViewProps {
   neighborIds: Set<string>
   onSelectNode: (nodeId: string | null) => void
   onOpenNote: (noteId: string) => void
+  onOpenCanvas: (canvasId: string) => void
   onRightClickNode: (target: RightClickTarget) => void
   rerenderKey: number
   onRelayout: () => void
@@ -75,7 +76,7 @@ type FGRef = any
 export function GraphView({
   nodes, links, graphMode, tagColorMap,
   selectedNoteId, focusedNodeId, neighborIds,
-  onSelectNode, onOpenNote, onRightClickNode,
+  onSelectNode, onOpenNote, onOpenCanvas, onRightClickNode,
   rerenderKey, onRelayout, onToggleFocus, focusMode,
 }: GraphViewProps): JSX.Element {
   const fgRef         = useRef<FGRef>(null)
@@ -144,11 +145,12 @@ export function GraphView({
     const now = Date.now()
     if (lastClickRef.current?.id === node.id && now - lastClickRef.current.t < 400) {
       if (node.nodeType === 'note') onOpenNote(node.id)
+      else if (node.nodeType === 'canvas' && node.canvasId) onOpenCanvas(node.canvasId)
       return
     }
     lastClickRef.current = { id: node.id, t: now }
     onSelectNode(selectedIdRef.current === node.id ? null : node.id)
-  }, [onSelectNode, onOpenNote])
+  }, [onSelectNode, onOpenNote, onOpenCanvas])
 
   useEffect(() => {
     if (!dims || nodes.length === 0) return
@@ -217,7 +219,7 @@ export function GraphView({
     ctx.globalAlpha = alpha
 
     if (node.nodeType === 'task') {
-      // Draw rounded rectangle for tasks
+      // Rounded rectangle for tasks
       const hw = r * 1.6; const hh = r * 0.9
       ctx.fillStyle = node.color + 'cc'
       roundRect(ctx, (node.x ?? 0) - hw, (node.y ?? 0) - hh, hw * 2, hh * 2, 3)
@@ -228,13 +230,38 @@ export function GraphView({
         ctx.stroke()
       }
     }
-    // Note nodes are drawn by force-graph's default circle renderer; we only paint labels
 
-    if ((isHovered || isSelected) && !isDimmed) {
+    if (node.nodeType === 'canvas') {
+      // Diamond shape for canvases
+      const hw = r * 1.5
+      ctx.fillStyle   = node.color + 'cc'
+      ctx.strokeStyle = isSelected ? '#ffffff' : node.color
+      ctx.lineWidth   = isSelected ? 2 / globalScale : 1 / globalScale
+      ctx.beginPath()
+      ctx.moveTo(node.x ?? 0,        (node.y ?? 0) - hw)
+      ctx.lineTo((node.x ?? 0) + hw, node.y ?? 0)
+      ctx.lineTo(node.x ?? 0,        (node.y ?? 0) + hw)
+      ctx.lineTo((node.x ?? 0) - hw, node.y ?? 0)
+      ctx.closePath()
+      ctx.fill()
+      ctx.stroke()
+
+      // Always show canvas label
+      const label    = node.label.length > 18 ? node.label.slice(0, 16) + '…' : node.label
+      const fontSize = Math.max(6, 8 / globalScale)
+      ctx.font         = `600 ${fontSize}px Manrope, sans-serif`
+      ctx.fillStyle    = isDimmed ? 'rgba(245,158,11,0.2)' : 'rgba(245,158,11,0.9)'
+      ctx.textAlign    = 'center'
+      ctx.textBaseline = 'top'
+      ctx.fillText(label, node.x ?? 0, (node.y ?? 0) + hw + 3 / globalScale)
+    }
+
+    // Note/task labels — always visible
+    if (node.nodeType !== 'canvas' && !isDimmed) {
       const label    = node.label.length > 22 ? node.label.slice(0, 20) + '…' : node.label
       const fontSize = Math.max(6, 8 / globalScale)
       ctx.font         = `400 ${fontSize}px Manrope, sans-serif`
-      ctx.fillStyle    = isSelected
+      ctx.fillStyle    = isSelected || isHovered
         ? 'rgba(255,255,255,0.9)'
         : textColor.replace(/,\s*[\d.]+\)$/, ', 0.55)')
       ctx.textAlign    = 'center'
@@ -295,7 +322,7 @@ export function GraphView({
             width={dims.w}
             height={dims.h}
             nodeColor={(node: GNode) => {
-              if (node.nodeType === 'task') return 'transparent'
+              if (node.nodeType === 'task' || node.nodeType === 'canvas') return 'transparent'
               const isDimmed = isFocused && !neighborIds.has(node.id) && node.id !== focusedNodeId
               if (isDimmed) return node.id === selectedNoteId ? '#ffffff22' : node.color + '1f'
               return node.id === selectedNoteId ? '#ffffff' : node.color
@@ -316,7 +343,8 @@ export function GraphView({
               if (lnk.kind === 'semantic')   return `rgba(129,140,248,${baseAlpha ?? 0.25})`
               if (lnk.kind === 'task-note')  return `rgba(251,146,60,${baseAlpha ?? 0.5})`
               if (lnk.kind === 'task-task')  return `rgba(192,132,252,${baseAlpha ?? 0.4})`
-              if (lnk.kind === 'canvas')     return `rgba(34,197,94,${baseAlpha ?? 0.5})`
+              if (lnk.kind === 'canvas')      return `rgba(34,197,94,${baseAlpha ?? 0.5})`
+              if (lnk.kind === 'canvas-note') return `rgba(245,158,11,${baseAlpha ?? 0.4})`
               const hex = lnk.sharedTags?.[0] ? tagColorMap.get(lnk.sharedTags[0]) : undefined
               return hex ? hexToRgba(hex, baseAlpha ?? 0.45) : `rgba(251,191,36,${baseAlpha ?? 0.4})`
             }}

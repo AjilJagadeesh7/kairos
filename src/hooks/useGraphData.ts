@@ -128,6 +128,34 @@ export function useGraphData(
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notes, embeddingMap, rerenderKey, canvases])
 
+  // Canvas nodes and canvas→note edges
+  const { canvasNodes, canvasLinks } = useMemo(() => {
+    const noteIds = new Set(notes.map(n => n.id))
+    const canvasNodes: GNode[] = canvases.map(canvas => ({
+      id:       canvas.id,
+      label:    canvas.title,
+      color:    '#f59e0b',
+      val:      5,
+      tags:     [],
+      nodeType: 'canvas' as const,
+      canvasId: canvas.id,
+    }))
+    const canvasLinks: GLink[] = []
+    const seen = new Set<string>()
+    for (const canvas of canvases) {
+      for (const node of canvas.nodes) {
+        if (node.type === 'note' && 'noteId' in node.data) {
+          const noteId = (node.data as { noteId: string }).noteId
+          if (noteIds.has(noteId)) {
+            const key = `${canvas.id}|${noteId}`
+            if (!seen.has(key)) { seen.add(key); canvasLinks.push({ source: canvas.id, target: noteId, kind: 'canvas-note' }) }
+          }
+        }
+      }
+    }
+    return { canvasNodes, canvasLinks }
+  }, [canvases, notes])
+
   // Task nodes and edges (only when showTasks=true)
   const { taskNodes, taskLinks } = useMemo(() => {
     if (!showTasks || !boards.length) return { taskNodes: [] as GNode[], taskLinks: [] as GLink[] }
@@ -181,6 +209,7 @@ export function useGraphData(
     linksNodes, linksLinks,
     tagsNodes, tagsLinks,
     taskNodes, taskLinks,
+    canvasNodes, canvasLinks,
     tagLegendItems,
     selectedNote,
   }

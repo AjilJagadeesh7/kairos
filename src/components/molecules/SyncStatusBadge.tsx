@@ -74,7 +74,7 @@ export function SyncStatusBadge(): JSX.Element {
         <div
           role="dialog"
           aria-label="Sync status details"
-          className="absolute right-0 top-full z-50 mt-1 w-64 overflow-hidden rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-2xl animate-in fade-in slide-in-from-top-1 duration-100"
+          className="absolute bottom-0 left-full z-50 ml-2 w-64 overflow-hidden rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-2xl animate-in fade-in slide-in-from-left-1 duration-100"
         >
           {/* Status row */}
           <div className="flex items-start gap-2.5 px-4 py-3">
