@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 
 import { useAppStore } from '../../../store/useAppStore'
 import { EditorDraft } from './EditorDraft'
+import { EditorErrorBoundary } from './EditorErrorBoundary'
 import type { EditorDraftProps } from '../../../types'
 import { Icon } from '../../../icons/Icon'
 
@@ -37,5 +38,14 @@ export function NoteEditor(): JSX.Element {
     )
   }
 
-  return <EditorDraft key={activeNote.id} note={activeNote} onSave={onSave} />
+  return (
+    <EditorErrorBoundary
+      key={activeNote.id}
+      noteId={activeNote.id}
+      content={activeNote.content}
+      onSaveRaw={content => void onSave({ title: activeNote.title, content })}
+    >
+      <EditorDraft key={activeNote.id} note={activeNote} onSave={onSave} />
+    </EditorErrorBoundary>
+  )
 }

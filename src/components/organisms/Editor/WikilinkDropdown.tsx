@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
-import type { Note } from '../../../types'
 import { Icon } from '../../../icons/Icon'
 
 interface WikilinkDropdownProps {
   x: number
   y: number
   query: string
-  suggestions: Note[]
+  suggestions: string[]
   isTransclusion?: boolean
   onSelect: (title: string) => void
   onDismiss: () => void
@@ -29,7 +28,7 @@ export function WikilinkDropdown({ x, y, query, suggestions, isTransclusion = fa
       if (e.key === 'ArrowUp')   { e.preventDefault(); setActiveIdx(i => Math.max(i - 1, 0)); return }
       if (e.key === 'Enter' || e.key === 'Tab') {
         const target = suggestions[activeIdx]
-        if (target) { e.preventDefault(); onSelect(target.title) }
+        if (target) { e.preventDefault(); onSelect(target) }
         else onDismiss()
       }
     }
@@ -74,11 +73,11 @@ export function WikilinkDropdown({ x, y, query, suggestions, isTransclusion = fa
         </div>
       ) : (
         <ul role="presentation">
-          {suggestions.map((note, i) => (
-            <li key={note.id} role="option" aria-selected={i === activeIdx}>
+          {suggestions.map((title, i) => (
+            <li key={title} role="option" aria-selected={i === activeIdx}>
               <button
                 type="button"
-                onMouseDown={(e) => { e.preventDefault(); onSelect(note.title) }}
+                onMouseDown={(e) => { e.preventDefault(); onSelect(title) }}
                 onMouseEnter={() => setActiveIdx(i)}
                 className={`flex w-full items-center gap-2 px-3 py-2 text-left transition ${
                   i === activeIdx
@@ -88,7 +87,7 @@ export function WikilinkDropdown({ x, y, query, suggestions, isTransclusion = fa
               >
                 <Icon name="file-text" size={13} className="shrink-0 text-[rgb(var(--accent))]" />
                 <span className="min-w-0 flex-1 truncate text-sm">
-                  {highlight(note.title, query)}
+                  {highlight(title, query)}
                 </span>
               </button>
             </li>

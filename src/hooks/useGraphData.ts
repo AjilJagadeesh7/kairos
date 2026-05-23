@@ -1,6 +1,6 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { parseWikilinks } from '../utils/wikilinks'
-import { cosineSimilarity } from '../utils/similarity'
+import { computeSimilarityPairs } from '../utils/similarityWorkerClient'
 import { colorForIndex } from '../utils/colorForIndex'
 import { TAG_COLOR_PALETTE } from '../utils/kanban'
 import { useKanbanStore } from '../store/useKanbanStore'
@@ -22,6 +22,24 @@ export function useGraphData(
 ) {
   const boards   = useKanbanStore(s => s.boards)
   const canvases = useCanvasStore(s => s.canvases)
+
+  // Async semantic links — computed in Web Worker off main thread
+  const [semanticLinks, setSemanticLinks] = useState<GLink[]>([])
+  const embeddingMapRef = useRef(embeddingMap)
+  embeddingMapRef.current = embeddingMap
+
+  useEffect(() => {
+    let cancelled = false
+    void computeSimilarityPairs(embeddingMap).then(pairs => {
+      if (cancelled) return
+      setSemanticLinks(
+        pairs.map(p => ({ source: p.source, target: p.target, kind: 'semantic' as const })),
+      )
+    }).catch(() => { /* cancelled or worker error — keep previous links */ })
+    return () => { cancelled = true }
+  // embeddingMap identity changes when notes are saved; rerenderKey covers manual refresh
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [embeddingMap, rerenderKey])
 
   const tagColorMap = useMemo(() => {
     const map = new Map<string, string>()
@@ -52,18 +70,6 @@ export function useGraphData(
         linksSeen.add(key)
         linksLinks.push({ source: note.id, target: tid, kind: 'wikilink' })
         linksInc(note.id); linksInc(tid)
-      }
-    }
-    for (let i = 0; i < notes.length; i++) {
-      for (let j = i + 1; j < notes.length; j++) {
-        const a = notes[i]; const b = notes[j]
-        const embA = embeddingMap.get(a.id)
-        const embB = embeddingMap.get(b.id)
-        if (!embA?.length || !embB?.length) continue
-        if (cosineSimilarity(embA, embB) > 0.75) {
-          linksLinks.push({ source: a.id, target: b.id, kind: 'semantic' })
-          linksInc(a.id); linksInc(b.id)
-        }
       }
     }
     // Canvas edges: connect note nodes whose canvas edge endpoints are both note-type nodes
@@ -126,7 +132,7 @@ export function useGraphData(
 
     return { linksNodes, linksLinks, tagsNodes, tagsLinks }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notes, embeddingMap, rerenderKey, canvases])
+  }, [notes, rerenderKey, canvases])
 
   // Canvas nodes and canvas→note edges
   const { canvasNodes, canvasLinks } = useMemo(() => {
@@ -204,9 +210,14 @@ export function useGraphData(
     [notes, selectedNoteId],
   )
 
+  const allLinksLinks = useMemo(
+    () => [...linksLinks, ...semanticLinks],
+    [linksLinks, semanticLinks],
+  )
+
   return {
     tagColorMap,
-    linksNodes, linksLinks,
+    linksNodes, linksLinks: allLinksLinks,
     tagsNodes, tagsLinks,
     taskNodes, taskLinks,
     canvasNodes, canvasLinks,

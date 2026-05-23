@@ -35,6 +35,10 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
   const [readingMode, setReadingMode] = useState(false)
   const [restoreKey, setRestoreKey]   = useState(0)   // bump to force MarkdownEditor remount on restore
   const [exportingPDF, setExportingPDF] = useState(false)
+  const [largeDismissed, setLargeDismissed] = useState(false)
+
+  const LARGE_NOTE_BYTES = 150_000
+  const isLargeNote = !largeDismissed && new TextEncoder().encode(content).length > LARGE_NOTE_BYTES
   const deleteNoteById    = useAppStore(s => s.deleteNoteById)
   const updateNoteTags    = useAppStore(s => s.updateNoteTags)
   const keyBindings       = useAppStore(s => s.keyBindings)
@@ -92,12 +96,19 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
     const t = titleRef.current
     const c = contentRef.current
     const text = `${t}\n\n${c}`
-    const embedded = await embedText(note.id, text)
     const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
     const contentHash = Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('')
-    await onSave({ title: t || 'Untitled note', content: c, embedding: embedded.embedding, contentHash })
+    // Save immediately with empty embedding so the note persists fast,
+    // then compute embedding in the background and upsert separately
+    await onSave({ title: t || 'Untitled note', content: c, embedding: [], contentHash })
     setSaveStatus('saved')
     setTimeout(() => setSaveStatus((s) => s === 'saved' ? 'idle' : s), 2000)
+    // Fire-and-forget: compute embedding without blocking the save response
+    void embedText(note.id, text).then(async ({ embedding }) => {
+      if (!embedding.length) return
+      const { upsertEmbedding } = await import('../../../db/schema')
+      await upsertEmbedding(note.id, embedding, contentHash)
+    }).catch(() => { /* embedding is best-effort */ })
   }, [note.id, onSave])
 
   const handleRestore = (restoredContent: string, restoredTitle?: string) => {
@@ -301,6 +312,18 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
               </div>
             )}
           </div>
+
+          {isLargeNote && (
+            <div className="mb-2 flex items-center gap-2 rounded-xl border border-amber-400/40 bg-amber-50/60 px-3 py-2 dark:bg-amber-950/20">
+              <Icon name="alert-triangle" size={13} className="shrink-0 text-amber-500" />
+              <p className="flex-1 text-[11px] text-amber-700 dark:text-amber-400">
+                This note is large (&gt;150 KB). The editor may be slower than usual — consider splitting it into smaller notes.
+              </p>
+              <button type="button" onClick={() => setLargeDismissed(true)} className="text-amber-500 hover:text-amber-700">
+                <Icon name="x" size={13} />
+              </button>
+            </div>
+          )}
 
           <div ref={editorRootRef} className="min-h-0 flex-1 rounded-md border border-border bg-surface">
             <MarkdownEditor

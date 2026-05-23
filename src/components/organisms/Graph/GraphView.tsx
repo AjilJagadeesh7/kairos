@@ -207,11 +207,27 @@ export function GraphView({
   const handleNodeDragEnd = useCallback((node: GNode) => { node.fx = node.x; node.fy = node.y }, [])
 
   const isFocused = focusMode && focusedNodeId !== null
+  const isLargeGraph = nodes.length > 200
+
+  // Degree map for LOD label suppression on large graphs
+  const degreeMap = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const l of links) {
+      const s = typeof l.source === 'object' ? l.source.id : l.source
+      const t = typeof l.target === 'object' ? l.target.id : l.target
+      m.set(s, (m.get(s) ?? 0) + 1)
+      m.set(t, (m.get(t) ?? 0) + 1)
+    }
+    return m
+  }, [links])
 
   const nodeCanvasObject = useCallback((node: GNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
     const isSelected  = node.id === selectedNoteId
     const isHovered   = hoveredIdRef.current === node.id
     const isDimmed    = isFocused && !neighborIds.has(node.id) && node.id !== focusedNodeId
+    const deg         = degreeMap.get(node.id) ?? 0
+    // On large graphs, suppress labels for low-degree nodes unless selected/hovered
+    const suppressLabel = isLargeGraph && deg < 3 && !isSelected && !isHovered
 
     const r      = 5 * Math.sqrt(node.val || 1)
     const alpha  = isDimmed ? 0.12 : 1
@@ -256,8 +272,8 @@ export function GraphView({
       ctx.fillText(label, node.x ?? 0, (node.y ?? 0) + hw + 3 / globalScale)
     }
 
-    // Note/task labels — always visible
-    if (node.nodeType !== 'canvas' && !isDimmed) {
+    // Note/task labels — hidden for low-degree nodes on large graphs
+    if (node.nodeType !== 'canvas' && !isDimmed && !suppressLabel) {
       const label    = node.label.length > 22 ? node.label.slice(0, 20) + '…' : node.label
       const fontSize = Math.max(6, 8 / globalScale)
       ctx.font         = `400 ${fontSize}px Manrope, sans-serif`
@@ -270,7 +286,7 @@ export function GraphView({
     }
 
     ctx.globalAlpha = 1
-  }, [selectedNoteId, isFocused, neighborIds, focusedNodeId, textColor])
+  }, [selectedNoteId, isFocused, neighborIds, focusedNodeId, textColor, degreeMap, isLargeGraph])
 
   // Seed cached positions so nodes don't scatter on remount (tab switch)
   const graphData = useMemo(() => {
@@ -357,14 +373,14 @@ export function GraphView({
               l.kind === 'wikilink' || l.kind === 'task-note' ? 5 : 0
             }
             linkDirectionalArrowRelPos={1}
-            linkDirectionalParticles={(l: GLink) => l.kind === 'wikilink' ? 2 : 0}
+            linkDirectionalParticles={(l: GLink) => isLargeGraph || l.kind !== 'wikilink' ? 0 : 2}
             linkDirectionalParticleSpeed={0.004}
             linkDirectionalParticleWidth={1.5}
             linkDirectionalParticleColor={() => '#2dd4bf'}
-            d3AlphaDecay={0.035}
-            d3VelocityDecay={0.6}
-            cooldownTicks={200}
-            warmupTicks={nodes.some(n => posCache.has(`${graphMode}:${n.id}`)) ? 0 : 60}
+            d3AlphaDecay={isLargeGraph ? 0.06 : 0.035}
+            d3VelocityDecay={isLargeGraph ? 0.7 : 0.6}
+            cooldownTicks={isLargeGraph ? 80 : 200}
+            warmupTicks={nodes.some(n => posCache.has(`${graphMode}:${n.id}`)) ? 0 : (isLargeGraph ? 30 : 60)}
             enableNodeDrag
             onNodeHover={handleNodeHover}
             onNodeDragEnd={handleNodeDragEnd}

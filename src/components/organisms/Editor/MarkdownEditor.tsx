@@ -19,6 +19,7 @@ import { math } from '@milkdown/plugin-math'
 import { wikilinkHighlightPlugin } from './wikilinkPlugin'
 import { calloutPlugin } from './calloutPlugin'
 import { linkInputRulePlugin, linkKeymapPlugin } from './linkInputRulePlugin'
+import { pasteSanitizePlugin } from './pasteSanitizePlugin'
 import { useWikilinkTooltip } from '../../../hooks/useWikilinkTooltip'
 import { useWikilinkAutocomplete } from '../../../hooks/useWikilinkAutocomplete'
 import { useEditorContextMenu } from '../../../hooks/useEditorContextMenu'
@@ -33,6 +34,7 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, notes, read
   const editorReadyRef       = useRef(false)
   const prevNoteIdRef        = useRef(noteId)
   const initialMarkdownRef   = useRef(initialMarkdown)
+  const pendingContentRef    = useRef<string | null>(null)  // content waiting for editor ready
   const onChangeRef          = useRef(onChange)
   const onWikilinkClickRef   = useRef(onWikilinkClick)
   const readOnlyRef          = useRef(readOnly)
@@ -69,7 +71,12 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, notes, read
   useEffect(() => {
     if (prevNoteIdRef.current === noteId) return
     prevNoteIdRef.current = noteId
-    if (crepeRef.current && editorReadyRef.current) crepeRef.current.editor.action(replaceAll(initialMarkdown))
+    if (crepeRef.current && editorReadyRef.current) {
+      crepeRef.current.editor.action(replaceAll(initialMarkdown))
+    } else {
+      // Editor still initialising — queue the content so it's applied on ready
+      pendingContentRef.current = initialMarkdown
+    }
   }, [noteId, initialMarkdown])
 
   // Close context menu on window events
@@ -113,10 +120,16 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, notes, read
     crepe.editor.use(linkInputRulePlugin)
     crepe.editor.use(linkKeymapPlugin)
     crepe.editor.use(math)
+    crepe.editor.use(pasteSanitizePlugin)
     crepe.on(listener => { listener.markdownUpdated((_ctx, md) => onChangeRef.current(md)) })
 
     void crepe.create().then(() => {
       editorReadyRef.current = true
+      // Flush any content update that arrived before the editor was ready
+      if (pendingContentRef.current !== null) {
+        crepe.editor.action(replaceAll(pendingContentRef.current))
+        pendingContentRef.current = null
+      }
       if (readOnlyRef.current) {
         crepe.editor.action(ctx => {
           ctx.get(editorViewCtx).setProps({ editable: () => false })
@@ -137,10 +150,14 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, notes, read
   function runCmd(run: (commands: TableCommandRunner) => void) {
     const crepe = crepeRef.current
     if (!crepe) return
-    crepe.editor.action((ctx) => {
-      run(ctx.get(commandsCtx) as unknown as TableCommandRunner)
-      ctx.get(editorViewCtx).focus()
-    })
+    try {
+      crepe.editor.action((ctx) => {
+        run(ctx.get(commandsCtx) as unknown as TableCommandRunner)
+        ctx.get(editorViewCtx).focus()
+      })
+    } catch (err) {
+      console.warn('[MindVault] Editor command failed:', err)
+    }
     closeMenu()
   }
 

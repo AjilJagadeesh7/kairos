@@ -1,4 +1,4 @@
-import { RefObject, useCallback, useEffect, useRef, useState } from 'react'
+import { RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { editorViewCtx } from '@milkdown/core'
 import type { Crepe } from '@milkdown/crepe'
 import type { Note } from '../types'
@@ -25,7 +25,12 @@ export function useWikilinkAutocomplete(
 ) {
   const [ac, setAc] = useState<AutocompleteState>(HIDDEN)
   const notesRef = useRef(notes)
-  useEffect(() => { notesRef.current = notes }, [notes])
+  // Pre-lowercased index rebuilt only when notes array changes — avoids O(n) toLowerCase on every keystroke
+  const lowerIndex = useRef<Array<{ title: string; lower: string }>>([])
+  useEffect(() => {
+    notesRef.current = notes
+    lowerIndex.current = notes.map(n => ({ title: n.title, lower: n.title.toLowerCase() }))
+  }, [notes])
 
   const dismiss = useCallback(() => setAc(HIDDEN), [])
 
@@ -78,11 +83,18 @@ export function useWikilinkAutocomplete(
     return () => el.removeEventListener('keyup', onKeyUp)
   }, [rootRef, refresh])
 
-  const suggestions = ac.visible
-    ? notesRef.current
-        .filter(n => n.title.toLowerCase().includes(ac.query.toLowerCase()))
-        .slice(0, 8)
-    : []
+  const suggestions = useMemo(() => {
+    if (!ac.visible) return []
+    const q = ac.query.toLowerCase()
+    const results: string[] = []
+    for (const entry of lowerIndex.current) {
+      if (entry.lower.includes(q)) {
+        results.push(entry.title)
+        if (results.length === 8) break   // early exit — no need to scan further
+      }
+    }
+    return results
+  }, [ac.visible, ac.query])
 
   return { ac, suggestions, complete, dismiss }
 }

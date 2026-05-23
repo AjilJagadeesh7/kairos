@@ -264,10 +264,11 @@ export const useAppStore = create<AppState>()(
           updatedAt: new Date().toISOString(),
         }
 
-        // Update search index and in-memory store
+        // Update search index and in-memory store — in-place map keeps array
+        // positions stable so sidebar items don't shift on every keystroke
         indexNote(updated)
         set(s => ({
-          notes: [updated, ...s.notes.filter(n => n.id !== activeNoteId)],
+          notes: s.notes.map(n => n.id === activeNoteId ? updated : n),
         }))
 
         // Auto-update wikilinks in all other notes when title changes
