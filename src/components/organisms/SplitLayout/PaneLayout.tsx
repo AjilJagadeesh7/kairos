@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useIsMobile } from '../../../hooks/useIsMobile'
 import {
   DndContext, DragOverlay, PointerSensor,
   useSensor, useSensors, closestCenter,
@@ -56,7 +57,8 @@ export function PaneLayout() {
   const [overTarget, setOverTarget]   = useState<string | null>(null)
   const slotContainerRef              = useRef<HTMLDivElement>(null)
 
-  const isMultiPane  = panes.length > 1
+  const isMobile     = useIsMobile()
+  const isMultiPane  = panes.length > 1 && !isMobile
   const sidebarOpen  = useAppStore(s => s.sidebarOpen)
   const sidebarWidth = useAppStore(s => s.sidebarWidth)
   const { startResize } = useSidebarResize(slotContainerRef)
@@ -156,8 +158,8 @@ export function PaneLayout() {
             </div>
           )}
 
-          {/* Panes */}
-          {panes.map((pane, index) => (
+          {/* Panes — on mobile only render the focused pane */}
+          {(isMobile ? panes.filter(p => p.id === focusedPaneId) : panes).map((pane, index) => (
             <PaneIdContext.Provider key={pane.id} value={pane.id}>
               <div
                 className={`flex min-w-0 flex-1 flex-col overflow-hidden ${

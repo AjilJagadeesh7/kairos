@@ -70,7 +70,7 @@ export function BoardView({ board }: BoardViewProps): JSX.Element {
             onClick={() => setActiveTaskId(null)}
           />
           {/* Drawer */}
-          <aside className="fixed inset-y-0 right-0 z-50 flex w-[600px] max-w-full flex-col border-l border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-2xl">
+          <aside className="fixed inset-y-0 right-0 z-50 flex w-full md:w-[600px] flex-col border-l border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-2xl">
             <TaskDetailPanel
               task={activeTask}
               board={board}

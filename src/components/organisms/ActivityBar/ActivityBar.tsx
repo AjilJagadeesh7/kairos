@@ -188,7 +188,7 @@ export function ActivityBar() {
   return (
     <aside
       aria-label="Activity bar"
-      className="flex w-12 shrink-0 flex-col items-center border-r border-border bg-surface2"
+      className="hidden md:flex w-12 shrink-0 flex-col items-center border-r border-border bg-surface2"
     >
       {/* Logo */}
       <Tooltip label="MindVault — Home">

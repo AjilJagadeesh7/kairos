@@ -172,7 +172,7 @@ export function PaneTabBar({ paneId, draggingTabId, overDropTarget }: PaneTabBar
   const tabIds = pane.tabs.map(t => `${paneId}:${t.id}`)
 
   return (
-    <div className={`flex min-h-0 shrink-0 items-stretch ${
+    <div className={`hidden md:flex min-h-0 shrink-0 items-stretch ${
       isFocused
         ? 'bg-bg border-b-2 border-b-[rgb(var(--accent))]'
         : 'bg-surface border-b border-[rgb(var(--border))]'
