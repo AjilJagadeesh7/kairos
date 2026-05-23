@@ -1,8 +1,20 @@
-use tauri::{AppHandle, WebviewUrl, WebviewWindowBuilder};
+use std::sync::Arc;
+use tauri::{AppHandle, State, WebviewUrl, WebviewWindowBuilder};
 use tauri::http::{Request, Response};
+use tokio::sync::Mutex;
+use serde::{Deserialize, Serialize};
+use tantivy::{
+    collector::TopDocs,
+    directory::RamDirectory,
+    query::QueryParser,
+    schema::{Field, IndexRecordOption, Schema, Value, STRING, STORED, TEXT},
+    Index, IndexWriter, TantivyDocument, Term,
+};
 
-// Headers that must be stripped from proxied responses so the browser
-// won't refuse to display the page in an iframe.
+// ---------------------------------------------------------------------------
+// HTTP proxy (unchanged)
+// ---------------------------------------------------------------------------
+
 const STRIP_RESPONSE_HEADERS: &[&str] = &[
     "x-frame-options",
     "content-security-policy",
@@ -11,44 +23,30 @@ const STRIP_RESPONSE_HEADERS: &[&str] = &[
 
 async fn proxy_fetch(request: Request<Vec<u8>>) -> Response<Vec<u8>> {
     let uri = request.uri().to_string();
-
-    // mvproxy://www.youtube.com/watch?v=... → https://www.youtube.com/watch?v=...
     let target = match uri.strip_prefix("mvproxy://") {
         Some(rest) => format!("https://{}", rest),
-        None => {
-            return Response::builder().status(400).body(b"bad request".to_vec()).unwrap();
-        }
+        None => return Response::builder().status(400).body(b"bad request".to_vec()).unwrap(),
     };
 
     let client = match reqwest::Client::builder()
-        .user_agent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+        .user_agent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36")
         .redirect(reqwest::redirect::Policy::limited(5))
         .timeout(std::time::Duration::from_secs(20))
         .build()
     {
         Ok(c) => c,
-        Err(e) => {
-            return Response::builder()
-                .status(500)
-                .body(format!("client error: {e}").into_bytes())
-                .unwrap();
-        }
+        Err(e) => return Response::builder().status(500).body(format!("client error: {e}").into_bytes()).unwrap(),
     };
 
     let method = match request.method().as_str() {
         "POST" => reqwest::Method::POST,
         _ => reqwest::Method::GET,
     };
-
     let mut req = client.request(method, &target);
-
-    // Forward safe request headers
     for (name, value) in request.headers() {
         let n = name.as_str().to_lowercase();
         if !matches!(n.as_str(), "host" | "origin" | "referer") {
-            if let Ok(v) = value.to_str() {
-                req = req.header(name.as_str(), v);
-            }
+            if let Ok(v) = value.to_str() { req = req.header(name.as_str(), v); }
         }
     }
 
@@ -56,56 +54,221 @@ async fn proxy_fetch(request: Request<Vec<u8>>) -> Response<Vec<u8>> {
         Ok(resp) => {
             let status = resp.status().as_u16();
             let mut builder = Response::builder().status(status);
-
             for (name, value) in resp.headers() {
                 let n = name.as_str().to_lowercase();
-                if STRIP_RESPONSE_HEADERS.contains(&n.as_str()) {
-                    continue;
-                }
-                if let Ok(v) = value.to_str() {
-                    builder = builder.header(name.as_str(), v);
-                }
+                if STRIP_RESPONSE_HEADERS.contains(&n.as_str()) { continue; }
+                if let Ok(v) = value.to_str() { builder = builder.header(name.as_str(), v); }
             }
-
-            // Allow any origin to use this proxied content
             builder = builder.header("Access-Control-Allow-Origin", "*");
-
             let body = resp.bytes().await.unwrap_or_default().to_vec();
-            builder.body(body).unwrap_or_else(|_| {
-                Response::builder().status(500).body(vec![]).unwrap()
-            })
+            builder.body(body).unwrap_or_else(|_| Response::builder().status(500).body(vec![]).unwrap())
         }
-        Err(e) => Response::builder()
-            .status(502)
+        Err(e) => Response::builder().status(502)
             .header("Content-Type", "text/plain; charset=utf-8")
             .body(format!("proxy error: {e}").into_bytes())
             .unwrap(),
     }
 }
 
-// Open any URL in a standalone in-app browser window (no iframe restrictions).
+// ---------------------------------------------------------------------------
+// In-app browser command (unchanged)
+// ---------------------------------------------------------------------------
+
 #[tauri::command]
 fn open_app_browser(app: AppHandle, url: String) -> Result<(), String> {
     let parsed = url.parse::<reqwest::Url>().map_err(|e| e.to_string())?;
     let label = format!("appbrowser-{}", std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_millis());
-
+        .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis());
     WebviewWindowBuilder::new(&app, label, WebviewUrl::External(parsed))
-        .title("MindVault — Browser")
-        .inner_size(1100.0, 760.0)
-        .resizable(true)
-        .build()
-        .map_err(|e| e.to_string())?;
-
+        .title("MindVault — Browser").inner_size(1100.0, 760.0).resizable(true)
+        .build().map_err(|e| e.to_string())?;
     Ok(())
 }
 
+// ---------------------------------------------------------------------------
+// Tantivy full-text search state
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct NoteDoc {
+    pub id: String,
+    pub title: String,
+    pub content: String,
+    pub tags: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SearchHit {
+    pub id: String,
+    pub score: f32,
+}
+
+struct TantivyFields {
+    id:      Field,
+    title:   Field,
+    content: Field,
+    tags:    Field,
+}
+
+pub struct SearchState {
+    index:  Option<Index>,
+    writer: Option<Arc<Mutex<IndexWriter>>>,
+    fields: Option<TantivyFields>,
+    schema: Option<Schema>,
+}
+
+impl Default for SearchState { fn default() -> Self { Self { index: None, writer: None, fields: None, schema: None } } }
+pub type SearchHandle = Arc<Mutex<SearchState>>;
+
+fn build_schema() -> (Schema, TantivyFields) {
+    let mut b = Schema::builder();
+    let id      = b.add_text_field("id",      STRING | STORED);
+    let title   = b.add_text_field("title",   TEXT | STORED);
+    let content = b.add_text_field("content", TEXT);
+    let tags    = b.add_text_field("tags",    TEXT);
+    (b.build(), TantivyFields { id, title, content, tags })
+}
+
+// ---------------------------------------------------------------------------
+// Tantivy Tauri commands
+// ---------------------------------------------------------------------------
+
+/// Rebuild the full in-memory index from all notes.
+/// Called once after phase-2 content load; fast (Rust + RAM).
+#[tauri::command]
+async fn build_search_index(
+    notes: Vec<NoteDoc>,
+    state: State<'_, SearchHandle>,
+) -> Result<(), String> {
+    let mut guard = state.lock().await;
+    let (schema, fields) = build_schema();
+    let dir   = RamDirectory::create();
+    let index = Index::open_or_create(dir, schema.clone()).map_err(|e| e.to_string())?;
+    let mut writer: IndexWriter = index.writer(50_000_000).map_err(|e| e.to_string())?;
+
+    for note in &notes {
+        let mut doc = TantivyDocument::default();
+        doc.add_text(fields.id,      &note.id);
+        doc.add_text(fields.title,   &note.title);
+        // Truncate content to 8 KB — same limit as MiniSearch side
+        doc.add_text(fields.content, &note.content[..note.content.len().min(8192)]);
+        doc.add_text(fields.tags,    &note.tags);
+        writer.add_document(doc).map_err(|e| e.to_string())?;
+    }
+    writer.commit().map_err(|e| e.to_string())?;
+
+    let writer_arc = Arc::new(Mutex::new(writer));
+    guard.schema = Some(schema);
+    guard.fields = Some(fields);
+    guard.writer = Some(writer_arc);
+    guard.index  = Some(index);
+    Ok(())
+}
+
+/// Add or replace a single note in the index after a save.
+#[tauri::command]
+async fn update_note_index(
+    note: NoteDoc,
+    state: State<'_, SearchHandle>,
+) -> Result<(), String> {
+    let guard = state.lock().await;
+    let (Some(index), Some(writer_arc), Some(fields)) =
+        (guard.index.as_ref(), guard.writer.as_ref(), guard.fields.as_ref())
+    else { return Ok(()); };  // index not built yet — skip
+
+    let id_term = Term::from_field_text(fields.id, &note.id);
+    let reader  = index.reader().map_err(|e| e.to_string())?;
+    let _ = reader; // suppress unused
+
+    let mut writer = writer_arc.lock().await;
+    writer.delete_term(id_term);
+    let mut doc = TantivyDocument::default();
+    doc.add_text(fields.id,      &note.id);
+    doc.add_text(fields.title,   &note.title);
+    doc.add_text(fields.content, &note.content[..note.content.len().min(8192)]);
+    doc.add_text(fields.tags,    &note.tags);
+    writer.add_document(doc).map_err(|e| e.to_string())?;
+    writer.commit().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Remove a note from the index.
+#[tauri::command]
+async fn remove_note_index(
+    id: String,
+    state: State<'_, SearchHandle>,
+) -> Result<(), String> {
+    let guard = state.lock().await;
+    let (Some(_), Some(writer_arc), Some(fields)) =
+        (guard.index.as_ref(), guard.writer.as_ref(), guard.fields.as_ref())
+    else { return Ok(()); };
+    let id_term = Term::from_field_text(fields.id, &id);
+    let mut writer = writer_arc.lock().await;
+    writer.delete_term(id_term);
+    writer.commit().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Full-text search — returns up to 50 hits ordered by score.
+#[tauri::command]
+async fn search_fulltext(
+    query: String,
+    state: State<'_, SearchHandle>,
+) -> Result<Vec<SearchHit>, String> {
+    let guard = state.lock().await;
+    let (Some(index), Some(schema), Some(fields)) =
+        (guard.index.as_ref(), guard.schema.as_ref(), guard.fields.as_ref())
+    else { return Ok(vec![]); };
+
+    let reader = index.reader().map_err(|e| e.to_string())?;
+    let searcher = reader.searcher();
+
+    // Boost title × 3 over content, include tags
+    let mut qp = QueryParser::for_index(index, vec![fields.title, fields.content, fields.tags]);
+    qp.set_field_boost(fields.title, 3.0);
+    qp.set_field_boost(fields.tags,  2.0);
+    // Gracefully handle invalid query syntax
+    let q = match qp.parse_query(&query) {
+        Ok(q) => q,
+        Err(_) => {
+            let escaped = tantivy::query::TermQuery::new(
+                Term::from_field_text(fields.title, &query),
+                IndexRecordOption::Basic,
+            );
+            Box::new(escaped)
+        }
+    };
+
+    let top_docs = searcher.search(&q, &TopDocs::with_limit(50).order_by_score()).map_err(|e| e.to_string())?;
+    let id_field = schema.get_field("id").map_err(|e| e.to_string())?;
+
+    let mut hits = Vec::with_capacity(top_docs.len());
+    for (score, addr) in top_docs {
+        let doc: TantivyDocument = searcher.doc(addr).map_err(|e| e.to_string())?;
+        if let Some(id) = doc.get_first(id_field).and_then(|v| v.as_str()) {
+            hits.push(SearchHit { id: id.to_string(), score });
+        }
+    }
+    Ok(hits)
+}
+
+// ---------------------------------------------------------------------------
+// App entry point
+// ---------------------------------------------------------------------------
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let search_state: SearchHandle = Arc::new(Mutex::new(SearchState::default()));
+
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![open_app_browser])
+        .manage(search_state)
+        .invoke_handler(tauri::generate_handler![
+            open_app_browser,
+            build_search_index,
+            update_note_index,
+            remove_note_index,
+            search_fulltext,
+        ])
         .register_asynchronous_uri_scheme_protocol("mvproxy", |_app, request, responder| {
             tauri::async_runtime::spawn(async move {
                 responder.respond(proxy_fetch(request).await);
@@ -118,6 +281,7 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_sql::Builder::default().build())
         .run(tauri::generate_context!())
         .expect("error while running MindVault");
 }

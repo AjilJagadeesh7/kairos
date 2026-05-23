@@ -15,12 +15,15 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = [] }
 reqwest = { version = "0.12", features = ["rustls-tls"], default-features = false }
-tauri-plugin-fs = "2"
+tauri-plugin-fs = { version = "2", features = ["watch"] }
 tauri-plugin-dialog = "2"
 tauri-plugin-shell = "2"
 tauri-plugin-deep-link = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
 tauri-plugin-clipboard-manager = "2"
+tauri-plugin-sql = { version = "2", features = ["sqlite"] }
+tantivy = { version = "0.26", default-features = false, features = ["mmap"] }
+tokio = { version = "1", features = ["sync", "rt"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

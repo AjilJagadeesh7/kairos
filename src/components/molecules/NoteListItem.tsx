@@ -1,4 +1,5 @@
 
+import { memo } from 'react'
 import { TagBadge } from '../atoms/TagBadge'
 import { useAppStore } from '../../store/useAppStore'
 import { useIconRules, resolveNoteIcon } from '../../plugins/pluginContext'
@@ -16,7 +17,7 @@ interface Props {
   onCopyLink: (e: React.MouseEvent) => void
 }
 
-export function NoteListItem({ note, isActive, isCopied, tagMap, onOpen, onDelete, onCopyLink }: Props) {
+export const NoteListItem = memo(function NoteListItem({ note, isActive, isCopied, tagMap, onOpen, onDelete, onCopyLink }: Props) {
   const isPinned  = useAppStore(s => s.pinnedNoteIds.includes(note.id))
   const pinNote   = useAppStore(s => s.pinNote)
   const unpinNote = useAppStore(s => s.unpinNote)
@@ -97,4 +98,13 @@ export function NoteListItem({ note, isActive, isCopied, tagMap, onOpen, onDelet
       </div>
     </div>
   )
-}
+}, (prev, next) =>
+  // Only re-render if something the item actually displays changed
+  prev.note.id        === next.note.id &&
+  prev.note.title     === next.note.title &&
+  prev.note.updatedAt === next.note.updatedAt &&
+  prev.note.tags      === next.note.tags &&     // same array ref
+  prev.isActive       === next.isActive &&
+  prev.isCopied       === next.isCopied &&
+  prev.tagMap         === next.tagMap
+)

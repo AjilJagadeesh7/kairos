@@ -1,5 +1,5 @@
 import { Component, type ReactNode } from 'react'
-import { Icon } from '../../atoms/../../../icons/Icon'
+import { Icon } from '../../../icons/Icon'
 
 interface Props {
   noteId: string

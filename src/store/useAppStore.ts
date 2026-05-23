@@ -187,22 +187,33 @@ export const useAppStore = create<AppState>()(
 
       loadNotes: async () => {
         const { readAllNotesMeta, readAllNotes, isPlainFolderConnected } = await import('../sync/plainFolder')
+        const { getCachedNotesMeta, rebuildCache } = await import('../db/vaultCache')
         if (!isPlainFolderConnected()) {
           set({ isNotesLoaded: true })
           return
         }
         await useLoaderStore.getState().run('load-notes', async () => {
           try {
-            // Phase 1: metadata-only load — sidebar appears immediately
-            const meta = await readAllNotesMeta()
-            meta.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-            set({ notes: meta, isNotesLoaded: true })
+            // Phase 1a: try SQLite cache (single query, sub-millisecond on warm DB)
+            const cached = await getCachedNotesMeta()
+            if (cached && cached.length > 0) {
+              cached.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+              set({ notes: cached, isNotesLoaded: true })
+            } else {
+              // Phase 1b: cache miss → read frontmatter from filesystem in parallel
+              const meta = await readAllNotesMeta()
+              meta.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+              set({ notes: meta, isNotesLoaded: true })
+            }
 
-            // Phase 2: full content in background — search index + graph links populate
+            // Phase 2: full content in background — builds search index + graph links
             const full = await readAllNotes()
             full.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
             buildIndex(full)
             set({ notes: full })
+
+            // Refresh SQLite cache with current state (handles external changes)
+            void rebuildCache(full)
           } catch (err) {
             console.warn('[loadNotes] failed:', err)
             set({ isNotesLoaded: true })
@@ -331,6 +342,9 @@ export const useAppStore = create<AppState>()(
             .catch(err => console.warn('[history] append failed:', err))
         }
 
+        // Keep SQLite metadata cache in sync (fire-and-forget)
+        void import('../db/vaultCache').then(({ upsertCachedMeta }) => upsertCachedMeta(updated))
+
         // Store embedding in Dexie (for semantic search)
         if (embedding && embedding.length > 0) {
           await upsertEmbedding(activeNoteId, embedding, contentHash)
@@ -391,6 +405,9 @@ export const useAppStore = create<AppState>()(
             await deletePlainNote(id).catch(() => { /* best-effort */ })
             deleteNoteHistory(id).catch(() => { /* best-effort */ })
           }
+
+          // Remove from SQLite cache
+          void import('../db/vaultCache').then(({ deleteCachedMeta }) => deleteCachedMeta(id))
 
           // Remove from sync providers
           const { deleteNoteFromAll, anySyncProviderConnected } = await import('../sync/syncOrchestrator')

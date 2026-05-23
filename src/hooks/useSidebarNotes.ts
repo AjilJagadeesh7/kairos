@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
 import { useConfirmStore } from '../store/useConfirmStore'
@@ -43,6 +43,9 @@ export function useSidebarNotes(onClose?: () => void) {
   const [selectedTagFilters, setSelectedTagFilters] = useState<string[]>([])
   const [dateFilter,         setDateFilter]         = useState<DateFilter>('any')
 
+  // Defer the heavy filter computation so keystrokes are never blocked
+  const deferredQuery = useDeferredValue(query)
+
   const allTags = useMemo((): TagRecord[] => {
     const tagSet = new Set<string>()
     notes.forEach(n => n.tags.forEach(t => tagSet.add(t)))
@@ -54,16 +57,22 @@ export function useSidebarNotes(onClose?: () => void) {
     [allTags],
   )
 
-  // Index-based full-text search with fuzzy + prefix matching
-  const indexResults = useMemo(() => {
-    if (!query.trim() || searchMode !== 'fulltext' || !isIndexReady()) return null
-    const hits = searchNotes(query)
-    const hitIds = new Map(hits.map(h => [h.id, h.score]))
-    // Sort by search score, preserving ranked order
-    return notes
-      .filter(n => hitIds.has(n.id))
-      .sort((a, b) => (hitIds.get(b.id) ?? 0) - (hitIds.get(a.id) ?? 0))
-  }, [notes, query, searchMode])
+  // Async full-text search: Tantivy on desktop, MiniSearch fallback elsewhere
+  const [indexResults, setIndexResults] = useState<Note[] | null>(null)
+  useEffect(() => {
+    if (!deferredQuery.trim() || searchMode !== 'fulltext') { setIndexResults(null); return }
+    if (!isIndexReady()) { setIndexResults(null); return }
+    let cancelled = false
+    void searchNotes(deferredQuery).then(hits => {
+      if (cancelled) return
+      const hitIds = new Map(hits.map(h => [h.id, h.score]))
+      setIndexResults(
+        notes.filter(n => hitIds.has(n.id))
+             .sort((a, b) => (hitIds.get(b.id) ?? 0) - (hitIds.get(a.id) ?? 0))
+      )
+    })
+    return () => { cancelled = true }
+  }, [notes, deferredQuery, searchMode])
 
   const filtered = useMemo(() => {
     // Start from index results (fulltext) or all notes
@@ -80,13 +89,13 @@ export function useSidebarNotes(onClose?: () => void) {
     }
 
     // For non-fulltext modes with no index, apply plain text filter
-    if (query.trim() && searchMode !== 'fulltext' && searchMode !== 'semantic') {
-      const q = query.toLowerCase()
+    if (deferredQuery.trim() && searchMode !== 'fulltext' && searchMode !== 'semantic') {
+      const q = deferredQuery.toLowerCase()
       list = list.filter(n => `${n.title}\n${n.content}`.toLowerCase().includes(q))
     }
 
     return list
-  }, [notes, indexResults, selectedTagFilters, dateFilter, query, searchMode])
+  }, [notes, indexResults, selectedTagFilters, dateFilter, deferredQuery, searchMode])
 
   const semanticResults = useSemanticSearch(filtered, query, searchMode)
   const visible = searchMode === 'semantic' && query.trim() ? (semanticResults ?? filtered) : filtered

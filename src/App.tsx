@@ -3,6 +3,7 @@ import { Toaster } from 'sonner'
 import { useAppStore } from './store/useAppStore'
 import { usePaneStore } from './store/usePaneStore'
 import { useAppStartup } from './hooks/useAppStartup'
+import { useVaultWatcher } from './hooks/useVaultWatcher'
 import { ActivityBar } from './components/organisms/ActivityBar/ActivityBar'
 import { PaneLayout } from './components/organisms/SplitLayout/PaneLayout'
 import { LoaderBar } from './components/molecules/LoaderBar'
@@ -30,6 +31,17 @@ function AppInner() {
   const [showCommandPalette, setShowCommandPalette] = useState(false)
   useAppStartup()
   useCalloutStyles()
+
+  // Hot-reload notes when the vault directory is modified externally
+  // (VS Code, git pull, another Markdown editor, etc.)
+  const loadNotes    = useAppStore(s => s.loadNotes)
+  const vaultStatus  = useAppStore(s => s.vaultStatus)
+  const [vaultPath, setVaultPath] = useState<string | null>(null)
+  useEffect(() => {
+    if (vaultStatus !== 'ok') return
+    import('./sync/plainFolder').then(({ getVaultPath }) => setVaultPath(getVaultPath()))
+  }, [vaultStatus])
+  useVaultWatcher(vaultPath, loadNotes)
 
   const closeShortcuts      = useCallback(() => setShowShortcuts(false), [])
   const closeCommandPalette = useCallback(() => setShowCommandPalette(false), [])

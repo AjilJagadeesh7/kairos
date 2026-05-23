@@ -19,9 +19,10 @@ type IndexDoc = {
   tags: string
 }
 
-const SEARCH_CACHE_DB   = 'mindvault-search-cache'
+const SEARCH_CACHE_DB    = 'mindvault-search-cache'
 const SEARCH_CACHE_STORE = 'index'
 const SEARCH_CACHE_KEY   = 'minisearch'
+const INDEXED_META_KEY   = 'indexed-meta'   // Map<id, updatedAt> snapshot
 
 // --------------------------------------------------------------------------
 // MiniSearch singleton
@@ -65,17 +66,29 @@ function openCacheDB(): Promise<IDBDatabase> {
   })
 }
 
+async function idbGet(key: string): Promise<unknown> {
+  const db    = await openCacheDB()
+  const tx    = db.transaction(SEARCH_CACHE_STORE, 'readonly')
+  const store = tx.objectStore(SEARCH_CACHE_STORE)
+  const result = await new Promise<unknown>((res, rej) => {
+    const req = store.get(key); req.onsuccess = () => res(req.result); req.onerror = () => rej(req.error)
+  })
+  db.close()
+  return result
+}
+
+async function idbPut(key: string, value: unknown): Promise<void> {
+  const db    = await openCacheDB()
+  const tx    = db.transaction(SEARCH_CACHE_STORE, 'readwrite')
+  const store = tx.objectStore(SEARCH_CACHE_STORE)
+  store.put(value, key)
+  await new Promise<void>((res, rej) => { tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error) })
+  db.close()
+}
+
 async function loadIndexFromCache(): Promise<boolean> {
   try {
-    const db    = await openCacheDB()
-    const tx    = db.transaction(SEARCH_CACHE_STORE, 'readonly')
-    const store = tx.objectStore(SEARCH_CACHE_STORE)
-    const result: unknown = await new Promise((res, rej) => {
-      const req = store.get(SEARCH_CACHE_KEY)
-      req.onsuccess = () => res(req.result)
-      req.onerror   = () => rej(req.error)
-    })
-    db.close()
+    const result = await idbGet(SEARCH_CACHE_KEY)
     if (!result) return false
     index = MiniSearch.loadJS<IndexDoc>(result as string, INDEX_OPTIONS)
     indexed = true
@@ -86,17 +99,8 @@ async function loadIndexFromCache(): Promise<boolean> {
 }
 
 function saveIndexToCache(): void {
-  // Fire-and-forget — don't block the caller
   void (async () => {
-    try {
-      const serialized = JSON.stringify(index)
-      const db    = await openCacheDB()
-      const tx    = db.transaction(SEARCH_CACHE_STORE, 'readwrite')
-      const store = tx.objectStore(SEARCH_CACHE_STORE)
-      store.put(serialized, SEARCH_CACHE_KEY)
-      await new Promise<void>((res, rej) => { tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error) })
-      db.close()
-    } catch { /* persistence is best-effort */ }
+    try { await idbPut(SEARCH_CACHE_KEY, JSON.stringify(index)) } catch { /* best-effort */ }
   })()
 }
 
@@ -107,12 +111,52 @@ void loadIndexFromCache()
 // Public API
 // --------------------------------------------------------------------------
 
-/** Rebuild the whole index from scratch (called after full content load). */
+/** Build or incrementally update the index after phase-2 content load. */
 export function buildIndex(notes: Note[]): void {
-  if (indexed) index.removeAll()
-  index.addAll(notes.map(toDoc))
-  indexed = true
-  saveIndexToCache()
+  // Run the (potentially heavy) work async so it doesn't block the caller
+  void (async () => {
+    try {
+      // Load the last-indexed metadata snapshot
+      const snapRaw = await idbGet(INDEXED_META_KEY).catch(() => null)
+      const snap: Record<string, string> = snapRaw && typeof snapRaw === 'string'
+        ? JSON.parse(snapRaw) as Record<string, string>
+        : {}
+
+      const currentIds = new Set(notes.map(n => n.id))
+
+      if (indexed && Object.keys(snap).length > 0) {
+        // Incremental path: only re-index notes that changed or are new
+        const changed = notes.filter(n => snap[n.id] !== n.updatedAt)
+        const removed = Object.keys(snap).filter(id => !currentIds.has(id))
+
+        for (const id of removed) { try { index.discard(id) } catch { /**/ } }
+        for (const n of changed) {
+          try { index.discard(n.id) } catch { /**/ }
+          index.add(toDoc(n))
+        }
+      } else {
+        // Full rebuild (first run or cache miss)
+        if (indexed) index.removeAll()
+        index.addAll(notes.map(toDoc))
+        indexed = true
+      }
+
+      // Persist snapshot of indexed IDs → updatedAt
+      const newSnap: Record<string, string> = {}
+      for (const n of notes) newSnap[n.id] = n.updatedAt
+      saveIndexToCache()
+      void idbPut(INDEXED_META_KEY, JSON.stringify(newSnap)).catch(() => {})
+    } catch {
+      // Fallback: full rebuild
+      if (indexed) index.removeAll()
+      index.addAll(notes.map(toDoc))
+      indexed = true
+      saveIndexToCache()
+    }
+
+    // Also build native Tantivy index on desktop (faster, no JS overhead)
+    void import('./tauriSearch').then(({ buildTauriIndex }) => buildTauriIndex(notes))
+  })()
 }
 
 /** Add or update a single note in the index. */
@@ -121,6 +165,7 @@ export function indexNote(note: Note): void {
   try { index.discard(note.id) } catch { /* not present */ }
   index.add(toDoc(note))
   saveIndexToCache()
+  void import('./tauriSearch').then(({ updateTauriIndex }) => updateTauriIndex(note))
 }
 
 /** Remove a note from the index. */
@@ -128,6 +173,7 @@ export function deindexNote(noteId: string): void {
   if (!indexed) return
   try { index.discard(noteId) } catch { /* not present */ }
   saveIndexToCache()
+  void import('./tauriSearch').then(({ removeTauriIndex }) => removeTauriIndex(noteId))
 }
 
 export interface SearchResult {
@@ -136,9 +182,17 @@ export interface SearchResult {
   terms: string[]
 }
 
-/** Run a query and return ranked note IDs. Empty query → empty array. */
-export function searchNotes(query: string): SearchResult[] {
-  if (!query.trim() || !indexed) return []
+/** Run a query via Tantivy (desktop) or MiniSearch (web/mobile). */
+export async function searchNotes(query: string): Promise<SearchResult[]> {
+  if (!query.trim()) return []
+  // Try native Tantivy first
+  try {
+    const { searchTauri } = await import('./tauriSearch')
+    const hits = await searchTauri(query)
+    if (hits) return hits.map(h => ({ id: h.id, score: h.score, terms: [] }))
+  } catch { /* fall through */ }
+  // MiniSearch fallback
+  if (!indexed) return []
   try {
     return index.search(query).map(r => ({
       id: r.id as string,

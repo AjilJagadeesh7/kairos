@@ -1,8 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
 
 import type { GNode, GLink } from '../../../types'
 import { Icon } from '../../../icons/Icon'
+
+// 3D WebGL renderer — loaded lazily so Three.js (~600KB) doesn't enter the
+// initial bundle. Only materialises when the user requests the 3D view.
+const ForceGraph3D = lazy(() => import('react-force-graph-3d'))
 
 // Survives component unmount/remount (tab switches). Keyed by "mode:nodeId".
 const posCache = new Map<string, { x: number; y: number }>()
@@ -88,6 +92,9 @@ export function GraphView({
   const [dims,      setDims]      = useState<{ w: number; h: number } | null>(null)
   const [bgColor,   setBgColor]   = useState('rgb(10,10,10)')
   const [textColor, setTextColor] = useState('rgba(255,255,255,0.75)')
+  // 3D WebGL toggle — auto-on for very large graphs (>300 nodes)
+  const [force3D, setForce3D] = useState(false)
+  const use3D = force3D || nodes.length > 300
 
   useEffect(() => { selectedIdRef.current = selectedNoteId }, [selectedNoteId])
 
@@ -326,10 +333,50 @@ export function GraphView({
         >
           <Icon name="refresh-cw" size={13} />
         </button>
+        <button
+          title={use3D ? 'Switch to 2D canvas' : 'Switch to 3D WebGL (faster for large graphs)'}
+          onClick={() => setForce3D(v => !v)}
+          className={`rounded-md p-1.5 transition text-xs font-semibold ${
+            use3D
+              ? 'bg-[rgb(var(--accent))]/20 text-[rgb(var(--accent))]'
+              : 'text-[rgb(var(--text-3))] hover:bg-[rgb(var(--surface-3))] hover:text-[rgb(var(--text))]'
+          }`}
+        >
+          {use3D ? '2D' : '3D'}
+        </button>
       </div>
 
       <div ref={canvasWrapRef} className="relative flex-1" style={{ overflow: 'hidden' }}>
-        {dims && nodes.length > 0 && (
+        {dims && nodes.length > 0 && use3D && (
+          <Suspense fallback={
+            <div className="flex h-full items-center justify-center" style={{ color: 'rgba(255,255,255,0.3)' }}>
+              <Icon name="loader-2" size={20} className="animate-spin" />
+            </div>
+          }>
+            <ForceGraph3D
+              key={`3d-${rerenderKey}-${nodes.length}`}
+              graphData={graphData}
+              backgroundColor={bgColor}
+              width={dims.w}
+              height={dims.h}
+              nodeColor={(node: GNode) => node.id === selectedNoteId ? '#ffffff' : node.color}
+              nodeVal={(node: GNode) => node.val}
+              nodeLabel={(node: GNode) => node.label}
+              linkColor={(lnk: GLink) => {
+                if (lnk.kind === 'wikilink')   return 'rgba(45,212,191,0.5)'
+                if (lnk.kind === 'semantic')   return 'rgba(129,140,248,0.3)'
+                if (lnk.kind === 'task-note')  return 'rgba(251,146,60,0.6)'
+                return 'rgba(251,191,36,0.4)'
+              }}
+              linkWidth={1}
+              onNodeClick={(node: GNode) => handleNodeClick(node)}
+              d3AlphaDecay={0.04}
+              d3VelocityDecay={0.4}
+              cooldownTicks={100}
+            />
+          </Suspense>
+        )}
+        {dims && nodes.length > 0 && !use3D && (
           <ForceGraph2D
             key={`${rerenderKey}-${nodes.length}-${graphMode}`}
             ref={fgRef}

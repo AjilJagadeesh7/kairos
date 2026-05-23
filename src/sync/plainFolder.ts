@@ -138,6 +138,8 @@ export async function disconnectPlainFolder(): Promise<void> {
 // Status
 // ---------------------------------------------------------------------------
 
+export function getVaultPath(): string | null { return _tauriPath }
+
 export function isPlainFolderConnected(): boolean {
   if (isDesktop()) return _tauriPath !== null
   return true // mobile always has Documents/MindVault
