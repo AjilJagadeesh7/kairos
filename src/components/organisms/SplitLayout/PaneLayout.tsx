@@ -50,7 +50,6 @@ export function PaneLayout() {
   const focusedPaneId = usePaneStore(s => s.focusedPaneId)
   const setFocusedPane = usePaneStore(s => s.setFocusedPane)
   const { reorderTabs, moveTabToPane } = usePaneStore()
-  const notes         = useAppStore(s => s.notes)
 
   const [sidebarSlot, setSidebarSlot] = useState<HTMLDivElement | null>(null)
   const [draggingId, setDraggingId]   = useState<string | null>(null)
@@ -196,7 +195,7 @@ export function PaneLayout() {
             <TabPreview
               tab={draggedTab}
               isActive={draggedTab.id === pane?.activeTabId}
-              title={deriveTitle(draggedTab.path, notes)}
+              title={deriveTitle(draggedTab.path, useAppStore.getState().notes)}
             />
           )
         })()}

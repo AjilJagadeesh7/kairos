@@ -182,6 +182,8 @@ async function _subdirPath(name: 'notes' | 'kanban' | 'config' | 'journal' | 'ca
 // ---------------------------------------------------------------------------
 
 export async function writePlainNote(note: Note): Promise<void> {
+  const { suppressVaultWatcher } = await import('./selfWriteGuard')
+  suppressVaultWatcher()
   const content  = serializeNote(note)
   const fileName = noteIdToPath(note.id)
   const dir      = await _subdirPath('notes')

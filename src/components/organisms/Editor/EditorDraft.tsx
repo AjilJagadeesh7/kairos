@@ -45,25 +45,31 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
   const conflict          = useConflictStore(s => s.conflicts.find(c => c.noteId === note.id))
   const setNoteTagColor   = useAppStore(s => s.setNoteTagColor)
   const noteTagColors     = useAppStore(s => s.noteTagColors)
-  const notes             = useAppStore(s => s.notes)
+  // Subscribe only to the sorted list of tag names — never re-fires on content/updatedAt saves.
+  const allTagNames       = useAppStore(s => {
+    const tagSet = new Set<string>()
+    s.notes.forEach(n => n.tags.forEach(t => tagSet.add(t)))
+    return [...tagSet].sort().join('\0')
+  })
   const navigate          = useNavigate()
 
-  const allTags = useMemo((): TagRecord[] => {
-    const tagSet = new Set<string>()
-    notes.forEach(n => n.tags.forEach(t => tagSet.add(t)))
-    return [...tagSet].sort().map(name => ({
+  const allTags = useMemo((): TagRecord[] =>
+    allTagNames ? allTagNames.split('\0').map(name => ({
       name,
       color: noteTagColors[name] ?? tagColor(name),
       createdAt: '',
-    }))
-  }, [notes, noteTagColors])
+    })) : []
+  , [allTagNames, noteTagColors])
 
   const tagMap = useMemo(() => new Map(allTags.map(tag => [tag.name, tag])), [allTags])
 
+  // Read from store snapshot at click time — no subscription needed.
   const handleWikilinkClick = useCallback((linkedTitle: string) => {
-    const found = notes.find(n => n.title.trim().toLowerCase() === linkedTitle.trim().toLowerCase())
+    const found = useAppStore.getState().notes.find(
+      n => n.title.trim().toLowerCase() === linkedTitle.trim().toLowerCase()
+    )
     if (found) navigate(`/notes/${found.id}`)
-  }, [notes, navigate])
+  }, [navigate])
 
   const editorRootRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef(title)
@@ -220,7 +226,7 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
                 noteId={note.id}
                 initialMarkdown={content}
                 noteTitle={title}
-                notes={notes}
+
                 readOnly
                 onChange={setContent}
                 onWikilinkClick={(t) => handleWikilinkClick(t)}
@@ -342,7 +348,6 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
               noteId={note.id}
               initialMarkdown={content}
               noteTitle={title}
-              notes={notes}
               onChange={setContent}
               onWikilinkClick={(t) => handleWikilinkClick(t)}
             />

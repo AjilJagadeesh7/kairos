@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePaneStore, pathToType } from '../../../store/usePaneStore'
 import { useAppStore } from '../../../store/useAppStore'
 import { usePluginRegistry } from '../../../plugins/pluginContext'
@@ -130,6 +130,39 @@ function CompactThemePicker({ value, onChange }: { value: ThemeMode; onChange: (
 
 const SIDEBAR_TYPES = new Set(['notes', 'journal', 'canvas', 'graph', 'settings'])
 
+function NavBtn({ to, iconName, label, NavIconComponent, activePath, onNav }: {
+  to: string
+  label: string
+  iconName?: IconToken
+  NavIconComponent?: React.ElementType
+  activePath: string
+  onNav: (dest: string, label: string, e: React.MouseEvent) => void
+}) {
+  const dest = to === '/journal' ? `/journal/${todayDate()}` : to
+  const isActive = activePath === to || activePath.startsWith(to + '/')
+  return (
+    <Tooltip label={label}>
+      <button
+        type="button"
+        onClick={(e) => onNav(dest, label, e)}
+        className={`relative flex h-11 w-12 items-center justify-center transition-colors ${
+          isActive ? 'text-accent' : 'text-text3 hover:text-text'
+        }`}
+      >
+        {isActive && (
+          <span className="absolute inset-y-1 left-0 w-0.5 rounded-r-full bg-accent" />
+        )}
+        {iconName
+          ? <Icon name={iconName} size={20} strokeWidth={isActive ? 2 : 1.75} />
+          : NavIconComponent
+            ? <NavIconComponent size={20} strokeWidth={isActive ? 2 : 1.75} />
+            : null
+        }
+      </button>
+    </Tooltip>
+  )
+}
+
 export function ActivityBar() {
   const theme         = useAppStore(s => s.theme)
   const setTheme      = useAppStore(s => s.setTheme)
@@ -145,7 +178,7 @@ export function ActivityBar() {
   const activeType = pathToType(activePath)
   const focusedHasSidebar = SIDEBAR_TYPES.has(activeType)
 
-  function go(to: string, label: string, e: React.MouseEvent) {
+  const go = useCallback((to: string, label: string, e: React.MouseEvent) => {
     if (e.ctrlKey || e.metaKey) {
       const { focusedPaneId, openInNewTab } = usePaneStore.getState()
       openInNewTab(focusedPaneId, to, label)
@@ -153,38 +186,7 @@ export function ActivityBar() {
       const { focusedPaneId, navigatePane } = usePaneStore.getState()
       navigatePane(focusedPaneId, to)
     }
-  }
-
-  function NavBtn({ to, iconName, label, NavIconComponent }: {
-    to: string
-    label: string
-    iconName?: IconToken
-    NavIconComponent?: React.ElementType
-  }) {
-    const dest = to === '/journal' ? `/journal/${todayDate()}` : to
-    const isActive = activePath === to || activePath.startsWith(to + '/')
-    return (
-      <Tooltip label={label}>
-        <button
-          type="button"
-          onClick={(e) => go(dest, label, e)}
-          className={`relative flex h-11 w-12 items-center justify-center transition-colors ${
-            isActive ? 'text-accent' : 'text-text3 hover:text-text'
-          }`}
-        >
-          {isActive && (
-            <span className="absolute inset-y-1 left-0 w-0.5 rounded-r-full bg-accent" />
-          )}
-          {iconName
-            ? <Icon name={iconName} size={20} strokeWidth={isActive ? 2 : 1.75} />
-            : NavIconComponent
-              ? <NavIconComponent size={20} strokeWidth={isActive ? 2 : 1.75} />
-              : null
-          }
-        </button>
-      </Tooltip>
-    )
-  }
+  }, [])
 
   return (
     <aside
@@ -209,7 +211,7 @@ export function ActivityBar() {
 
       {/* Primary nav */}
       <nav className="flex flex-1 flex-col items-center py-1">
-        {TOP_NAV.map(item => <NavBtn key={item.to} {...item} />)}
+        {TOP_NAV.map(item => <NavBtn key={item.to} {...item} activePath={activePath} onNav={go} />)}
 
         {pluginPages.map(({ path, navLabel, navIcon: NavIconComponent }) => (
           <NavBtn
@@ -218,6 +220,8 @@ export function ActivityBar() {
             label={navLabel}
             NavIconComponent={NavIconComponent ?? undefined}
             iconName={NavIconComponent ? undefined : 'bar-chart-2'}
+            activePath={activePath}
+            onNav={go}
           />
         ))}
       </nav>
@@ -239,7 +243,7 @@ export function ActivityBar() {
         )}
         <SyncStatusBadge />
         <CompactThemePicker value={theme} onChange={setTheme} />
-        <NavBtn to="/settings" iconName="settings-2" label="Settings" />
+        <NavBtn to="/settings" iconName="settings-2" label="Settings" activePath={activePath} onNav={go} />
       </div>
     </aside>
   )

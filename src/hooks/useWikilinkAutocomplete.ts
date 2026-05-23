@@ -1,7 +1,7 @@
 import { RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { editorViewCtx } from '@milkdown/core'
 import type { Crepe } from '@milkdown/crepe'
-import type { Note } from '../types'
+import { useAppStore } from '../store/useAppStore'
 
 export interface AutocompleteState {
   visible: boolean
@@ -21,16 +21,17 @@ const PASSTHROUGH_KEYS = new Set(['Escape', 'ArrowUp', 'ArrowDown', 'Enter', 'Ta
 export function useWikilinkAutocomplete(
   crepeRef: RefObject<Crepe | null>,
   rootRef: RefObject<HTMLElement | null>,
-  notes: Note[],
 ) {
   const [ac, setAc] = useState<AutocompleteState>(HIDDEN)
-  const notesRef = useRef(notes)
-  // Pre-lowercased index rebuilt only when notes array changes — avoids O(n) toLowerCase on every keystroke
+
+  // Subscribe only to note titles — this selector never re-fires on content/updatedAt changes,
+  // so MarkdownEditor is completely decoupled from save-triggered store updates.
+  const noteTitles = useAppStore(s => s.notes.map(n => n.title).join('\0'))
   const lowerIndex = useRef<Array<{ title: string; lower: string }>>([])
   useEffect(() => {
-    notesRef.current = notes
-    lowerIndex.current = notes.map(n => ({ title: n.title, lower: n.title.toLowerCase() }))
-  }, [notes])
+    const titles = useAppStore.getState().notes.map(n => n.title)
+    lowerIndex.current = titles.map(t => ({ title: t, lower: t.toLowerCase() }))
+  }, [noteTitles])
 
   const dismiss = useCallback(() => setAc(HIDDEN), [])
 

@@ -26,7 +26,6 @@ function AppInner() {
   const onboardingDone = useAppStore(s => s.onboardingDone)
   const keyBindings    = useAppStore(s => s.keyBindings)
   const createNote     = useAppStore(s => s.createNote)
-  const notes          = useAppStore(s => s.notes)
   const [showShortcuts, setShowShortcuts]           = useState(false)
   const [showCommandPalette, setShowCommandPalette] = useState(false)
   useAppStartup()
@@ -79,7 +78,7 @@ function AppInner() {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [keyBindings, createNote, notes])
+  }, [keyBindings, createNote])
 
   return (
     <div className="flex h-screen overflow-hidden bg-bg text-text">

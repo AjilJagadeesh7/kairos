@@ -29,7 +29,7 @@ import { NotePreviewPopover } from '../../common/NotePreviewPopover'
 import { WikilinkDropdown } from './WikilinkDropdown'
 import type { MarkdownEditorProps, TableCommandRunner } from '../../../types'
 
-export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, notes, readOnly = false, onChange, onWikilinkClick }: MarkdownEditorProps): JSX.Element {
+export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = false, onChange, onWikilinkClick }: MarkdownEditorProps): JSX.Element {
   const rootRef              = useRef<HTMLDivElement | null>(null)
   const crepeRef             = useRef<Crepe | null>(null)
   const editorReadyRef       = useRef(false)
@@ -56,7 +56,7 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, notes, read
 
   const { tooltip, attach: attachTooltip, dismiss: dismissTooltip } = useWikilinkTooltip(rootRef)
   const { menu, handleContextMenu, resizeImage, closeMenu } = useEditorContextMenu(crepeRef, rootRef)
-  const { ac, suggestions, complete, dismiss: dismissAc } = useWikilinkAutocomplete(crepeRef, rootRef, notes)
+  const { ac, suggestions, complete, dismiss: dismissAc } = useWikilinkAutocomplete(crepeRef, rootRef)
 
   // Handle navigation events dispatched from TransclusionEmbed widgets (outside React tree)
   useEffect(() => {

@@ -6,6 +6,7 @@
  */
 import { useEffect, useRef } from 'react'
 import { isDesktop } from '../utils/platform'
+import { isVaultWatcherSuppressed } from '../sync/selfWriteGuard'
 
 type UnwatchFn = () => void | Promise<void>
 
@@ -33,7 +34,7 @@ export function useVaultWatcher(
             // event.paths is string[] of affected paths
             const paths: string[] = (event as { paths?: string[] }).paths ?? []
             const hasMdChange = paths.length === 0 || paths.some(p => p.endsWith('.md'))
-            if (hasMdChange) {
+            if (hasMdChange && !isVaultWatcherSuppressed()) {
               // Debounce: coalesce rapid bursts (e.g. git checkout touching many files)
               scheduleReload()
             }
