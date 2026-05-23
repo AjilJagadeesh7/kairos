@@ -13,20 +13,22 @@ export function NoteEditor(): JSX.Element {
   const notes            = useAppStore((s) => s.notes)
   const updateNote       = useAppStore((s) => s.updateNote)
   const loadNoteContent  = useAppStore((s) => s.loadNoteContent)
-  const [contentReady, setContentReady] = useState(false)
+
+  // Track which specific noteId is mid-fetch — avoids resetting a global flag
+  // on every navigation, which caused a spinner flicker for already-loaded notes.
+  const [fetchingId, setFetchingId] = useState<string | null>(null)
 
   const activeNote = isNotesLoaded
     ? (noteId ? (notes.find(n => n.id === noteId) ?? null) : null)
     : undefined
 
-  // If phase-1 metadata load gave us an empty content string, fetch it on demand
+  // Only trigger a fetch when the note's content slot is genuinely empty
   useEffect(() => {
-    setContentReady(false)
     if (!noteId || !isNotesLoaded) return
     const note = notes.find(n => n.id === noteId)
-    if (!note) { setContentReady(true); return }
-    if (note.content !== '') { setContentReady(true); return }
-    void loadNoteContent(noteId).then(() => setContentReady(true))
+    if (!note || note.content !== '') return   // already in memory — nothing to do
+    setFetchingId(noteId)
+    void loadNoteContent(noteId).then(() => setFetchingId(null))
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [noteId, isNotesLoaded])
 
@@ -35,7 +37,10 @@ export function NoteEditor(): JSX.Element {
     [noteId, updateNote],
   )
 
-  if (activeNote === undefined || (activeNote && !contentReady)) {
+  // Show spinner only while this specific note is being fetched
+  const isFetching = fetchingId === noteId
+
+  if (activeNote === undefined || (activeNote && isFetching)) {
     return (
       <div className="flex h-full items-center justify-center text-text3">
         <Icon name="loader-2" size={20} className="animate-spin" />
