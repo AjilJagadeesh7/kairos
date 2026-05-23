@@ -6,6 +6,7 @@ import { SyncStatusBadge } from '../../molecules/SyncStatusBadge'
 import { THEME_REGISTRY } from '../../../themes/registry'
 import { todayDate } from '../../../store/useJournalStore'
 import { Icon } from '../../../icons/Icon'
+import { AppLogo } from '../../atoms/AppLogo'
 import type { IconToken } from '../../../icons/tokens'
 import type { ThemeMode } from '../../../types'
 
@@ -200,7 +201,7 @@ export function ActivityBar() {
           }}
           className="flex h-12 w-12 items-center justify-center text-text2 transition hover:text-text"
         >
-          <span className="select-none text-[18px] font-black leading-none tracking-tighter">M</span>
+          <AppLogo size={28} />
         </button>
       </Tooltip>
 

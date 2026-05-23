@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../../../store/useAppStore'
 import { usePaneStore } from '../../../store/usePaneStore'
 import { Icon } from '../../../icons/Icon'
+import { AppLogo } from '../../atoms/AppLogo'
 import type { IconToken } from '../../../icons/tokens'
 
 // ── Sample notes ──────────────────────────────────────────────────────────────
@@ -174,8 +175,8 @@ export function OnboardingModal() {
           {/* ── Step 0: Welcome + name ─────────────────────────────────── */}
           {step === 0 && (
             <div className="px-8 pb-8 pt-12 text-center">
-              <div className="mb-5 inline-flex items-center justify-center rounded-2xl bg-[rgb(var(--accent)/0.1)] p-4">
-                <Icon name="book-open" size={32} className="text-[rgb(var(--accent))]" strokeWidth={1.5} />
+              <div className="mb-5 inline-flex items-center justify-center">
+                <AppLogo size={64} />
               </div>
               <h1 className="mb-2 text-2xl font-black tracking-tight text-[rgb(var(--text))]">
                 Welcome to MindVault

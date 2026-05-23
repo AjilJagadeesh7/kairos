@@ -1,5 +1,6 @@
 import { SectionCard } from '../../molecules/SectionCard'
 import { Icon } from '../../../icons/Icon'
+import { AppLogo } from '../../atoms/AppLogo'
 import type { IconToken } from '../../../icons/tokens'
 
 const FEATURES: Array<{ iconName: IconToken; title: string; desc: string }> = [
@@ -55,6 +56,13 @@ export function AboutSection() {
     <div className="space-y-5">
       {/* About */}
       <SectionCard title="About MindVault">
+        <div className="mb-4 flex items-center gap-3">
+          <AppLogo size={48} />
+          <div>
+            <p className="font-bold text-text">MindVault</p>
+            <p className="text-xs text-text3">Privacy-first, local-first knowledge base</p>
+          </div>
+        </div>
         <div className="space-y-3 text-sm text-[rgb(var(--text-2))]">
           <p>
             MindVault is a <strong className="text-[rgb(var(--text))]">privacy-first, local-first knowledge base</strong> combining
