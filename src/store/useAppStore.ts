@@ -70,6 +70,7 @@ type AppState = {
   unpinNote: (id: string) => void
 
   loadNotes: () => Promise<void>
+  loadNoteContent: (noteId: string) => Promise<string>
   loadFolders: () => Promise<void>
   createNote: (initial?: { title?: string; content?: string; folder?: string }) => Promise<string>
   updateActiveNote: (patch: Pick<Note, 'title' | 'content' | 'embedding'> & { contentHash: string }) => Promise<void>
@@ -185,22 +186,40 @@ export const useAppStore = create<AppState>()(
       unpinNote: (id) => set(s => ({ pinnedNoteIds: s.pinnedNoteIds.filter(x => x !== id) })),
 
       loadNotes: async () => {
-        const { readAllNotes, isPlainFolderConnected } = await import('../sync/plainFolder')
+        const { readAllNotesMeta, readAllNotes, isPlainFolderConnected } = await import('../sync/plainFolder')
         if (!isPlainFolderConnected()) {
           set({ isNotesLoaded: true })
           return
         }
         await useLoaderStore.getState().run('load-notes', async () => {
           try {
-            const notes = await readAllNotes()
-            notes.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-            buildIndex(notes)
-            set({ notes, isNotesLoaded: true })
+            // Phase 1: metadata-only load — sidebar appears immediately
+            const meta = await readAllNotesMeta()
+            meta.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+            set({ notes: meta, isNotesLoaded: true })
+
+            // Phase 2: full content in background — search index + graph links populate
+            const full = await readAllNotes()
+            full.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+            buildIndex(full)
+            set({ notes: full })
           } catch (err) {
             console.warn('[loadNotes] failed:', err)
             set({ isNotesLoaded: true })
           }
         })
+      },
+
+      loadNoteContent: async (noteId: string): Promise<string> => {
+        const existing = get().notes.find(n => n.id === noteId)
+        if (existing?.content) return existing.content
+        const { readNoteContent, isPlainFolderConnected } = await import('../sync/plainFolder')
+        if (!isPlainFolderConnected()) return ''
+        const content = await readNoteContent(noteId)
+        if (content !== null) {
+          set(s => ({ notes: s.notes.map(n => n.id === noteId ? { ...n, content } : n) }))
+        }
+        return content ?? ''
       },
 
       loadFolders: async () => {

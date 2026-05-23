@@ -13,6 +13,19 @@ function hashTagColor(tag: string): string {
   return TAG_COLOR_PALETTE[Math.abs(h) % TAG_COLOR_PALETTE.length]
 }
 
+// Module-level wikilink parse cache keyed by note content.
+// Avoids re-running regex for every note on every re-render of useGraphData.
+// Key: note id → { cacheKey: content string, links: string[] }
+const wikilinkCache = new Map<string, { cacheKey: string; links: string[] }>()
+
+function getCachedWikilinks(noteId: string, content: string): string[] {
+  const cached = wikilinkCache.get(noteId)
+  if (cached && cached.cacheKey === content) return cached.links
+  const links = parseWikilinks(content)
+  wikilinkCache.set(noteId, { cacheKey: content, links })
+  return links
+}
+
 export function useGraphData(
   notes: Note[],
   embeddingMap: Map<string, number[]>,
@@ -62,7 +75,7 @@ export function useGraphData(
     const linksLinks: GLink[] = []
 
     for (const note of notes) {
-      for (const lnk of parseWikilinks(note.content)) {
+      for (const lnk of getCachedWikilinks(note.id, note.content)) {
         const tid = titleMap.get(lnk.trim().toLowerCase())
         if (!tid || tid === note.id) continue
         const key = [note.id, tid].sort().join('|')

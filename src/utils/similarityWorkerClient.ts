@@ -13,6 +13,14 @@ function getWorker(): Worker {
   return worker
 }
 
+// Terminate the worker when the page unloads to avoid dangling background threads.
+if (typeof window !== 'undefined') {
+  window.addEventListener('unload', () => {
+    worker?.terminate()
+    worker = null
+  })
+}
+
 let cachedFingerprint = ''
 let cachedResult: Array<{ source: string; target: string }> = []
 

@@ -11,7 +11,7 @@
  * Mobile (Capacitor) — uses @capacitor/filesystem (Documents/MindVault).
  */
 import { isDesktop } from '../utils/platform'
-import { serializeNote, deserializeNote, noteIdToPath } from '../adapters/storage/noteSerializer'
+import { serializeNote, deserializeNote, deserializeNoteMeta, extractNoteContent, noteIdToPath } from '../adapters/storage/noteSerializer'
 import type { Note, JournalEntry, ContentVersion } from '../types'
 import type { Board } from '../types/kanban.types'
 import type { Canvas } from '../types/canvas.types'
@@ -211,14 +211,12 @@ export async function readAllNotes(): Promise<Note[]> {
     const notesPath = `${_tauriPath}/notes`
     try { await mkdir(notesPath, { recursive: true }) } catch { /* exists */ }
     const entries = await readDir(notesPath)
-    const notes: Note[] = []
-    for (const entry of entries) {
-      if (!entry.name?.endsWith('.md')) continue
-      try {
-        notes.push(deserializeNote(await readTextFile(`${notesPath}/${entry.name}`)))
-      } catch { /* skip malformed */ }
-    }
-    return notes
+    const mdEntries = entries.filter(e => e.name?.endsWith('.md'))
+    // Read all files in parallel instead of serially
+    const results = await Promise.allSettled(
+      mdEntries.map(e => readTextFile(`${notesPath}/${e.name!}`).then(deserializeNote))
+    )
+    return results.flatMap(r => r.status === 'fulfilled' ? [r.value] : [])
   }
 
   const notesPath = 'MindVault/notes'
@@ -226,18 +224,65 @@ export async function readAllNotes(): Promise<Note[]> {
   const { Filesystem, Directory } = await import('@capacitor/filesystem')
   try {
     const result = await Filesystem.readdir({ path: notesPath, directory: Directory.Documents })
-    const notes: Note[] = []
-    for (const entry of result.files) {
-      if (!entry.name.endsWith('.md')) continue
-      const raw = await mobileRead(`${notesPath}/${entry.name}`)
-      if (raw) {
-        try { notes.push(deserializeNote(raw)) } catch {}
-      }
-    }
-    return notes
+    const mdFiles = result.files.filter(e => e.name.endsWith('.md'))
+    const results = await Promise.allSettled(
+      mdFiles.map(e => mobileRead(`${notesPath}/${e.name}`).then(raw => {
+        if (!raw) throw new Error('empty')
+        return deserializeNote(raw)
+      }))
+    )
+    return results.flatMap(r => r.status === 'fulfilled' ? [r.value] : [])
   } catch {
     return []
   }
+}
+
+/** Phase-1 loader: reads only frontmatter from each file (no body). Much faster for large vaults. */
+export async function readAllNotesMeta(): Promise<Note[]> {
+  if (isDesktop()) {
+    if (!_tauriPath) return []
+    const { readDir, readTextFile, mkdir } = await import('@tauri-apps/plugin-fs')
+    const notesPath = `${_tauriPath}/notes`
+    try { await mkdir(notesPath, { recursive: true }) } catch { /* exists */ }
+    const entries = await readDir(notesPath)
+    const mdEntries = entries.filter(e => e.name?.endsWith('.md'))
+    const results = await Promise.allSettled(
+      mdEntries.map(e => readTextFile(`${notesPath}/${e.name!}`).then(deserializeNoteMeta))
+    )
+    return results.flatMap(r => r.status === 'fulfilled' ? [r.value] : [])
+  }
+
+  const notesPath = 'MindVault/notes'
+  await mobileMkdir(notesPath)
+  const { Filesystem, Directory } = await import('@capacitor/filesystem')
+  try {
+    const result = await Filesystem.readdir({ path: notesPath, directory: Directory.Documents })
+    const mdFiles = result.files.filter(e => e.name.endsWith('.md'))
+    const results = await Promise.allSettled(
+      mdFiles.map(e => mobileRead(`${notesPath}/${e.name}`).then(raw => {
+        if (!raw) throw new Error('empty')
+        return deserializeNoteMeta(raw)
+      }))
+    )
+    return results.flatMap(r => r.status === 'fulfilled' ? [r.value] : [])
+  } catch {
+    return []
+  }
+}
+
+/** Load the body content for a single note by ID. */
+export async function readNoteContent(noteId: string): Promise<string | null> {
+  const fileName = noteIdToPath(noteId)
+  if (isDesktop()) {
+    if (!_tauriPath) return null
+    const { readTextFile } = await import('@tauri-apps/plugin-fs')
+    try {
+      const raw = await readTextFile(`${_tauriPath}/notes/${fileName}`)
+      return extractNoteContent(raw)
+    } catch { return null }
+  }
+  const raw = await mobileRead(`MindVault/notes/${fileName}`)
+  return raw ? extractNoteContent(raw) : null
 }
 
 // ---------------------------------------------------------------------------

@@ -91,13 +91,24 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
       .then((ok) => { if (ok) void deleteNoteById(note.id) })
   }
 
+  const lastSavedHashRef = useRef<string>('')
+
   const saveNote = useCallback(async () => {
-    setSaveStatus('saving')
     const t = titleRef.current
     const c = contentRef.current
     const text = `${t}\n\n${c}`
     const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
     const contentHash = Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('')
+
+    // Skip redundant saves — rapid typing queues multiple debounced calls but
+    // the content may be identical by the time each fires.
+    if (contentHash === lastSavedHashRef.current) {
+      setSaveStatus('idle')
+      return
+    }
+    lastSavedHashRef.current = contentHash
+
+    setSaveStatus('saving')
     // Save immediately with empty embedding so the note persists fast,
     // then compute embedding in the background and upsert separately
     await onSave({ title: t || 'Untitled note', content: c, embedding: [], contentHash })

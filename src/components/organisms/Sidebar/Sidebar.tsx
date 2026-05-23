@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLoaderStore } from '../../../store/useLoaderStore'
 import { useNavigate } from 'react-router-dom'
 
@@ -6,7 +6,7 @@ import { useAppStore } from '../../../store/useAppStore'
 import { useSidebarNotes } from '../../../hooks/useSidebarNotes'
 import { buildFolderTree, getAllFolderPaths } from '../../../utils/folderTree'
 import { SearchModePills } from '../../molecules/SearchModePills'
-import { NoteListItem } from '../../molecules/NoteListItem'
+import { VirtualNoteList } from '../../molecules/VirtualNoteList'
 import { NoteTemplateModal } from '../Notes/NoteTemplateModal'
 import { FolderTree } from './FolderTree'
 import type { NoteTemplate } from '../Notes/NoteTemplateModal'
@@ -18,7 +18,6 @@ interface Props {
 }
 
 export function Sidebar({ onClose }: Props): JSX.Element {
-  const listRef = useRef<HTMLUListElement>(null)
   const [showTemplates, setShowTemplates] = useState(false)
   const [templateFolder, setTemplateFolder] = useState<string | undefined>()
   const [creatingRootFolder, setCreatingRootFolder] = useState(false)
@@ -103,16 +102,6 @@ export function Sidebar({ onClose }: Props): JSX.Element {
         })
         .then(ok => { if (ok) void deleteNoteById(note.id) })
     })
-  }
-
-  // Arrow-key navigation within the flat search results list
-  function onListKeyDown(e: React.KeyboardEvent<HTMLUListElement>) {
-    const items = listRef.current?.querySelectorAll<HTMLElement>('[data-note-item]')
-    if (!items || items.length === 0) return
-    const current = document.activeElement as HTMLElement
-    const idx = Array.from(items).indexOf(current)
-    if (e.key === 'ArrowDown') { e.preventDefault(); items[Math.min(idx + 1, items.length - 1)]?.focus() }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); items[Math.max(idx - 1, 0)]?.focus() }
   }
 
   return (
@@ -211,49 +200,26 @@ export function Sidebar({ onClose }: Props): JSX.Element {
         </div>
 
         {/* ── Body: tree view or search results ── */}
-        <div className="flex-1 overflow-y-auto pb-4 pt-2">
+        <div className="min-h-0 flex-1 overflow-hidden">
           {!isNotesLoaded ? (
             <div className="flex items-center justify-center py-10 text-text3">
               <Icon name="loader-2" size={20} className="animate-spin" aria-label="Loading notes" />
             </div>
           ) : isSearching ? (
-            // Flat search results
-            <ul
-              ref={listRef}
-              role="listbox"
-              aria-label="Search results"
-              aria-live="polite"
-              onKeyDown={onListKeyDown}
-              className="px-1"
-            >
-              {sortedVisible.length === 0 ? (
-                <li className="py-8 text-center text-xs text-text3" role="option" aria-selected={false}>
-                  No notes match &ldquo;{query}&rdquo;
-                </li>
-              ) : (
-                sortedVisible.map(note => (
-                  <li key={note.id} role="option" aria-selected={activeNoteId === note.id} className="relative">
-                    <NoteListItem
-                      note={note}
-                      isActive={activeNoteId === note.id}
-                      isCopied={copiedId === note.id}
-                      tagMap={tagMap}
-                      onOpen={() => openNote(note.id)}
-                      onDelete={e => handleDelete(e, note)}
-                      onCopyLink={e => copyLink(e, note)}
-                    />
-                    {note.folder && (
-                      <span className="pointer-events-none absolute bottom-[5px] right-24 text-[10px] text-text3/50">
-                        {note.folder}
-                      </span>
-                    )}
-                  </li>
-                ))
-              )}
-            </ul>
+            // Virtualized flat search results — DOM stays constant regardless of vault size
+            <VirtualNoteList
+              notes={sortedVisible}
+              activeNoteId={activeNoteId}
+              copiedId={copiedId}
+              tagMap={tagMap}
+              query={query}
+              onOpen={openNote}
+              onDelete={handleDelete}
+              onCopyLink={copyLink}
+            />
           ) : (
             // Folder tree
-            <div className="px-1">
+            <div className="h-full overflow-y-auto pb-4 pt-2 px-1">
               <FolderTree
                 root={folderTree}
                 activeNoteId={activeNoteId}
