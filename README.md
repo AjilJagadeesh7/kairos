@@ -117,6 +117,7 @@ src/
 │   ├── atoms/          # Button, TagBadge, …
 │   ├── molecules/      # NoteListItem, TagSelector, …
 │   └── organisms/
+│       ├── Canvas/     # CanvasView, CanvasList, CanvasSidebar
 │       ├── Editor/     # MarkdownEditor, EditorDraft, HistoryPanel, …
 │       ├── Journal/    # JournalCalendar, JournalEditor
 │       ├── Kanban/     # BoardView, BoardList, task modals
@@ -124,10 +125,10 @@ src/
 │       ├── Settings/   # All settings sections
 │       └── Onboarding/ # OnboardingModal
 ├── hooks/              # useAppStartup, useSidebarNotes, usePwaUpdate, …
-├── pages/              # NotesPage, JournalPage, KanbanPage, GraphPage, …
-├── store/              # Zustand stores (useAppStore, useJournalStore, …)
+├── pages/              # NotesPage, JournalPage, KanbanPage, GraphPage, CanvasPage, …
+├── store/              # Zustand stores (useAppStore, useJournalStore, useCanvasStore, …)
 ├── sync/               # plainFolder, s3, webdav, syncOrchestrator
-├── search/             # Full-text note index (MiniSearch)
+├── search/             # universalSearch — full-text index (MiniSearch) covering all content types
 ├── types/              # Shared TypeScript types
 └── utils/              # wikilinks, timeAgo, stripMarkdown, …
 
@@ -136,12 +137,75 @@ src-tauri/              # Tauri v2 Rust shell
 
 ---
 
+## Adding a New Feature to the Command Palette
+
+The command palette (`src/components/organisms/CommandPalette.tsx`) is the single entry point for all searchable content and navigation. When adding a new feature (new content type, new section, new settings tab), follow these steps:
+
+### 1. Add a navigation item (for routes / sections)
+
+In the `NAV_ITEMS` array at the top of `CommandPalette.tsx`:
+
+```ts
+{ kind: 'nav', id: 'nav-myfeature', label: 'My Feature', hint: 'Open My Feature', iconName: 'icon-name', path: '/myfeature' },
+```
+
+This makes the route appear in the default (empty query) nav list and in filtered search results.
+
+### 2. Index content items in `src/search/universalSearch.ts`
+
+a. Add the new kind to `ResultKind`:
+
+```ts
+export type ResultKind = 'note' | 'journal' | 'task' | 'canvas' | 'myfeature'
+```
+
+b. Write a doc builder:
+
+```ts
+function myFeatureDoc(item: MyFeature): UnifiedDoc {
+  return { id: `myfeature:${item.id}`, kind: 'myfeature', title: item.title, meta: '...', body: '...', updatedAt: item.updatedAt }
+}
+```
+
+c. Add the new type parameter to `buildUniversalIndex` and index the items:
+
+```ts
+export function buildUniversalIndex(notes, journalEntries, boards, canvases, myFeatures) {
+  ...
+  for (const item of myFeatures) docs.push(myFeatureDoc(item))
+}
+```
+
+### 3. Wire up in `CommandPalette.tsx`
+
+- Import the store: `const myFeatures = useMyFeatureStore(s => s.items)`
+- Add to `ResultItem` union: `| { kind: 'myfeature'; item: MyFeature; score: number }`
+- Add to `itemKey()`: `if (item.kind === 'myfeature') return 'myfeature:' + item.item.id`
+- Add a `ResultRow` branch: render the row with the right icon and label
+- Add to `groupResults()`: add a section, e.g. `{ label: 'My Features', items: myFeatures }`
+- Add a lookup map: `const myFeatureMap = useMemo(() => new Map(myFeatures.map(i => [i.id, i])), [myFeatures])`
+- Handle hits in the search results loop: `else if (hit.kind === 'myfeature') { ... }`
+- Pass to `buildUniversalIndex(notes, journalEntries, boards, canvases, myFeatures)`
+- Handle navigation in `activate()`: `else if (item.kind === 'myfeature') navigate('/myfeature/' + item.item.id)`
+
+### Settings tabs
+
+To add a new settings tab to the palette, add a single line to `NAV_ITEMS`:
+
+```ts
+{ kind: 'nav', id: 'nav-s-myfeature', label: 'Settings → My Feature', hint: 'Description shown in results', iconName: 'settings', path: '/settings?section=myfeature' },
+```
+
+---
+
 ## Sync Setup
 
 ### S3 / S3-compatible
+
 Go to **Settings → Sync** and enter your bucket name, region, endpoint, access key, and secret key. Works with AWS S3, Backblaze B2, Cloudflare R2, MinIO, and any S3-compatible provider.
 
 ### WebDAV
+
 Enter your WebDAV server URL and credentials in **Settings → Sync**.
 
 ---

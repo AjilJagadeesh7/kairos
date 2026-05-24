@@ -4,10 +4,11 @@ import type { IconToken } from '../../icons/tokens'
 import { useAppStore } from '../../store/useAppStore'
 import { useJournalStore } from '../../store/useJournalStore'
 import { useKanbanStore } from '../../store/useKanbanStore'
+import { useCanvasStore } from '../../store/useCanvasStore'
 import {
   buildUniversalIndex, searchUniversal, searchByTitle,
 } from '../../search/universalSearch'
-import type { Note, JournalEntry } from '../../types'
+import type { Note, JournalEntry, Canvas } from '../../types'
 import type { KanbanTask, Board } from '../../types/kanban.types'
 import { todayDate } from '../../store/useJournalStore'
 import { Icon } from '../../icons/Icon'
@@ -28,6 +29,7 @@ const NAV_ITEMS: NavItem[] = [
   { kind: 'nav', id: 'nav-notes',       label: 'Notes',                   hint: 'Open Notes',                      iconName: 'file-text',    path: '/notes' },
   { kind: 'nav', id: 'nav-journal',     label: 'Journal',                 hint: "Open today's journal",             iconName: 'calendar-days',path: `/journal/${todayDate()}` },
   { kind: 'nav', id: 'nav-kanban',      label: 'Kanban',                  hint: 'Open Kanban boards',               iconName: 'layout-list',  path: '/kanban' },
+  { kind: 'nav', id: 'nav-canvas',       label: 'Canvas',                  hint: 'Open Canvases',                    iconName: 'pen-tool',         path: '/canvas' },
   { kind: 'nav', id: 'nav-graph',       label: 'Knowledge Graph',         hint: 'Open Knowledge Graph',             iconName: 'network',      path: '/graph' },
   { kind: 'nav', id: 'nav-settings',    label: 'Settings',                hint: 'Open Settings',                    iconName: 'settings',     path: '/settings' },
   { kind: 'nav', id: 'nav-new-note',    label: 'New note',                hint: 'Create a blank note',              iconName: 'plus',         path: undefined },
@@ -48,12 +50,14 @@ type ResultItem =
   | { kind: 'note';    note: Note;                        score: number }
   | { kind: 'journal'; entry: JournalEntry;               score: number }
   | { kind: 'task';    task: KanbanTask; board: Board;    score: number }
+  | { kind: 'canvas';  canvas: Canvas;                    score: number }
   | NavItem
 
 function itemKey(item: ResultItem): string {
   if (item.kind === 'note')    return `note:${item.note.id}`
   if (item.kind === 'journal') return `journal:${item.entry.date}`
   if (item.kind === 'task')    return `task:${item.task.id}`
+  if (item.kind === 'canvas')  return `canvas:${item.canvas.id}`
   return item.id
 }
 
@@ -163,6 +167,26 @@ function ResultRow({ item, isActive, onHover, onClick }: RowProps) {
     )
   }
 
+  if (item.kind === 'canvas') {
+    const { canvas } = item
+    return (
+      <li
+        role="option"
+        aria-selected={isActive}
+        onMouseEnter={onHover}
+        onClick={onClick}
+        className={`flex cursor-pointer items-center gap-3 px-4 py-2 transition-colors ${bg}`}
+      >
+        <Icon name="pen-tool" size={14} className={`shrink-0 ${isActive ? 'text-accent' : 'text-text3'}`} aria-hidden />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[13px] font-medium text-text">{canvas.title || 'Untitled canvas'}</p>
+          <p className="truncate text-[11px] text-text3">Canvas</p>
+        </div>
+        {isActive && <Icon name="corner-down-left" size={12} className="shrink-0 text-text3" aria-hidden />}
+      </li>
+    )
+  }
+
   // nav item
   return (
     <li
@@ -194,12 +218,14 @@ function groupResults(items: ResultItem[]): GroupedSection[] {
   const notes   = items.filter(i => i.kind === 'note')
   const journal = items.filter(i => i.kind === 'journal')
   const tasks   = items.filter(i => i.kind === 'task')
+  const canvases = items.filter(i => i.kind === 'canvas')
 
   const sections: GroupedSection[] = []
-  if (nav.length)     sections.push({ label: 'Navigate',      items: nav })
-  if (notes.length)   sections.push({ label: 'Notes',          items: notes })
-  if (journal.length) sections.push({ label: 'Journal',        items: journal })
-  if (tasks.length)   sections.push({ label: 'Kanban tasks',   items: tasks })
+  if (nav.length)      sections.push({ label: 'Navigate',    items: nav })
+  if (notes.length)    sections.push({ label: 'Notes',       items: notes })
+  if (journal.length)  sections.push({ label: 'Journal',     items: journal })
+  if (tasks.length)    sections.push({ label: 'Kanban tasks', items: tasks })
+  if (canvases.length) sections.push({ label: 'Canvases',    items: canvases })
   return sections
 }
 
@@ -218,6 +244,7 @@ export function CommandPalette({ onClose }: Props) {
   const journalEntriesMap = useJournalStore(s => s.entries)
   const journalEntries = useMemo(() => Object.values(journalEntriesMap), [journalEntriesMap])
   const boards    = useKanbanStore(s => s.boards)
+  const canvases  = useCanvasStore(s => s.canvases)
 
   const [query, setQuery]   = useState('')
   const [active, setActive] = useState(0)
@@ -226,7 +253,7 @@ export function CommandPalette({ onClose }: Props) {
 
   // Build index once when palette mounts (fast: ~1-3ms)
   useEffect(() => {
-    buildUniversalIndex(notes, journalEntries, boards)
+    buildUniversalIndex(notes, journalEntries, boards, canvases)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -251,6 +278,10 @@ export function CommandPalette({ onClose }: Props) {
     () => new Map(journalEntries.map(e => [e.date, e])),
     [journalEntries],
   )
+  const canvasMap = useMemo(
+    () => new Map(canvases.map(c => [c.id, c])),
+    [canvases],
+  )
 
   // ── Results computation ──────────────────────────────────────────────────────
   const results: ResultItem[] = useMemo(() => {
@@ -268,7 +299,7 @@ export function CommandPalette({ onClose }: Props) {
         ? [{ kind: 'journal' as const, entry: todayEntry, score: 1 }]
         : []
 
-      return [...NAV_ITEMS.slice(0, 5), ...recentNotes, ...todayJournal]
+      return [...NAV_ITEMS.slice(0, 6), ...recentNotes, ...todayJournal]
     }
 
     // ── With query: run universal search ──────────────────────────────────────
@@ -277,18 +308,18 @@ export function CommandPalette({ onClose }: Props) {
 
     for (const hit of hits) {
       if (hit.kind === 'note') {
-        const noteId = hit.id.slice(5) // strip "note:"
-        const note = noteMap.get(noteId)
+        const note = noteMap.get(hit.id.slice(5))
         if (note) searchItems.push({ kind: 'note', note, score: hit.score })
       } else if (hit.kind === 'journal') {
-        const date = hit.id.slice(8) // strip "journal:"
-        const entry = journalMap.get(date)
+        const entry = journalMap.get(hit.id.slice(8))
         if (entry) searchItems.push({ kind: 'journal', entry, score: hit.score })
       } else if (hit.kind === 'task') {
-        const taskId = hit.id.slice(5) // strip "task:"
-        const task = taskMap.get(taskId)
-        const board = taskBoardMap.get(taskId)
+        const task = taskMap.get(hit.id.slice(5))
+        const board = taskBoardMap.get(hit.id.slice(5))
         if (task && board) searchItems.push({ kind: 'task', task, board, score: hit.score })
+      } else if (hit.kind === 'canvas') {
+        const canvas = canvasMap.get(hit.id.slice(7))
+        if (canvas) searchItems.push({ kind: 'canvas', canvas, score: hit.score })
       }
     }
 
@@ -300,7 +331,7 @@ export function CommandPalette({ onClose }: Props) {
 
     // Nav items always come first, then content ranked by score
     return [...matchedNav, ...searchItems]
-  }, [query, notes, journalMap, noteMap, taskMap, taskBoardMap])
+  }, [query, notes, journalMap, noteMap, taskMap, taskBoardMap, canvasMap])
 
   // ── Flat list for keyboard navigation ────────────────────────────────────────
   const flatItems = results // same array, already flat
@@ -321,6 +352,8 @@ export function CommandPalette({ onClose }: Props) {
       navigate(`/journal/${item.entry.date}`)
     } else if (item.kind === 'task') {
       navigate(`/kanban/${item.board.id}`)
+    } else if (item.kind === 'canvas') {
+      navigate(`/canvas/${item.canvas.id}`)
     } else if (item.kind === 'nav') {
       if (item.id === 'nav-new-note') {
         void createNote().then(id => navigate(`/notes/${id}`))
