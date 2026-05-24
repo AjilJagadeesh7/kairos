@@ -15,36 +15,6 @@ export function serializeNote(note: Note): string {
   return lines.join('\n')
 }
 
-/** Parse only the YAML frontmatter — returns Note with content: '' for fast listing. */
-export function deserializeNoteMeta(raw: string): Note {
-  if (!raw.startsWith('---\n')) throw new Error('Missing frontmatter separator')
-  const rest = raw.slice(4)
-  const closeIdx = rest.indexOf('\n---\n')
-  if (closeIdx === -1) throw new Error('Unclosed frontmatter block')
-  const fm = rest.slice(0, closeIdx)
-  const get = (key: string) => fm.match(new RegExp(`^${key}: (.+)$`, 'm'))?.[1] ?? ''
-  const rawFolder = get('folder')
-  return {
-    id: get('id'),
-    title: JSON.parse(get('title') || '""') as string,
-    tags: JSON.parse(get('tags') || '[]') as string[],
-    createdAt: get('createdAt') || new Date().toISOString(),
-    updatedAt: get('updatedAt') || new Date().toISOString(),
-    content: '',
-    embedding: [],
-    folder: rawFolder ? (JSON.parse(rawFolder) as string) || undefined : undefined,
-  }
-}
-
-/** Extract just the body (content) from a serialized note. */
-export function extractNoteContent(raw: string): string {
-  if (!raw.startsWith('---\n')) return raw
-  const rest = raw.slice(4)
-  const closeIdx = rest.indexOf('\n---\n')
-  if (closeIdx === -1) return raw
-  return rest.slice(closeIdx + 5).replace(/^\n/, '')
-}
-
 /** Parse a serialized markdown string back into a Note. */
 export function deserializeNote(raw: string): Note {
   if (!raw.startsWith('---\n')) throw new Error('Missing frontmatter separator')

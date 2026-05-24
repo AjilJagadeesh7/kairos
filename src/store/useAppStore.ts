@@ -70,7 +70,6 @@ type AppState = {
   unpinNote: (id: string) => void
 
   loadNotes: () => Promise<void>
-  loadNoteContent: (noteId: string) => Promise<string>
   loadFolders: () => Promise<void>
   createNote: (initial?: { title?: string; content?: string; folder?: string }) => Promise<string>
   updateActiveNote: (patch: Pick<Note, 'title' | 'content' | 'embedding'> & { contentHash: string }) => Promise<void>
@@ -204,18 +203,6 @@ export const useAppStore = create<AppState>()(
         })
       },
 
-      loadNoteContent: async (noteId: string): Promise<string> => {
-        const existing = get().notes.find(n => n.id === noteId)
-        if (existing?.content) return existing.content
-        const { readNoteContent, isPlainFolderConnected } = await import('../sync/plainFolder')
-        if (!isPlainFolderConnected()) return ''
-        const content = await readNoteContent(noteId)
-        if (content !== null) {
-          set(s => ({ notes: s.notes.map(n => n.id === noteId ? { ...n, content } : n) }))
-        }
-        return content ?? ''
-      },
-
       loadFolders: async () => {
         const { readFolderList, isPlainFolderConnected } = await import('../sync/plainFolder')
         if (!isPlainFolderConnected()) return
@@ -325,9 +312,6 @@ export const useAppStore = create<AppState>()(
             .catch(err => console.warn('[history] append failed:', err))
         }
 
-        // Keep SQLite metadata cache in sync (fire-and-forget)
-        void import('../db/vaultCache').then(({ upsertCachedMeta }) => upsertCachedMeta(updated))
-
         // Store embedding in Dexie (for semantic search)
         if (embedding && embedding.length > 0) {
           await upsertEmbedding(activeNoteId, embedding, contentHash)
@@ -388,9 +372,6 @@ export const useAppStore = create<AppState>()(
             await deletePlainNote(id).catch(() => { /* best-effort */ })
             deleteNoteHistory(id).catch(() => { /* best-effort */ })
           }
-
-          // Remove from SQLite cache
-          void import('../db/vaultCache').then(({ deleteCachedMeta }) => deleteCachedMeta(id))
 
           // Remove from sync providers
           const { deleteNoteFromAll, anySyncProviderConnected } = await import('../sync/syncOrchestrator')
