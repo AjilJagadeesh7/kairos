@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo } from 'react'
 import { parseWikilinks } from '../utils/wikilinks'
-import { computeSimilarityPairs } from '../utils/similarityWorkerClient'
+import { cosineSimilarity } from '../utils/similarity'
 import { colorForIndex } from '../utils/colorForIndex'
 import { TAG_COLOR_PALETTE } from '../utils/kanban'
 import { useKanbanStore } from '../store/useKanbanStore'
@@ -14,8 +14,6 @@ function hashTagColor(tag: string): string {
 }
 
 // Module-level wikilink parse cache keyed by note content.
-// Avoids re-running regex for every note on every re-render of useGraphData.
-// Key: note id → { cacheKey: content string, links: string[] }
 const wikilinkCache = new Map<string, { cacheKey: string; links: string[] }>()
 
 function getCachedWikilinks(noteId: string, content: string): string[] {
@@ -35,24 +33,6 @@ export function useGraphData(
 ) {
   const boards   = useKanbanStore(s => s.boards)
   const canvases = useCanvasStore(s => s.canvases)
-
-  // Async semantic links — computed in Web Worker off main thread
-  const [semanticLinks, setSemanticLinks] = useState<GLink[]>([])
-  const embeddingMapRef = useRef(embeddingMap)
-  embeddingMapRef.current = embeddingMap
-
-  useEffect(() => {
-    let cancelled = false
-    void computeSimilarityPairs(embeddingMap).then(pairs => {
-      if (cancelled) return
-      setSemanticLinks(
-        pairs.map(p => ({ source: p.source, target: p.target, kind: 'semantic' as const })),
-      )
-    }).catch(() => { /* cancelled or worker error — keep previous links */ })
-    return () => { cancelled = true }
-  // embeddingMap identity changes when notes are saved; rerenderKey covers manual refresh
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [embeddingMap, rerenderKey])
 
   const tagColorMap = useMemo(() => {
     const map = new Map<string, string>()
@@ -85,9 +65,26 @@ export function useGraphData(
         linksInc(note.id); linksInc(tid)
       }
     }
+
+    // Semantic links — cosine similarity computed synchronously so graphData is
+    // produced in a single pass with no async state updates that would trigger a
+    // second ForceGraph2D initialisation.
+    for (let i = 0; i < notes.length; i++) {
+      for (let j = i + 1; j < notes.length; j++) {
+        const a = notes[i]; const b = notes[j]
+        const embA = embeddingMap.get(a.id)
+        const embB = embeddingMap.get(b.id)
+        if (!embA?.length || !embB?.length) continue
+        if (cosineSimilarity(embA, embB) > 0.75) {
+          linksLinks.push({ source: a.id, target: b.id, kind: 'semantic' })
+          linksInc(a.id); linksInc(b.id)
+        }
+      }
+    }
+
     // Canvas edges: connect note nodes whose canvas edge endpoints are both note-type nodes
     for (const canvas of canvases) {
-      const noteNodeMap = new Map<string, string>() // canvasNodeId → noteId
+      const noteNodeMap = new Map<string, string>()
       for (const node of canvas.nodes) {
         if (node.type === 'note' && 'noteId' in node.data) {
           noteNodeMap.set(node.id, (node.data as { noteId: string }).noteId)
@@ -145,7 +142,7 @@ export function useGraphData(
 
     return { linksNodes, linksLinks, tagsNodes, tagsLinks }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notes, rerenderKey, canvases])
+  }, [notes, embeddingMap, rerenderKey, canvases])
 
   // Canvas nodes and canvas→note edges
   const { canvasNodes, canvasLinks } = useMemo(() => {
@@ -223,14 +220,9 @@ export function useGraphData(
     [notes, selectedNoteId],
   )
 
-  const allLinksLinks = useMemo(
-    () => [...linksLinks, ...semanticLinks],
-    [linksLinks, semanticLinks],
-  )
-
   return {
     tagColorMap,
-    linksNodes, linksLinks: allLinksLinks,
+    linksNodes, linksLinks,
     tagsNodes, tagsLinks,
     taskNodes, taskLinks,
     canvasNodes, canvasLinks,

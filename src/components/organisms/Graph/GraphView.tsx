@@ -25,10 +25,6 @@ function savePositions(nodes: GNode[], mode: string) {
 
 function seedPositions(nodes: GNode[], mode: string) {
   for (const n of nodes) {
-    // Only seed nodes that d3 hasn't positioned yet (new node objects from a notes update).
-    // If x is already set, this is the same live object the simulation is running on —
-    // overwriting it would clobber an in-progress drag or a just-pinned position.
-    if (n.x != null) continue
     const p = posCache.get(`${mode}:${n.id}`)
     if (p) {
       n.x = p.x; n.y = p.y
@@ -317,46 +313,23 @@ export function GraphView({
     ctx.globalAlpha = 1
   }, [selectedNoteId, isFocused, neighborIds, focusedNodeId, textColor, degreeMap, isLargeGraph])
 
-  // Whether all nodes already have cached positions from a previous visit.
-  // Stored in a ref so the graphData useMemo can set it and the JSX can read it
-  // without an extra state re-render.
-  const allPrePositionedRef = useRef(false)
-
   // Seed cached positions so nodes don't scatter on remount (tab switch).
-  // Also detect whether every node already has a cached position — if so we
-  // can skip running the force simulation entirely on this visit.
   const graphData = useMemo(() => {
-    allPrePositionedRef.current =
-      nodes.length > 0 && nodes.every(n => posCache.has(`${graphMode}:${n.id}`))
     seedPositions(nodes, graphMode)
     return { nodes, links }
   }, [nodes, links, graphMode])
-
-  // Debounce graphData changes by 150 ms so that the initial wikilink graph and
-  // the semantic-link update (which arrives ~50–100 ms later via the cached
-  // similarity worker) are coalesced into a single ForceGraph2D initialisation.
-  // Without this, the simulation restarts twice on every visit.
-  const [committedData, setCommittedData] = useState<typeof graphData | null>(null)
-  const debounceRef    = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const latestDataRef  = useRef(graphData)
-  latestDataRef.current = graphData
-
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      debounceRef.current = null
-      setCommittedData(latestDataRef.current)
-    }, 150)
-  }, [graphData])
-
-  useEffect(() => {
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
-  }, [])
 
   // Save positions on unmount (tab switch away) and periodically via onEngineStop
   useEffect(() => {
     return () => { savePositions(nodes, graphMode) }
   }, [nodes, graphMode])
+
+  // Guarantee the RAF loop is stopped on unmount regardless of react-kapsule
+  // destructor timing. Prevents a stale loop from the previous visit competing
+  // with the new one on the next visit (WebKitGTK CPU canvas).
+  useEffect(() => {
+    return () => { fgRef.current?.pauseAnimation() }
+  }, [])
 
   const handleEngineStop = useCallback(() => {
     savePositions(nodes, graphMode)
@@ -428,11 +401,11 @@ export function GraphView({
             />
           </Suspense>
         )}
-        {dims && committedData && committedData.nodes.length > 0 && !use3D && (
+        {dims && nodes.length > 0 && !use3D && (
           <ForceGraph2D
             key={`${rerenderKey}-${graphMode}`}
             ref={fgRef}
-            graphData={committedData}
+            graphData={graphData}
             backgroundColor={bgColor}
             width={dims.w}
             height={dims.h}
@@ -474,8 +447,8 @@ export function GraphView({
             linkDirectionalArrowRelPos={1}
             d3AlphaDecay={isLargeGraph ? 0.06 : 0.035}
             d3VelocityDecay={isLargeGraph ? 0.7 : 0.6}
-            cooldownTicks={allPrePositionedRef.current ? 0 : (isLargeGraph ? 80 : 200)}
-            warmupTicks={0}
+            cooldownTicks={isLargeGraph ? 80 : 200}
+            warmupTicks={nodes.some(n => posCache.has(`${graphMode}:${n.id}`)) ? 0 : 60}
             enableNodeDrag
             onNodeHover={handleNodeHover}
             onNodeDragEnd={handleNodeDragEnd}
@@ -483,14 +456,7 @@ export function GraphView({
           />
         )}
 
-        {/* Settling spinner: shown for the ~150ms debounce window before ForceGraph2D mounts */}
-        {dims && nodes.length > 0 && !committedData && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <Icon name="loader-2" size={22} className="animate-spin" style={{ color: 'rgba(255,255,255,0.2)' }} />
-          </div>
-        )}
-
-        {committedData && committedData.nodes.length > 0 && !selectedNoteId && (
+        {nodes.length > 0 && !selectedNoteId && (
           <div className="pointer-events-none absolute bottom-5 left-1/2 z-10 -translate-x-1/2 rounded-full px-3 py-1 text-[11px]"
             style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.25)', border: '1px solid rgba(255,255,255,0.06)' }}>
             Click · Double-click to open · Right-click for options
