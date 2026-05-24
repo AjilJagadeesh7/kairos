@@ -13,6 +13,7 @@ interface CanvasState {
   deleteCanvas: (canvasId: string) => void
   updateNodes: (canvasId: string, nodes: CanvasNode[]) => void
   updateEdges: (canvasId: string, edges: CanvasEdge[]) => void
+  updateNodesAndEdges: (canvasId: string, nodes: CanvasNode[], edges: CanvasEdge[]) => void
   updateNodeData: (canvasId: string, nodeId: string, data: Partial<CanvasNode['data']>) => void
 }
 
@@ -73,6 +74,15 @@ export const useCanvasStore = create<CanvasState>()(
         const now = new Date().toISOString()
         set(s => ({
           canvases: s.canvases.map(c => c.id === canvasId ? { ...c, edges, updatedAt: now } : c),
+        }))
+        const canvas = get().canvases.find(c => c.id === canvasId)
+        if (canvas) void fsUpsert(canvas)
+      },
+
+      updateNodesAndEdges: (canvasId, nodes, edges) => {
+        const now = new Date().toISOString()
+        set(s => ({
+          canvases: s.canvases.map(c => c.id === canvasId ? { ...c, nodes, edges, updatedAt: now } : c),
         }))
         const canvas = get().canvases.find(c => c.id === canvasId)
         if (canvas) void fsUpsert(canvas)

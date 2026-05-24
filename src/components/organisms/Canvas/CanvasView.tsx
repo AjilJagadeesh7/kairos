@@ -153,21 +153,18 @@ function ToolBtn({ label, icon, onClick, active }: {
 // ─── Inner canvas (needs to be child of ReactFlowProvider) ────────────────────
 
 function CanvasInner({ canvas }: { canvas: Canvas }) {
-  const navigate    = useNavigate()
-  const updateNodes = useCanvasStore(s => s.updateNodes)
-  const updateEdges = useCanvasStore(s => s.updateEdges)
-  const colorMode   = useColorMode()
+  const navigate            = useNavigate()
+  const updateNodesAndEdges = useCanvasStore(s => s.updateNodesAndEdges)
+  const colorMode           = useColorMode()
 
   const [showMinimap,    setShowMinimap]    = useState(false)
   const [showNotePicker, setShowNotePicker] = useState(false)
 
   // Stable refs for callbacks so nodes always get the latest version
-  const navigateRef    = useRef(navigate)
-  const updateNodesRef = useRef(updateNodes)
-  const updateEdgesRef = useRef(updateEdges)
-  useEffect(() => { navigateRef.current    = navigate    }, [navigate])
-  useEffect(() => { updateNodesRef.current = updateNodes }, [updateNodes])
-  useEffect(() => { updateEdgesRef.current = updateEdges }, [updateEdges])
+  const navigateRef            = useRef(navigate)
+  const updateNodesAndEdgesRef = useRef(updateNodesAndEdges)
+  useEffect(() => { navigateRef.current            = navigate            }, [navigate])
+  useEffect(() => { updateNodesAndEdgesRef.current = updateNodesAndEdges }, [updateNodesAndEdges])
 
   // Local nodes/edges — the source of truth for React Flow
   const [nodes, setNodes] = useState<Node[]>(() => toFlowNodes(canvas.nodes))
@@ -190,14 +187,34 @@ function CanvasInner({ canvas }: { canvas: Canvas }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canvas.id])
 
-  // Debounced save
+  // Debounced save — single atomic update so useGraphData only reruns once
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const scheduleSave = useCallback(() => {
     if (saveTimer.current) clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => {
-      updateNodesRef.current(canvasIdRef.current, nodesRef.current.map(toCanvasNode))
-      updateEdgesRef.current(canvasIdRef.current, edgesRef.current as unknown as CanvasEdge[])
+      saveTimer.current = null
+      updateNodesAndEdgesRef.current(
+        canvasIdRef.current,
+        nodesRef.current.map(toCanvasNode),
+        edgesRef.current as unknown as CanvasEdge[],
+      )
     }, 600)
+  }, [])
+
+  // On unmount: cancel pending timer and flush immediately so edits are never
+  // lost and no delayed store update fires while another page is initialising.
+  useEffect(() => {
+    return () => {
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current)
+        saveTimer.current = null
+        updateNodesAndEdgesRef.current(
+          canvasIdRef.current,
+          nodesRef.current.map(toCanvasNode),
+          edgesRef.current as unknown as CanvasEdge[],
+        )
+      }
+    }
   }, [])
 
   // Stable callbacks injected into node.data

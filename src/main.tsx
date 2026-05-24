@@ -14,8 +14,9 @@ window.onerror = (_msg, _source, _line, _col, error) => {
 
 window.onunhandledrejection = (event: PromiseRejectionEvent) => {
   const reason = event.reason
+  const msg = typeof reason === 'string' ? reason : (reason instanceof Error ? reason.message : '')
   // Skip Vite HMR module-reload failures — dev-only noise, not real app errors
-  if (typeof reason === 'string' && reason.includes('Importing a module script failed')) return
+  if (msg.includes('Importing a module script failed')) return
   logger.captureError(reason ?? new Error('Unhandled promise rejection'), 'unhandledrejection')
 }
 

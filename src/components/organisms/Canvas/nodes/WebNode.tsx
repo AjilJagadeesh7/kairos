@@ -61,6 +61,7 @@ export function WebNode({ id, data, selected }: NodeProps & { data: WebNodeData 
   const [editing,  setEditing]  = useState(!data.url)
   const [loading,  setLoading]  = useState(!!data.url)
   const [blocked,  setBlocked]  = useState(false)
+  const iframeRef  = useRef<HTMLIFrameElement>(null)
   const checkTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const blockTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -79,7 +80,16 @@ export function WebNode({ id, data, selected }: NodeProps & { data: WebNodeData 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.url])
 
-  useEffect(() => () => clearTimers(), [])
+  // On unmount: cancel timers and blank the iframe to cancel the mvproxy
+  // request immediately — without this, Wikipedia keeps streaming through
+  // the Rust proxy after navigation, blocking the main thread and causing
+  // the app to freeze when loading graph or other pages.
+  useEffect(() => {
+    return () => {
+      clearTimers()
+      if (iframeRef.current) iframeRef.current.src = 'about:blank'
+    }
+  }, [])
 
   const commit = useCallback(() => {
     const url = normalizeUrl(draft)
@@ -194,6 +204,7 @@ export function WebNode({ id, data, selected }: NodeProps & { data: WebNodeData 
         {liveUrl && !editing ? (
           <>
             <iframe
+              ref={iframeRef}
               key={iframeSrc}
               src={iframeSrc}
               title={liveUrl}

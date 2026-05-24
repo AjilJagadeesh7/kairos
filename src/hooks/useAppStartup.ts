@@ -123,15 +123,25 @@ export function useAppStartup() {
       } else if (folderStatus === 'none') {
         // no toast — VaultBanner handles this inline
       } else {
+        // Notes must be awaited first — other stores may reference note IDs
         await store.loadNotes()
         await store.loadFolders()
-        const { useKanbanStore } = await import('../store/useKanbanStore')
-        const kanbanStore = useKanbanStore.getState()
-        if (!kanbanStore.isLoaded) await kanbanStore.loadBoards()
 
-        const { useJournalStore } = await import('../store/useJournalStore')
-        const journalStore = useJournalStore.getState()
-        if (!journalStore.isLoaded) await journalStore.loadEntries()
+        // Kanban, journal, and canvas are independent — load in parallel
+        const [
+          { useKanbanStore },
+          { useJournalStore },
+          { useCanvasStore },
+        ] = await Promise.all([
+          import('../store/useKanbanStore'),
+          import('../store/useJournalStore'),
+          import('../store/useCanvasStore'),
+        ])
+        await Promise.all([
+          useKanbanStore.getState().isLoaded  ? Promise.resolve() : useKanbanStore.getState().loadBoards(),
+          useJournalStore.getState().isLoaded ? Promise.resolve() : useJournalStore.getState().loadEntries(),
+          useCanvasStore.getState().isLoaded  ? Promise.resolve() : useCanvasStore.getState().loadCanvases(),
+        ])
 
         // Discover plugins dropped directly into the vault folder, then load
         const { scanLocalPlugins, loadAllPlugins } = await import('../plugins/pluginManager')
