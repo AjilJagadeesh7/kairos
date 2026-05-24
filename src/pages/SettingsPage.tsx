@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom'
-import { useState } from 'react'
-import { useAppStore } from '../store/useAppStore'
+import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { usePaneStore } from '../store/usePaneStore'
 import { usePaneId, useSidebarSlot } from '../contexts/PaneContext'
 import { SidebarWrapper } from '../components/organisms/Sidebar/SidebarWrapper'
@@ -9,7 +9,16 @@ import { SettingsSidebar } from '../components/organisms/Settings/SettingsSideba
 import type { Section } from '../types'
 
 export function SettingsPage() {
-  const [section, setSection]    = useState<Section>('storage-sync')
+  const { search }               = useLocation()
+  const [section, setSection]    = useState<Section>(() => {
+    const s = new URLSearchParams(search).get('section') as Section | null
+    return s ?? 'storage-sync'
+  })
+
+  useEffect(() => {
+    const s = new URLSearchParams(search).get('section') as Section | null
+    if (s) setSection(s)
+  }, [search])
   const paneId                   = usePaneId()
   const focusedPaneId            = usePaneStore(s => s.focusedPaneId)
   const isMultiPane              = usePaneStore(s => s.panes.length > 1)

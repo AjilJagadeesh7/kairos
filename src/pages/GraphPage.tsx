@@ -201,6 +201,10 @@ export function GraphPage() {
           focusMode={focusMode}
           onSelectNode={handleSelectNode}
           onOpenNote={id => navigate(`/notes/${id}`)}
+          onOpenNoteInNewPane={id => {
+            const { focusedPaneId, addPane } = usePaneStore.getState()
+            addPane(focusedPaneId, `/notes/${id}`)
+          }}
           onOpenCanvas={id => navigate(`/canvas/${id}`)}
           onRightClickNode={setContextMenu}
           onToggleFocus={handleToggleFocus}

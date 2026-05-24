@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useAppStore } from '../store/useAppStore'
+import { usePaneStore } from '../store/usePaneStore'
 import { initPlainFolder, isPlainFolderConnected } from '../sync/plainFolder'
 import { initLogger } from '../logger/logger'
 import type { FontOption, FontWeight } from '../types/ui.types'
@@ -43,8 +43,12 @@ const FONT_FAMILIES: Record<FontOption, string> = {
 
 const FONT_WEIGHT_MAP: Record<FontWeight, string> = { light: '300', regular: '400', medium: '500' }
 
+function goToSettings(section = 'vault') {
+  const { focusedPaneId, navigatePane } = usePaneStore.getState()
+  navigatePane(focusedPaneId, `/settings?section=${section}`)
+}
+
 export function useAppStartup() {
-  const navigate   = useNavigate()
   const theme      = useAppStore(s => s.theme)
   const font       = useAppStore(s => s.font)
   const fontWeight = useAppStore(s => s.fontWeight)
@@ -118,7 +122,7 @@ export function useAppStartup() {
         toast.error('Vault folder not found', {
           description: 'The folder this app was using has been moved or deleted. Please select a new one.',
           duration: Infinity,
-          action: { label: 'Select folder', onClick: () => navigate('/settings') },
+          action: { label: 'Select folder', onClick: () => goToSettings('vault') },
         })
       } else if (folderStatus === 'none') {
         // no toast — VaultBanner handles this inline
@@ -227,12 +231,12 @@ export function useAppStartup() {
 
       if (isS3Connected()) {
         pingS3().then(err => {
-          if (err) toast.warning('S3 sync unavailable', { description: err, action: { label: 'Settings', onClick: () => navigate('/settings') } })
+          if (err) toast.warning('S3 sync unavailable', { description: err, action: { label: 'Settings', onClick: () => goToSettings('storage-sync') } })
         })
       }
       if (isWebDAVConnected()) {
         pingWebDAV().then(err => {
-          if (err) toast.warning('WebDAV sync unavailable', { description: err, action: { label: 'Settings', onClick: () => navigate('/settings') } })
+          if (err) toast.warning('WebDAV sync unavailable', { description: err, action: { label: 'Settings', onClick: () => goToSettings('storage-sync') } })
         })
       }
 

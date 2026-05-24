@@ -1,11 +1,9 @@
-import { useNavigate } from 'react-router-dom'
-
 import { useAppStore } from '../../store/useAppStore'
+import { usePaneStore } from '../../store/usePaneStore'
 import { Icon } from '../../icons/Icon'
 
 export function VaultBanner() {
   const vaultStatus = useAppStore(s => s.vaultStatus)
-  const navigate = useNavigate()
 
   if (vaultStatus === 'ok' || vaultStatus === 'loading') return null
 
@@ -27,7 +25,10 @@ export function VaultBanner() {
           : 'No vault folder connected. Pick a local folder to start saving notes.'}
       </span>
       <button
-        onClick={() => navigate('/settings')}
+        onClick={() => {
+          const { focusedPaneId, navigatePane } = usePaneStore.getState()
+          navigatePane(focusedPaneId, '/settings?section=vault')
+        }}
         className={`shrink-0 rounded-md px-3 py-1 text-xs font-semibold transition ${
           isMissing
             ? 'bg-red-500/10 hover:bg-red-500/20'

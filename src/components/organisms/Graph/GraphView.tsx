@@ -44,6 +44,7 @@ interface GraphViewProps {
   neighborIds: Set<string>
   onSelectNode: (nodeId: string | null) => void
   onOpenNote: (noteId: string) => void
+  onOpenNoteInNewPane?: (noteId: string) => void
   onOpenCanvas: (canvasId: string) => void
   onRightClickNode: (target: RightClickTarget) => void
   rerenderKey: number
@@ -82,7 +83,7 @@ type FGRef = any
 export function GraphView({
   nodes, links, graphMode, tagColorMap,
   selectedNoteId, focusedNodeId, neighborIds,
-  onSelectNode, onOpenNote, onOpenCanvas, onRightClickNode,
+  onSelectNode, onOpenNote, onOpenNoteInNewPane, onOpenCanvas, onRightClickNode,
   rerenderKey, onRelayout, onToggleFocus, focusMode,
 }: GraphViewProps): JSX.Element {
   const fgRef         = useRef<FGRef>(null)
@@ -150,7 +151,11 @@ export function GraphView({
     return closest
   }, [nodes])
 
-  const handleNodeClick = useCallback((node: GNode) => {
+  const handleNodeClick = useCallback((node: GNode, modifierKey: boolean) => {
+    if (modifierKey && node.nodeType === 'note' && onOpenNoteInNewPane) {
+      onOpenNoteInNewPane(node.id)
+      return
+    }
     const now = Date.now()
     if (lastClickRef.current?.id === node.id && now - lastClickRef.current.t < 400) {
       if (node.nodeType === 'note') onOpenNote(node.id)
@@ -159,7 +164,7 @@ export function GraphView({
     }
     lastClickRef.current = { id: node.id, t: now }
     onSelectNode(selectedIdRef.current === node.id ? null : node.id)
-  }, [onSelectNode, onOpenNote, onOpenCanvas])
+  }, [onSelectNode, onOpenNote, onOpenNoteInNewPane, onOpenCanvas])
 
   useEffect(() => {
     if (!dims || nodes.length === 0) return
@@ -175,7 +180,7 @@ export function GraphView({
         if (e.button !== 0) return
         if (Math.hypot(e.offsetX - startX, e.offsetY - startY) > 4) return
         const closest = findNodeAt(e.offsetX, e.offsetY)
-        if (closest) { handleNodeClick(closest as GNode); e.stopPropagation() }
+        if (closest) { handleNodeClick(closest as GNode, e.ctrlKey || e.metaKey); e.stopPropagation() }
         else onSelectNode(null)
       }
       const contextHandler = (e: MouseEvent) => {
@@ -303,16 +308,28 @@ export function GraphView({
     ctx.globalAlpha = 1
   }, [selectedNoteId, isFocused, neighborIds, focusedNodeId, textColor, degreeMap, isLargeGraph])
 
-  // Seed cached positions so nodes don't scatter on remount (tab switch).
+  // Always points to the node array kapsule is currently mutating (x/y tracking).
+  // Updated only when graphData is rebuilt — NOT on every prop-nodes change.
+  const activeNodesRef = useRef<GNode[]>(nodes)
+
+  // Only rebuild graphData (which restarts the simulation) when the node/link
+  // *structure* changes or an explicit relayout is requested. Content-only note
+  // updates (vault watcher, sync edits) change the `nodes` reference but not the
+  // count, so they get the same graphData object and kapsule never sees a new prop
+  // → no alpha(1).restart() → no scatter.
   const graphData = useMemo(() => {
     seedPositions(nodes, graphMode)
+    activeNodesRef.current = nodes
     return { nodes, links }
-  }, [nodes, links, graphMode])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rerenderKey, nodes.length, links.length, graphMode])
 
-  // Save positions on unmount (tab switch away) and periodically via onEngineStop
+  // Save positions from the nodes kapsule is actually working with (activeNodesRef),
+  // not the latest prop-nodes which may be fresh objects without x/y set.
+  // Re-runs only on graphMode change (to flush old-mode positions) and on unmount.
   useEffect(() => {
-    return () => { savePositions(nodes, graphMode) }
-  }, [nodes, graphMode])
+    return () => { savePositions(activeNodesRef.current, graphMode) }
+  }, [graphMode])
 
   // Guarantee the RAF loop is stopped on unmount regardless of react-kapsule
   // destructor timing. Prevents a stale loop from the previous visit competing
@@ -322,8 +339,8 @@ export function GraphView({
   }, [])
 
   const handleEngineStop = useCallback(() => {
-    savePositions(nodes, graphMode)
-  }, [nodes, graphMode])
+    savePositions(activeNodesRef.current, graphMode)
+  }, [graphMode])
 
   return (
     <div className="flex h-full flex-col" style={{ background: bgColor }}>

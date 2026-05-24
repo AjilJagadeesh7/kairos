@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { toast } from 'sonner'
 
 import { useKanbanStore } from '../../../../store/useKanbanStore'
 import type { KanbanTask } from '../../../../types/kanban.types'
@@ -24,8 +25,14 @@ export function TaskAttachments({ boardId, task }: TaskAttachmentsProps): JSX.El
   const handleFileSelect = async (files: FileList | null) => {
     if (!files) return
     for (const file of Array.from(files)) {
-      if (!ALLOWED_TYPES.includes(file.type)) continue
-      if (file.size > MAX_FILE_SIZE) continue
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        toast.error(`"${file.name}" is not supported`, { description: 'Only JPEG, PNG, GIF, and WebP images are allowed.' })
+        continue
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(`"${file.name}" is too large`, { description: 'Attachments must be under 2 MB.' })
+        continue
+      }
       try {
         const data = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader()
