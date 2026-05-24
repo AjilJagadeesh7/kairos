@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useKanbanStore } from '../../../../store/useKanbanStore'
 import { BoardHeader } from './BoardHeader'
 import { BoardColumns } from './BoardColumns'
@@ -18,6 +18,25 @@ export function BoardView({ board }: BoardViewProps): JSX.Element {
   const undo            = useKanbanStore(s => s.undo)
   const redo            = useKanbanStore(s => s.redo)
   const [showSettings, setShowSettings] = useState(false)
+  const [drawerWidth, setDrawerWidth]   = useState(520)
+  const resizeState = useRef<{ startX: number; startW: number } | null>(null)
+
+  function startResize(e: React.MouseEvent) {
+    e.preventDefault()
+    resizeState.current = { startX: e.clientX, startW: drawerWidth }
+    const onMove = (ev: MouseEvent) => {
+      if (!resizeState.current) return
+      const delta = resizeState.current.startX - ev.clientX
+      setDrawerWidth(Math.min(900, Math.max(380, resizeState.current.startW + delta)))
+    }
+    const onUp = () => {
+      resizeState.current = null
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }
 
   const keyBindings  = useAppStore(s => s.keyBindings)
   const createTask   = useKanbanStore(s => s.createTask)
@@ -70,7 +89,15 @@ export function BoardView({ board }: BoardViewProps): JSX.Element {
             onClick={() => setActiveTaskId(null)}
           />
           {/* Drawer */}
-          <aside className="fixed inset-y-0 right-0 z-50 flex w-full md:w-[600px] flex-col border-l border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-2xl">
+          <aside
+            className="fixed inset-y-0 right-0 z-50 flex flex-col border-l border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-2xl"
+            style={{ width: `min(${drawerWidth}px, 100vw)` }}
+          >
+            {/* Resize handle */}
+            <div
+              onMouseDown={startResize}
+              className="absolute inset-y-0 left-0 z-10 w-1 cursor-col-resize opacity-0 transition-opacity hover:opacity-100 hover:bg-[rgb(var(--accent))]/40 active:opacity-100 active:bg-[rgb(var(--accent))]/60"
+            />
             <TaskDetailPanel
               task={activeTask}
               board={board}

@@ -104,15 +104,21 @@ export function TaskDetailPanel({ task, board, onClose }: Props): JSX.Element {
         </section>
 
         <section className="mb-5">
-          <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[rgb(var(--text-3))]">
+          <h3 className="mb-2.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[rgb(var(--text-3))]">
             <Icon name="file-text" size={12} /> Linked Notes
+            {(task.linkedNotes.length > 0) && (
+              <span className="ml-1 font-normal normal-case text-[rgb(var(--text-3))]">({task.linkedNotes.length})</span>
+            )}
           </h3>
           <LinkedNotes boardId={board.id} task={task} />
         </section>
 
         <section className="mb-5">
-          <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[rgb(var(--text-3))]">
+          <h3 className="mb-2.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[rgb(var(--text-3))]">
             <Icon name="link-2" size={12} /> Linked Tasks
+            {(task.linkedTasks.length > 0) && (
+              <span className="ml-1 font-normal normal-case text-[rgb(var(--text-3))]">({task.linkedTasks.length})</span>
+            )}
           </h3>
           <LinkedTasks boardId={board.id} board={board} task={task} />
         </section>

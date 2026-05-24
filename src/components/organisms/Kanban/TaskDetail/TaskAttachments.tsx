@@ -10,30 +10,22 @@ interface TaskAttachmentsProps {
   task: KanbanTask
 }
 
-const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2MB
+const MAX_FILE_SIZE = 2 * 1024 * 1024
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 
 export function TaskAttachments({ boardId, task }: TaskAttachmentsProps): JSX.Element {
   const [isDragover, setIsDragover] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const addAttachment = useKanbanStore(s => s.addAttachment)
+  const addAttachment    = useKanbanStore(s => s.addAttachment)
   const deleteAttachment = useKanbanStore(s => s.deleteAttachment)
+  const attachments      = task.attachments ?? []
 
   const handleFileSelect = async (files: FileList | null) => {
     if (!files) return
-
     for (const file of Array.from(files)) {
-      if (!ALLOWED_TYPES.includes(file.type)) {
-        alert(`File type not supported. Please use: JPG, PNG, GIF, or WebP`)
-        continue
-      }
-
-      if (file.size > MAX_FILE_SIZE) {
-        alert(`File size exceeds 2MB limit. Please choose a smaller image.`)
-        continue
-      }
-
+      if (!ALLOWED_TYPES.includes(file.type)) continue
+      if (file.size > MAX_FILE_SIZE) continue
       try {
         const data = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader()
@@ -41,103 +33,80 @@ export function TaskAttachments({ boardId, task }: TaskAttachmentsProps): JSX.El
           reader.onerror = reject
           reader.readAsDataURL(file)
         })
-
         addAttachment(boardId, task.id, {
-          id: uuidv4(),
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          data,
-          createdAt: new Date().toISOString(),
+          id: uuidv4(), name: file.name, type: file.type,
+          size: file.size, data, createdAt: new Date().toISOString(),
         })
-      } catch (err) {
-        console.error('Failed to read file:', err)
-      }
+      } catch { /* skip */ }
     }
   }
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    setIsDragover(false)
-    handleFileSelect(e.dataTransfer.files)
-  }
-
-  const attachments = task.attachments ?? []
-
   return (
-    <section className="mb-5">
-      <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[rgb(var(--text-3))]">
-        Attachments
-      </h3>
+    <section
+      className={`mb-5 rounded-xl transition-colors ${isDragover ? 'bg-[rgb(var(--accent))]/5 ring-2 ring-[rgb(var(--accent))]/40' : ''}`}
+      onDrop={e => { e.preventDefault(); setIsDragover(false); void handleFileSelect(e.dataTransfer.files) }}
+      onDragOver={e => { e.preventDefault(); setIsDragover(true) }}
+      onDragLeave={() => setIsDragover(false)}
+    >
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-[rgb(var(--text-3))]">
+          Attachments {attachments.length > 0 && <span className="ml-1 font-normal normal-case">({attachments.length})</span>}
+        </h3>
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          title="Add image"
+          className="flex items-center gap-1 rounded-md px-1.5 py-1 text-[10px] font-medium text-[rgb(var(--text-3))] transition hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--accent))]"
+        >
+          <Icon name="plus" size={11} />
+          Add
+        </button>
+      </div>
 
-      {/* Image grid */}
-      {attachments.length > 0 && (
-        <div className="mb-3 grid grid-cols-3 gap-2">
-          {attachments.map(attachment => (
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept={ALLOWED_TYPES.join(',')}
+        onChange={e => void handleFileSelect(e.target.files)}
+        className="hidden"
+      />
+
+      {attachments.length === 0 ? (
+        <p className="text-[11px] text-[rgb(var(--text-3))]">
+          Drop images here or use <span className="text-[rgb(var(--accent))]">+ Add</span> above
+        </p>
+      ) : (
+        <div className="grid grid-cols-3 gap-2">
+          {attachments.map(att => (
             <div
-              key={attachment.id}
-              className="group relative aspect-square rounded-lg border border-[rgb(var(--border))] overflow-hidden bg-[rgb(var(--surface-2))]"
+              key={att.id}
+              className="group relative aspect-square overflow-hidden rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]"
             >
-              <img
-                src={attachment.data}
-                alt={attachment.name}
-                className="h-full w-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-1">
+              <img src={att.data} alt={att.name} className="h-full w-full object-cover" />
+              <div className="absolute inset-0 flex items-center justify-center gap-1 bg-black/0 transition-colors group-hover:bg-black/45">
                 <a
-                  href={attachment.data}
-                  download={attachment.name}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity rounded-md bg-white/90 p-1 hover:bg-white"
+                  href={att.data}
+                  download={att.name}
+                  className="rounded-md bg-white/90 p-1.5 opacity-0 transition-opacity hover:bg-white group-hover:opacity-100"
                   title="Download"
                 >
                   <Icon name="download" size={12} className="text-black" />
                 </a>
                 <button
-                  onClick={() => deleteAttachment(boardId, task.id, attachment.id)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity rounded-md bg-white/90 p-1 hover:bg-white"
-                  title="Delete"
+                  onClick={() => deleteAttachment(boardId, task.id, att.id)}
+                  className="rounded-md bg-white/90 p-1.5 opacity-0 transition-opacity hover:bg-white group-hover:opacity-100"
+                  title="Remove"
                 >
                   <Icon name="x" size={12} className="text-black" />
                 </button>
               </div>
-              <p className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] px-1 py-0.5 truncate">
-                {attachment.name}
+              <p className="absolute bottom-0 left-0 right-0 truncate bg-black/50 px-1.5 py-0.5 text-[10px] text-white">
+                {att.name}
               </p>
             </div>
           ))}
         </div>
       )}
-
-      {/* Upload area */}
-      <div
-        onDrop={handleDrop}
-        onDragover={(e) => { e.preventDefault(); setIsDragover(true) }}
-        onDragLeave={() => setIsDragover(false)}
-        className={`rounded-lg border-2 border-dashed p-4 text-center transition-colors ${
-          isDragover
-            ? 'border-[rgb(var(--accent))] bg-[rgb(var(--accent))]/5'
-            : 'border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]'
-        }`}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept={ALLOWED_TYPES.join(',')}
-          onChange={(e) => handleFileSelect(e.target.files)}
-          className="hidden"
-        />
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="flex items-center justify-center gap-2 mx-auto text-xs text-[rgb(var(--text-2))] hover:text-[rgb(var(--text))] transition-colors"
-        >
-          <Icon name="image" size={14} />
-          <span>Click to upload or drag image</span>
-        </button>
-        <p className="mt-1 text-[10px] text-[rgb(var(--text-3))]">
-          Max 2MB · JPG, PNG, GIF, WebP
-        </p>
-      </div>
     </section>
   )
 }
