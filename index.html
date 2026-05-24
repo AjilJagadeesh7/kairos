@@ -10,6 +10,21 @@
         var t = localStorage.getItem('mindvault.theme') || 'light';
         document.documentElement.setAttribute('data-theme', t);
         if (t !== 'light') document.documentElement.classList.add('dark');
+
+        // Apply background immediately so the native window never shows a white
+        // flash before the CSS stylesheet is parsed and applied.
+        var bg = {
+          light:       '#F8F6F2',
+          dark:        '#0A0A0A',
+          cyberpunk:   '#020108',
+          dracula:     '#1E1F2D',
+          nord:        '#262C38',
+          catppuccin:  '#11111B',
+        };
+        var col = bg[t] || bg.light;
+        document.documentElement.style.background = col;
+        document.body && (document.body.style.background = col);
+
         var f = localStorage.getItem('mindvault.font');
         var fw = localStorage.getItem('mindvault.fontWeight');
         var fonts = {

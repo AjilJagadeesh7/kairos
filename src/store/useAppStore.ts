@@ -186,34 +186,17 @@ export const useAppStore = create<AppState>()(
       unpinNote: (id) => set(s => ({ pinnedNoteIds: s.pinnedNoteIds.filter(x => x !== id) })),
 
       loadNotes: async () => {
-        const { readAllNotesMeta, readAllNotes, isPlainFolderConnected } = await import('../sync/plainFolder')
-        const { getCachedNotesMeta, rebuildCache } = await import('../db/vaultCache')
+        const { readAllNotes, isPlainFolderConnected } = await import('../sync/plainFolder')
         if (!isPlainFolderConnected()) {
           set({ isNotesLoaded: true })
           return
         }
         await useLoaderStore.getState().run('load-notes', async () => {
           try {
-            // Phase 1a: try SQLite cache (single query, sub-millisecond on warm DB)
-            const cached = await getCachedNotesMeta()
-            if (cached && cached.length > 0) {
-              cached.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-              set({ notes: cached, isNotesLoaded: true })
-            } else {
-              // Phase 1b: cache miss → read frontmatter from filesystem in parallel
-              const meta = await readAllNotesMeta()
-              meta.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-              set({ notes: meta, isNotesLoaded: true })
-            }
-
-            // Phase 2: full content in background — builds search index + graph links
-            const full = await readAllNotes()
-            full.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-            buildIndex(full)
-            set({ notes: full })
-
-            // Refresh SQLite cache with current state (handles external changes)
-            void rebuildCache(full)
+            const notes = await readAllNotes()
+            notes.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+            buildIndex(notes)
+            set({ notes, isNotesLoaded: true })
           } catch (err) {
             console.warn('[loadNotes] failed:', err)
             set({ isNotesLoaded: true })

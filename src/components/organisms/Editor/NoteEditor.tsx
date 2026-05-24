@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 
 import { useAppStore } from '../../../store/useAppStore'
@@ -8,39 +8,23 @@ import type { EditorDraftProps } from '../../../types'
 import { Icon } from '../../../icons/Icon'
 
 export function NoteEditor(): JSX.Element {
-  const { noteId }       = useParams<{ noteId?: string }>()
-  const isNotesLoaded    = useAppStore((s) => s.isNotesLoaded)
-  const notes            = useAppStore((s) => s.notes)
-  const updateNote       = useAppStore((s) => s.updateNote)
-  const loadNoteContent  = useAppStore((s) => s.loadNoteContent)
+  const { noteId }    = useParams<{ noteId?: string }>()
+  const isNotesLoaded = useAppStore((s) => s.isNotesLoaded)
+  const notes         = useAppStore((s) => s.notes)
+  const updateNote    = useAppStore((s) => s.updateNote)
 
-  // Track which specific noteId is mid-fetch — avoids resetting a global flag
-  // on every navigation, which caused a spinner flicker for already-loaded notes.
-  const [fetchingId, setFetchingId] = useState<string | null>(null)
-
+  // isNotesLoaded is only true after Phase 2 (full content loaded), so notes
+  // always have their content populated by the time we reach here.
   const activeNote = isNotesLoaded
     ? (noteId ? (notes.find(n => n.id === noteId) ?? null) : null)
     : undefined
-
-  // Only trigger a fetch when the note's content slot is genuinely empty
-  useEffect(() => {
-    if (!noteId || !isNotesLoaded) return
-    const note = notes.find(n => n.id === noteId)
-    if (!note || note.content !== '') return   // already in memory — nothing to do
-    setFetchingId(noteId)
-    void loadNoteContent(noteId).then(() => setFetchingId(null))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [noteId, isNotesLoaded])
 
   const onSave = useCallback<EditorDraftProps['onSave']>(
     (patch) => updateNote(noteId!, patch),
     [noteId, updateNote],
   )
 
-  // Show spinner only while this specific note is being fetched
-  const isFetching = fetchingId === noteId
-
-  if (activeNote === undefined || (activeNote && isFetching)) {
+  if (activeNote === undefined) {
     return (
       <div className="flex h-full items-center justify-center text-text3">
         <Icon name="loader-2" size={20} className="animate-spin" />

@@ -31,6 +31,7 @@ function AppInner() {
   useAppStartup()
   useCalloutStyles()
 
+
   // Hot-reload notes when the vault directory is modified externally
   // (VS Code, git pull, another Markdown editor, etc.)
   const loadNotes    = useAppStore(s => s.loadNotes)

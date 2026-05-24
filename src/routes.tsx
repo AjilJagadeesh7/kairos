@@ -7,8 +7,6 @@ import { usePluginRegistry } from './plugins/pluginContext'
 import { ErrorBoundary } from './components/common/ErrorBoundary'
 import { Icon } from './icons/Icon'
 
-// Heavy pages are code-split — their dependency trees (force-graph, dnd-kit,
-// reactflow, codemirror) are excluded from the initial bundle chunk.
 const GraphPage   = lazy(() => import('./pages/GraphPage').then(m => ({ default: m.GraphPage })))
 const KanbanPage  = lazy(() => import('./pages/KanbanPage').then(m => ({ default: m.KanbanPage })))
 const CanvasPage  = lazy(() => import('./pages/CanvasPage').then(m => ({ default: m.CanvasPage })))

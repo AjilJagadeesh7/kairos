@@ -33,7 +33,9 @@ export function useVaultWatcher(
           (event) => {
             // event.paths is string[] of affected paths
             const paths: string[] = (event as { paths?: string[] }).paths ?? []
-            const hasMdChange = paths.length === 0 || paths.some(p => p.endsWith('.md'))
+            // Only react when we know a .md file changed — ignore empty-path
+            // events that some platforms fire on watcher initialisation.
+            const hasMdChange = paths.length > 0 && paths.some(p => p.endsWith('.md'))
             if (hasMdChange && !isVaultWatcherSuppressed()) {
               // Debounce: coalesce rapid bursts (e.g. git checkout touching many files)
               scheduleReload()
