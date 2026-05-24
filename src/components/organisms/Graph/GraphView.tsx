@@ -9,27 +9,20 @@ import { Icon } from '../../../icons/Icon'
 const ForceGraph3D = lazy(() => import('react-force-graph-3d'))
 
 // Survives component unmount/remount (tab switches). Keyed by "mode:nodeId".
-const posCache = new Map<string, { x: number; y: number; fx?: number; fy?: number }>()
+// Only x/y are persisted — fx/fy are intentionally excluded so all nodes
+// enter each visit unpinned and the simulation animates them consistently.
+const posCache = new Map<string, { x: number; y: number }>()
 
 function savePositions(nodes: GNode[], mode: string) {
   for (const n of nodes) {
-    if (n.x != null && n.y != null) {
-      posCache.set(`${mode}:${n.id}`, {
-        x: n.x, y: n.y,
-        fx: n.fx ?? undefined,
-        fy: n.fy ?? undefined,
-      })
-    }
+    if (n.x != null && n.y != null) posCache.set(`${mode}:${n.id}`, { x: n.x, y: n.y })
   }
 }
 
 function seedPositions(nodes: GNode[], mode: string) {
   for (const n of nodes) {
     const p = posCache.get(`${mode}:${n.id}`)
-    if (p) {
-      n.x = p.x; n.y = p.y
-      if (p.fx != null) { n.fx = p.fx; n.fy = p.fy }
-    }
+    if (p) { n.x = p.x; n.y = p.y }
   }
 }
 
@@ -221,15 +214,12 @@ export function GraphView({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleNodeHover   = useCallback((_n: GNode | null) => {}, [])
   const handleNodeDragEnd = useCallback((node: GNode) => {
+    // Pin for the current session so the node doesn't drift after release.
+    // fx/fy are NOT saved to posCache — on next visit all nodes enter unpinned
+    // so the simulation animates every node consistently.
     node.fx = node.x
     node.fy = node.y
-    // Write to posCache immediately — don't wait for handleEngineStop.
-    // If notes update and the graph remounts before the simulation decays,
-    // seedPositions will still restore the pinned position.
-    if (node.x != null && node.y != null) {
-      posCache.set(`${graphMode}:${node.id}`, { x: node.x, y: node.y, fx: node.x, fy: node.y })
-    }
-  }, [graphMode])
+  }, [])
 
   const isFocused = focusMode && focusedNodeId !== null
   const isLargeGraph = nodes.length > 200

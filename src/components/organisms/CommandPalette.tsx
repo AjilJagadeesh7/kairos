@@ -94,112 +94,41 @@ function SectionLabel({ label }: { label: string }) {
 
 interface RowProps {
   item: ResultItem
+  idx: number
   isActive: boolean
   onHover: () => void
   onClick: () => void
 }
 
-function ResultRow({ item, isActive, onHover, onClick }: RowProps) {
+function rowContent(item: ResultItem): { iconName: IconToken; primary: string; secondary?: string } {
+  if (item.kind === 'note')    return { iconName: 'file-text',    primary: item.note.title || 'Untitled note', secondary: item.note.folder }
+  if (item.kind === 'journal') return { iconName: 'calendar-days', primary: formatJournalDate(item.entry.date), secondary: excerpt(item.entry.content) }
+  if (item.kind === 'task')    return { iconName: 'check-square', primary: item.task.title,                    secondary: item.board.title }
+  if (item.kind === 'canvas')  return { iconName: 'pen-tool',     primary: item.canvas.title || 'Untitled canvas', secondary: 'Canvas' }
+  return { iconName: item.iconName, primary: item.label, secondary: item.hint }
+}
+
+function ResultRow({ item, idx, isActive, onHover, onClick }: RowProps) {
+  const { iconName, primary, secondary } = rowContent(item)
   const bg = isActive ? 'bg-accent/15' : 'hover:bg-surface2'
 
-  if (item.kind === 'note') {
-    const { note } = item
-    return (
-      <li
-        role="option"
-        aria-selected={isActive}
-        onMouseEnter={onHover}
-        onClick={onClick}
-        className={`flex cursor-pointer items-center gap-3 px-4 py-2 transition-colors ${bg}`}
-      >
-        <Icon name="file-text" size={14} className={`shrink-0 ${isActive ? 'text-accent' : 'text-text3'}`} aria-hidden />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-medium text-text">{note.title || 'Untitled note'}</p>
-          {note.folder && (
-            <p className="flex items-center gap-1 truncate text-[11px] text-text3">
-              <Icon name="folder-open" size={10} aria-hidden />{note.folder}
-            </p>
-          )}
-        </div>
-        {isActive && <Icon name="corner-down-left" size={12} className="shrink-0 text-text3" aria-hidden />}
-      </li>
-    )
-  }
-
-  if (item.kind === 'journal') {
-    const { entry } = item
-    const ex = excerpt(entry.content)
-    return (
-      <li
-        role="option"
-        aria-selected={isActive}
-        onMouseEnter={onHover}
-        onClick={onClick}
-        className={`flex cursor-pointer items-center gap-3 px-4 py-2 transition-colors ${bg}`}
-      >
-        <Icon name="calendar-days" size={14} className={`shrink-0 ${isActive ? 'text-accent' : 'text-text3'}`} aria-hidden />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-medium text-text">{formatJournalDate(entry.date)}</p>
-          {ex && <p className="truncate text-[11px] text-text3">{ex}</p>}
-        </div>
-        {isActive && <Icon name="corner-down-left" size={12} className="shrink-0 text-text3" aria-hidden />}
-      </li>
-    )
-  }
-
-  if (item.kind === 'task') {
-    const { task, board } = item
-    return (
-      <li
-        role="option"
-        aria-selected={isActive}
-        onMouseEnter={onHover}
-        onClick={onClick}
-        className={`flex cursor-pointer items-center gap-3 px-4 py-2 transition-colors ${bg}`}
-      >
-        <Icon name="check-square" size={14} className={`shrink-0 ${isActive ? 'text-accent' : 'text-text3'}`} aria-hidden />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-medium text-text">{task.title}</p>
-          <p className="truncate text-[11px] text-text3">{board.title}</p>
-        </div>
-        {isActive && <Icon name="corner-down-left" size={12} className="shrink-0 text-text3" aria-hidden />}
-      </li>
-    )
-  }
-
-  if (item.kind === 'canvas') {
-    const { canvas } = item
-    return (
-      <li
-        role="option"
-        aria-selected={isActive}
-        onMouseEnter={onHover}
-        onClick={onClick}
-        className={`flex cursor-pointer items-center gap-3 px-4 py-2 transition-colors ${bg}`}
-      >
-        <Icon name="pen-tool" size={14} className={`shrink-0 ${isActive ? 'text-accent' : 'text-text3'}`} aria-hidden />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-medium text-text">{canvas.title || 'Untitled canvas'}</p>
-          <p className="truncate text-[11px] text-text3">Canvas</p>
-        </div>
-        {isActive && <Icon name="corner-down-left" size={12} className="shrink-0 text-text3" aria-hidden />}
-      </li>
-    )
-  }
-
-  // nav item
   return (
     <li
       role="option"
       aria-selected={isActive}
+      data-idx={idx}
       onMouseEnter={onHover}
       onClick={onClick}
       className={`flex cursor-pointer items-center gap-3 px-4 py-2 transition-colors ${bg}`}
     >
-      <Icon name={item.iconName} size={14} className={`shrink-0 ${isActive ? 'text-accent' : 'text-text3'}`} aria-hidden />
+      <Icon name={iconName} size={14} className={`shrink-0 ${isActive ? 'text-accent' : 'text-text3'}`} aria-hidden />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-medium text-text">{item.label}</p>
-        <p className="truncate text-[11px] text-text3">{item.hint}</p>
+        <p className="truncate text-[13px] font-medium text-text">{primary}</p>
+        {secondary && (
+          item.kind === 'note' && item.note.folder
+            ? <p className="flex items-center gap-1 truncate text-[11px] text-text3"><Icon name="folder-open" size={10} aria-hidden />{secondary}</p>
+            : <p className="truncate text-[11px] text-text3">{secondary}</p>
+        )}
       </div>
       {isActive && <Icon name="corner-down-left" size={12} className="shrink-0 text-text3" aria-hidden />}
     </li>
@@ -449,6 +378,7 @@ export function CommandPalette({ onClose }: Props) {
                   <ResultRow
                     key={key}
                     item={item}
+                    idx={idx}
                     isActive={active === idx}
                     onHover={() => setActive(idx)}
                     onClick={() => activate(item)}
