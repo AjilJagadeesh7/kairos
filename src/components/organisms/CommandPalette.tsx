@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
 import type { IconToken } from '../../icons/tokens'
 import { useAppStore } from '../../store/useAppStore'
 import { useJournalStore } from '../../store/useJournalStore'
 import { useKanbanStore } from '../../store/useKanbanStore'
 import { useCanvasStore } from '../../store/useCanvasStore'
+import { usePaneStore } from '../../store/usePaneStore'
 import {
   buildUniversalIndex, searchUniversal, searchByTitle,
 } from '../../search/universalSearch'
@@ -167,7 +167,6 @@ interface Props {
 const MAX_RESULTS = 30
 
 export function CommandPalette({ onClose }: Props) {
-  const navigate  = useNavigate()
   const notes     = useAppStore(s => s.notes)
   const createNote = useAppStore(s => s.createNote)
   const journalEntriesMap = useJournalStore(s => s.entries)
@@ -275,23 +274,26 @@ export function CommandPalette({ onClose }: Props) {
 
   // ── Actions ──────────────────────────────────────────────────────────────────
   const activate = useCallback((item: ResultItem) => {
+    const { focusedPaneId, navigatePane } = usePaneStore.getState()
+    const go = (path: string) => navigatePane(focusedPaneId, path)
+
     if (item.kind === 'note') {
-      navigate(`/notes/${item.note.id}`)
+      go(`/notes/${item.note.id}`)
     } else if (item.kind === 'journal') {
-      navigate(`/journal/${item.entry.date}`)
+      go(`/journal/${item.entry.date}`)
     } else if (item.kind === 'task') {
-      navigate(`/kanban/${item.board.id}`)
+      go(`/kanban/${item.board.id}`)
     } else if (item.kind === 'canvas') {
-      navigate(`/canvas/${item.canvas.id}`)
+      go(`/canvas/${item.canvas.id}`)
     } else if (item.kind === 'nav') {
       if (item.id === 'nav-new-note') {
-        void createNote().then(id => navigate(`/notes/${id}`))
+        void createNote().then(id => go(`/notes/${id}`))
       } else if (item.path) {
-        navigate(item.path)
+        go(item.path)
       }
     }
     onClose()
-  }, [navigate, createNote, onClose])
+  }, [createNote, onClose])
 
   function onKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'ArrowDown') {
