@@ -1,10 +1,10 @@
 import { useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 
 import { useAppStore } from '../../store/useAppStore'
 import { useConflictStore } from '../../store/useConflictStore'
 import { anySyncProviderConnected } from '../../sync/syncOrchestrator'
 import { useClickOutside } from '../../hooks/useClickOutside'
+import { usePaneStore } from '../../store/usePaneStore'
 import { Icon } from '../../icons/Icon'
 
 const STATUS_LABEL: Record<string, string> = {
@@ -21,7 +21,6 @@ export function SyncStatusBadge(): JSX.Element {
   const s3Config      = useAppStore(s => s.s3Config)
   const webdavConfig  = useAppStore(s => s.webdavConfig)
   const lastSyncTime  = useAppStore(s => s.lastSyncTime)
-  const navigate      = useNavigate()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useClickOutside(ref, () => setOpen(false))
@@ -130,7 +129,7 @@ export function SyncStatusBadge(): JSX.Element {
           <div className="flex items-center gap-2 border-t border-[rgb(var(--border))] px-4 py-2.5">
             <button
               type="button"
-              onClick={() => { setOpen(false); navigate('/settings') }}
+              onClick={() => { setOpen(false); const { focusedPaneId, navigatePane } = usePaneStore.getState(); navigatePane(focusedPaneId, '/settings?section=storage-sync') }}
               className="flex-1 rounded-lg bg-[rgb(var(--accent))] px-3 py-1.5 text-center text-[11px] font-semibold text-[rgb(var(--accent-fg))] transition hover:opacity-90"
             >
               {connected ? 'Sync settings' : 'Configure sync'}

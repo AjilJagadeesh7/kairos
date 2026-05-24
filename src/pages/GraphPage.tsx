@@ -190,6 +190,7 @@ export function GraphPage() {
 
       <section className="flex min-w-0 flex-1 flex-col">
         <GraphView
+          key={`${rerenderKey}-${baseNodes.length}-${graphMode}`}
           nodes={nodes}
           links={links}
           graphMode={graphMode}
