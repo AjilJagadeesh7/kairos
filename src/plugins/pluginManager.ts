@@ -73,7 +73,12 @@ function buildPluginAPI(manifest: PluginManifest): MindVaultPluginAPI {
     // ── UI registration ────────────────────────────────────────────────────────
     registerPage(reg: Omit<PluginPageRegistration, 'pluginId'>) {
       gate(manifest, 'ui:page', 'registerPage')
-      _registry = { ..._registry, pages: [..._registry.pages, { ...reg, pluginId: id }] }
+      const entry = { ...reg, pluginId: id }
+      const existing = _registry.pages.findIndex(p => p.path === reg.path)
+      const pages = existing >= 0
+        ? _registry.pages.map((p, i) => i === existing ? entry : p)
+        : [..._registry.pages, entry]
+      _registry = { ..._registry, pages }
       notifyRegistry()
     },
 

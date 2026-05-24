@@ -44,9 +44,13 @@ export function CustomNavProvider({ paneId, children }: Props) {
     future: {} as Record<string, never>,
   }), [navigator])
 
+  const qIdx = path.indexOf('?')
+  const pathname = qIdx >= 0 ? path.slice(0, qIdx) : path
+  const search   = qIdx >= 0 ? path.slice(qIdx)   : ''
+
   const location = useMemo(() => ({
-    pathname: path,
-    search: '',
+    pathname,
+    search,
     hash: '',
     state: null,
     key: paneId,
