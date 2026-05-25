@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { TagChip } from '../atoms/TagChip'
+import { SectionLabel } from '../atoms/SectionLabel'
 import type { TagRecord } from '../../types'
 
 interface TagFiltersDropdownProps {
@@ -31,7 +32,7 @@ export function TagFiltersDropdown({
     <div className="space-y-3">
       <div>
         <div className="mb-2 flex items-center justify-between gap-2">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-text3">Tag filter</p>
+          <SectionLabel>Tag filter</SectionLabel>
           <button
             type="button"
             onClick={handleClear}

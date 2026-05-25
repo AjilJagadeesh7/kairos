@@ -112,6 +112,20 @@ Types that are genuinely private to a single file and never exported are exempt.
 | Pure utility functions     | `src/utils/<name>.ts`                                        |
 | Static data used by one UI | Adjacent to the component, e.g. `<name>Data.tsx`             |
 
+### Reusable atoms — always use these, never inline the pattern
+
+- **`Button`** (`atoms/Button`) — all text buttons; variant: primary/ghost/pill, size: xs/sm/md
+- **`IconButton`** (`atoms/IconButton`) — icon-only buttons; size xs/sm/md = h-6/h-7/h-8; use `iconClassName` for icon-level styles like `animate-spin`
+- **`ToggleSwitch`** (`atoms/ToggleSwitch`) — on/off toggles with `role="switch"`; size sm/md
+- **`SectionLabel`** (`atoms/SectionLabel`) — `uppercase tracking-widest` section headers; use `className` prop for margin/padding
+- **`KbdKey`** (`atoms/KbdKey`) — keyboard shortcut display (`<kbd>` element)
+- **`Divider`** (`atoms/Divider`) — horizontal `border-t border-border` separator
+- **`Pill`** (`atoms/Pill`) — pill/tab toggle buttons
+- **`TagBadge`** (`atoms/TagBadge`) — colored tag display
+- **`TagChip`** (`atoms/TagChip`) — removable tag chips
+
+When you find yourself writing any of these patterns inline, extract to the atom instead.
+
 ## Key architectural rules
 
 - Platform detection: `src/utils/platform.ts` — `isDesktop()` for Tauri-only features

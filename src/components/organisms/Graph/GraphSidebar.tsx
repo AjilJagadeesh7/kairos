@@ -3,6 +3,9 @@ import { stripMarkdown } from '../../../utils/stripMarkdown'
 import { useKanbanStore } from '../../../store/useKanbanStore'
 import type { GNode, GLink, GraphMode, Note } from '../../../types'
 import { Icon } from '../../../icons/Icon'
+import { IconButton } from '../../atoms/IconButton'
+import { ToggleSwitch } from '../../atoms/ToggleSwitch'
+import { SectionLabel } from '../../atoms/SectionLabel'
 
 
 interface SelectedTaskInfo {
@@ -52,16 +55,9 @@ export function GraphSidebar({
   return (
     <aside className="flex h-full w-full flex-col border-r border-border bg-surface2">
       <div className="flex items-center gap-2 border-b border-border px-3 py-3">
-        <span className="flex-1 text-xs font-semibold uppercase tracking-widest text-text3">Graph</span>
+        <SectionLabel className="flex-1">Graph</SectionLabel>
         {onClose && (
-          <button
-            type="button"
-            aria-label="Close sidebar"
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-text2 transition hover:bg-surface3 hover:text-text xl:hidden"
-          >
-            <Icon name="x" size={16} />
-          </button>
+          <IconButton icon="x" label="Close sidebar" size="md" onClick={onClose} className="xl:hidden" />
         )}
       </div>
 
@@ -69,7 +65,7 @@ export function GraphSidebar({
 
         {/* Graph type toggle */}
         <section>
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-text3">Graph Type</p>
+          <SectionLabel className="mb-2">Graph Type</SectionLabel>
           <div className="flex flex-col gap-1">
             {(['links', 'tags'] as GraphMode[]).map(mode => (
               <button
@@ -90,7 +86,7 @@ export function GraphSidebar({
 
         {/* Node type filters */}
         <section>
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-text3">Node Types</p>
+          <SectionLabel className="mb-2">Node Types</SectionLabel>
           <div className="flex flex-col gap-0.5">
             <FilterRow icon="file-text"    label="Notes"   count={noteCount}        on={true}       onToggle={undefined} dot="#818cf8" />
             <FilterRow icon="square-kanban" label="Tasks"  count={taskNodeCount}    on={showTasks}  onToggle={onToggleTasks} dot="#fb923c" />
@@ -100,7 +96,7 @@ export function GraphSidebar({
 
         {/* Stats */}
         <section>
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-text3">Stats</p>
+          <SectionLabel className="mb-1.5">Stats</SectionLabel>
           <div className="flex flex-col gap-0.5 text-xs text-text2">
             <span>{noteCount} note{noteCount !== 1 ? 's' : ''}</span>
             {showTasks  && <span>{taskNodeCount}   task{taskNodeCount   !== 1 ? 's' : ''}</span>}
@@ -111,7 +107,7 @@ export function GraphSidebar({
 
         {/* Legend */}
         <section>
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-text3">Legend</p>
+          <SectionLabel className="mb-2">Legend</SectionLabel>
           {graphMode === 'links' ? (
             <div className="flex flex-col gap-2 text-[11px] text-text2">
               <LegendLine color="#2dd4bf" dashed label={`Wikilink (${wikilinkCount})`} arrow />
@@ -245,19 +241,7 @@ function FilterRow({ icon, label, count, on, onToggle, dot }: {
       <span className={`flex-1 text-xs ${on ? 'text-text2' : 'text-text3'}`}>{label}</span>
       <span className="text-[10px] text-text3">{count}</span>
       {onToggle && (
-        <button
-          type="button"
-          role="switch"
-          aria-checked={on}
-          onClick={e => { e.stopPropagation(); onToggle() }}
-          className={`relative inline-flex h-4 w-8 shrink-0 items-center rounded-full transition-colors ${
-            on ? 'bg-[rgb(var(--accent))]' : 'bg-[rgb(var(--surface-3))]'
-          }`}
-        >
-          <span className={`inline-block h-3 w-3 translate-x-0.5 rounded-full bg-white shadow transition-transform ${
-            on ? 'translate-x-[17px]' : ''
-          }`} />
-        </button>
+        <ToggleSwitch checked={on} onChange={() => onToggle()} label={label} />
       )}
     </div>
   )

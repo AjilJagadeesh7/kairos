@@ -7,6 +7,7 @@ import { THEME_REGISTRY } from '../../../themes/registry'
 import { todayDate } from '../../../store/useJournalStore'
 import { Icon } from '../../../icons/Icon'
 import { AppLogo } from '../../atoms/AppLogo'
+import { SectionLabel } from '../../atoms/SectionLabel'
 import type { IconToken } from '../../../icons/tokens'
 import type { ThemeMode } from '../../../types'
 
@@ -94,7 +95,7 @@ function CompactThemePicker({ value, onChange }: { value: ThemeMode; onChange: (
 
         {open && (
           <div className="absolute bottom-0 left-full z-50 ml-2 w-48 overflow-hidden rounded-lg border border-border bg-surface py-1 shadow-xl">
-            <p className="px-3 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-widest text-text3">Theme</p>
+            <SectionLabel className="px-3 pb-1 pt-1.5">Theme</SectionLabel>
             {THEME_REGISTRY.map(theme => (
               <button
                 key={theme.id}

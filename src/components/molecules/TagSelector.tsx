@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '../atoms/Button'
 import { ColorPicker } from './ColorPicker'
+import { SectionLabel } from '../atoms/SectionLabel'
 import { TAG_COLOR_PALETTE, tagTextColor } from '../../utils/kanban'
 import type { TagRecord } from '../../types'
 import { Icon } from '../../icons/Icon'
@@ -116,7 +117,7 @@ export function TagSelector({ selectedTags, onTagsChange, onTagCreate, available
             </div>
 
             {/* Color swatches */}
-            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-text3">Color</p>
+            <SectionLabel className="mb-1.5">Color</SectionLabel>
             <ColorPicker
               value={newTagColor}
               onChange={setNewTagColor}

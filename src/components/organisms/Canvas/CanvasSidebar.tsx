@@ -3,6 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useCanvasStore } from '../../../store/useCanvasStore'
 import { timeAgo } from '../../../utils/timeAgo'
 import { Icon } from '../../../icons/Icon'
+import { IconButton } from '../../atoms/IconButton'
+import { SectionLabel } from '../../atoms/SectionLabel'
+import { Divider } from '../../atoms/Divider'
 
 export function CanvasSidebar() {
   const navigate      = useNavigate()
@@ -42,18 +45,11 @@ export function CanvasSidebar() {
     <div className="flex h-full flex-col overflow-hidden bg-[rgb(var(--surface-2))]">
       {/* Header */}
       <div className="flex h-10 shrink-0 items-center justify-between px-3">
-        <span className="text-[11px] font-semibold uppercase tracking-widest text-[rgb(var(--text-3))]">Canvas</span>
-        <button
-          type="button"
-          onClick={handleNew}
-          title="New canvas"
-          className="flex h-6 w-6 items-center justify-center rounded text-[rgb(var(--text-3))] transition hover:bg-[rgb(var(--surface-3))] hover:text-[rgb(var(--text))]"
-        >
-          <Icon name="plus" size={14} />
-        </button>
+        <SectionLabel>Canvas</SectionLabel>
+        <IconButton icon="plus" label="New canvas" size="xs" onClick={handleNew} />
       </div>
 
-      <div className="h-px bg-[rgb(var(--border))]" />
+      <Divider />
 
       {/* Canvas list */}
       <div className="flex-1 overflow-y-auto py-1">

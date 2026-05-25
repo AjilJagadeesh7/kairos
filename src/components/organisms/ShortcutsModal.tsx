@@ -4,6 +4,9 @@ import { useAppStore } from '../../store/useAppStore'
 import { SHORTCUT_REGISTRY, displayKey } from '../../shortcuts/registry'
 import type { ShortcutContext } from '../../shortcuts/registry'
 import { Icon } from '../../icons/Icon'
+import { IconButton } from '../atoms/IconButton'
+import { SectionLabel } from '../atoms/SectionLabel'
+import { KbdKey } from '../atoms/KbdKey'
 
 interface ShortcutsModalProps {
   onClose: () => void
@@ -40,21 +43,13 @@ export function ShortcutsModal({ onClose }: ShortcutsModalProps) {
         <div className="flex items-center gap-2 border-b border-[rgb(var(--border))] px-5 py-4">
           <Icon name="keyboard" size={16} className="text-[rgb(var(--accent))]" />
           <h2 className="flex-1 text-sm font-semibold text-[rgb(var(--text))]">Keyboard shortcuts</h2>
-          <button
-            onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-[rgb(var(--text-3))] transition hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]"
-            aria-label="Close"
-          >
-            <Icon name="x" size={14} />
-          </button>
+          <IconButton icon="x" label="Close" size="sm" onClick={onClose} />
         </div>
 
         <div className="divide-y divide-[rgb(var(--border))] p-2">
           {grouped.map(({ context, shortcuts }) => (
             <div key={context} className="py-3 first:pt-1">
-              <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-[rgb(var(--text-3))]">
-                {context}
-              </p>
+              <SectionLabel className="mb-2 px-3">{context}</SectionLabel>
               <div className="space-y-0.5">
                 {shortcuts.map(def => {
                   const key = keyBindings[def.id] ?? def.defaultKey
@@ -65,13 +60,11 @@ export function ShortcutsModal({ onClose }: ShortcutsModalProps) {
                       className="flex items-center justify-between rounded-lg px-3 py-1.5"
                     >
                       <span className="text-sm text-[rgb(var(--text-2))]">{def.label}</span>
-                      <kbd className={`rounded px-2 py-0.5 font-mono text-xs ${
-                        isCustom
-                          ? 'border border-[rgb(var(--accent)/0.4)] bg-[rgb(var(--accent)/0.08)] text-[rgb(var(--accent))]'
-                          : 'border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] text-[rgb(var(--text-2))]'
-                      }`}>
+                      <KbdKey className={isCustom
+                        ? 'border-[rgb(var(--accent)/0.4)] bg-[rgb(var(--accent)/0.08)] text-[rgb(var(--accent))]'
+                        : 'text-text2'}>
                         {displayKey(key)}
-                      </kbd>
+                      </KbdKey>
                     </div>
                   )
                 })}

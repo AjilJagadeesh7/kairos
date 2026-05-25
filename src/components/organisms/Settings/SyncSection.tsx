@@ -7,6 +7,7 @@ import { VaultSection } from './VaultSection'
 import { S3Section } from './S3Section'
 import { WebDAVSection } from './WebDAVSection'
 import { Icon } from '../../../icons/Icon'
+import { SectionLabel } from '../../atoms/SectionLabel'
 
 export function SyncSection() {
   const syncStatus    = useAppStore((s) => s.syncStatus)
@@ -33,9 +34,7 @@ export function SyncSection() {
       <VaultSection />
 
       <div>
-        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-[rgb(var(--text-3))]">
-          Remote Sync (optional)
-        </p>
+        <SectionLabel className="mb-3">Remote Sync (optional)</SectionLabel>
         <p className="mb-4 text-xs text-[rgb(var(--text-2))]">
           Connect one or more remote providers to sync your vault across devices.
           Notes are pushed after every save and pulled on startup.

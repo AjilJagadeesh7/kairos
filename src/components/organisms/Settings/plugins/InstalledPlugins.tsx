@@ -2,6 +2,7 @@ import { usePluginStore } from '../../../../plugins/usePluginStore'
 import { uninstallPlugin } from '../../../../plugins/installPlugin'
 import { SectionCard } from '../../../molecules/SectionCard'
 import { Button } from '../../../atoms/Button'
+import { ToggleSwitch } from '../../../atoms/ToggleSwitch'
 import { Icon } from '../../../../icons/Icon'
 
 export function InstalledPlugins() {
@@ -46,20 +47,12 @@ export function InstalledPlugins() {
               <p className="mt-0.5 text-[11px] text-[rgb(var(--text-3))]">by {plugin.manifest.author}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2.5">
-              <button
-                type="button"
-                role="switch"
-                aria-checked={plugin.enabled}
-                title={plugin.enabled ? 'Disable (takes effect after restart)' : 'Enable (takes effect after restart)'}
-                onClick={() => setEnabled(plugin.id, !plugin.enabled)}
-                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[rgb(var(--accent))]/50 ${
-                  plugin.enabled ? 'bg-[rgb(var(--accent))]' : 'bg-[rgb(var(--surface-3))]'
-                }`}
-              >
-                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
-                  plugin.enabled ? 'translate-x-[18px]' : 'translate-x-[3px]'
-                }`} />
-              </button>
+              <ToggleSwitch
+                checked={plugin.enabled}
+                onChange={v => setEnabled(plugin.id, v)}
+                size="md"
+                label={plugin.enabled ? 'Disable plugin' : 'Enable plugin'}
+              />
               <Button
                 variant="ghost"
                 size="xs"

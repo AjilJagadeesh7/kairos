@@ -9,6 +9,8 @@ import { SearchModePills } from '../../molecules/SearchModePills'
 import { VirtualNoteList } from '../../molecules/VirtualNoteList'
 import { NoteTemplateModal } from '../Notes/NoteTemplateModal'
 import { FolderTree } from './FolderTree'
+import { IconButton } from '../../atoms/IconButton'
+import { SectionLabel } from '../../atoms/SectionLabel'
 import type { NoteTemplate } from '../../../types'
 import type { Note } from '../../../types'
 import { Icon } from '../../../icons/Icon'
@@ -115,50 +117,13 @@ export function Sidebar({ onClose }: Props): JSX.Element {
       >
         {/* ── Header ── */}
         <div className="sidebar-header flex items-center gap-1 border-b border-border px-3 py-3">
-          <span className="flex-1 text-xs font-semibold uppercase tracking-widest text-text3">Files</span>
-          <button
-            type="button"
-            title="New note"
-            aria-label="New note"
-            onClick={() => openNewNoteTemplates()}
-            className="flex h-6 w-6 items-center justify-center rounded text-text3 transition hover:bg-surface3 hover:text-text"
-          >
-            <Icon name="plus" size={14} aria-hidden />
-          </button>
-          <button
-            type="button"
-            title="New folder"
-            aria-label="New folder"
-            onClick={() => setCreatingRootFolder(true)}
-            className="flex h-6 w-6 items-center justify-center rounded text-text3 transition hover:bg-surface3 hover:text-text"
-          >
-            <Icon name="folder-plus" size={14} aria-hidden />
-          </button>
-          <button
-            type="button"
-            title="Refresh"
-            aria-label="Refresh notes"
-            onClick={() => void loadNotes()}
-            disabled={isRefreshing}
-            className="flex h-6 w-6 items-center justify-center rounded text-text3 transition hover:bg-surface3 hover:text-text disabled:pointer-events-none"
-          >
-            <Icon
-              name="refresh-cw"
-              size={14}
-              aria-hidden
-              className={isRefreshing ? 'animate-spin' : undefined}
-            />
-          </button>
-          {/* Mobile-only close button — desktop uses ActivityBar toggle */}
+          <SectionLabel className="flex-1">Files</SectionLabel>
+          <IconButton icon="plus"        label="New note"       size="xs" onClick={() => openNewNoteTemplates()} />
+          <IconButton icon="folder-plus" label="New folder"     size="xs" onClick={() => setCreatingRootFolder(true)} />
+          <IconButton icon="refresh-cw"  label="Refresh notes"  size="xs" onClick={() => void loadNotes()} disabled={isRefreshing}
+            iconClassName={isRefreshing ? 'animate-spin' : ''} />
           {onClose && (
-            <button
-              type="button"
-              aria-label="Close sidebar"
-              onClick={onClose}
-              className="flex h-6 w-6 items-center justify-center rounded-md text-text2 transition hover:bg-surface3 hover:text-text xl:hidden"
-            >
-              <Icon name="x" size={14} aria-hidden />
-            </button>
+            <IconButton icon="x" label="Close sidebar" size="xs" onClick={onClose} className="xl:hidden" />
           )}
         </div>
 

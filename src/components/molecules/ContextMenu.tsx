@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Icon } from '../../icons/Icon'
+import { Divider } from '../atoms/Divider'
 
 // ── Primitives ────────────────────────────────────────────────────────────────
 
@@ -27,7 +28,7 @@ function Item({ label, shortcut, onClick, danger, disabled }: ItemProps) {
 }
 
 function Sep() {
-  return <div className="my-1 border-t border-border" />
+  return <Divider className="my-1" />
 }
 
 function Sub({ label, children }: { label: string; children: React.ReactNode }) {

@@ -11,6 +11,7 @@ import type { KanbanTask, Board } from '../../types/kanban.types'
 import { NAV_ITEMS, itemKey, groupResults } from './commandPaletteItems'
 import type { ResultItem } from './commandPaletteItems'
 import { ResultRow, SectionLabel } from './CommandPaletteRow'
+import { KbdKey } from '../../atoms/KbdKey'
 
 const MAX_RESULTS = 30
 
@@ -153,7 +154,7 @@ export function CommandPalette({ onClose }: Props) {
           {query && (
             <button type="button" onClick={() => setQuery('')} className="shrink-0 text-text3 transition hover:text-text" aria-label="Clear">×</button>
           )}
-          <kbd className="shrink-0 rounded border border-border bg-surface2 px-1.5 py-0.5 text-[11px] text-text3">Esc</kbd>
+          <KbdKey className="shrink-0">Esc</KbdKey>
         </div>
 
         <ul ref={listRef} role="listbox" aria-label="Search results" className="max-h-[480px] overflow-y-auto py-1">
@@ -182,12 +183,12 @@ export function CommandPalette({ onClose }: Props) {
 
         <div className="flex items-center gap-4 border-t border-border px-4 py-2">
           <span className="text-[11px] text-text3">
-            <kbd className="rounded border border-border bg-surface2 px-1 py-0.5 text-[10px]">↑</kbd>
-            <kbd className="ml-0.5 rounded border border-border bg-surface2 px-1 py-0.5 text-[10px]">↓</kbd>
+            <KbdKey className="px-1 text-[10px]">↑</KbdKey>
+            <KbdKey className="ml-0.5 px-1 text-[10px]">↓</KbdKey>
             {' '}navigate
           </span>
           <span className="text-[11px] text-text3">
-            <kbd className="rounded border border-border bg-surface2 px-1 py-0.5 text-[10px]">↵</kbd>
+            <KbdKey className="px-1 text-[10px]">↵</KbdKey>
             {' '}open
           </span>
           <span className="ml-auto text-[11px] text-text3">

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 
 import { useJournalStore, todayDate } from '../../../store/useJournalStore'
 import { Icon } from '../../../icons/Icon'
+import { IconButton } from '../../atoms/IconButton'
 
 const DAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 const MONTHS = [
@@ -154,23 +155,11 @@ export function JournalCalendar({ activeDate, onClose }: JournalCalendarProps) {
         /* ── Calendar ── */
         <div className="flex-1 overflow-y-auto p-4">
           <div className="mb-4 flex items-center justify-between">
-            <button
-              onClick={prevMonth}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-[rgb(var(--text-2))] transition hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]"
-              aria-label="Previous month"
-            >
-              <Icon name="chevron-left" size={15} />
-            </button>
+            <IconButton icon="chevron-left"  label="Previous month" size="sm" onClick={prevMonth} />
             <span className="text-sm font-medium text-[rgb(var(--text))]">
               {MONTHS[viewMonth]} {viewYear}
             </span>
-            <button
-              onClick={nextMonth}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-[rgb(var(--text-2))] transition hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]"
-              aria-label="Next month"
-            >
-              <Icon name="chevron-right" size={15} />
-            </button>
+            <IconButton icon="chevron-right" label="Next month"     size="sm" onClick={nextMonth} />
           </div>
 
           <div className="mb-1 grid grid-cols-7 gap-0.5">

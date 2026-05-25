@@ -4,6 +4,7 @@ import { usePaneStore, pathToType } from '../../../store/usePaneStore'
 import { SyncStatusBadge } from '../../molecules/SyncStatusBadge'
 import { THEME_REGISTRY } from '../../../themes/registry'
 import { Icon } from '../../../icons/Icon'
+import { SectionLabel } from '../../atoms/SectionLabel'
 import type { ThemeMode } from '../../../types'
 
 const PAGE_LABELS: Record<string, string> = {
@@ -51,7 +52,7 @@ function ThemeButton({ value, onChange }: { value: ThemeMode; onChange: (t: Them
 
       {open && (
         <div className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-xl">
-          <p className="px-3 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-widest text-text3">Theme</p>
+          <SectionLabel className="px-3 pb-1 pt-1.5">Theme</SectionLabel>
           {THEME_REGISTRY.map(theme => (
             <button
               key={theme.id}

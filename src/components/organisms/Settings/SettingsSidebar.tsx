@@ -1,5 +1,7 @@
 import { usePluginRegistry } from '../../../plugins/pluginContext'
 import { Icon } from '../../../icons/Icon'
+import { IconButton } from '../../atoms/IconButton'
+import { SectionLabel } from '../../atoms/SectionLabel'
 import type { IconToken } from '../../../icons/tokens'
 import type { Section } from '../../../types'
 
@@ -27,18 +29,9 @@ export function SettingsSidebar({ section, onSectionChange, onClose }: SettingsS
   return (
     <aside className="flex h-full w-full flex-col border-r border-border bg-surface2">
       <div className="flex items-center gap-2 border-b border-border px-3 py-3">
-        <span className="flex-1 text-xs font-semibold uppercase tracking-widest text-text3">
-          Settings
-        </span>
+        <SectionLabel className="flex-1">Settings</SectionLabel>
         {onClose && (
-          <button
-            type="button"
-            aria-label="Close sidebar"
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-text2 transition hover:bg-surface3 hover:text-text xl:hidden"
-          >
-            <Icon name="x" size={16} />
-          </button>
+          <IconButton icon="x" label="Close sidebar" size="md" onClick={onClose} className="xl:hidden" />
         )}
       </div>
 

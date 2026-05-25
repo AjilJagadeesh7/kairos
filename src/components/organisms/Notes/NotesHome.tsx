@@ -7,6 +7,7 @@ import { TAG_COLOR_PALETTE } from '../../../utils/kanban'
 import { TagBadge } from '../../atoms/TagBadge'
 import { Button } from '../../atoms/Button'
 import { NoteTemplateModal } from './NoteTemplateModal'
+import { SectionLabel } from '../../atoms/SectionLabel'
 import type { NoteTemplate } from '../../../types'
 import type { Note, TagRecord } from '../../../types'
 import { Icon } from '../../../icons/Icon'
@@ -255,7 +256,7 @@ export function NotesHome() {
               {childFolders.length > 0 && (
                 <div>
                   {directNotes.length > 0 && (
-                    <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-text3">Folders</p>
+                    <SectionLabel className="mb-3">Folders</SectionLabel>
                   )}
                   <div className="flex flex-wrap gap-1">
                     {childFolders.map(name => (
@@ -273,7 +274,7 @@ export function NotesHome() {
               {directNotes.length > 0 && (
                 <div>
                   {childFolders.length > 0 && (
-                    <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-text3">Notes</p>
+                    <SectionLabel className="mb-3">Notes</SectionLabel>
                   )}
                   <div className="flex flex-wrap gap-1">
                     {directNotes.map(note => (

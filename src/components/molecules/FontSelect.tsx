@@ -1,4 +1,5 @@
 import type { FontOption, FontWeight } from '../../types'
+import { SectionLabel } from '../atoms/SectionLabel'
 
 interface FontDef {
   value: FontOption
@@ -75,9 +76,7 @@ export function FontSelect({ value, weight, onFontChange, onWeightChange }: Font
       {/* Font grid grouped by style */}
       {FONT_GROUPS.map(group => (
         <div key={group.heading}>
-          <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-[rgb(var(--text-3))]">
-            {group.heading}
-          </p>
+          <SectionLabel className="mb-2.5">{group.heading}</SectionLabel>
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
             {group.fonts.map(font => {
               const selected = font.value === value
@@ -116,9 +115,7 @@ export function FontSelect({ value, weight, onFontChange, onWeightChange }: Font
       {/* Weight picker — only shown when the selected font has multiple weights */}
       {availableWeights.length > 1 && (
         <div>
-          <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-[rgb(var(--text-3))]">
-            Weight
-          </p>
+          <SectionLabel className="mb-2.5">Weight</SectionLabel>
           <div className="flex gap-2.5">
             {FONT_WEIGHTS.map(w => {
               const available = availableWeights.includes(w.value)

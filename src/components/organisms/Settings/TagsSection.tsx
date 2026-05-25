@@ -6,6 +6,7 @@ import { ColorPicker } from '../../molecules/ColorPicker'
 import { SectionCard } from '../../molecules/SectionCard'
 import { Button } from '../../atoms/Button'
 import { Icon } from '../../../icons/Icon'
+import { SectionLabel } from '../../atoms/SectionLabel'
 
 function hashColor(name: string): string {
   let h = 5381
@@ -73,7 +74,7 @@ export function TagsSection() {
             />
           </div>
           <div>
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-[rgb(var(--text-3))]">Color</p>
+            <SectionLabel className="mb-2">Color</SectionLabel>
             <ColorPicker value={newColor} onChange={setNewColor} cols={6} />
           </div>
           <Button
