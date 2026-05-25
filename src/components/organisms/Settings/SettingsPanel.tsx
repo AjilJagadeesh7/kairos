@@ -9,6 +9,7 @@ import { KeyboardSection } from './KeyboardSection'
 import { LogsSection } from './LogsSection'
 import { PluginsSection } from './PluginsSection'
 import { MarketplaceSection } from './MarketplaceSection'
+import { UpdatesSection } from './UpdatesSection'
 import type { Section } from '../../../types'
 
 interface SettingsPanelProps {
@@ -33,6 +34,7 @@ export function SettingsPanel({ section }: SettingsPanelProps) {
         {section === 'callouts'     && <CalloutsSection />}
         {section === 'keyboard'     && <KeyboardSection />}
         {section === 'plugins'      && <PluginsSection />}
+        {section === 'updates'      && <UpdatesSection />}
         {section === 'logs'         && <LogsSection />}
         {section === 'about'        && <AboutSection />}
 

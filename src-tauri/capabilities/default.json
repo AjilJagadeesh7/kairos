@@ -23,6 +23,10 @@
     "dialog:allow-open",
     "dialog:allow-save",
     "shell:allow-open",
-    "clipboard-manager:allow-read-text"
+    "clipboard-manager:allow-read-text",
+    "updater:default",
+    "updater:allow-check",
+    "updater:allow-download",
+    "updater:allow-install"
   ]
 }

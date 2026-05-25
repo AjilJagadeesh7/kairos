@@ -19,6 +19,7 @@ const CORE_NAV: Array<{ id: Section; label: string; iconName: IconToken }> = [
   { id: 'keyboard',     label: 'Keyboard',         iconName: 'keyboard'    },
   { id: 'plugins',      label: 'Plugins',          iconName: 'puzzle'      },
   { id: 'marketplace',  label: 'Marketplace',      iconName: 'store'       },
+  { id: 'updates',      label: 'Updates',          iconName: 'arrow-up-circle' },
   { id: 'logs',         label: 'Logs',             iconName: 'scroll-text' },
   { id: 'about',        label: 'About',            iconName: 'info'        },
 ]
