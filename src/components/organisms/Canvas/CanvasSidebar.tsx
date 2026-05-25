@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useCanvasStore } from '../../../store/useCanvasStore'
 import { timeAgo } from '../../../utils/timeAgo'
@@ -6,6 +6,7 @@ import { Icon } from '../../../icons/Icon'
 import { IconButton } from '../../atoms/IconButton'
 import { SectionLabel } from '../../atoms/SectionLabel'
 import { Divider } from '../../atoms/Divider'
+import { InlineEditInput } from '../../molecules/InlineEditInput'
 
 export function CanvasSidebar() {
   const navigate      = useNavigate()
@@ -17,11 +18,6 @@ export function CanvasSidebar() {
 
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameVal, setRenameVal]   = useState('')
-  const renameRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    if (renamingId) renameRef.current?.focus()
-  }, [renamingId])
 
   function commitRename() {
     if (!renamingId) return
@@ -79,17 +75,12 @@ export function CanvasSidebar() {
 
                 <div className="min-w-0 flex-1">
                   {renamingId === canvas.id ? (
-                    <input
-                      ref={renameRef}
+                    <InlineEditInput
                       value={renameVal}
-                      onChange={e => setRenameVal(e.target.value)}
-                      onBlur={commitRename}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') commitRename()
-                        if (e.key === 'Escape') setRenamingId(null)
-                      }}
-                      onClick={e => e.stopPropagation()}
-                      className="w-full rounded border border-[rgb(var(--accent))] bg-[rgb(var(--surface))] px-1 py-0 text-[12px] text-[rgb(var(--text))] outline-none"
+                      onChange={setRenameVal}
+                      onCommit={commitRename}
+                      onCancel={() => setRenamingId(null)}
+                      className="w-full px-1"
                     />
                   ) : (
                     <p className="truncate text-[12px] font-medium leading-tight">{canvas.title}</p>

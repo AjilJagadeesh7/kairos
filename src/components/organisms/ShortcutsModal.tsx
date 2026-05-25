@@ -7,6 +7,7 @@ import { Icon } from '../../icons/Icon'
 import { IconButton } from '../atoms/IconButton'
 import { SectionLabel } from '../atoms/SectionLabel'
 import { KbdKey } from '../atoms/KbdKey'
+import { ModalShell } from '../molecules/ModalShell'
 
 interface ShortcutsModalProps {
   onClose: () => void
@@ -32,14 +33,7 @@ export function ShortcutsModal({ onClose }: ShortcutsModalProps) {
   })).filter(g => g.shortcuts.length > 0)
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="relative w-full max-w-md rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--bg))] shadow-2xl"
-        onClick={e => e.stopPropagation()}
-      >
+    <ModalShell onClose={onClose}>
         <div className="flex items-center gap-2 border-b border-[rgb(var(--border))] px-5 py-4">
           <Icon name="keyboard" size={16} className="text-[rgb(var(--accent))]" />
           <h2 className="flex-1 text-sm font-semibold text-[rgb(var(--text))]">Keyboard shortcuts</h2>
@@ -79,6 +73,6 @@ export function ShortcutsModal({ onClose }: ShortcutsModalProps) {
           </p>
         </div>
       </div>
-    </div>
+    </ModalShell>
   )
 }

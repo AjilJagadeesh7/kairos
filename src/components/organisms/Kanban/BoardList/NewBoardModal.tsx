@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { useKanbanStore } from '../../../../store/useKanbanStore'
 import { Button } from '../../../atoms/Button'
 import { Icon } from '../../../../icons/Icon'
+import { ModalShell } from '../../../molecules/ModalShell'
+import { IconButton } from '../../../atoms/IconButton'
 
 interface NewBoardModalProps {
   onClose: () => void
@@ -33,16 +35,10 @@ export function NewBoardModal({ onClose }: NewBoardModalProps): JSX.Element {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={handleBackdropClick}
-    >
-      <div className="w-full max-w-md rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6 shadow-2xl">
+    <ModalShell onClose={onClose} className="rounded-2xl p-6">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-[rgb(var(--text))]">New Board</h2>
-          <Button variant="ghost" size="xs" className="h-7 w-7 p-0" onClick={onClose}>
-            <Icon name="x" size={14} />
-          </Button>
+          <IconButton icon="x" label="Close" size="sm" onClick={onClose} />
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -81,7 +77,6 @@ export function NewBoardModal({ onClose }: NewBoardModalProps): JSX.Element {
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalShell>
   )
 }

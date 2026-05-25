@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 
 import { Button } from '../../atoms/Button'
 import { Icon } from '../../../icons/Icon'
+import { ModalShell } from '../../molecules/ModalShell'
+import { IconButton } from '../../atoms/IconButton'
 import type { NoteTemplate } from '../../../types'
 import { makeTemplates } from './noteTemplates'
 
@@ -37,28 +38,20 @@ export function NoteTemplateModal({ onSelect, onClose }: NoteTemplateModalProps)
     if (t) onSelect(t)
   }
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={handleBackdropClick}
-    >
+  return (
+    <ModalShell onClose={onClose} maxWidth="max-w-3xl" className="rounded-2xl p-6">
       <div
         ref={containerRef}
         tabIndex={-1}
         onKeyDown={handleKeyDown}
-        className="flex w-full max-w-3xl flex-col gap-5 rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-6 shadow-2xl outline-none"
+        className="flex flex-col gap-5 outline-none"
       >
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-semibold text-[rgb(var(--text))]">New note</h2>
-            <p className="mt-0.5 text-xs text-[rgb(var(--text-3))]">Choose a template to get started</p>
+            <h2 className="text-base font-semibold text-text">New note</h2>
+            <p className="mt-0.5 text-xs text-text3">Choose a template to get started</p>
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-md p-1.5 text-[rgb(var(--text-3))] transition hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]"
-          >
-            <Icon name="x" size={15} />
-          </button>
+          <IconButton icon="x" label="Close" size="sm" onClick={onClose} />
         </div>
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 max-h-[60vh] overflow-y-auto pr-1">
@@ -96,7 +89,6 @@ export function NoteTemplateModal({ onSelect, onClose }: NoteTemplateModalProps)
           </Button>
         </div>
       </div>
-    </div>,
-    document.body,
+    </ModalShell>
   )
 }

@@ -126,6 +126,14 @@ Types that are genuinely private to a single file and never exported are exempt.
 
 When you find yourself writing any of these patterns inline, extract to the atom instead.
 
+### Reusable molecules — always use these, never inline the pattern
+
+- **`ModalShell`** (`molecules/ModalShell`) — all modals; wraps `createPortal` + backdrop + card; props: `onClose`, `maxWidth`, `zIndex`, `blur`, `className`. Pass `className="overflow-hidden p-0"` when the card controls its own padding.
+- **`EmptyState`** (`molecules/EmptyState`) — icon + title + optional description + optional action button for empty lists/panels
+- **`InlineEditInput`** (`molecules/InlineEditInput`) — autoFocus input with Enter/Escape/blur commit; use for rename and create-folder flows; `onClick` stops propagation automatically
+
+When you find yourself writing a modal backdrop + card, an inline editing input, or an empty-list placeholder, use these molecules instead.
+
 ## Key architectural rules
 
 - Platform detection: `src/utils/platform.ts` — `isDesktop()` for Tauri-only features

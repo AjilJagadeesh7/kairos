@@ -9,6 +9,8 @@ import { TagManager } from './TagManager'
 import { ExportOptions } from './ExportOptions'
 import type { Board } from '../../../../types/kanban.types'
 import { Icon } from '../../../../icons/Icon'
+import { ModalShell } from '../../../molecules/ModalShell'
+import { IconButton } from '../../../atoms/IconButton'
 
 type Tab = 'general' | 'columns' | 'tags' | 'export'
 
@@ -64,17 +66,11 @@ export function BoardSettings({ board, onClose }: BoardSettingsProps): JSX.Eleme
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={handleBackdropClick}
-    >
-      <div className="flex h-[600px] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-2xl">
+    <ModalShell onClose={onClose} maxWidth="max-w-2xl" className="flex h-[600px] flex-col overflow-hidden rounded-2xl">
         {/* Header */}
-        <div className="flex flex-shrink-0 items-center justify-between border-b border-[rgb(var(--border))] px-5 py-4">
-          <h2 className="text-lg font-semibold text-[rgb(var(--text))]">Board Settings</h2>
-          <Button variant="ghost" size="xs" className="h-7 w-7 p-0" onClick={onClose}>
-            <Icon name="x" size={14} />
-          </Button>
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-border px-5 py-4">
+          <h2 className="text-lg font-semibold text-text">Board Settings</h2>
+          <IconButton icon="x" label="Close" size="sm" onClick={onClose} />
         </div>
 
         <div className="flex flex-1 min-h-0">
@@ -142,7 +138,6 @@ export function BoardSettings({ board, onClose }: BoardSettingsProps): JSX.Eleme
             {activeTab === 'export' && <ExportOptions board={board} />}
           </div>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }

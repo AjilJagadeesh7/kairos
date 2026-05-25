@@ -2,6 +2,8 @@ import { useRef, useState } from 'react'
 import { ConnectedFolderRow } from './FolderRow'
 import { NoteRow } from './NoteRow'
 import { Icon } from '../../../icons/Icon'
+import { InlineEditInput } from '../../molecules/InlineEditInput'
+import { EmptyState } from '../../molecules/EmptyState'
 import type { FolderNode } from '../../../utils/folderTree'
 import type { Note, TagRecord } from '../../../types'
 import type { DragState } from './FolderRow'
@@ -38,17 +40,13 @@ function RootNewFolderInput({ onCommit, onCancel }: { onCommit: (name: string) =
   return (
     <div className="flex h-[26px] items-center gap-1.5 px-2">
       <Icon name="folder-plus" size={12} className="shrink-0 text-accent/70" aria-hidden />
-      <input
-        autoFocus
+      <InlineEditInput
         value={value}
-        onChange={e => setValue(e.target.value)}
+        onChange={setValue}
+        onCommit={commit}
+        onCancel={onCancel}
         placeholder="Folder name"
-        onBlur={commit}
-        onKeyDown={e => {
-          if (e.key === 'Enter') { e.preventDefault(); commit() }
-          if (e.key === 'Escape') { onCancel() }
-        }}
-        className="min-w-0 flex-1 rounded border border-accent bg-surface px-1.5 py-0 text-[12px] outline-none placeholder:text-text3"
+        className="min-w-0 flex-1 placeholder:text-text3"
       />
     </div>
   )
@@ -167,10 +165,7 @@ export function FolderTree({
       ))}
 
       {!hasContent && !creatingRootFolder && (
-        <div className="flex flex-col items-center gap-2 py-10 text-center">
-          <Icon name="file-text" size={28} className="text-text3" aria-hidden />
-          <p className="text-xs text-text3">No notes yet</p>
-        </div>
+        <EmptyState icon="file-text" title="No notes yet" className="py-10" />
       )}
     </div>
   )

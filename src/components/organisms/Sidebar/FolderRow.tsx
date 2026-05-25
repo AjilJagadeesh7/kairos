@@ -3,6 +3,7 @@ import { useIconRules, resolveFolderIcon } from '../../../plugins/pluginContext'
 import { FolderMenu } from './FolderMenu'
 import { NoteRow } from './NoteRow'
 import { Icon } from '../../../icons/Icon'
+import { InlineEditInput } from '../../molecules/InlineEditInput'
 import type { FolderNode } from '../../../utils/folderTree'
 import type { Note, TagRecord } from '../../../types'
 
@@ -183,17 +184,13 @@ function FolderRow({
           {isCreatingChild && (
             <div style={{ paddingLeft: `${8 + (depth + 1) * 16}px` }} className="flex h-[26px] items-center gap-1.5 pr-2">
               <Icon name="folder-plus" size={12} className="shrink-0 text-accent/70" aria-hidden />
-              <input
-                autoFocus
+              <InlineEditInput
                 value={newFolderName}
-                onChange={e => setNewFolderName(e.target.value)}
+                onChange={setNewFolderName}
+                onCommit={commitNewFolder}
+                onCancel={() => { setNewFolderName(''); onFinishCreatingChild() }}
                 placeholder="Folder name"
-                onBlur={commitNewFolder}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') { e.preventDefault(); commitNewFolder() }
-                  if (e.key === 'Escape') { setNewFolderName(''); onFinishCreatingChild() }
-                }}
-                className="min-w-0 flex-1 rounded border border-accent bg-surface px-1.5 py-0 text-[12px] outline-none placeholder:text-text3"
+                className="min-w-0 flex-1 placeholder:text-text3"
               />
             </div>
           )}
