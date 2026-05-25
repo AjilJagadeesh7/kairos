@@ -28,12 +28,14 @@ interface GraphSidebarProps {
   tagColorMap: Map<string, string>
   selectedNote: Note | null
   selectedTaskInfo: SelectedTaskInfo | null
+  selectedCanvasInfo: { canvasId: string; title: string } | null
   showTasks: boolean
   showCanvas: boolean
   onToggleTasks: () => void
   onToggleCanvas: () => void
   onOpenNote: (noteId: string) => void
   onOpenTask: (nodeId: string) => void
+  onOpenCanvas: (canvasId: string) => void
   onClose?: () => void
 }
 
@@ -42,10 +44,10 @@ export function GraphSidebar({
   nodes, links,
   wikilinkCount, semanticCount, taskNodeCount, canvasNodeCount,
   tagLegendItems, tagColorMap,
-  selectedNote, selectedTaskInfo,
+  selectedNote, selectedTaskInfo, selectedCanvasInfo,
   showTasks, showCanvas,
   onToggleTasks, onToggleCanvas,
-  onOpenNote, onOpenTask, onClose,
+  onOpenNote, onOpenTask, onOpenCanvas, onClose,
 }: GraphSidebarProps): JSX.Element {
   const noteCount = nodes.filter(n => n.nodeType === 'note').length
 
@@ -203,6 +205,24 @@ export function GraphSidebar({
               className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-surface2 px-2 py-1.5 text-[10px] font-semibold text-text transition hover:opacity-80"
             >
               Open task <Icon name="arrow-right" size={10} />
+            </button>
+          </section>
+        )}
+
+        {/* Selected canvas panel */}
+        {selectedCanvasInfo && !selectedNote && !selectedTaskInfo && (
+          <section className="rounded-xl border border-border bg-surface3 p-3">
+            <div className="mb-2 flex items-start gap-1.5">
+              <Icon name="pen-tool" size={12} className="mt-0.5 shrink-0 text-text3" />
+              <p className="text-xs font-semibold leading-snug text-text">
+                {selectedCanvasInfo.title || 'Untitled Canvas'}
+              </p>
+            </div>
+            <button
+              onClick={() => onOpenCanvas(selectedCanvasInfo.canvasId)}
+              className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-surface2 px-2 py-1.5 text-[10px] font-semibold text-text transition hover:opacity-80"
+            >
+              Open canvas <Icon name="arrow-right" size={10} />
             </button>
           </section>
         )}

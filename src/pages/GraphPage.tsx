@@ -5,6 +5,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/schema'
 import { useAppStore } from '../store/useAppStore'
 import { useKanbanStore } from '../store/useKanbanStore'
+import { useCanvasStore } from '../store/useCanvasStore'
 import { usePaneStore } from '../store/usePaneStore'
 import { usePaneId, useSidebarSlot } from '../contexts/PaneContext'
 import { SidebarWrapper } from '../components/organisms/Sidebar/SidebarWrapper'
@@ -29,6 +30,7 @@ export function GraphPage() {
   const navigate             = useNavigate()
   const notes                = useAppStore(s => s.notes)
   const appendWikilink       = useAppStore(s => s.appendWikilink)
+  const canvases             = useCanvasStore(s => s.canvases)
   const paneId               = usePaneId()
   const isMultiPane          = usePaneStore(s => s.panes.length > 1)
 
@@ -107,6 +109,15 @@ export function GraphPage() {
     return null
   }, [selectedNodeId, nodes])
 
+  const selectedCanvasInfo = useMemo(() => {
+    if (!selectedNodeId) return null
+    const node = nodes.find(n => n.id === selectedNodeId)
+    if (!node || node.nodeType !== 'canvas') return null
+    const canvas = canvases.find(c => c.id === selectedNodeId)
+    if (!canvas) return null
+    return { canvasId: canvas.id, title: canvas.title }
+  }, [selectedNodeId, nodes, canvases])
+
   function handleModeChange(mode: GraphMode) {
     setSelectedNodeId(null)
     setFocusMode(false)
@@ -171,12 +182,14 @@ export function GraphPage() {
       tagColorMap={tagColorMap}
       selectedNote={selectedNote}
       selectedTaskInfo={selectedTaskInfo}
+      selectedCanvasInfo={selectedCanvasInfo}
       showTasks={showTasks}
       showCanvas={showCanvas}
       onToggleTasks={() => setShowTasks(v => !v)}
       onToggleCanvas={() => setShowCanvas(v => !v)}
       onOpenNote={id => navigate(`/notes/${id}`)}
       onOpenTask={handleOpenTask}
+      onOpenCanvas={id => navigate(`/canvas/${id}`)}
     />
   )
 

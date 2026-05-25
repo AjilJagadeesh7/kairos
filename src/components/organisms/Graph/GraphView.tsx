@@ -137,11 +137,15 @@ export function GraphView({
     return () => obs.disconnect()
   }, [])
 
+  // Points to the node copies kapsule is actively mutating (x/y updated by simulation).
+  // Must be declared before findNodeAt so it can be referenced in the closure.
+  const activeNodesRef = useRef<GNode[]>(nodes)
+
   const findNodeAt = useCallback((offsetX: number, offsetY: number): GNode | null => {
     const fg = fgRef.current
     if (!fg?.graph2ScreenCoords) return null
     let closest: GNode | null = null; let minDist = Infinity
-    for (const node of nodes) {
+    for (const node of activeNodesRef.current) {
       if (node.x == null || node.y == null) continue
       const sc     = fg.graph2ScreenCoords(node.x, node.y)
       const radius = 5 * Math.sqrt(node.val || 1) + 6
@@ -149,7 +153,7 @@ export function GraphView({
       if (dist <= radius && dist < minDist) { minDist = dist; closest = node }
     }
     return closest
-  }, [nodes])
+  }, [])
 
   const handleNodeClick = useCallback((node: GNode, modifierKey: boolean) => {
     if (modifierKey && node.nodeType === 'note' && onOpenNoteInNewPane) {
@@ -308,19 +312,29 @@ export function GraphView({
     ctx.globalAlpha = 1
   }, [selectedNoteId, isFocused, neighborIds, focusedNodeId, textColor, degreeMap, isLargeGraph])
 
-  // Always points to the node array kapsule is currently mutating (x/y tracking).
-  // Updated only when graphData is rebuilt — NOT on every prop-nodes change.
-  const activeNodesRef = useRef<GNode[]>(nodes)
-
   // Only rebuild graphData (which restarts the simulation) when the node/link
   // *structure* changes or an explicit relayout is requested. Content-only note
   // updates (vault watcher, sync edits) change the `nodes` reference but not the
   // count, so they get the same graphData object and kapsule never sees a new prop
   // → no alpha(1).restart() → no scatter.
   const graphData = useMemo(() => {
-    seedPositions(nodes, graphMode)
-    activeNodesRef.current = nodes
-    return { nodes, links }
+    // Shallow-clone every node so d3-force can write x/y/vx/vy freely.
+    // Original objects from useGraphData may be immutable (Zustand freeze).
+    const nodesCopy = nodes.map(n => ({ ...n }))
+    seedPositions(nodesCopy, graphMode)
+    activeNodesRef.current = nodesCopy
+
+    // Drop any link whose source or target doesn't exist in the current node set.
+    // This prevents kapsule's "node not found" error caused by dangling wikilinks
+    // that reference a note which has since been deleted.
+    const nodeIdSet = new Set(nodesCopy.map(n => n.id))
+    const safeLinks = links.filter(l => {
+      const src = typeof l.source === 'object' ? (l.source as GNode).id : l.source
+      const tgt = typeof l.target === 'object' ? (l.target as GNode).id : l.target
+      return nodeIdSet.has(src as string) && nodeIdSet.has(tgt as string)
+    })
+
+    return { nodes: nodesCopy, links: safeLinks }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rerenderKey, nodes.length, links.length, graphMode])
 

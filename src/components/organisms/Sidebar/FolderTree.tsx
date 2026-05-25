@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { IconToken } from '../../../icons/tokens'
 import { usePaneStore } from '../../../store/usePaneStore'
 import { useAppStore } from '../../../store/useAppStore'
 import { useIconRules, resolveNoteIcon, resolveFolderIcon } from '../../../plugins/pluginContext'
-import { timeAgo } from '../../../utils/timeAgo'
 import type { FolderNode } from '../../../utils/folderTree'
 import type { Note, TagRecord } from '../../../types'
 import { Icon } from '../../../icons/Icon'
@@ -98,17 +98,29 @@ function FolderMenu({ onNewNote, onNewSubfolder, onRename, onDelete, onClose }: 
   )
 }
 
-// ─── Move-to-folder popover ───────────────────────────────────────────────────
+// ─── Note context menu ────────────────────────────────────────────────────────
 
-interface MovePopoverProps {
+interface NoteContextMenuProps {
+  x: number
+  y: number
+  note: Note
+  isPinned: boolean
+  isCopied: boolean
   allFolderPaths: string[]
-  currentFolder: string | undefined
+  onPin: () => void
+  onCopyLink: () => void
+  onOpenInNewTab: () => void
   onMove: (folder: string) => void
+  onDelete: () => void
   onClose: () => void
 }
 
-function MovePopover({ allFolderPaths, currentFolder, onMove, onClose }: MovePopoverProps) {
+function NoteContextMenu({
+  x, y, note, isPinned, isCopied, allFolderPaths,
+  onPin, onCopyLink, onOpenInNewTab, onMove, onDelete, onClose,
+}: NoteContextMenuProps) {
   const ref = useRef<HTMLDivElement>(null)
+  const [showMove, setShowMove] = useState(false)
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -118,34 +130,81 @@ function MovePopover({ allFolderPaths, currentFolder, onMove, onClose }: MovePop
     return () => document.removeEventListener('mousedown', handler)
   }, [onClose])
 
-  const options = [
-    { label: '/ (root)', value: '' },
-    ...allFolderPaths.map(p => ({ label: p, value: p })),
-  ].filter(o => o.value !== (currentFolder ?? ''))
+  const left = Math.min(x, window.innerWidth - 208)
+  const top  = Math.min(y, window.innerHeight - 260)
 
-  return (
+  return createPortal(
     <div
       ref={ref}
       role="menu"
-      className="absolute right-0 top-full z-50 mt-1 max-h-48 min-w-[180px] overflow-y-auto rounded-lg border border-border bg-surface shadow-lg"
+      onContextMenu={e => e.preventDefault()}
+      className="fixed z-[9999] min-w-[190px] overflow-hidden rounded-lg border border-border bg-surface shadow-lg"
+      style={{ left, top }}
     >
-      {options.length === 0 ? (
-        <p className="px-3 py-2 text-xs text-text3">No other folders</p>
-      ) : (
-        options.map(o => (
-          <button
-            key={o.value}
-            type="button"
-            role="menuitem"
-            onClick={(e) => { e.stopPropagation(); onMove(o.value); onClose() }}
-            className="flex w-full items-center gap-2 px-3 py-2 text-xs text-text transition hover:bg-surface2"
-          >
-            <Icon name="folder" size={12} aria-hidden />
-            {o.label}
-          </button>
-        ))
+      <button type="button" role="menuitem"
+        onClick={e => { e.stopPropagation(); onPin(); onClose() }}
+        className="flex w-full items-center gap-2 px-3 py-2 text-xs text-text transition hover:bg-surface2"
+      >
+        <Icon name="pin" size={13} aria-hidden className={isPinned ? 'fill-accent text-accent' : ''} />
+        {isPinned ? 'Unpin' : 'Pin'}
+      </button>
+
+      <button type="button" role="menuitem"
+        onClick={e => { e.stopPropagation(); setShowMove(v => !v) }}
+        className="flex w-full items-center gap-2 px-3 py-2 text-xs text-text transition hover:bg-surface2"
+      >
+        <Icon name="folder-input" size={13} aria-hidden />
+        Move to folder
+        <Icon name="chevron-right" size={11} className="ml-auto text-text3" aria-hidden />
+      </button>
+
+      {showMove && (
+        <div className="border-t border-border/50 max-h-40 overflow-y-auto">
+          {[{ label: '/ (root)', value: '' }, ...allFolderPaths.map(p => ({ label: p, value: p }))]
+            .filter(o => o.value !== (note.folder ?? ''))
+            .map(o => (
+              <button key={o.value} type="button" role="menuitem"
+                onClick={e => { e.stopPropagation(); onMove(o.value); onClose() }}
+                className="flex w-full items-center gap-2 px-4 py-1.5 text-xs text-text2 transition hover:bg-surface2"
+              >
+                <Icon name="folder" size={11} aria-hidden />
+                {o.label}
+              </button>
+            ))
+          }
+        </div>
       )}
-    </div>
+
+      <button type="button" role="menuitem"
+        onClick={e => { e.stopPropagation(); onCopyLink(); onClose() }}
+        className="flex w-full items-center gap-2 px-3 py-2 text-xs text-text transition hover:bg-surface2"
+      >
+        {isCopied
+          ? <Icon name="check" size={13} className="text-green-500" aria-hidden />
+          : <Icon name="copy" size={13} aria-hidden />
+        }
+        Copy wikilink
+      </button>
+
+      <button type="button" role="menuitem"
+        onClick={e => { e.stopPropagation(); onOpenInNewTab(); onClose() }}
+        className="flex w-full items-center gap-2 px-3 py-2 text-xs text-text transition hover:bg-surface2"
+      >
+        <Icon name="external-link" size={13} aria-hidden />
+        Open in new tab
+      </button>
+
+      <div className="my-0.5 border-t border-border/50" />
+
+      <button type="button" role="menuitem"
+        onClick={e => { e.stopPropagation(); onDelete(); onClose() }}
+        className="flex w-full items-center gap-2 px-3 py-2 text-xs text-red-400 transition hover:bg-surface2"
+      >
+        <Icon name="trash-2" size={13} aria-hidden />
+        Delete
+      </button>
+    </div>,
+    document.body,
   )
 }
 
@@ -169,114 +228,75 @@ function NoteRow({
   onOpen, onDelete, onCopyLink, onMove, onDragStart,
 }: NoteRowProps) {
   const label = note.title || 'Untitled note'
-  const [showMove, setShowMove] = useState(false)
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null)
   const isPinned  = useAppStore(s => s.pinnedNoteIds.includes(note.id))
   const pinNote   = useAppStore(s => s.pinNote)
   const unpinNote = useAppStore(s => s.unpinNote)
   const iconRules = useIconRules()
   const iconRule  = resolveNoteIcon(note.title, note.tags, iconRules)
 
-  function handleOpenInNewTab(e: React.MouseEvent) {
-    e.stopPropagation()
+  function handleOpenInNewTab() {
     const { focusedPaneId, openInNewTab } = usePaneStore.getState()
     openInNewTab(focusedPaneId, `/notes/${note.id}`, note.title || 'Note')
     onOpen()
   }
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      data-note-item
-      aria-label={label}
-      aria-current={isActive ? 'true' : undefined}
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.effectAllowed = 'move'
-        e.dataTransfer.setData('mindvault/noteId', note.id)
-        onDragStart(note.id)
-      }}
-      onClick={onOpen}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen() } }}
-      style={{ paddingLeft: `${8 + depth * 16}px` }}
-      className={`group relative flex h-[26px] cursor-pointer select-none items-center gap-1.5 pr-1 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-accent/50 ${
-        isActive
-          ? 'bg-accent/15 text-text'
-          : 'text-text2 hover:bg-surface3 hover:text-text'
-      }`}
-    >
-      <IndentGuides depth={depth} />
+    <>
+      <div
+        role="button"
+        tabIndex={0}
+        data-note-item
+        aria-label={label}
+        aria-current={isActive ? 'true' : undefined}
+        draggable
+        onDragStart={(e) => {
+          e.dataTransfer.effectAllowed = 'move'
+          e.dataTransfer.setData('mindvault/noteId', note.id)
+          onDragStart(note.id)
+        }}
+        onClick={onOpen}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen() } }}
+        onContextMenu={e => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY }) }}
+        style={{ paddingLeft: `${8 + depth * 16}px` }}
+        className={`group relative flex h-[26px] cursor-pointer select-none items-center gap-1.5 pr-2 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-accent/50 ${
+          isActive
+            ? 'bg-accent/15 text-text'
+            : 'text-text2 hover:bg-surface3 hover:text-text'
+        }`}
+      >
+        <IndentGuides depth={depth} />
 
-      {/* Fixed-width icon zone — aligns with folder icons */}
-      <span className="relative flex w-5 shrink-0 items-center justify-center" aria-hidden style={iconRule?.color ? { color: iconRule.color } : undefined}>
-        {iconRule
-          ? <span className="text-[12px] leading-none">{iconRule.emoji}</span>
-          : isPinned
-            ? <Icon name="pin" size={11} className="text-accent" />
-            : <Icon name="file-text" size={11} className={isActive ? 'text-accent/60' : 'text-text3'} />
-        }
-      </span>
+        {/* Fixed-width icon zone — aligns with folder icons */}
+        <span className="relative flex w-5 shrink-0 items-center justify-center" aria-hidden style={iconRule?.color ? { color: iconRule.color } : undefined}>
+          {iconRule
+            ? <span className="text-[12px] leading-none">{iconRule.emoji}</span>
+            : isPinned
+              ? <Icon name="pin" size={11} className="text-accent" />
+              : <Icon name="file-text" size={11} className={isActive ? 'text-accent/60' : 'text-text3'} />
+          }
+        </span>
 
-      <span className="min-w-0 flex-1 truncate">{label}</span>
-
-      {/* Hover actions */}
-      <div className="absolute right-1 top-0 flex h-full items-center opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-        <span className="mr-1.5 text-[11px] text-text3">{timeAgo(note.updatedAt)}</span>
-        <button
-          type="button"
-          title={isPinned ? 'Unpin' : 'Pin'}
-          aria-label={isPinned ? `Unpin "${label}"` : `Pin "${label}"`}
-          onClick={e => { e.stopPropagation(); isPinned ? unpinNote(note.id) : pinNote(note.id) }}
-          className={`flex h-5 w-5 items-center justify-center rounded transition ${
-            isPinned ? 'text-accent' : 'text-text3 hover:text-text'
-          }`}
-        >
-          <Icon name="pin" size={10} className={isPinned ? 'fill-accent' : ''} aria-hidden />
-        </button>
-        <div className="relative">
-          <button
-            type="button"
-            title="Move to folder"
-            onClick={e => { e.stopPropagation(); setShowMove(v => !v) }}
-            className="flex h-5 w-5 items-center justify-center rounded text-text3 transition hover:text-text"
-          >
-            <Icon name="folder-input" size={10} aria-hidden />
-          </button>
-          {showMove && (
-            <MovePopover
-              allFolderPaths={allFolderPaths}
-              currentFolder={note.folder}
-              onMove={onMove}
-              onClose={() => setShowMove(false)}
-            />
-          )}
-        </div>
-        <button
-          type="button"
-          title="Copy wikilink"
-          onClick={e => { e.stopPropagation(); onCopyLink() }}
-          className="flex h-5 w-5 items-center justify-center rounded text-text3 transition hover:text-text"
-        >
-          {isCopied ? <Icon name="check" size={10} className="text-green-500" aria-hidden /> : <Icon name="copy" size={10} aria-hidden />}
-        </button>
-        <button
-          type="button"
-          title="Open in new tab"
-          onClick={handleOpenInNewTab}
-          className="flex h-5 w-5 items-center justify-center rounded text-text3 transition hover:text-text"
-        >
-          <Icon name="external-link" size={10} aria-hidden />
-        </button>
-        <button
-          type="button"
-          title="Delete"
-          onClick={e => { e.stopPropagation(); onDelete() }}
-          className="flex h-5 w-5 items-center justify-center rounded text-text3 transition hover:text-red-400"
-        >
-          <Icon name="trash-2" size={10} aria-hidden />
-        </button>
+        <span className="min-w-0 flex-1 truncate">{label}</span>
       </div>
-    </div>
+
+      {ctxMenu && (
+        <NoteContextMenu
+          x={ctxMenu.x}
+          y={ctxMenu.y}
+          note={note}
+          isPinned={isPinned}
+          isCopied={isCopied}
+          allFolderPaths={allFolderPaths}
+          onPin={() => isPinned ? unpinNote(note.id) : pinNote(note.id)}
+          onCopyLink={onCopyLink}
+          onOpenInNewTab={handleOpenInNewTab}
+          onMove={onMove}
+          onDelete={onDelete}
+          onClose={() => setCtxMenu(null)}
+        />
+      )}
+    </>
   )
 }
 
