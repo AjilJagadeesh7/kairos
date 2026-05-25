@@ -77,6 +77,41 @@ for (const item of myFeatures) docs.push(myFeatureDoc(item))
 - The RAF loop is explicitly stopped on GraphView unmount via `useEffect(() => () => fgRef.current?.pauseAnimation(), [])`
 - `posCache` stores only `{ x, y }` — **never `fx/fy`**. Dragging pins a node for the current session only (`node.fx = node.x` on the live object). Persisting `fx/fy` causes previously-dragged nodes to be frozen on re-visits while others animate, making behavior inconsistent.
 
+## Modularization rules
+
+These rules are enforced across the entire codebase. Apply them when adding or editing any file.
+
+### File size limit: 300 lines
+
+No component, hook, or module file may exceed 300 lines. When a file grows past this, split it:
+
+- **Sub-components** → extract to a sibling file in the same folder (e.g. `MyFeatureToolbar.tsx` next to `MyFeature.tsx`)
+- **Custom hooks** → extract to `src/hooks/useMyHook.ts`
+- **Pure utilities / helpers** → extract to an adjacent `.ts` file (e.g. `myFeatureUtils.ts`)
+- **Static data / large config objects** → extract to an adjacent `.ts` or `.tsx` file (e.g. `myFeatureData.tsx` when JSX is needed for icons)
+
+### Types must live in `src/types/`
+
+Shared or exported TypeScript types and interfaces must **not** be defined inside component files. Instead:
+
+1. Add the type to the relevant file in `src/types/` (e.g. `note.types.ts`, `graph.types.ts`, `editor.types.ts`).
+2. Re-export it from `src/types/index.ts`.
+3. Import it as `import type { MyType } from '../../../types'` (or the equivalent relative path).
+
+Types that are genuinely private to a single file and never exported are exempt.
+
+### File/folder placement
+
+| What                       | Where                                                        |
+|----------------------------|--------------------------------------------------------------|
+| Shared/exported types      | `src/types/<domain>.types.ts`                                |
+| Custom React hooks         | `src/hooks/use<Name>.ts` (or `.tsx` if JSX)                  |
+| Page-level components      | `src/pages/<Name>Page.tsx`                                   |
+| Organism-level components  | `src/components/organisms/<Feature>/<Name>.tsx`              |
+| Molecule/atom components   | `src/components/molecules/` or `atoms/`                      |
+| Pure utility functions     | `src/utils/<name>.ts`                                        |
+| Static data used by one UI | Adjacent to the component, e.g. `<name>Data.tsx`             |
+
 ## Key architectural rules
 
 - Platform detection: `src/utils/platform.ts` — `isDesktop()` for Tauri-only features

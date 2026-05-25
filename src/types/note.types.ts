@@ -14,3 +14,12 @@ export type TagRecord = {
   color: string
   createdAt: string
 }
+
+export interface NoteTemplate {
+  id: string
+  name: string
+  description: string
+  icon: React.ReactNode
+  title: string
+  content: string
+}

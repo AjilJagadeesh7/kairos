@@ -9,7 +9,7 @@ import { SearchModePills } from '../../molecules/SearchModePills'
 import { VirtualNoteList } from '../../molecules/VirtualNoteList'
 import { NoteTemplateModal } from '../Notes/NoteTemplateModal'
 import { FolderTree } from './FolderTree'
-import type { NoteTemplate } from '../Notes/NoteTemplateModal'
+import type { NoteTemplate } from '../../../types'
 import type { Note } from '../../../types'
 import { Icon } from '../../../icons/Icon'
 

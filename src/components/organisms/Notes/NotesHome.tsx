@@ -7,7 +7,7 @@ import { TAG_COLOR_PALETTE } from '../../../utils/kanban'
 import { TagBadge } from '../../atoms/TagBadge'
 import { Button } from '../../atoms/Button'
 import { NoteTemplateModal } from './NoteTemplateModal'
-import type { NoteTemplate } from './NoteTemplateModal'
+import type { NoteTemplate } from '../../../types'
 import type { Note, TagRecord } from '../../../types'
 import { Icon } from '../../../icons/Icon'
 

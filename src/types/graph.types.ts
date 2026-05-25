@@ -31,3 +31,7 @@ export type GLink = {
 }
 
 export type GraphPopover = { noteId: string; x: number; y: number }
+
+export type GraphMode = 'links' | 'tags'
+
+export type RightClickTarget = { node: GNode; x: number; y: number }

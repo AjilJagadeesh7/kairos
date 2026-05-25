@@ -15,10 +15,8 @@ import { NoteInfoPanel } from './NoteInfoPanel'
 import { ConflictBanner } from './ConflictBanner'
 import { useConflictStore } from '../../../store/useConflictStore'
 import { eventMatchesAction } from '../../../hooks/useShortcutKey'
-import type { EditorDraftProps, TagRecord } from '../../../types'
+import type { EditorDraftProps, TagRecord, SaveStatus } from '../../../types'
 import { Icon } from '../../../icons/Icon'
-
-type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved'
 
 function tagColor(name: string): string {
   let h = 5381

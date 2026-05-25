@@ -1,11 +1,9 @@
 
 import { stripMarkdown } from '../../../utils/stripMarkdown'
 import { useKanbanStore } from '../../../store/useKanbanStore'
-import type { GNode, GLink } from '../../../types'
-import type { Note } from '../../../types'
+import type { GNode, GLink, GraphMode, Note } from '../../../types'
 import { Icon } from '../../../icons/Icon'
 
-type GraphMode = 'links' | 'tags'
 
 interface SelectedTaskInfo {
   nodeId: string

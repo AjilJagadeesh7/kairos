@@ -1,4 +1,4 @@
-export type { Note, TagRecord } from './note.types'
+export type { Note, TagRecord, NoteTemplate } from './note.types'
 export type { SyncStatus, SyncProviderType, StorageTarget, SyncMeta } from './sync.types'
 export type { ThemeMode, SearchMode, FontOption, FontWeight, VaultStatus } from './ui.types'
 export type {
@@ -10,7 +10,7 @@ export type {
   TableCommandRunner,
 } from './editor.types'
 export { CLOSED_MENU } from './editor.types'
-export type { EdgeKind, GraphEdge, GNode, GLink, GraphPopover } from './graph.types'
+export type { EdgeKind, GraphEdge, GNode, GLink, GraphPopover, GraphMode, RightClickTarget } from './graph.types'
 export type { Section, CustomCallout } from './settings.types'
 export type { SettingRecord, EmbeddingRecord } from './db.types'
 export type { JournalEntry } from './journal.types'

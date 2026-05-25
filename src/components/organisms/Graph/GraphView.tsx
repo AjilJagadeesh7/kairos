@@ -1,38 +1,16 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
 
-import type { GNode, GLink } from '../../../types'
+import type { GNode, GLink, GraphMode, RightClickTarget } from '../../../types'
 import { Icon } from '../../../icons/Icon'
+import { hexToRgba, roundRect } from './graphCanvasUtils'
+import {
+  savePositions, seedPositions, clearPositionsForMode, hasCachedPositions,
+} from '../../../hooks/useGraphPositionCache'
 
-// 3D WebGL renderer — loaded lazily so Three.js (~600KB) doesn't enter the
-// initial bundle. Only materialises when the user requests the 3D view.
+export type { RightClickTarget }
+
 const ForceGraph3D = lazy(() => import('react-force-graph-3d'))
-
-// Survives component unmount/remount (tab switches). Keyed by "mode:nodeId".
-// Only x/y are persisted — fx/fy are intentionally excluded so all nodes
-// enter each visit unpinned and the simulation animates them consistently.
-const posCache = new Map<string, { x: number; y: number }>()
-
-function savePositions(nodes: GNode[], mode: string) {
-  for (const n of nodes) {
-    if (n.x != null && n.y != null) posCache.set(`${mode}:${n.id}`, { x: n.x, y: n.y })
-  }
-}
-
-function seedPositions(nodes: GNode[], mode: string) {
-  for (const n of nodes) {
-    const p = posCache.get(`${mode}:${n.id}`)
-    if (p) { n.x = p.x; n.y = p.y }
-  }
-}
-
-type GraphMode = 'links' | 'tags'
-
-interface RightClickTarget {
-  node: GNode
-  x: number
-  y: number
-}
 
 interface GraphViewProps {
   nodes: GNode[]
@@ -53,29 +31,6 @@ interface GraphViewProps {
   focusMode: boolean
 }
 
-export type { RightClickTarget }
-
-function hexToRgba(hex: string, alpha: number): string {
-  if (!hex.startsWith('#') || hex.length < 7) return `rgba(251,191,36,${alpha})`
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  return `rgba(${r},${g},${b},${alpha})`
-}
-
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  ctx.beginPath()
-  ctx.moveTo(x + r, y)
-  ctx.lineTo(x + w - r, y)
-  ctx.arcTo(x + w, y, x + w, y + r, r)
-  ctx.lineTo(x + w, y + h - r)
-  ctx.arcTo(x + w, y + h, x + w - r, y + h, r)
-  ctx.lineTo(x + r, y + h)
-  ctx.arcTo(x, y + h, x, y + h - r, r)
-  ctx.lineTo(x, y + r)
-  ctx.arcTo(x, y, x + r, y, r)
-  ctx.closePath()
-}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type FGRef = any
@@ -105,9 +60,7 @@ export function GraphView({
   const prevRerenderKey = useRef(rerenderKey)
   useEffect(() => {
     if (rerenderKey !== prevRerenderKey.current) {
-      for (const key of posCache.keys()) {
-        if (key.startsWith(`${graphMode}:`)) posCache.delete(key)
-      }
+      clearPositionsForMode(graphMode)
       prevRerenderKey.current = rerenderKey
     }
   }, [rerenderKey, graphMode])
@@ -469,7 +422,7 @@ export function GraphView({
             d3AlphaDecay={isLargeGraph ? 0.06 : 0.035}
             d3VelocityDecay={isLargeGraph ? 0.7 : 0.6}
             cooldownTicks={isLargeGraph ? 80 : 200}
-            warmupTicks={nodes.some(n => posCache.has(`${graphMode}:${n.id}`)) ? 0 : 60}
+            warmupTicks={hasCachedPositions(nodes, graphMode) ? 0 : 60}
             enableNodeDrag
             onNodeHover={handleNodeHover}
             onNodeDragEnd={handleNodeDragEnd}

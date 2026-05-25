@@ -14,7 +14,7 @@ import { GraphSidebar } from '../components/organisms/Graph/GraphSidebar'
 import { GraphView } from '../components/organisms/Graph/GraphView'
 import { GraphContextMenu } from '../components/organisms/Graph/GraphContextMenu'
 import { ErrorBoundary } from '../components/common/ErrorBoundary'
-import type { RightClickTarget } from '../components/organisms/Graph/GraphView'
+import type { GraphMode, RightClickTarget } from '../types'
 
 // Isolated so that focusedPaneId changes never re-render GraphPage/GraphView
 function GraphSidebarPortal({ paneId, sidebar }: { paneId: string; sidebar: React.ReactNode }) {
@@ -24,7 +24,6 @@ function GraphSidebarPortal({ paneId, sidebar }: { paneId: string; sidebar: Reac
   return createPortal(sidebar, slot)
 }
 
-type GraphMode = 'links' | 'tags'
 
 export function GraphPage() {
   const navigate             = useNavigate()
