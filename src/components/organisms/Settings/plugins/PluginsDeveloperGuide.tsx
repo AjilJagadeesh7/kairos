@@ -1,60 +1,77 @@
 import { useState } from 'react'
 import type { IconToken } from '../../../../icons/tokens'
-import { SectionCard } from '../../../molecules/SectionCard'
 import { Icon } from '../../../../icons/Icon'
 import { TabGettingStarted, TabApiReference, TabIconPacks, TabDistribution } from './PluginDocTabs'
 
 type DocTab = 'start' | 'api' | 'icons' | 'distribution'
 
-const DOC_TABS: { id: DocTab; label: string; icon: IconToken }[] = [
-  { id: 'start',        label: 'Getting Started', icon: 'graduation-cap' },
-  { id: 'api',          label: 'API Reference',   icon: 'zap'            },
-  { id: 'icons',        label: 'Icon Packs',      icon: 'palette'        },
-  { id: 'distribution', label: 'Distribution',    icon: 'store'          },
+const DOC_TABS: { id: DocTab; label: string; icon: IconToken; description: string }[] = [
+  { id: 'start',        label: 'Getting Started', icon: 'graduation-cap', description: 'Your first plugin in 5 min' },
+  { id: 'api',          label: 'API Reference',   icon: 'zap',            description: 'Notes, kanban, events'     },
+  { id: 'icons',        label: 'Icon Packs',      icon: 'palette',        description: 'Override built-in icons'   },
+  { id: 'distribution', label: 'Distribution',    icon: 'store',          description: 'Share via marketplace'     },
 ]
 
 export function PluginsDeveloperGuide() {
   const [activeTab, setActiveTab] = useState<DocTab>('start')
+  const active = DOC_TABS.find(t => t.id === activeTab)!
 
   return (
-    <SectionCard title="Build a Plugin">
-      <div className="mb-4 flex gap-1 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] p-1">
+    <div>
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-text">Build a Plugin</h3>
+        <a
+          href="https://github.com/AjilJagadeesh7/mindvault"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1 text-xs text-accent hover:underline"
+        >
+          <Icon name="external-link" size={11} />
+          Full docs
+        </a>
+      </div>
+
+      {/* Tab picker grid */}
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {DOC_TABS.map(tab => (
           <button
             key={tab.id}
             type="button"
             onClick={() => setActiveTab(tab.id)}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+            className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition-colors ${
               activeTab === tab.id
-                ? 'bg-[rgb(var(--surface))] text-[rgb(var(--text))] shadow-sm'
-                : 'text-[rgb(var(--text-3))] hover:text-[rgb(var(--text-2))]'
+                ? 'border-accent/40 bg-accent/8 text-accent'
+                : 'border-border bg-surface text-text2 hover:border-border hover:bg-surface2'
             }`}
           >
-            <Icon name={tab.icon} size={12} className="shrink-0" />
-            {tab.label}
+            <Icon
+              name={tab.icon}
+              size={16}
+              className={activeTab === tab.id ? 'text-accent' : 'text-text3'}
+              strokeWidth={activeTab === tab.id ? 2 : 1.75}
+            />
+            <span className="text-xs font-medium leading-tight">{tab.label}</span>
+            <span className={`text-[10px] leading-tight ${activeTab === tab.id ? 'text-accent/70' : 'text-text3'}`}>
+              {tab.description}
+            </span>
           </button>
         ))}
       </div>
 
-      {activeTab === 'start'        && <TabGettingStarted />}
-      {activeTab === 'api'          && <TabApiReference />}
-      {activeTab === 'icons'        && <TabIconPacks />}
-      {activeTab === 'distribution' && <TabDistribution />}
+      {/* Active tab content */}
+      <div className="rounded-xl border border-border bg-surface p-4">
+        <div className="mb-3 flex items-center gap-2 border-b border-border pb-3">
+          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-accent/10">
+            <Icon name={active.icon} size={13} className="text-accent" />
+          </div>
+          <span className="text-xs font-semibold text-text">{active.label}</span>
+        </div>
 
-      <div className="mt-4 flex items-center gap-2 rounded-lg border border-[rgb(var(--accent))]/20 bg-[rgb(var(--accent))]/5 px-3 py-2.5">
-        <Icon name="external-link" size={13} className="shrink-0 text-[rgb(var(--accent))]" />
-        <p className="text-xs text-[rgb(var(--text-2))]">
-          Full docs and an example plugin at{' '}
-          <a
-            href="https://github.com/AjilJagadeesh7/mindvault"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-[rgb(var(--accent))] hover:underline"
-          >
-            github.com/AjilJagadeesh7/mindvault
-          </a>
-        </p>
+        {activeTab === 'start'        && <TabGettingStarted />}
+        {activeTab === 'api'          && <TabApiReference />}
+        {activeTab === 'icons'        && <TabIconPacks />}
+        {activeTab === 'distribution' && <TabDistribution />}
       </div>
-    </SectionCard>
+    </div>
   )
 }

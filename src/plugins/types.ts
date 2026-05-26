@@ -50,7 +50,8 @@ export interface PluginPageRegistration {
   pluginId: string
   path: string                    // e.g. "/pomodoro"
   navLabel: string                // text shown in header
-  navIcon?: React.ElementType     // lucide icon component
+  navIcon?: React.ElementType     // lucide icon component (from app bundle)
+  navIconName?: IconToken         // icon token string (preferred for JS plugins)
   component: React.ComponentType
 }
 
@@ -142,6 +143,13 @@ export interface MindVaultPluginAPI {
   // Shared UI components and React (so plugins don't bundle them)
   components: typeof import('./sharedComponents')
   React: typeof import('react')
+
+  // Third-party rendering libs — lazy-loaded; available once any plugin loads
+  libs: {
+    ChartJS: Record<string, unknown>
+    ReactChartJS2: Record<string, unknown>
+    Excalidraw: Record<string, unknown>
+  }
 }
 
 export type PluginSetupFn = (api: MindVaultPluginAPI) => void | Promise<void>

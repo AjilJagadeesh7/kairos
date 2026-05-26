@@ -978,3 +978,12 @@ body {
 .reading-view .milkdown .milkdown-slash-menu {
   display: none !important;
 }
+
+/* ─── CHART & QUERY BLOCK WIDGETS ────────────────────────────────────────── */
+/* When our React widget decoration precedes a code-block NodeView, hide the  */
+/* raw NodeView (Milkdown's Vue-based CodeMirror editor). CSS is more         */
+/* reliable than Decoration.node for hiding Vue-managed DOM elements.         */
+.chart-block-widget + .milkdown-code-block,
+.query-block-widget + .milkdown-code-block {
+  display: none !important;
+}

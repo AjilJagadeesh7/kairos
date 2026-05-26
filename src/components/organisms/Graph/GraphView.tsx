@@ -353,7 +353,7 @@ export function GraphView({
             </div>
           }>
             <ForceGraph3D
-              key={`3d-${rerenderKey}`}
+              key={`3d-${rerenderKey}-${nodes.length}`}
               graphData={graphData}
               backgroundColor={bgColor}
               width={dims.w}
@@ -377,7 +377,7 @@ export function GraphView({
         )}
         {dims && nodes.length > 0 && !use3D && (
           <ForceGraph2D
-            key={`${rerenderKey}-${graphMode}`}
+            key={`${rerenderKey}-${graphMode}-${nodes.length}`}
             ref={fgRef}
             graphData={graphData}
             backgroundColor={bgColor}

@@ -48,6 +48,9 @@ export default defineConfig({
 
           if (id.includes('/dexie/')) return 'vendor-db'
 
+          if (id.includes('/chart.js/') || id.includes('/react-chartjs-2/')) return 'vendor-charts'
+          if (id.includes('/@excalidraw/')) return 'vendor-excalidraw'
+
           // AI packages are lazy-loaded — they'll get their own async chunk automatically
           return undefined
         },
@@ -56,8 +59,8 @@ export default defineConfig({
   },
   // Pre-bundle heavy deps during dev so hot-reload is fast
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom', 'zustand', 'dexie', 'dexie-react-hooks'],
-    exclude: ['@mlc-ai/web-llm', '@xenova/transformers'],
+    include: ['react', 'react-dom', 'react-router-dom', 'zustand', 'dexie', 'dexie-react-hooks', 'chart.js', 'react-chartjs-2'],
+    exclude: ['@mlc-ai/web-llm', '@xenova/transformers', '@excalidraw/excalidraw'],
   },
   worker: {
     format: 'es',

@@ -8,9 +8,9 @@ interface ToggleSwitchProps {
   className?: string
 }
 
-const sizeMap: Record<Size, { track: string; thumb: string; thumbOn: string }> = {
-  sm: { track: 'h-4 w-8',    thumb: 'h-3 w-3 translate-x-0.5',   thumbOn: 'translate-x-[17px]' },
-  md: { track: 'h-5 w-9',    thumb: 'h-3.5 w-3.5 translate-x-[3px]', thumbOn: 'translate-x-[18px]' },
+const sizeMap: Record<Size, { track: string; thumb: string; thumbOff: string; thumbOn: string }> = {
+  sm: { track: 'h-4 w-8',  thumb: 'h-3 w-3',     thumbOff: 'translate-x-0.5',    thumbOn: 'translate-x-[17px]' },
+  md: { track: 'h-5 w-9',  thumb: 'h-3.5 w-3.5', thumbOff: 'translate-x-[3px]',  thumbOn: 'translate-x-[18px]' },
 }
 
 export function ToggleSwitch({
@@ -20,7 +20,7 @@ export function ToggleSwitch({
   label,
   className = '',
 }: ToggleSwitchProps): JSX.Element {
-  const { track, thumb, thumbOn } = sizeMap[size]
+  const { track, thumb, thumbOff, thumbOn } = sizeMap[size]
   return (
     <button
       type="button"
@@ -32,7 +32,7 @@ export function ToggleSwitch({
         checked ? 'bg-accent' : 'bg-surface3'
       } ${className}`}
     >
-      <span className={`inline-block rounded-full bg-white shadow transition-transform ${thumb} ${checked ? thumbOn : ''}`} />
+      <span className={`inline-block rounded-full bg-white shadow transition-transform ${thumb} ${checked ? thumbOn : thumbOff}`} />
     </button>
   )
 }

@@ -27,7 +27,7 @@ export function BottomNav() {
 
   const allTabs = [
     ...TABS,
-    ...pluginPages.map(p => ({ to: p.path, iconName: 'bar-chart-2' as IconToken, label: p.navLabel })),
+    ...pluginPages.map(p => ({ to: p.path, iconName: (p.navIconName ?? 'puzzle') as IconToken, label: p.navLabel })),
   ]
 
   return (

@@ -214,13 +214,13 @@ export function ActivityBar() {
       <nav className="flex flex-1 flex-col items-center py-1">
         {TOP_NAV.map(item => <NavBtn key={item.to} {...item} activePath={activePath} onNav={go} />)}
 
-        {pluginPages.map(({ path, navLabel, navIcon: NavIconComponent }) => (
+        {pluginPages.map(({ path, navLabel, navIcon: NavIconComponent, navIconName }) => (
           <NavBtn
             key={path}
             to={path}
             label={navLabel}
             NavIconComponent={NavIconComponent ?? undefined}
-            iconName={NavIconComponent ? undefined : 'bar-chart-2'}
+            iconName={NavIconComponent ? undefined : (navIconName ?? 'puzzle')}
             activePath={activePath}
             onNav={go}
           />

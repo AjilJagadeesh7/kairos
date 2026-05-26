@@ -22,6 +22,27 @@ import type {
 } from './types'
 import type { IconToken } from '../icons/tokens'
 
+// ─── Lazy-loaded third-party rendering libs ───────────────────────────────────
+type PluginLibs = MindVaultPluginAPI['libs']
+let _libs: PluginLibs | null = null
+
+async function ensureLibs(): Promise<PluginLibs> {
+  if (_libs) return _libs
+  // Each lib loads independently — a failure in one must never block the others
+  // or prevent plugins that don't use that lib from loading.
+  async function tryLoad(fn: () => Promise<unknown>): Promise<Record<string, unknown>> {
+    try { return await fn() as Record<string, unknown> }
+    catch (e) { console.warn('[plugins] lib failed to load:', e); return {} }
+  }
+  const [chartJS, reactChartJS2, excalidraw] = await Promise.all([
+    tryLoad(() => import('chart.js')),
+    tryLoad(() => import('react-chartjs-2')),
+    tryLoad(() => import('@excalidraw/excalidraw')),
+  ])
+  _libs = { ChartJS: chartJS, ReactChartJS2: reactChartJS2, Excalidraw: excalidraw }
+  return _libs
+}
+
 // ─── Module-level registry ────────────────────────────────────────────────────
 // Not in Zustand — plugin setup() runs outside React's render cycle and mutating
 // Zustand during async startup causes tearing. Subscribers are notified after
@@ -63,7 +84,7 @@ export function emitEvent(event: AppEvent, payload?: unknown) {
 }
 
 // ─── API factory ──────────────────────────────────────────────────────────────
-function buildPluginAPI(manifest: PluginManifest): MindVaultPluginAPI {
+function buildPluginAPI(manifest: PluginManifest, libs: PluginLibs): MindVaultPluginAPI {
   const id = manifest.id
 
   return {
@@ -208,6 +229,7 @@ function buildPluginAPI(manifest: PluginManifest): MindVaultPluginAPI {
 
     components: sharedComponents,
     React,
+    libs,
   }
 }
 
@@ -224,11 +246,14 @@ export async function loadSinglePlugin(pluginId: string): Promise<void> {
   const url  = URL.createObjectURL(blob)
 
   try {
-    const mod = await import(/* @vite-ignore */ url) as PluginModule
+    const [mod, libs] = await Promise.all([
+      import(/* @vite-ignore */ url) as Promise<PluginModule>,
+      ensureLibs(),
+    ])
     if (typeof mod.default !== 'function') {
       throw new Error(`Plugin "${pluginId}" must export a default setup function`)
     }
-    await mod.default(buildPluginAPI(installed.manifest))
+    await mod.default(buildPluginAPI(installed.manifest, libs))
     logger.info(`loaded: ${pluginId} v${installed.manifest.version}`, 'plugins')
   } catch (err) {
     if (err instanceof PermissionError) {

@@ -22,6 +22,7 @@ import { linkInputRulePlugin, linkKeymapPlugin } from './linkInputRulePlugin'
 import { pasteSanitizePlugin } from './pasteSanitizePlugin'
 import { imageLazyPlugin } from './imageLazyPlugin'
 import { queryBlockPlugin } from './queryBlockPlugin'
+import { chartCodeBlockPlugin } from './chartCodeBlockPlugin'
 import { useWikilinkTooltip } from '../../../hooks/useWikilinkTooltip'
 import { useWikilinkAutocomplete } from '../../../hooks/useWikilinkAutocomplete'
 import { useEditorContextMenu } from '../../../hooks/useEditorContextMenu'
@@ -114,6 +115,31 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
       },
       featureConfigs: {
         [Crepe.Feature.ImageBlock]: { onUpload: fileToDataURL },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        [Crepe.Feature.BlockEdit]: { buildMenu: (builder: any) => {
+          const group = builder.getGroup('advanced')
+          if (!group) return
+          const chartTemplate = [
+            'type: bar', 'title: My Chart',
+            'labels: [Jan, Feb, Mar, Apr, May]',
+            'datasets:', '  - label: Series 1',
+            '    data: [10, 20, 15, 25, 18]', '    color: "#6366f1"',
+          ].join('\n')
+          group.addItem('chart', {
+            label: 'Chart',
+            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>',
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            onRun: (ctx: any) => {
+              const view = ctx.get(editorViewCtx)
+              const { state } = view
+              const codeBlock = state.schema.nodes['code_block']
+              if (!codeBlock) return
+              const block = codeBlock.create({ language: 'chart' }, state.schema.text(chartTemplate))
+              view.dispatch(state.tr.replaceSelectionWith(block).scrollIntoView())
+              view.focus()
+            },
+          })
+        } },
       },
     })
     crepeRef.current = crepe
@@ -125,6 +151,7 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
     crepe.editor.use(pasteSanitizePlugin)
     crepe.editor.use(imageLazyPlugin)
     crepe.editor.use(queryBlockPlugin)
+    crepe.editor.use(chartCodeBlockPlugin)
     crepe.on(listener => { listener.markdownUpdated((_ctx, md) => onChangeRef.current(md)) })
 
     void crepe.create().then(() => {
@@ -305,6 +332,27 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
           }}
           onInsertHr={() => runCmd(c => c.call(insertHrCommand.key))}
           onInsertCodeBlock={() => runCmd(c => c.call(createCodeBlockCommand.key))}
+          onInsertChart={() => {
+            crepeRef.current?.editor.action(ctx => {
+              const view  = ctx.get(editorViewCtx)
+              const { state } = view
+              const codeBlock = state.schema.nodes['code_block']
+              if (!codeBlock) return
+              const template = [
+                'type: bar',
+                'title: My Chart',
+                'labels: [Jan, Feb, Mar, Apr, May]',
+                'datasets:',
+                '  - label: Series 1',
+                '    data: [10, 20, 15, 25, 18]',
+                '    color: "#6366f1"',
+              ].join('\n')
+              const block = codeBlock.create({ language: 'chart' }, state.schema.text(template))
+              view.dispatch(state.tr.replaceSelectionWith(block).scrollIntoView())
+              view.focus()
+            })
+            closeMenu()
+          }}
           onHeading={(level) => runCmd(c => c.call(wrapInHeadingCommand.key, level))}
           onTurnIntoText={() => runCmd(c => c.call(turnIntoTextCommand.key))}
           onAddLink={() => {

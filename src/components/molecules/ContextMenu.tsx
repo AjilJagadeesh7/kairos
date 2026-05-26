@@ -91,6 +91,7 @@ type ContextMenuProps = {
   onInsertCallout: () => void
   onInsertHr: () => void
   onInsertCodeBlock: () => void
+  onInsertChart: () => void
   // links
   onAddLink: () => void
   onAddExternalLink: () => void
@@ -109,7 +110,7 @@ export function ContextMenu({
   onBold, onItalic, onInlineCode, onStrikethrough, onClearFormatting,
   onBulletList, onOrderedList, onTaskList, onBlockquote,
   onHeading, onTurnIntoText,
-  onInsertTable, onInsertCallout, onInsertHr, onInsertCodeBlock,
+  onInsertTable, onInsertCallout, onInsertHr, onInsertCodeBlock, onInsertChart,
   onAddLink, onAddExternalLink,
   onCut, onCopy, onPaste, onSelectAll,
 }: ContextMenuProps): JSX.Element {
@@ -201,6 +202,7 @@ export function ContextMenu({
           <Sub label="Insert">
             <Item label="Table"          onClick={onInsertTable} />
             <Item label="Callout"        onClick={onInsertCallout} />
+            <Item label="Chart"          onClick={onInsertChart} />
             <Item label="Horizontal rule" onClick={onInsertHr} />
             <Item label="Code block"     onClick={onInsertCodeBlock} />
           </Sub>
