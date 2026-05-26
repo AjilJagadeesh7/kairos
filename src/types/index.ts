@@ -16,6 +16,7 @@ export type { SettingRecord, EmbeddingRecord } from './db.types'
 export type { JournalEntry } from './journal.types'
 export type { Canvas, CanvasNode, CanvasEdge, CanvasNodeType, CanvasNodeData, CanvasTextData, CanvasNoteData, CanvasWebData } from './canvas.types'
 export type { ContentVersion, VersionHistory } from './history.types'
+export type { FrontmatterFieldType, FrontmatterField, FrontmatterPanelMode } from './frontmatter.types'
 export type {
   Board,
   KanbanColumn,

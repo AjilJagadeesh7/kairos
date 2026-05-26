@@ -75,6 +75,7 @@ type AppState = {
   updateActiveNote: (patch: Pick<Note, 'title' | 'content' | 'embedding'> & { contentHash: string }) => Promise<void>
   updateNote: (noteId: string, patch: Pick<Note, 'title' | 'content' | 'embedding'> & { contentHash: string }) => Promise<void>
   updateNoteTags: (noteId: string, tags: string[]) => Promise<void>
+  updateNoteFrontmatter: (noteId: string, fm: Record<string, unknown>) => Promise<void>
   appendWikilink: (noteId: string, targetTitle: string) => Promise<void>
   deleteNoteById: (id: string) => Promise<void>
   moveNoteToFolder: (noteId: string, folder: string) => Promise<void>
@@ -338,6 +339,18 @@ export const useAppStore = create<AppState>()(
         if (!existing) return
         const updated = { ...existing, tags, updatedAt: new Date().toISOString() }
         indexNote(updated)
+        set(s => ({ notes: s.notes.map(n => n.id === noteId ? updated : n) }))
+        const { writePlainNote, isPlainFolderConnected } = await import('../sync/plainFolder')
+        if (isPlainFolderConnected()) {
+          writePlainNote(updated).catch(err => console.warn('[storage] write failed:', err))
+        }
+      },
+
+      updateNoteFrontmatter: async (noteId, fm) => {
+        const { notes } = get()
+        const existing = notes.find(n => n.id === noteId)
+        if (!existing) return
+        const updated = { ...existing, userFrontmatter: fm, updatedAt: new Date().toISOString() }
         set(s => ({ notes: s.notes.map(n => n.id === noteId ? updated : n) }))
         const { writePlainNote, isPlainFolderConnected } = await import('../sync/plainFolder')
         if (isPlainFolderConnected()) {

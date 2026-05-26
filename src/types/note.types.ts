@@ -7,6 +7,7 @@ export type Note = {
   createdAt: string
   updatedAt: string
   folder?: string  // vault-relative path: "Projects/Work", "" or undefined = root
+  userFrontmatter?: Record<string, unknown>
 }
 
 export type TagRecord = {

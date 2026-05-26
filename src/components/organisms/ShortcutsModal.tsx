@@ -72,7 +72,6 @@ export function ShortcutsModal({ onClose }: ShortcutsModalProps) {
             Customize bindings in <span className="font-medium text-[rgb(var(--text-2))]">Settings → Keyboard</span>
           </p>
         </div>
-      </div>
     </ModalShell>
   )
 }

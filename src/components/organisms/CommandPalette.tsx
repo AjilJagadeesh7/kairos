@@ -11,7 +11,7 @@ import type { KanbanTask, Board } from '../../types/kanban.types'
 import { NAV_ITEMS, itemKey, groupResults } from './commandPaletteItems'
 import type { ResultItem } from './commandPaletteItems'
 import { ResultRow, SectionLabel } from './CommandPaletteRow'
-import { KbdKey } from '../../atoms/KbdKey'
+import { KbdKey } from '../atoms/KbdKey'
 
 const MAX_RESULTS = 30
 

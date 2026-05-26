@@ -10,6 +10,7 @@ import { LogsSection } from './LogsSection'
 import { PluginsSection } from './PluginsSection'
 import { MarketplaceSection } from './MarketplaceSection'
 import { UpdatesSection } from './UpdatesSection'
+import { PublishSection } from './PublishSection'
 import type { Section } from '../../../types'
 
 interface SettingsPanelProps {
@@ -37,6 +38,7 @@ export function SettingsPanel({ section }: SettingsPanelProps) {
         {section === 'updates'      && <UpdatesSection />}
         {section === 'logs'         && <LogsSection />}
         {section === 'about'        && <AboutSection />}
+        {section === 'publish'      && <PublishSection />}
 
         {/* Plugin-registered settings sections */}
         {pluginSection && (

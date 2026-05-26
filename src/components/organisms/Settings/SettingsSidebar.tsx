@@ -17,6 +17,7 @@ const CORE_NAV: Array<{ id: Section; label: string; iconName: IconToken }> = [
   { id: 'tags',         label: 'Tags',             iconName: 'tag'         },
   { id: 'callouts',     label: 'Callouts',         iconName: 'brackets'    },
   { id: 'keyboard',     label: 'Keyboard',         iconName: 'keyboard'    },
+  { id: 'publish',      label: 'Publish & Export', iconName: 'send'        },
   { id: 'plugins',      label: 'Plugins',          iconName: 'puzzle'      },
   { id: 'marketplace',  label: 'Marketplace',      iconName: 'store'       },
   { id: 'updates',      label: 'Updates',          iconName: 'arrow-up-circle' },

@@ -21,6 +21,7 @@ import { calloutPlugin } from './calloutPlugin'
 import { linkInputRulePlugin, linkKeymapPlugin } from './linkInputRulePlugin'
 import { pasteSanitizePlugin } from './pasteSanitizePlugin'
 import { imageLazyPlugin } from './imageLazyPlugin'
+import { queryBlockPlugin } from './queryBlockPlugin'
 import { useWikilinkTooltip } from '../../../hooks/useWikilinkTooltip'
 import { useWikilinkAutocomplete } from '../../../hooks/useWikilinkAutocomplete'
 import { useEditorContextMenu } from '../../../hooks/useEditorContextMenu'
@@ -123,6 +124,7 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
     crepe.editor.use(math)
     crepe.editor.use(pasteSanitizePlugin)
     crepe.editor.use(imageLazyPlugin)
+    crepe.editor.use(queryBlockPlugin)
     crepe.on(listener => { listener.markdownUpdated((_ctx, md) => onChangeRef.current(md)) })
 
     void crepe.create().then(() => {
