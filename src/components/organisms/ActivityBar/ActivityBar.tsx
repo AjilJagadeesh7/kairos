@@ -228,25 +228,26 @@ export function ActivityBar() {
         ))}
       </nav>
 
-      {/* Bottom: sidebar toggle + sync + theme + settings */}
+      {/* Bottom: plugins → sync → theme → settings → sidebar toggle */}
       <div className="flex flex-col items-center pb-1">
-        {focusedHasSidebar && (
-          <Tooltip label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}>
-            <button
-              type="button"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className={`relative flex h-9 w-12 items-center justify-center transition-colors ${
-                sidebarOpen ? 'text-accent' : 'text-text3 hover:text-text'
-              }`}
-            >
-              <Icon name={sidebarOpen ? 'panel-left-close' : 'panel-left-open'} size={18} strokeWidth={1.75} />
-            </button>
-          </Tooltip>
-        )}
         <SlotRenderer slot="activity-bar:bottom" props={{}} />
         <SyncStatusBadge />
         <CompactThemePicker value={theme} onChange={setTheme} />
         <NavBtn to="/settings" iconName="settings-2" label="Settings" activePath={activePath} onNav={go} />
+        {/* Sidebar toggle — always occupies its slot; dimmed when page has no sidebar */}
+        <Tooltip label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}>
+          <button
+            type="button"
+            onClick={() => focusedHasSidebar && setSidebarOpen(!sidebarOpen)}
+            className={`relative flex h-9 w-12 items-center justify-center transition-colors ${
+              !focusedHasSidebar ? 'pointer-events-none text-text3/30'
+              : sidebarOpen     ? 'text-accent'
+              : 'text-text3 hover:text-text'
+            }`}
+          >
+            <Icon name={sidebarOpen ? 'panel-left-close' : 'panel-left-open'} size={18} strokeWidth={1.75} />
+          </button>
+        </Tooltip>
       </div>
     </aside>
   )

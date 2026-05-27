@@ -1,12 +1,14 @@
 import { useEffect, useRef } from 'react'
 import {
   Chart,
+  BarController, LineController, PieController, DoughnutController, RadarController,
   CategoryScale, LinearScale, RadialLinearScale,
   BarElement, LineElement, PointElement, ArcElement,
   Title, Tooltip, Legend, Filler,
 } from 'chart.js'
 
 Chart.register(
+  BarController, LineController, PieController, DoughnutController, RadarController,
   CategoryScale, LinearScale, RadialLinearScale,
   BarElement, LineElement, PointElement, ArcElement,
   Title, Tooltip, Legend, Filler,
@@ -134,37 +136,51 @@ export function ChartBlock({ code }: { code: string }) {
     const spec = parseChartYaml(code)
     if (!spec || !canvasRef.current) return
 
+    const canvas  = canvasRef.current
+    const isPolar = spec.type === 'pie' || spec.type === 'doughnut'
+    let raf = 0
+
     chartRef.current?.destroy()
     chartRef.current = null
 
-    const canvas = canvasRef.current
-    const isPolar = spec.type === 'pie' || spec.type === 'doughnut'
-
-    try {
-      chartRef.current = new Chart(canvas, {
-        type: spec.type,
-        data: buildData(spec),
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          animation: false,
-          plugins: {
-            legend: { display: isPolar || spec.type === 'radar', position: 'bottom' },
-            title: spec.title
-              ? { display: true, text: spec.title, font: { size: 13, weight: '600' as const } }
-              : { display: false },
+    // ProseMirror widget decorations may render into a detached or not-yet-laid-out
+    // DOM node. Poll via rAF until the container has real pixel dimensions, then size
+    // the canvas drawing surface explicitly so Chart.js has something to paint on.
+    function tryInit() {
+      const container = canvas.parentElement
+      if (!canvas.isConnected || !container || container.clientWidth === 0) {
+        raf = requestAnimationFrame(tryInit)
+        return
+      }
+      // Stamp actual pixel dimensions onto the canvas before Chart.js reads them
+      canvas.width  = container.clientWidth
+      canvas.height = container.clientHeight || 268
+      try {
+        chartRef.current = new Chart(canvas, {
+          type: spec!.type,
+          data: buildData(spec!),
+          options: {
+            responsive: false,
+            animation: false,
+            plugins: {
+              legend: { display: isPolar || spec!.type === 'radar', position: 'bottom', labels: { color: 'rgba(160,160,160,0.9)', font: { size: 11 } } },
+              title: spec!.title
+                ? { display: true, text: spec!.title, color: 'rgba(180,180,180,0.9)', font: { size: 13, weight: '600' as const } }
+                : { display: false },
+            },
+            scales: isPolar || spec!.type === 'radar' ? {} : {
+              x: { grid: { color: 'rgba(128,128,128,0.12)' }, ticks: { color: 'rgba(160,160,160,0.8)', font: { size: 11 } } },
+              y: { grid: { color: 'rgba(128,128,128,0.12)' }, ticks: { color: 'rgba(160,160,160,0.8)', font: { size: 11 } }, beginAtZero: true },
+            },
           },
-          scales: isPolar || spec.type === 'radar' ? {} : {
-            x: { grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { font: { size: 11 } } },
-            y: { grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { font: { size: 11 } }, beginAtZero: true },
-          },
-        },
-      })
-    } catch (e) {
-      console.error('[ChartBlock] Chart.js init failed:', e)
+        })
+      } catch (e) {
+        console.error('[ChartBlock] Chart.js init failed:', e)
+      }
     }
 
-    return () => { chartRef.current?.destroy(); chartRef.current = null }
+    raf = requestAnimationFrame(tryInit)
+    return () => { cancelAnimationFrame(raf); chartRef.current?.destroy(); chartRef.current = null }
   }, [code])
 
   const spec = parseChartYaml(code)
@@ -193,7 +209,7 @@ export function ChartBlock({ code }: { code: string }) {
         background: 'rgb(var(--surface-2))',
       }}
     >
-      <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
+      <canvas ref={canvasRef} style={{ display: 'block' }} />
     </div>
   )
 }
