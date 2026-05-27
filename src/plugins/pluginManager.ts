@@ -22,27 +22,6 @@ import type {
 } from './types'
 import type { IconToken } from '../icons/tokens'
 
-// ─── Lazy-loaded third-party rendering libs ───────────────────────────────────
-type PluginLibs = MindVaultPluginAPI['libs']
-let _libs: PluginLibs | null = null
-
-async function ensureLibs(): Promise<PluginLibs> {
-  if (_libs) return _libs
-  // Each lib loads independently — a failure in one must never block the others
-  // or prevent plugins that don't use that lib from loading.
-  async function tryLoad(name: string, fn: () => Promise<unknown>): Promise<Record<string, unknown>> {
-    try { return await fn() as Record<string, unknown> }
-    catch (e) { logger.error(`lib "${name}" failed to load — plugins using it will show an error`, 'plugins', e); return {} }
-  }
-  const [chartJS, reactChartJS2, excalidraw] = await Promise.all([
-    tryLoad('chart.js', () => import('chart.js')),
-    tryLoad('react-chartjs-2', () => import('react-chartjs-2')),
-    tryLoad('@excalidraw/excalidraw', () => import('@excalidraw/excalidraw')),
-  ])
-  _libs = { ChartJS: chartJS, ReactChartJS2: reactChartJS2, Excalidraw: excalidraw }
-  return _libs
-}
-
 // ─── Module-level registry ────────────────────────────────────────────────────
 // Not in Zustand — plugin setup() runs outside React's render cycle and mutating
 // Zustand during async startup causes tearing. Subscribers are notified after
@@ -84,7 +63,7 @@ export function emitEvent(event: AppEvent, payload?: unknown) {
 }
 
 // ─── API factory ──────────────────────────────────────────────────────────────
-function buildPluginAPI(manifest: PluginManifest, libs: PluginLibs): MindVaultPluginAPI {
+function buildPluginAPI(manifest: PluginManifest): MindVaultPluginAPI {
   const id = manifest.id
 
   return {
@@ -229,7 +208,6 @@ function buildPluginAPI(manifest: PluginManifest, libs: PluginLibs): MindVaultPl
 
     components: sharedComponents,
     React,
-    libs,
   }
 }
 
