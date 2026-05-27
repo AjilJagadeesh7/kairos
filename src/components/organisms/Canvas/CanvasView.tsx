@@ -185,13 +185,17 @@ function CanvasInner({ canvas }: { canvas: Canvas }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canvas.id])
 
-  // ── Nodes with injected callbacks + locked state ─────────────────────────
+  // ── Nodes with injected callbacks + locked/collapsed state ──────────────
   const nodesWithCallbacks = useMemo(() => nodes.map(n => {
-    const locked = !!(n.data as Record<string, unknown>).locked
+    const d        = n.data as Record<string, unknown>
+    const locked   = !!d.locked
+    const collapsed = n.type === 'note' && !!d.collapsed
     return {
       ...n,
       dragHandle: '.drag-handle',
       draggable: !locked,
+      // height:32 when collapsed → ReactFlow repositions handles to the actual header size
+      ...(collapsed ? { height: 32 } : {}),
       data: {
         ...n.data,
         canvasId:     canvas.id,

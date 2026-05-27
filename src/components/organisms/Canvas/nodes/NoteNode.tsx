@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
-import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react'
+import { useEffect, useMemo } from 'react'
+import { Handle, Position, NodeResizer, useUpdateNodeInternals, type NodeProps } from '@xyflow/react'
 import { useAppStore } from '../../../../store/useAppStore'
 import { Icon } from '../../../../icons/Icon'
 import type { CanvasNoteData } from '../../../../types'
@@ -22,9 +22,13 @@ interface NoteNodeData extends CanvasNoteData {
 }
 
 export function NoteNode({ id, data, selected }: NodeProps & { data: NoteNodeData }) {
-  const notes = useAppStore(s => s.notes)
-  const note  = useMemo(() => notes.find(n => n.id === data.noteId), [notes, data.noteId])
-  const collapsed = !!data.collapsed
+  const notes               = useAppStore(s => s.notes)
+  const note                = useMemo(() => notes.find(n => n.id === data.noteId), [notes, data.noteId])
+  const collapsed           = !!data.collapsed
+  const updateNodeInternals = useUpdateNodeInternals()
+
+  // Tell ReactFlow to recompute handle positions whenever collapsed state changes
+  useEffect(() => { updateNodeInternals(id) }, [collapsed, id, updateNodeInternals])
 
   const preview = note?.content
     ? note.content.replace(/^#+\s.*/gm, '').replace(/[*`\[\]#>]/g, '').trim().slice(0, 300)
