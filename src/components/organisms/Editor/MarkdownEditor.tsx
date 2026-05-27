@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Crepe } from '@milkdown/crepe'
 import { commandsCtx, editorViewCtx } from '@milkdown/core'
@@ -29,6 +29,7 @@ import { useEditorContextMenu } from '../../../hooks/useEditorContextMenu'
 import { ContextMenu } from '../../molecules/ContextMenu'
 import { NotePreviewPopover } from '../../common/NotePreviewPopover'
 import { WikilinkDropdown } from './WikilinkDropdown'
+import { ChartTypeModal, buildChartTemplate } from './ChartTypeModal'
 import type { MarkdownEditorProps, TableCommandRunner } from '../../../types'
 
 export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = false, onChange, onWikilinkClick }: MarkdownEditorProps): JSX.Element {
@@ -54,11 +55,60 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
     })
   }, [readOnly])
 
+  const [chartModalOpen, setChartModalOpen] = useState(false)
+
   const navigate = useNavigate()
 
   const { tooltip, attach: attachTooltip, dismiss: dismissTooltip } = useWikilinkTooltip(rootRef)
   const { menu, handleContextMenu, resizeImage, closeMenu } = useEditorContextMenu(crepeRef, rootRef)
   const { ac, suggestions, complete, dismiss: dismissAc } = useWikilinkAutocomplete(crepeRef, rootRef)
+
+  // Listen for slash-menu chart trigger (fires from inside Milkdown's action ctx)
+  useEffect(() => {
+    const h = () => setChartModalOpen(true)
+    window.addEventListener('mv:open-chart-modal', h)
+    return () => window.removeEventListener('mv:open-chart-modal', h)
+  }, [])
+
+  // When the editor regains focus while "/" is already the only character on the line,
+  // the SlashProvider's isSame check suppresses the menu (doc+selection unchanged).
+  // Ping the cursor position (start→end of "/") to force two state updates that
+  // bypass isSame, re-triggering shouldShow after the 20ms debounce.
+  useEffect(() => {
+    const root = rootRef.current
+    if (!root) return
+    const onFocus = () => {
+      const crepe = crepeRef.current
+      if (!crepe || !editorReadyRef.current) return
+      crepe.editor.action(ctx => {
+        const view = ctx.get(editorViewCtx)
+        const { state } = view
+        const { $from } = state.selection
+        if ($from.parent.type.name !== 'paragraph') return
+        if ($from.parent.textContent !== '/') return
+        const end = state.selection.from
+        const start = $from.start($from.depth)
+        if (end === start) return
+        // Move cursor to paragraph start and back — forces isSame=false twice
+        view.dispatch(state.tr.setSelection(TextSelection.create(state.doc, start)))
+        view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, end)))
+      })
+    }
+    root.addEventListener('focusin', onFocus)
+    return () => root.removeEventListener('focusin', onFocus)
+  }, [])
+
+  function insertChartBlock(template: string) {
+    crepeRef.current?.editor.action(ctx => {
+      const view = ctx.get(editorViewCtx)
+      const { state } = view
+      const codeBlock = state.schema.nodes['code_block']
+      if (!codeBlock) return
+      const block = codeBlock.create({ language: 'chart' }, state.schema.text(template))
+      view.dispatch(state.tr.replaceSelectionWith(block).scrollIntoView())
+      view.focus()
+    })
+  }
 
   // Handle navigation events dispatched from TransclusionEmbed widgets (outside React tree)
   useEffect(() => {
@@ -117,28 +167,19 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
         [Crepe.Feature.ImageBlock]: { onUpload: fileToDataURL },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         [Crepe.Feature.BlockEdit]: { buildMenu: (builder: any) => {
-          const group = builder.getGroup('advanced')
-          if (!group) return
-          const chartTemplate = [
-            'type: bar', 'title: My Chart',
-            'labels: [Jan, Feb, Mar, Apr, May]',
-            'datasets:', '  - label: Series 1',
-            '    data: [10, 20, 15, 25, 18]', '    color: "#6366f1"',
-          ].join('\n')
-          group.addItem('chart', {
-            label: 'Chart',
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>',
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            onRun: (ctx: any) => {
-              const view = ctx.get(editorViewCtx)
-              const { state } = view
-              const codeBlock = state.schema.nodes['code_block']
-              if (!codeBlock) return
-              const block = codeBlock.create({ language: 'chart' }, state.schema.text(chartTemplate))
-              view.dispatch(state.tr.replaceSelectionWith(block).scrollIntoView())
-              view.focus()
-            },
-          })
+          try {
+            const group = builder.getGroup('advanced')
+            group.addItem('chart', {
+              label: 'Chart',
+              icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>',
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              onRun: (_ctx: any) => {
+                window.dispatchEvent(new Event('mv:open-chart-modal'))
+              },
+            })
+          } catch {
+            // 'advanced' group not available in this version — chart still accessible via right-click
+          }
         } },
       },
     })
@@ -269,6 +310,13 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
         />
       )}
 
+      {chartModalOpen && (
+        <ChartTypeModal
+          onInsert={insertChartBlock}
+          onClose={() => setChartModalOpen(false)}
+        />
+      )}
+
       {menu.visible && (
         <ContextMenu
           x={menu.x} y={menu.y} kind={menu.kind} rowIndex={menu.rowIndex} colIndex={menu.colIndex}
@@ -332,27 +380,7 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
           }}
           onInsertHr={() => runCmd(c => c.call(insertHrCommand.key))}
           onInsertCodeBlock={() => runCmd(c => c.call(createCodeBlockCommand.key))}
-          onInsertChart={() => {
-            crepeRef.current?.editor.action(ctx => {
-              const view  = ctx.get(editorViewCtx)
-              const { state } = view
-              const codeBlock = state.schema.nodes['code_block']
-              if (!codeBlock) return
-              const template = [
-                'type: bar',
-                'title: My Chart',
-                'labels: [Jan, Feb, Mar, Apr, May]',
-                'datasets:',
-                '  - label: Series 1',
-                '    data: [10, 20, 15, 25, 18]',
-                '    color: "#6366f1"',
-              ].join('\n')
-              const block = codeBlock.create({ language: 'chart' }, state.schema.text(template))
-              view.dispatch(state.tr.replaceSelectionWith(block).scrollIntoView())
-              view.focus()
-            })
-            closeMenu()
-          }}
+          onInsertChart={() => { setChartModalOpen(true); closeMenu() }}
           onHeading={(level) => runCmd(c => c.call(wrapInHeadingCommand.key, level))}
           onTurnIntoText={() => runCmd(c => c.call(turnIntoTextCommand.key))}
           onAddLink={() => {

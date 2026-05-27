@@ -5,21 +5,17 @@ import { embedText } from '../../../utils/embeddingClient'
 import { useAppStore } from '../../../store/useAppStore'
 import { useConfirmStore } from '../../../store/useConfirmStore'
 import { TAG_COLOR_PALETTE } from '../../../utils/kanban'
-import { TagSelector } from '../../molecules/TagSelector'
-import { TagBadge } from '../../atoms/TagBadge'
 import { EditorToolbar } from './EditorToolbar'
 import { EditorBannerArea } from './EditorBannerArea'
 import { EditorReadingMode } from './EditorReadingMode'
 import { MarkdownEditor } from './MarkdownEditor'
 import { HistoryPanel } from './HistoryPanel'
-import { BacklinksPanel } from './BacklinksPanel'
-import { NoteInfoPanel } from './NoteInfoPanel'
+import { NoteRightSidebar } from './NoteRightSidebar'
 import { ConflictBanner } from './ConflictBanner'
-import { FrontmatterPanel } from './FrontmatterPanel'
 import { useConflictStore } from '../../../store/useConflictStore'
 import { eventMatchesAction } from '../../../hooks/useShortcutKey'
-import type { EditorDraftProps, SaveStatus } from '../../../types'
 import { Icon } from '../../../icons/Icon'
+import type { EditorDraftProps, SaveStatus, TagRecord } from '../../../types'
 
 function tagColor(name: string): string {
   let h = 5381
@@ -34,7 +30,9 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
   const [showHistory, setShowHistory] = useState(false)
   const [readingMode, setReadingMode] = useState(false)
-  const [restoreKey, setRestoreKey]   = useState(0)   // bump to force MarkdownEditor remount on restore
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarWidth, setSidebarWidth] = useState(268)
+  const [restoreKey, setRestoreKey]   = useState(0)
   const [exportingPDF, setExportingPDF] = useState(false)
   const [largeDismissed, setLargeDismissed] = useState(false)
 
@@ -47,13 +45,12 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
   const conflict          = useConflictStore(s => s.conflicts.find(c => c.noteId === note.id))
   const setNoteTagColor   = useAppStore(s => s.setNoteTagColor)
   const noteTagColors     = useAppStore(s => s.noteTagColors)
-  // Subscribe only to the sorted list of tag names — never re-fires on content/updatedAt saves.
   const allTagNames       = useAppStore(s => {
     const tagSet = new Set<string>()
     s.notes.forEach(n => n.tags.forEach(t => tagSet.add(t)))
     return [...tagSet].sort().join('\0')
   })
-  const navigate          = useNavigate()
+  const navigate = useNavigate()
 
   const allTags = useMemo((): TagRecord[] =>
     allTagNames ? allTagNames.split('\0').map(name => ({
@@ -65,7 +62,6 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
 
   const tagMap = useMemo(() => new Map(allTags.map(tag => [tag.name, tag])), [allTags])
 
-  // Read from store snapshot at click time — no subscription needed.
   const handleWikilinkClick = useCallback((linkedTitle: string) => {
     const found = useAppStore.getState().notes.find(
       n => n.title.trim().toLowerCase() === linkedTitle.trim().toLowerCase()
@@ -81,6 +77,7 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
 
   const handleExportPDF = async () => {
     setExportingPDF(true)
+    const { exportPDF } = await import('./exportPDF')
     await exportPDF(editorRootRef.current, titleRef.current || 'Untitled note').finally(() => setExportingPDF(false))
   }
 
@@ -104,31 +101,21 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
     const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
     const contentHash = Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('')
 
-    // Skip redundant saves — rapid typing queues multiple debounced calls but
-    // the content may be identical by the time each fires.
-    if (contentHash === lastSavedHashRef.current) {
-      setSaveStatus('idle')
-      return
-    }
+    if (contentHash === lastSavedHashRef.current) { setSaveStatus('idle'); return }
     lastSavedHashRef.current = contentHash
-
     setSaveStatus('saving')
-    // Save immediately with empty embedding so the note persists fast,
-    // then compute embedding in the background and upsert separately
     await onSave({ title: t || 'Untitled note', content: c, embedding: [], contentHash })
     setSaveStatus('saved')
     setTimeout(() => setSaveStatus((s) => s === 'saved' ? 'idle' : s), 2000)
-    // Fire-and-forget: compute embedding without blocking the save response
     void embedText(note.id, text).then(async ({ embedding }) => {
       if (!embedding.length) return
       const { upsertEmbedding } = await import('../../../db/schema')
       await upsertEmbedding(note.id, embedding, contentHash)
-    }).catch(() => { /* embedding is best-effort */ })
+    }).catch(() => { /* best-effort */ })
   }, [note.id, onSave])
 
   const handleRestore = (restoredContent: string, restoredTitle?: string) => {
     const newTitle = restoredTitle ?? titleRef.current
-    // Update refs immediately so saveNote reads the restored values
     titleRef.current   = newTitle
     contentRef.current = restoredContent
     if (restoredTitle) setTitle(newTitle)
@@ -160,7 +147,7 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [saveStatus, saveNote, keyBindings, readingMode])
+  }, [saveStatus, saveNote, keyBindings, readingMode]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (title === note.title && content === note.content) return
@@ -169,27 +156,36 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
     return () => window.clearTimeout(handle)
   }, [title, content]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  function startResize(e: React.MouseEvent) {
+    e.preventDefault()
+    const startX = e.clientX
+    const startW = sidebarWidth
+
+    const onMove = (ev: MouseEvent) => {
+      const delta = startX - ev.clientX   // drag left → wider
+      setSidebarWidth(Math.max(200, Math.min(520, startW + delta)))
+    }
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }
+
   return (
     <section className="relative flex h-full flex-col bg-bg">
       {conflict && (
         <ConflictBanner
           conflict={conflict}
-          onApplyRemote={(newContent, newTitle) => {
-            setContent(newContent)
-            setTitle(newTitle)
-          }}
+          onApplyRemote={(newContent, newTitle) => { setContent(newContent); setTitle(newTitle) }}
         />
       )}
 
       {readingMode ? (
         <EditorReadingMode
-          note={note}
-          title={title}
-          content={content}
-          restoreKey={restoreKey}
-          tags={tags}
-          tagMap={tagMap}
-          editorRootRef={editorRootRef}
+          note={note} title={title} content={content} restoreKey={restoreKey}
+          tags={tags} tagMap={tagMap} editorRootRef={editorRootRef}
           exportingPDF={exportingPDF}
           onExportPDF={() => void handleExportPDF()}
           onExitReadingMode={() => setReadingMode(false)}
@@ -197,15 +193,9 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
           onWikilinkClick={handleWikilinkClick}
         />
       ) : (
-        <div className="flex h-full flex-col overflow-x-hidden overflow-y-auto p-4">
-          <EditorBannerArea
-            note={note}
-            onUpdateFrontmatter={fm => void updateNoteFrontmatter(note.id, fm)}
-          />
+        <div className="flex h-full flex-col overflow-hidden">
           <EditorToolbar
             note={note}
-            title={title}
-            onTitleChange={setTitle}
             saveStatus={saveStatus}
             onSave={() => void saveNote()}
             exportingPDF={exportingPDF}
@@ -214,55 +204,85 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
             onToggleHistory={() => setShowHistory(h => !h)}
             onReadingMode={() => setReadingMode(true)}
             onDelete={handleDeleteNote}
+            sidebarOpen={sidebarOpen}
+            onToggleSidebar={() => setSidebarOpen(v => !v)}
           />
 
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <TagSelector
-              selectedTags={tags}
-              onTagsChange={saveTags}
-              onTagCreate={(name, color) => setNoteTagColor(name, color)}
-              availableTags={allTags}
-            />
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {tags.map((tagName) => {
-                  const tag = tagMap.get(tagName)
-                  return tag ? (
-                    <TagBadge key={tagName} tag={tag} onRemove={() => void saveTags(tags.filter((t) => t !== tagName))} variant="md" />
-                  ) : null
-                })}
+          <div className="flex flex-1 min-h-0 overflow-hidden">
+            {/* ── Main writing area ─────────────────────────────────────── */}
+            {/* No overflow here — .ProseMirror is the scroll container (see index.css).
+                min-h-0 lets the flex chain constrain ProseMirror's height so it scrolls. */}
+            <div className="flex flex-1 min-h-0 flex-col">
+              <div ref={editorRootRef} className="flex flex-1 min-h-0 flex-col pt-6 pl-24 pr-8 md:pl-28 md:pr-12">
+                {/* Pre-editor elements — shrink-0 so they don't compete with the editor for height */}
+                <div className="shrink-0">
+                  <EditorBannerArea
+                    note={note}
+                    onUpdateFrontmatter={fm => void updateNoteFrontmatter(note.id, fm)}
+                  />
+
+                  {isLargeNote && (
+                    <div className="mb-3 flex items-center gap-2 rounded-xl border border-amber-400/40 bg-amber-50/60 px-3 py-2 dark:bg-amber-950/20">
+                      <Icon name="alert-triangle" size={13} className="shrink-0 text-amber-500" />
+                      <p className="flex-1 text-[11px] text-amber-700 dark:text-amber-400">
+                        This note is large (&gt;150 KB). The editor may be slower — consider splitting it.
+                      </p>
+                      <button type="button" onClick={() => setLargeDismissed(true)} className="text-amber-500 hover:text-amber-700">
+                        <Icon name="x" size={13} />
+                      </button>
+                    </div>
+                  )}
+
+                  <input
+                    value={title}
+                    onChange={e => setTitle(e.target.value)}
+                    className="w-full bg-transparent text-[26px] font-bold leading-tight text-text outline-none placeholder:text-text3"
+                    placeholder="Untitled note"
+                  />
+
+                  <hr className="my-4 border-border" />
+                </div>
+
+                {/* Editor fills remaining height — ProseMirror scrolls internally */}
+                <div className="flex-1 min-h-0">
+                  <MarkdownEditor
+                    key={restoreKey}
+                    noteId={note.id}
+                    initialMarkdown={content}
+                    noteTitle={title}
+                    onChange={setContent}
+                    onWikilinkClick={handleWikilinkClick}
+                  />
+                </div>
               </div>
-            )}
-          </div>
-
-          {isLargeNote && (
-            <div className="mb-2 flex items-center gap-2 rounded-xl border border-amber-400/40 bg-amber-50/60 px-3 py-2 dark:bg-amber-950/20">
-              <Icon name="alert-triangle" size={13} className="shrink-0 text-amber-500" />
-              <p className="flex-1 text-[11px] text-amber-700 dark:text-amber-400">
-                This note is large (&gt;150 KB). The editor may be slower than usual — consider splitting it into smaller notes.
-              </p>
-              <button type="button" onClick={() => setLargeDismissed(true)} className="text-amber-500 hover:text-amber-700">
-                <Icon name="x" size={13} />
-              </button>
             </div>
-          )}
 
-          <div ref={editorRootRef} className="min-h-[240px] rounded-md border border-border bg-surface md:min-h-0 md:flex-1">
-            <MarkdownEditor
-              key={restoreKey}
-              noteId={note.id}
-              initialMarkdown={content}
-              noteTitle={title}
-              onChange={setContent}
-              onWikilinkClick={(t) => handleWikilinkClick(t)}
-            />
-          </div>
+            {/* ── Resize handle + right sidebar ─────────────────────────── */}
+            {sidebarOpen && (
+              <>
+                {/* Drag handle — sits on the border, widens hit area with padding */}
+                <div
+                  className="group relative z-10 w-1 shrink-0 cursor-col-resize bg-border transition-colors hover:bg-accent/50 active:bg-accent"
+                  onMouseDown={startResize}
+                >
+                  {/* Wider invisible hit area */}
+                  <div className="absolute inset-y-0 -left-1.5 -right-1.5" />
+                </div>
 
-          <BacklinksPanel noteTitle={title} />
-
-          <div className="mt-2 flex flex-col gap-2">
-            <FrontmatterPanel note={note} />
-            <NoteInfoPanel note={note} content={content} />
+                <div style={{ width: sidebarWidth }} className="shrink-0 overflow-hidden">
+                  <NoteRightSidebar
+                    note={note}
+                    content={content}
+                    title={title}
+                    tags={tags}
+                    tagMap={tagMap}
+                    allTags={allTags}
+                    onTagsChange={saveTags}
+                    onTagCreate={(name, color) => setNoteTagColor(name, color)}
+                  />
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

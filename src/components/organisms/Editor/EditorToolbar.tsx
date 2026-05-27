@@ -5,8 +5,6 @@ import type { EditorDraftProps, SaveStatus } from '../../../types'
 
 interface EditorToolbarProps {
   note: EditorDraftProps['note']
-  title: string
-  onTitleChange: (v: string) => void
   saveStatus: SaveStatus
   onSave: () => void
   exportingPDF: boolean
@@ -15,84 +13,91 @@ interface EditorToolbarProps {
   onToggleHistory: () => void
   onReadingMode: () => void
   onDelete: () => void
+  sidebarOpen: boolean
+  onToggleSidebar: () => void
 }
 
 export function EditorToolbar({
-  note, title, onTitleChange, saveStatus, onSave,
+  note, saveStatus, onSave,
   exportingPDF, onExportPDF,
   showHistory, onToggleHistory, onReadingMode, onDelete,
+  sidebarOpen, onToggleSidebar,
 }: EditorToolbarProps) {
   return (
-    <div className="mb-2 flex items-center gap-2">
-      <input
-        value={title}
-        onChange={(e) => onTitleChange(e.target.value)}
-        className="min-w-0 flex-1 rounded-md border border-border bg-surface px-3 py-2 text-lg font-bold text-text outline-none placeholder:text-text3 focus:border-text2"
-        placeholder="Note title"
-      />
+    <div className="flex h-10 shrink-0 items-center gap-1.5 border-b border-border px-3">
 
-      <span className={`hidden shrink-0 text-xs transition-all sm:inline-flex items-center gap-1 ${
+      {/* Save status */}
+      <span className={`mr-1 shrink-0 text-xs transition-all ${
         saveStatus === 'idle' ? 'opacity-0 pointer-events-none' : 'opacity-100'
       } ${saveStatus === 'saved' ? 'text-green-500' : 'text-text3'}`}>
         {saveStatus === 'saving' && 'Saving…'}
-        {saveStatus === 'saved'  && <><Icon name="check" size={11} /> Saved</>}
+        {saveStatus === 'saved'  && <span className="flex items-center gap-0.5"><Icon name="check" size={11} /> Saved</span>}
         {saveStatus === 'dirty'  && 'Unsaved'}
       </span>
 
+      <div className="flex-1" />
+
+      {/* Save */}
       <button
         type="button"
         onClick={onSave}
         disabled={saveStatus === 'saving' || saveStatus === 'idle'}
-        title={saveStatus === 'dirty' ? 'Save now (⌘S)' : 'No unsaved changes'}
-        className={`flex h-[38px] shrink-0 items-center gap-1.5 rounded-md border px-3 text-sm font-medium transition ${
+        title={saveStatus === 'dirty' ? 'Save (⌘S)' : 'No unsaved changes'}
+        className={`flex h-7 items-center gap-1 rounded px-2.5 text-xs font-medium transition ${
           saveStatus === 'dirty'
-            ? 'border-accent/40 bg-accent/10 text-accent hover:bg-accent/20'
-            : 'cursor-default border-border bg-surface text-text3 opacity-40'
+            ? 'bg-accent/10 text-accent hover:bg-accent/20'
+            : 'cursor-default text-text3 opacity-40'
         }`}
       >
-        <Icon name="save" size={14} />
-        <span className="hidden sm:inline">Save</span>
+        <Icon name="save" size={12} />
+        Save
       </button>
 
+      {/* Export */}
       <Dropdown trigger={
-        <div className="flex h-[38px] shrink-0 items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-sm font-medium text-text3 transition hover:border-accent/50 hover:text-accent">
-          <Icon name="share" size={14} />
-          <span className="hidden sm:inline">Export</span>
-          <Icon name="chevron-down" size={12} />
+        <div className="flex h-7 items-center gap-1 rounded px-2.5 text-xs font-medium text-text3 transition hover:bg-surface3 hover:text-text">
+          <Icon name="share" size={12} />
+          Export
+          <Icon name="chevron-down" size={10} />
         </div>
       }>
         <ExportMenu note={note} exportingPDF={exportingPDF} onExportPDF={onExportPDF} size="md" />
       </Dropdown>
 
-      <button
-        type="button"
-        title="Reading mode"
-        onClick={onReadingMode}
-        className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-md border border-border bg-surface text-text3 transition hover:border-accent/50 hover:text-accent"
+      <div className="mx-0.5 h-4 w-px bg-border" />
+
+      {/* Reading mode */}
+      <button type="button" title="Reading mode" onClick={onReadingMode}
+        className="flex h-7 w-7 items-center justify-center rounded text-text3 transition hover:bg-surface3 hover:text-text"
       >
-        <Icon name="eye" size={15} />
+        <Icon name="eye" size={14} />
       </button>
 
-      <button
-        type="button"
-        title="Version history"
-        onClick={onToggleHistory}
-        className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-md border transition ${
-          showHistory
-            ? 'border-accent/40 bg-accent/10 text-accent'
-            : 'border-border bg-surface text-text3 hover:border-accent/50 hover:text-accent'
+      {/* History */}
+      <button type="button" title="Version history" onClick={onToggleHistory}
+        className={`flex h-7 w-7 items-center justify-center rounded transition ${
+          showHistory ? 'bg-accent/10 text-accent' : 'text-text3 hover:bg-surface3 hover:text-text'
         }`}
       >
-        <Icon name="history" size={15} />
+        <Icon name="history" size={14} />
       </button>
 
-      <button
-        type="button"
-        title="Delete note"
-        onClick={onDelete}
-        className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-md border border-border bg-surface text-text3 transition hover:border-red-400/50 hover:text-red-400"
+      {/* Delete */}
+      <button type="button" title="Delete note" onClick={onDelete}
+        className="flex h-7 w-7 items-center justify-center rounded text-text3 transition hover:bg-red-500/10 hover:text-red-400"
       >
-        <Icon name="trash-2" size={15} />
+        <Icon name="trash-2" size={14} />
+      </button>
+
+      <div className="mx-0.5 h-4 w-px bg-border" />
+
+      {/* Sidebar toggle */}
+      <button type="button" title={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'} onClick={onToggleSidebar}
+        className={`flex h-7 w-7 items-center justify-center rounded transition ${
+          sidebarOpen ? 'bg-accent/10 text-accent' : 'text-text3 hover:bg-surface3 hover:text-text'
+        }`}
+      >
+        <Icon name={sidebarOpen ? 'panel-left-close' : 'panel-left-open'} size={14} />
       </button>
     </div>
   )

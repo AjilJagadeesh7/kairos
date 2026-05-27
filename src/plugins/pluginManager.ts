@@ -30,14 +30,14 @@ async function ensureLibs(): Promise<PluginLibs> {
   if (_libs) return _libs
   // Each lib loads independently — a failure in one must never block the others
   // or prevent plugins that don't use that lib from loading.
-  async function tryLoad(fn: () => Promise<unknown>): Promise<Record<string, unknown>> {
+  async function tryLoad(name: string, fn: () => Promise<unknown>): Promise<Record<string, unknown>> {
     try { return await fn() as Record<string, unknown> }
-    catch (e) { console.warn('[plugins] lib failed to load:', e); return {} }
+    catch (e) { logger.error(`lib "${name}" failed to load — plugins using it will show an error`, 'plugins', e); return {} }
   }
   const [chartJS, reactChartJS2, excalidraw] = await Promise.all([
-    tryLoad(() => import('chart.js')),
-    tryLoad(() => import('react-chartjs-2')),
-    tryLoad(() => import('@excalidraw/excalidraw')),
+    tryLoad('chart.js', () => import('chart.js')),
+    tryLoad('react-chartjs-2', () => import('react-chartjs-2')),
+    tryLoad('@excalidraw/excalidraw', () => import('@excalidraw/excalidraw')),
   ])
   _libs = { ChartJS: chartJS, ReactChartJS2: reactChartJS2, Excalidraw: excalidraw }
   return _libs
@@ -270,6 +270,15 @@ export async function loadSinglePlugin(pluginId: string): Promise<void> {
 export async function scanLocalPlugins(): Promise<void> {
   const { listPluginIds, readPluginFile } = await import('../sync/plainFolder')
   const ids = await listPluginIds()
+  const idSet = new Set(ids)
+
+  // Remove store entries whose vault folder no longer exists
+  for (const p of usePluginStore.getState().plugins) {
+    if (p.source === 'local' && !idSet.has(p.id)) {
+      usePluginStore.getState().removePlugin(p.id)
+      logger.info(`removed stale plugin: ${p.id}`, 'plugins')
+    }
+  }
 
   for (const id of ids) {
     const raw = await readPluginFile(id, 'manifest.json')
