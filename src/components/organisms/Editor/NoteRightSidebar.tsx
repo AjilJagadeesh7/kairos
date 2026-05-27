@@ -5,7 +5,6 @@ import { TagSelector } from '../../molecules/TagSelector'
 import { TagBadge } from '../../atoms/TagBadge'
 import { FrontmatterPanel } from './FrontmatterPanel'
 import { NoteInfoPanel } from './NoteInfoPanel'
-import { Icon } from '../../../icons/Icon'
 import { SlotRenderer } from '../../molecules/SlotRenderer'
 import { SectionLabel } from '../../atoms/SectionLabel'
 import type { Note, TagRecord } from '../../../types'
@@ -124,13 +123,6 @@ export function NoteRightSidebar({
         className="border-b border-border"
       />
 
-      {/* ── Outgoing links count at very bottom ──────────────────────────── */}
-      <div className="mt-auto border-t border-border px-3 py-2">
-        <p className="flex items-center gap-1.5 text-[11px] text-text3">
-          <Icon name="external-link" size={11} />
-          {note.id ? 'ID: ' + note.id.slice(0, 8) + '…' : ''}
-        </p>
-      </div>
     </aside>
   )
 }

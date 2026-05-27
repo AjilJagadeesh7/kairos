@@ -1,88 +1,196 @@
 # MindVault
 
-**A privacy-first, local-first knowledge base — notes, journal, kanban, and knowledge graph, all on your device.**
+**A privacy-first, local-first knowledge base — notes, journal, kanban, canvas, and knowledge graph, all on your device.**
 
-No accounts. No cloud required. No telemetry. Your data never leaves your machine unless you explicitly enable sync.
+No accounts. No cloud required. No telemetry. Your data never leaves your machine unless you explicitly turn on sync.
+
+---
+
+## What's inside
+
+| Module | What it does |
+| ------ | ------------ |
+| **Notes** | Rich markdown editor with wikilinks, transclusion, backlinks, tags, version history, PDF export |
+| **Journal** | Daily entries with a calendar sidebar, full-text search, auto-save |
+| **Kanban** | Drag-and-drop boards with subtasks, priorities, due dates, and note links |
+| **Canvas** | Freeform whiteboard — text cards, embedded notes, web pages, custom nodes |
+| **Knowledge Graph** | Force-directed graph of wikilink connections between notes |
+| **Plugins** | First-class plugin system — inject UI anywhere, add themes, custom node types, editor blocks |
 
 ---
 
 ## Features
 
 ### Notes
-- Rich markdown editor (Milkdown / ProseMirror) with WYSIWYG toolbar
-- **Wikilinks** — type `[[` to link between notes with autocomplete
-- **Transclusion** — type `![[` to embed a note's content inline as a live card
+
+- Rich markdown editor (Milkdown / ProseMirror) — bold, italic, tables, code, math, callouts
+- **Wikilinks** — type `[[` to link notes with autocomplete; hover for a preview popover
+- **Transclusion** — type `![[` to embed another note's content as a live card
 - Full-text search (fuzzy + prefix) and semantic AI search via local Ollama
-- Tags, backlinks panel, note info, PDF export
-- **Version history** — every save creates a snapshot; restore any previous version
-- **11 note templates** — Meeting Notes, Project Plan, Brainstorm, Book Notes, Bug Report, Weekly Review, and more
+- Tags with colours, backlinks panel, frontmatter properties, note word/char counts
+- **Version history** — every save is snapshotted; restore any version with one click
+- **11 note templates** — Meeting Notes, Project Plan, Brainstorm, Bug Report, Weekly Review, and more
+- Reading mode, PDF export, Markdown export
 
 ### Journal
-- Daily entries with a calendar sidebar (Monday-first grid)
-- Search across all journal entries by content or date
-- Version history per entry
-- Auto-save with 2 s debounce + Ctrl+S
+
+- Daily entries keyed by date at `/journal/YYYY-MM-DD`
+- Calendar sidebar with Monday-first grid
+- Search across all entries by content or date
+- Version history per entry, auto-save with 2s debounce + Ctrl+S
 
 ### Kanban
-- Multiple boards with drag-and-drop columns and tasks
-- Subtasks, checkpoints, priorities, due dates, labels
-- Tasks linkable to notes
+
+- Multiple boards, drag-and-drop columns and cards
+- Subtasks, checkpoints, priorities (urgent / high / medium / low), due dates, labels
+- Filter by priority, due date, and tag; sort by manual order, priority, or due date
+- Undo / redo per board
+
+### Canvas
+
+- Freeform whiteboard powered by ReactFlow
+- Text cards, embedded note cards (live wikilink preview), web page iframes
+- Minimap, fit-view, named canvas list, custom plugin node types
 
 ### Knowledge Graph
-- Force-directed 3D graph of note–note wikilink connections
-- Tag clusters, neighbourhood focus, right-click to create links
+
+- Force-directed 2D graph of note–note wikilink connections
+- Tag clustering, neighbourhood focus mode, cosine-similarity semantic edges
+- Right-click node to create a new wikilink, pin nodes, search + highlight
 
 ### Sync (optional, always encrypted)
-- S3-compatible storage (AWS, Backblaze, MinIO, etc.)
+
+- S3-compatible (AWS S3, Backblaze B2, Cloudflare R2, MinIO, any compatible provider)
 - WebDAV
 - Notes are encrypted on-device before upload — the server never sees plaintext
 
 ### AI (fully local)
-- Semantic search using local embeddings via [Ollama](https://ollama.com)
-- No data sent to OpenAI, Anthropic, or any cloud AI service
 
-### Privacy
-- No accounts, no sign-up, no email required
-- Everything stored locally (filesystem via File System Access API or Tauri FS)
-- No analytics or telemetry of any kind
-- Works fully offline
+- Semantic search via local embeddings (all-MiniLM-L6-v2, runs in-browser via transformers.js)
+- Optional: connect to a local [Ollama](https://ollama.com) instance for LLM features
+- Zero data sent to OpenAI, Anthropic, or any cloud AI service
+
+---
+
+## Plugin System
+
+MindVault has a first-class plugin system. Plugins are plain JavaScript files that live in your vault — no marketplace account required, no build pipeline needed for simple plugins.
+
+### What plugins can do
+
+| Capability | API | Permission |
+| ---------- | --- | ---------- |
+| Add a full page + nav item | `api.registerPage(...)` | `ui:page` |
+| Add a Settings section | `api.registerSettingsSection(...)` | `ui:settings` |
+| Inject UI into any slot | `api.registerSlot(slotId, Component)` | `ui:slot` |
+| Override CSS variables + inject raw CSS | `api.registerTheme(...)` | `ui:theme` |
+| Add command palette entries | `api.registerCommand(...)` | `ui:commands` |
+| Add editor toolbar buttons | `api.editor.registerToolbarItem(...)` | `editor:extend` |
+| Inject raw Milkdown / ProseMirror plugins | `api.editor.registerMilkdownPlugin(...)` | `editor:extend` |
+| Register custom canvas node types | `api.canvas.registerNodeType(type, Component)` | `canvas:extend` |
+| Override built-in icons | `api.registerIconPack(...)` | `ui:icons` |
+| Read and write notes | `api.notes.*` | `read:notes` / `write:notes` |
+| Read and write kanban tasks | `api.kanban.*` | `read:kanban` / `write:kanban` |
+| Subscribe to app events | `api.on(event, handler)` | `events` |
+| Persist plugin data | `api.readPluginData / writePluginData` | — |
+
+### Available UI slots
+
+Slots are named positions across the app where plugins can inject React components:
+
+```
+editor:toolbar:start / end    Notes editor toolbar (left / right)
+editor:title:below            Below the note title
+notes:right-sidebar:panel     Extra panel in the note right rail
+kanban:toolbar:end            Kanban board toolbar
+kanban:card:footer            Bottom of each task card
+canvas:toolbar:end            Canvas toolbar
+journal:header:end            Journal date header
+journal:sidebar:panel         Journal sidebar
+sidebar:header:end            Notes sidebar header
+sidebar:footer                Bottom of notes sidebar
+activity-bar:bottom           Activity bar above settings
+layout:status-bar             App-wide status bar
+settings:sidebar:end          Settings sidebar
+```
+
+### Minimal example
+
+```js
+// {vault}/plugins/word-count/index.js
+export default function setup(api) {
+  const { React } = api
+
+  function WordCount({ noteId }) {
+    const [count, setCount] = React.useState(null)
+    return React.createElement('button', {
+      onClick: () => {
+        const note = api.notes.get(noteId)
+        setCount(note?.content.split(/\s+/).length ?? 0)
+      },
+      style: { fontSize: 11, padding: '0 8px' }
+    }, count === null ? 'Count words' : `${count} words`)
+  }
+
+  api.registerSlot('editor:toolbar:end', WordCount)
+}
+```
+
+```json
+// {vault}/plugins/word-count/manifest.json
+{
+  "id": "word-count",
+  "name": "Word Count",
+  "version": "1.0.0",
+  "description": "Shows word count in the editor toolbar.",
+  "author": "You",
+  "entryPoint": "index.js",
+  "permissions": ["ui:slot", "read:notes"]
+}
+```
+
+Drop the folder into `{vault}/plugins/` and restart. It appears in **Settings → Plugins** automatically.
+
+Full plugin documentation is available inside the app under **Settings → Plugins → Build a Plugin**.
 
 ---
 
 ## Platforms
 
-| Platform | Status |
-|----------|--------|
+| Platform | Method |
+| -------- | ------ |
 | Desktop (Windows, macOS, Linux) | Tauri v2 |
 | Web / PWA | File System Access API |
-| Mobile (iOS, Android) | Capacitor (in progress) |
+| Mobile (iOS, Android) | Capacitor *(in progress)* |
 
-Desktop builds include **over-the-air updates** — the app checks for new releases on startup and prompts you to install.
+Desktop builds include **over-the-air updates** — the app checks for new releases on startup.
 
 ---
 
 ## Tech Stack
 
 | Layer | Library |
-|-------|---------|
+| ----- | ------- |
 | UI | React 18 + TypeScript + Vite |
 | Styling | Tailwind CSS v4 + CSS variables theme system |
 | Editor | Milkdown / Crepe (ProseMirror) |
+| Canvas | ReactFlow |
+| Graph | react-force-graph-2d |
 | State | Zustand |
 | Local DB | Dexie.js (IndexedDB) |
 | Storage | Tauri FS (desktop) · File System Access API (web) |
-| Graph | 3d-force-graph + Three.js |
-| Embeddings | transformers.js (all-MiniLM-L6-v2, local) |
+| Embeddings | transformers.js — all-MiniLM-L6-v2, runs locally |
 | Desktop shell | Tauri v2 |
 | PWA | vite-plugin-pwa + Workbox |
 
 ---
 
-## Getting Started
+## Getting Started (Development)
 
 ### Prerequisites
+
 - Node.js 20+
-- Rust + Cargo (for desktop builds)
+- Rust + Cargo (for desktop builds only)
 - A Chromium-based browser (for File System Access API in web mode)
 
 ### Web / PWA
@@ -92,7 +200,7 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`, click **Set up vault**, and pick a local folder. All notes are saved as plain `.md` files in that folder.
+Open `http://localhost:5173`, click **Set up vault**, and pick a local folder. Notes are saved as plain `.md` files — readable by any text editor.
 
 ### Desktop (Tauri)
 
@@ -101,9 +209,8 @@ npm install
 npm run tauri dev
 ```
 
-Build a distributable:
-
 ```bash
+# Production build
 npm run tauri build
 ```
 
@@ -114,86 +221,29 @@ npm run tauri build
 ```
 src/
 ├── components/
-│   ├── atoms/          # Button, TagBadge, …
-│   ├── molecules/      # NoteListItem, TagSelector, …
+│   ├── atoms/              # Button, TagBadge, IconButton, ToggleSwitch, …
+│   ├── molecules/          # SlotRenderer, ModalShell, TagSelector, Dropdown, …
 │   └── organisms/
-│       ├── Canvas/     # CanvasView, CanvasList, CanvasSidebar
-│       ├── Editor/     # MarkdownEditor, EditorDraft, HistoryPanel, …
-│       ├── Journal/    # JournalCalendar, JournalEditor
-│       ├── Kanban/     # BoardView, BoardList, task modals
-│       ├── Notes/      # NotesHome, NoteTemplateModal
-│       ├── Settings/   # All settings sections
-│       └── Onboarding/ # OnboardingModal
-├── hooks/              # useAppStartup, useSidebarNotes, usePwaUpdate, …
-├── pages/              # NotesPage, JournalPage, KanbanPage, GraphPage, CanvasPage, …
-├── store/              # Zustand stores (useAppStore, useJournalStore, useCanvasStore, …)
-├── sync/               # plainFolder, s3, webdav, syncOrchestrator
-├── search/             # universalSearch — full-text index (MiniSearch) covering all content types
-├── types/              # Shared TypeScript types
-└── utils/              # wikilinks, timeAgo, stripMarkdown, …
+│       ├── ActivityBar/    # App navigation bar
+│       ├── Canvas/         # CanvasView, CanvasToolbar, node types
+│       ├── Editor/         # MarkdownEditor, EditorDraft, HistoryPanel, …
+│       ├── Graph/          # GraphView, GraphSidebar
+│       ├── Journal/        # JournalCalendar, JournalEditor
+│       ├── Kanban/         # BoardView, BoardList, task modals
+│       ├── Notes/          # NotesHome, NoteTemplateModal
+│       ├── Settings/       # All settings sections including plugin docs
+│       └── Sidebar/        # Notes sidebar, FolderTree
+├── hooks/                  # useAppStartup, useSidebarNotes, useGraphData, …
+├── pages/                  # NotesPage, JournalPage, KanbanPage, CanvasPage, GraphPage, …
+├── plugins/                # Plugin system — registry, API factory, loader, slot types
+├── providers/              # PluginThemeProvider
+├── store/                  # Zustand stores (useAppStore, useKanbanStore, …)
+├── sync/                   # plainFolder, s3, webdav, syncOrchestrator, offlineQueue
+├── search/                 # universalSearch — full-text index covering all content types
+├── types/                  # Shared TypeScript types
+└── utils/                  # wikilinks, timeAgo, stripMarkdown, folderTree, …
 
-src-tauri/              # Tauri v2 Rust shell
-```
-
----
-
-## Adding a New Feature to the Command Palette
-
-The command palette (`src/components/organisms/CommandPalette.tsx`) is the single entry point for all searchable content and navigation. When adding a new feature (new content type, new section, new settings tab), follow these steps:
-
-### 1. Add a navigation item (for routes / sections)
-
-In the `NAV_ITEMS` array at the top of `CommandPalette.tsx`:
-
-```ts
-{ kind: 'nav', id: 'nav-myfeature', label: 'My Feature', hint: 'Open My Feature', iconName: 'icon-name', path: '/myfeature' },
-```
-
-This makes the route appear in the default (empty query) nav list and in filtered search results.
-
-### 2. Index content items in `src/search/universalSearch.ts`
-
-a. Add the new kind to `ResultKind`:
-
-```ts
-export type ResultKind = 'note' | 'journal' | 'task' | 'canvas' | 'myfeature'
-```
-
-b. Write a doc builder:
-
-```ts
-function myFeatureDoc(item: MyFeature): UnifiedDoc {
-  return { id: `myfeature:${item.id}`, kind: 'myfeature', title: item.title, meta: '...', body: '...', updatedAt: item.updatedAt }
-}
-```
-
-c. Add the new type parameter to `buildUniversalIndex` and index the items:
-
-```ts
-export function buildUniversalIndex(notes, journalEntries, boards, canvases, myFeatures) {
-  ...
-  for (const item of myFeatures) docs.push(myFeatureDoc(item))
-}
-```
-
-### 3. Wire up in `CommandPalette.tsx`
-
-- Import the store: `const myFeatures = useMyFeatureStore(s => s.items)`
-- Add to `ResultItem` union: `| { kind: 'myfeature'; item: MyFeature; score: number }`
-- Add to `itemKey()`: `if (item.kind === 'myfeature') return 'myfeature:' + item.item.id`
-- Add a `ResultRow` branch: render the row with the right icon and label
-- Add to `groupResults()`: add a section, e.g. `{ label: 'My Features', items: myFeatures }`
-- Add a lookup map: `const myFeatureMap = useMemo(() => new Map(myFeatures.map(i => [i.id, i])), [myFeatures])`
-- Handle hits in the search results loop: `else if (hit.kind === 'myfeature') { ... }`
-- Pass to `buildUniversalIndex(notes, journalEntries, boards, canvases, myFeatures)`
-- Handle navigation in `activate()`: `else if (item.kind === 'myfeature') navigate('/myfeature/' + item.item.id)`
-
-### Settings tabs
-
-To add a new settings tab to the palette, add a single line to `NAV_ITEMS`:
-
-```ts
-{ kind: 'nav', id: 'nav-s-myfeature', label: 'Settings → My Feature', hint: 'Description shown in results', iconName: 'settings', path: '/settings?section=myfeature' },
+src-tauri/                  # Tauri v2 Rust shell + capabilities
 ```
 
 ---
@@ -210,19 +260,25 @@ Enter your WebDAV server URL and credentials in **Settings → Sync**.
 
 ---
 
-## Releases & Updates
+## Adding a Feature to the Command Palette
 
-Desktop builds are distributed as signed installers for Windows (`.msi`), macOS (`.dmg`), and Linux (`.AppImage`). The app checks for new releases on startup via the Tauri updater and shows a prompt to install.
+The command palette (`src/components/organisms/CommandPalette.tsx`) is the single entry point for all searchable content. When adding a new content type or route, see the detailed checklist in [CLAUDE.md](./CLAUDE.md#adding-a-new-feature--command-palette-checklist).
 
-PWA installs update automatically via the service worker — you'll see a "Reload to update" prompt when a new version is ready.
+---
+
+## Releases
+
+Desktop builds are distributed as signed installers for Windows (`.msi`), macOS (`.dmg`), and Linux (`.AppImage`).
+
+PWA installs update automatically via the service worker — a "Reload to update" prompt appears when a new version is ready.
 
 ---
 
 ## Contributing
 
-Pull requests are welcome. By submitting a PR you agree your contribution will be licensed under AGPL-3.0.
+Pull requests are welcome. Open an issue before starting large changes so the approach can be discussed first.
 
-Please open an issue before starting large changes so we can discuss the approach first.
+By submitting a PR you agree your contribution will be licensed under AGPL-3.0.
 
 ---
 
@@ -236,7 +292,7 @@ Any modified version of MindVault distributed over a network must also be made a
 
 ## Author
 
-Built by **Ajil Jagadeesh**.
+Built by **Ajil Jagadeesh**
 
 - GitHub: [@AjilJagadeesh7](https://github.com/AjilJagadeesh7)
-- Email: ajiljagadeesh7@gmail.com
+- Email: ajiljagadeesh8@protonmail.com

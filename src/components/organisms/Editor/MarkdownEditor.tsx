@@ -1,20 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Crepe } from '@milkdown/crepe'
-import { commandsCtx, editorViewCtx } from '@milkdown/core'
+import { editorViewCtx } from '@milkdown/core'
 import { TextSelection } from '@milkdown/prose/state'
 import { replaceAll } from '@milkdown/utils'
-import {
-  addColAfterCommand, addColBeforeCommand, addRowAfterCommand, addRowBeforeCommand,
-  deleteSelectedCellsCommand, insertTableCommand, selectColCommand, selectRowCommand,
-  toggleStrikethroughCommand,
-} from '@milkdown/preset-gfm'
-import {
-  toggleEmphasisCommand, toggleInlineCodeCommand, toggleStrongCommand,
-  turnIntoTextCommand, wrapInHeadingCommand,
-  wrapInBulletListCommand, wrapInOrderedListCommand, wrapInBlockquoteCommand,
-  createCodeBlockCommand, insertHrCommand,
-} from '@milkdown/preset-commonmark'
 import { math } from '@milkdown/plugin-math'
 import { wikilinkHighlightPlugin } from './wikilinkPlugin'
 import { calloutPlugin } from './calloutPlugin'
@@ -26,11 +15,12 @@ import { chartCodeBlockPlugin } from './chartCodeBlockPlugin'
 import { useWikilinkTooltip } from '../../../hooks/useWikilinkTooltip'
 import { useWikilinkAutocomplete } from '../../../hooks/useWikilinkAutocomplete'
 import { useEditorContextMenu } from '../../../hooks/useEditorContextMenu'
+import { useEditorCommands } from './useEditorCommands'
 import { ContextMenu } from '../../molecules/ContextMenu'
 import { NotePreviewPopover } from '../../common/NotePreviewPopover'
 import { WikilinkDropdown } from './WikilinkDropdown'
 import { ChartTypeModal, buildChartTemplate } from './ChartTypeModal'
-import type { MarkdownEditorProps, TableCommandRunner } from '../../../types'
+import type { MarkdownEditorProps } from '../../../types'
 
 export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = false, onChange, onWikilinkClick }: MarkdownEditorProps): JSX.Element {
   const rootRef              = useRef<HTMLDivElement | null>(null)
@@ -38,7 +28,7 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
   const editorReadyRef       = useRef(false)
   const prevNoteIdRef        = useRef(noteId)
   const initialMarkdownRef   = useRef(initialMarkdown)
-  const pendingContentRef    = useRef<string | null>(null)  // content waiting for editor ready
+  const pendingContentRef    = useRef<string | null>(null)
   const onChangeRef          = useRef(onChange)
   const onWikilinkClickRef   = useRef(onWikilinkClick)
   const readOnlyRef          = useRef(readOnly)
@@ -46,7 +36,6 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
   useEffect(() => { onChangeRef.current = onChange }, [onChange])
   useEffect(() => { onWikilinkClickRef.current = onWikilinkClick }, [onWikilinkClick])
 
-  // Sync readOnly changes after the editor is ready
   useEffect(() => {
     readOnlyRef.current = readOnly
     if (!editorReadyRef.current || !crepeRef.current) return
@@ -56,24 +45,20 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
   }, [readOnly])
 
   const [chartModalOpen, setChartModalOpen] = useState(false)
-
   const navigate = useNavigate()
 
   const { tooltip, attach: attachTooltip, dismiss: dismissTooltip } = useWikilinkTooltip(rootRef)
   const { menu, handleContextMenu, resizeImage, closeMenu } = useEditorContextMenu(crepeRef, rootRef)
   const { ac, suggestions, complete, dismiss: dismissAc } = useWikilinkAutocomplete(crepeRef, rootRef)
+  const cmds = useEditorCommands(crepeRef, closeMenu, () => setChartModalOpen(true))
 
-  // Listen for slash-menu chart trigger (fires from inside Milkdown's action ctx)
   useEffect(() => {
     const h = () => setChartModalOpen(true)
     window.addEventListener('mv:open-chart-modal', h)
     return () => window.removeEventListener('mv:open-chart-modal', h)
   }, [])
 
-  // When the editor regains focus while "/" is already the only character on the line,
-  // the SlashProvider's isSame check suppresses the menu (doc+selection unchanged).
-  // Ping the cursor position (start→end of "/") to force two state updates that
-  // bypass isSame, re-triggering shouldShow after the 20ms debounce.
+  // When "/" is the only char and editor regains focus, ping cursor to force slash menu re-trigger
   useEffect(() => {
     const root = rootRef.current
     if (!root) return
@@ -86,10 +71,9 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
         const { $from } = state.selection
         if ($from.parent.type.name !== 'paragraph') return
         if ($from.parent.textContent !== '/') return
-        const end = state.selection.from
+        const end   = state.selection.from
         const start = $from.start($from.depth)
         if (end === start) return
-        // Move cursor to paragraph start and back — forces isSame=false twice
         view.dispatch(state.tr.setSelection(TextSelection.create(state.doc, start)))
         view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, end)))
       })
@@ -98,19 +82,6 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
     return () => root.removeEventListener('focusin', onFocus)
   }, [])
 
-  function insertChartBlock(template: string) {
-    crepeRef.current?.editor.action(ctx => {
-      const view = ctx.get(editorViewCtx)
-      const { state } = view
-      const codeBlock = state.schema.nodes['code_block']
-      if (!codeBlock) return
-      const block = codeBlock.create({ language: 'chart' }, state.schema.text(template))
-      view.dispatch(state.tr.replaceSelectionWith(block).scrollIntoView())
-      view.focus()
-    })
-  }
-
-  // Handle navigation events dispatched from TransclusionEmbed widgets (outside React tree)
   useEffect(() => {
     const handler = (e: Event) => {
       const path = (e as CustomEvent<{ path: string }>).detail?.path
@@ -120,19 +91,16 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
     return () => window.removeEventListener('mv:navigate', handler)
   }, [navigate])
 
-  // Swap content without reinitialising Milkdown when active note changes
   useEffect(() => {
     if (prevNoteIdRef.current === noteId) return
     prevNoteIdRef.current = noteId
     if (crepeRef.current && editorReadyRef.current) {
       crepeRef.current.editor.action(replaceAll(initialMarkdown))
     } else {
-      // Editor still initialising — queue the content so it's applied on ready
       pendingContentRef.current = initialMarkdown
     }
   }, [noteId, initialMarkdown])
 
-  // Close context menu on window events
   useEffect(() => {
     if (!menu.visible) return
     const close = () => closeMenu()
@@ -146,7 +114,6 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
     }
   }, [menu.visible, closeMenu])
 
-  // Initialise Milkdown once
   useEffect(() => {
     if (!rootRef.current) return
     const fileToDataURL = (file: File): Promise<string> =>
@@ -160,9 +127,7 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
     const crepe = new Crepe({
       root: rootRef.current,
       defaultValue: initialMarkdownRef.current,
-      features: {
-        [Crepe.Feature.Toolbar]: false,
-      },
+      features: { [Crepe.Feature.Toolbar]: false },
       featureConfigs: {
         [Crepe.Feature.ImageBlock]: { onUpload: fileToDataURL },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -173,12 +138,10 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
               label: 'Chart',
               icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>',
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              onRun: (_ctx: any) => {
-                window.dispatchEvent(new Event('mv:open-chart-modal'))
-              },
+              onRun: (_ctx: any) => { window.dispatchEvent(new Event('mv:open-chart-modal')) },
             })
           } catch {
-            // 'advanced' group not available in this version — chart still accessible via right-click
+            // 'advanced' group unavailable — chart still accessible via right-click
           }
         } },
       },
@@ -197,7 +160,6 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
 
     void crepe.create().then(() => {
       editorReadyRef.current = true
-      // Flush any content update that arrived before the editor was ready
       if (pendingContentRef.current !== null) {
         crepe.editor.action(replaceAll(pendingContentRef.current))
         pendingContentRef.current = null
@@ -210,7 +172,6 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
     })
 
     const detachTooltip = attachTooltip()
-
     return () => {
       detachTooltip?.()
       crepeRef.current       = null
@@ -218,51 +179,6 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
       void crepe.destroy()
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  function runCmd(run: (commands: TableCommandRunner) => void) {
-    const crepe = crepeRef.current
-    if (!crepe) return
-    try {
-      crepe.editor.action((ctx) => {
-        run(ctx.get(commandsCtx) as unknown as TableCommandRunner)
-        ctx.get(editorViewCtx).focus()
-      })
-    } catch (err) {
-      console.warn('[MindVault] Editor command failed:', err)
-    }
-    closeMenu()
-  }
-
-  function editorExec(cmd: string) {
-    crepeRef.current?.editor.action(ctx => { ctx.get(editorViewCtx).focus() })
-    document.execCommand(cmd)
-    closeMenu()
-  }
-
-  function handlePaste() {
-    closeMenu()
-    const crepe = crepeRef.current
-    if (!crepe) return
-
-    function dispatchPaste(text: string) {
-      if (!text) return
-      const dt = new DataTransfer()
-      dt.setData('text/plain', text)
-      const event = new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true })
-      crepe.editor.action(ctx => { ctx.get(editorViewCtx).dom.dispatchEvent(event) })
-    }
-
-    // Tauri native clipboard bypasses WebView isolation (works for system clipboard)
-    import('@tauri-apps/plugin-clipboard-manager')
-      .then(({ readText }) => readText())
-      .then(dispatchPaste)
-      .catch(() => {
-        // Fallback for web/PWA: browser clipboard API
-        navigator.clipboard.readText().then(dispatchPaste).catch(() => {
-          crepe.editor.action(ctx => { ctx.get(editorViewCtx).focus() })
-        })
-      })
-  }
 
   async function handleLinkClick(e: React.MouseEvent<HTMLDivElement>) {
     const anchor = (e.target as HTMLElement).closest('a[href]') as HTMLAnchorElement | null
@@ -279,6 +195,18 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
     }
   }
 
+  function insertChartBlock(template: string) {
+    crepeRef.current?.editor.action(ctx => {
+      const view = ctx.get(editorViewCtx)
+      const { state } = view
+      const codeBlock = state.schema.nodes['code_block']
+      if (!codeBlock) return
+      const block = codeBlock.create({ language: 'chart' }, state.schema.text(template))
+      view.dispatch(state.tr.replaceSelectionWith(block).scrollIntoView())
+      view.focus()
+    })
+  }
+
   return (
     <div
       className="relative h-full min-h-[320px]"
@@ -290,9 +218,7 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
 
       {ac.visible && (
         <WikilinkDropdown
-          x={ac.x}
-          y={ac.y}
-          query={ac.query}
+          x={ac.x} y={ac.y} query={ac.query}
           suggestions={suggestions}
           isTransclusion={ac.isTransclusion}
           onSelect={complete}
@@ -302,9 +228,7 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
 
       {tooltip.visible && (
         <NotePreviewPopover
-          title={tooltip.title}
-          x={tooltip.x}
-          y={tooltip.y}
+          title={tooltip.title} x={tooltip.x} y={tooltip.y}
           onNavigate={() => onWikilinkClickRef.current?.(tooltip.title)}
           onClose={dismissTooltip}
         />
@@ -321,98 +245,37 @@ export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = 
         <ContextMenu
           x={menu.x} y={menu.y} kind={menu.kind} rowIndex={menu.rowIndex} colIndex={menu.colIndex}
           selectedText={menu.selectedText}
-          onAddColBefore={() => runCmd(c => { c.call(selectColCommand.key, { index: Math.max(0, menu.colIndex) }); c.call(addColBeforeCommand.key) })}
-          onAddColAfter={() => runCmd(c => { c.call(selectColCommand.key, { index: Math.max(0, menu.colIndex) }); c.call(addColAfterCommand.key) })}
-          onRemoveCol={() => runCmd(c => { c.call(selectColCommand.key, { index: Math.max(0, menu.colIndex) }); c.call(deleteSelectedCellsCommand.key) })}
-          onAddRowBefore={() => runCmd(c => { c.call(selectRowCommand.key, { index: Math.max(0, menu.rowIndex) }); c.call(addRowBeforeCommand.key) })}
-          onAddRowAfter={() => runCmd(c => { c.call(selectRowCommand.key, { index: Math.max(0, menu.rowIndex) }); c.call(addRowAfterCommand.key) })}
-          onRemoveRow={() => runCmd(c => { c.call(selectRowCommand.key, { index: Math.max(0, menu.rowIndex) }); c.call(deleteSelectedCellsCommand.key) })}
+          onAddColBefore={() => cmds.onAddColBefore(menu.colIndex)}
+          onAddColAfter={() => cmds.onAddColAfter(menu.colIndex)}
+          onRemoveCol={() => cmds.onRemoveCol(menu.colIndex)}
+          onAddRowBefore={() => cmds.onAddRowBefore(menu.rowIndex)}
+          onAddRowAfter={() => cmds.onAddRowAfter(menu.rowIndex)}
+          onRemoveRow={() => cmds.onRemoveRow(menu.rowIndex)}
           onResizeImage={resizeImage}
-          onBold={() => runCmd(c => c.call(toggleStrongCommand.key))}
-          onItalic={() => runCmd(c => c.call(toggleEmphasisCommand.key))}
-          onInlineCode={() => runCmd(c => c.call(toggleInlineCodeCommand.key))}
-          onStrikethrough={() => runCmd(c => c.call(toggleStrikethroughCommand.key))}
-          onClearFormatting={() => {
-            crepeRef.current?.editor.action(ctx => {
-              const view = ctx.get(editorViewCtx)
-              const { state } = view
-              const { from, to } = state.selection
-              // Remove every mark type in one transaction
-              const tr = Object.values(state.schema.marks).reduce(
-                (t, markType) => t.removeMark(from, to, markType),
-                state.tr,
-              )
-              view.dispatch(tr)
-              view.focus()
-            })
-            closeMenu()
-          }}
-          onBulletList={() => runCmd(c => c.call(wrapInBulletListCommand.key))}
-          onOrderedList={() => runCmd(c => c.call(wrapInOrderedListCommand.key))}
-          onTaskList={() => {
-            crepeRef.current?.editor.action(ctx => {
-              const view = ctx.get(editorViewCtx)
-              const { state } = view
-              const nodes = state.schema.nodes
-              const para = nodes['paragraph'].create()
-              const item = nodes['list_item'].create({ checked: false, listType: 'bullet', label: '•', spread: 'false' }, para)
-              const list = nodes['bullet_list'].create(null, item)
-              view.dispatch(state.tr.replaceSelectionWith(list).scrollIntoView())
-              view.focus()
-            })
-            closeMenu()
-          }}
-          onBlockquote={() => runCmd(c => c.call(wrapInBlockquoteCommand.key))}
-          onInsertTable={() => runCmd(c => c.call(insertTableCommand.key, { row: 3, col: 3 }))}
-          onInsertCallout={() => {
-            crepeRef.current?.editor.action(ctx => {
-              const view = ctx.get(editorViewCtx)
-              const { state } = view
-              const nodes = state.schema.nodes
-              const titleText = state.schema.text('[!NOTE]')
-              const titlePara = nodes['paragraph'].create(null, titleText)
-              const bodyPara  = nodes['paragraph'].create(null, state.schema.text('Callout content'))
-              const bq = nodes['blockquote'].create(null, [titlePara, bodyPara])
-              view.dispatch(state.tr.replaceSelectionWith(bq).scrollIntoView())
-              view.focus()
-            })
-            closeMenu()
-          }}
-          onInsertHr={() => runCmd(c => c.call(insertHrCommand.key))}
-          onInsertCodeBlock={() => runCmd(c => c.call(createCodeBlockCommand.key))}
-          onInsertChart={() => { setChartModalOpen(true); closeMenu() }}
-          onHeading={(level) => runCmd(c => c.call(wrapInHeadingCommand.key, level))}
-          onTurnIntoText={() => runCmd(c => c.call(turnIntoTextCommand.key))}
-          onAddLink={() => {
-            crepeRef.current?.editor.action(ctx => {
-              const view = ctx.get(editorViewCtx)
-              view.dispatch(view.state.tr.insertText('[['))
-              view.focus()
-            })
-            closeMenu()
-          }}
-          onAddExternalLink={() => {
-            crepeRef.current?.editor.action(ctx => {
-              const view = ctx.get(editorViewCtx)
-              const { state } = view
-              const { from } = state.selection
-              // Insert []() and place cursor inside [] so user types display text first
-              const tr = state.tr.insertText('[]()')
-              const cursorPos = from + 1   // position between [ and ]
-              tr.setSelection(TextSelection.create(tr.doc, cursorPos))
-              view.dispatch(tr.scrollIntoView())
-              view.focus()
-            })
-            closeMenu()
-          }}
-          onCut={() => editorExec('cut')}
-          onCopy={() => editorExec('copy')}
-          onPaste={handlePaste}
-          onSelectAll={() => editorExec('selectAll')}
+          onBold={cmds.onBold}
+          onItalic={cmds.onItalic}
+          onInlineCode={cmds.onInlineCode}
+          onStrikethrough={cmds.onStrikethrough}
+          onClearFormatting={cmds.onClearFormatting}
+          onBulletList={cmds.onBulletList}
+          onOrderedList={cmds.onOrderedList}
+          onTaskList={cmds.onTaskList}
+          onBlockquote={cmds.onBlockquote}
+          onInsertTable={cmds.onInsertTable}
+          onInsertCallout={cmds.onInsertCallout}
+          onInsertHr={cmds.onInsertHr}
+          onInsertCodeBlock={cmds.onInsertCodeBlock}
+          onInsertChart={cmds.onInsertChart}
+          onHeading={cmds.onHeading}
+          onTurnIntoText={cmds.onTurnIntoText}
+          onAddLink={cmds.onAddLink}
+          onAddExternalLink={cmds.onAddExternalLink}
+          onCut={cmds.onCut}
+          onCopy={cmds.onCopy}
+          onPaste={cmds.onPaste}
+          onSelectAll={cmds.onSelectAll}
         />
       )}
     </div>
   )
 }
-
-

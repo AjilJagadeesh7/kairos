@@ -1,15 +1,17 @@
 import { useState } from 'react'
 import type { IconToken } from '../../../../icons/tokens'
 import { Icon } from '../../../../icons/Icon'
-import { TabGettingStarted, TabApiReference, TabIconPacks, TabDistribution } from './PluginDocTabs'
+import { TabGettingStarted, TabApiReference } from './PluginDocTabs'
+import { TabUIExtensions } from './PluginDocTabsExtensions'
+import { TabDistribution } from './PluginDocTabsDist'
 
-type DocTab = 'start' | 'api' | 'icons' | 'distribution'
+type DocTab = 'start' | 'api' | 'ui' | 'distribution'
 
 const DOC_TABS: { id: DocTab; label: string; icon: IconToken; description: string }[] = [
   { id: 'start',        label: 'Getting Started', icon: 'graduation-cap', description: 'Your first plugin in 5 min' },
   { id: 'api',          label: 'API Reference',   icon: 'zap',            description: 'Notes, kanban, events'     },
-  { id: 'icons',        label: 'Icon Packs',      icon: 'palette',        description: 'Override built-in icons'   },
-  { id: 'distribution', label: 'Distribution',    icon: 'store',          description: 'Share via marketplace'     },
+  { id: 'ui',           label: 'UI Extensions',   icon: 'layout-list',    description: 'Slots, themes, editor'     },
+  { id: 'distribution', label: 'Distribution',    icon: 'store',          description: 'Icons, marketplace, links' },
 ]
 
 export function PluginsDeveloperGuide() {
@@ -21,17 +23,17 @@ export function PluginsDeveloperGuide() {
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-text">Build a Plugin</h3>
         <a
-          href="https://github.com/AjilJagadeesh7/mindvault"
+          href="https://github.com/AjilJagadeesh7/mindvault#plugin-system"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1 text-xs text-accent hover:underline"
         >
           <Icon name="external-link" size={11} />
-          Full docs
+          Full docs on GitHub
         </a>
       </div>
 
-      {/* Tab picker grid */}
+      {/* Tab picker */}
       <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {DOC_TABS.map(tab => (
           <button
@@ -69,7 +71,7 @@ export function PluginsDeveloperGuide() {
 
         {activeTab === 'start'        && <TabGettingStarted />}
         {activeTab === 'api'          && <TabApiReference />}
-        {activeTab === 'icons'        && <TabIconPacks />}
+        {activeTab === 'ui'           && <TabUIExtensions />}
         {activeTab === 'distribution' && <TabDistribution />}
       </div>
     </div>

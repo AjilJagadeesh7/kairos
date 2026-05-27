@@ -67,6 +67,8 @@ export type IconToken =
   | 'palette'
   | 'panel-left-close'
   | 'panel-left-open'
+  | 'panel-right-close'
+  | 'panel-right-open'
   | 'pen-tool'
   | 'pencil'
   | 'pin'

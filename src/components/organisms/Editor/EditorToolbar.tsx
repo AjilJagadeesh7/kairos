@@ -105,7 +105,7 @@ export function EditorToolbar({
           sidebarOpen ? 'bg-accent/10 text-accent' : 'text-text3 hover:bg-surface3 hover:text-text'
         }`}
       >
-        <Icon name={sidebarOpen ? 'panel-left-close' : 'panel-left-open'} size={14} />
+        <Icon name={sidebarOpen ? 'panel-right-close' : 'panel-right-open'} size={14} />
       </button>
     </div>
   )
