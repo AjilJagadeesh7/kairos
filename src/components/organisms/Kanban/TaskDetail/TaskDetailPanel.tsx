@@ -22,22 +22,24 @@ interface Props {
 
 export function TaskDetailPanel({ task, board, onClose }: Props): JSX.Element {
   const updateTask = useKanbanStore(s => s.updateTask)
-  const [tagInput, setTagInput] = useState('')
+  const [tagInput, setTagInput]   = useState('')
+  const [addingTag, setAddingTag] = useState(false)
 
   const progress = calcTaskProgress(task)
 
-  function addTag(e: React.KeyboardEvent) {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault()
-      const name = tagInput.trim().replace(/^,/, '')
-      if (!name || task.tags.includes(name)) { setTagInput(''); return }
+  function commitTag() {
+    const name = tagInput.trim().replace(/^,/, '')
+    if (name && !task.tags.includes(name)) {
       updateTask(board.id, task.id, { tags: [...task.tags, name] })
       useKanbanStore.getState().addBoardTag(board.id, name)
-      setTagInput('')
     }
-    if (e.key === 'Backspace' && !tagInput && task.tags.length > 0) {
-      updateTask(board.id, task.id, { tags: task.tags.slice(0, -1) })
-    }
+    setTagInput('')
+    setAddingTag(false)
+  }
+
+  function addTag(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); commitTag() }
+    if (e.key === 'Escape') { setTagInput(''); setAddingTag(false) }
   }
 
   function removeTag(tag: string) {
@@ -71,27 +73,52 @@ export function TaskDetailPanel({ task, board, onClose }: Props): JSX.Element {
         <TaskDescriptionEditor boardId={board.id} task={task} />
 
         <section className="mb-5">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-[rgb(var(--text-3))]">Tags</h3>
+          <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[rgb(var(--text-3))]">
+            <Icon name="tag" size={12} /> Tags
+          </h3>
           <div className="flex flex-wrap items-center gap-1.5">
-            {task.tags.map(tag => (
-              <span
-                key={tag}
-                className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium"
-                style={{ backgroundColor: getTagColor(tag), color: tagTextColor(getTagColor(tag)) }}
+            {task.tags.map(tag => {
+              const bg = getTagColor(tag)
+              const fg = tagTextColor(bg)
+              return (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium"
+                  style={{ backgroundColor: bg, color: fg }}
+                >
+                  <Icon name="hash" size={9} strokeWidth={2.5} />
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => removeTag(tag)}
+                    className="ml-0.5 flex items-center justify-center opacity-60 transition hover:opacity-100"
+                    style={{ color: 'inherit' }}
+                  >
+                    <Icon name="x" size={10} />
+                  </button>
+                </span>
+              )
+            })}
+            {addingTag ? (
+              <input
+                autoFocus
+                value={tagInput}
+                onChange={e => setTagInput(e.target.value)}
+                onKeyDown={addTag}
+                onBlur={commitTag}
+                placeholder="Tag name…"
+                className="min-w-[80px] rounded-full border border-dashed border-[rgb(var(--border))] bg-transparent px-2.5 py-0.5 text-[11px] text-[rgb(var(--text))] outline-none placeholder:text-[rgb(var(--text-3))]"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setAddingTag(true)}
+                className="inline-flex items-center gap-1 rounded-full border border-dashed border-[rgb(var(--border))] px-2 py-0.5 text-[11px] text-[rgb(var(--text-3))] transition hover:border-[rgb(var(--text-3))] hover:text-[rgb(var(--text-2))]"
               >
-                {tag}
-                <button onClick={() => removeTag(tag)} className="ml-0.5 opacity-70 hover:opacity-100 leading-none">×</button>
-              </span>
-            ))}
-            <input
-              value={tagInput}
-              onChange={e => setTagInput(e.target.value)}
-              onKeyDown={addTag}
-              placeholder="Add tag…"
-              className="min-w-[72px] flex-1 bg-transparent text-sm text-[rgb(var(--text))] outline-none placeholder-[rgb(var(--text-3))]"
-            />
+                <Icon name="plus" size={10} /> Add tag
+              </button>
+            )}
           </div>
-          <p className="mt-1.5 text-[10px] text-[rgb(var(--text-3))]">Enter or comma to add</p>
         </section>
 
         <TaskAttachments boardId={board.id} task={task} />

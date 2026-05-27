@@ -1,4 +1,11 @@
-import { DndContext, DragOverlay, closestCorners } from '@dnd-kit/core'
+import { DndContext, DragOverlay, closestCorners, pointerWithin, type CollisionDetection } from '@dnd-kit/core'
+
+// pointerWithin is reliable for large zones (empty columns); fall back to
+// closestCorners for edge cases where the pointer is between elements.
+const collisionDetection: CollisionDetection = (args) => {
+  const hits = pointerWithin(args)
+  return hits.length > 0 ? hits : closestCorners(args)
+}
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable'
 import { useBoardDragDrop } from '../../../../hooks/useBoardDragDrop'
 import { KanbanColumn } from './KanbanColumn'
@@ -27,12 +34,12 @@ export function BoardColumns({ board }: Props): JSX.Element {
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={collisionDetection}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex-1 overflow-x-auto overflow-y-hidden">
+      <div className="h-full overflow-x-auto overflow-y-hidden snap-x snap-mandatory scroll-pl-4 scroll-smooth">
         <div className="flex h-full min-w-full gap-3 p-4">
           <SortableContext items={sortedColumns.map(c => c.id)} strategy={horizontalListSortingStrategy}>
             {sortedColumns.map(col => (

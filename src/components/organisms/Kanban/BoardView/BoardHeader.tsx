@@ -5,7 +5,7 @@ import { useKanbanStore } from '../../../../store/useKanbanStore'
 import { Button } from '../../../atoms/Button'
 import { Select } from '../../../atoms/Select'
 import { AddColumnModal } from './AddColumnModal'
-import type { Board, DueFilter, Priority, SortMode } from '../../../../types/kanban.types'
+import type { Board, DueFilter, Priority } from '../../../../types/kanban.types'
 import { Icon } from '../../../../icons/Icon'
 import { SlotRenderer } from '../../../molecules/SlotRenderer'
 
@@ -16,12 +16,6 @@ const DUE_OPTIONS: Array<{ value: DueFilter; label: string }> = [
   { value: 'overdue', label: 'Overdue'       },
   { value: 'today',   label: 'Due today'     },
   { value: 'week',    label: 'Due this week' },
-]
-const SORT_OPTIONS: Array<{ value: SortMode; label: string }> = [
-  { value: 'manual',   label: 'Manual'   },
-  { value: 'priority', label: 'Priority' },
-  { value: 'due',      label: 'Due date' },
-  { value: 'created',  label: 'Created'  },
 ]
 
 interface BoardHeaderProps {
@@ -115,12 +109,6 @@ export function BoardHeader({ board, onOpenSettings }: BoardHeaderProps): JSX.El
 
       {/* ── Right actions ────────────────────────────────────────── */}
       <div className="flex items-center gap-1">
-        <Select<SortMode>
-          value={filters.sort}
-          options={SORT_OPTIONS}
-          onChange={sort => setFilters({ sort })}
-        />
-
         <div className="mx-1 h-4 w-px bg-[rgb(var(--border))]" />
 
         {/* Add column */}

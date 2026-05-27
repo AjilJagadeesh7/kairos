@@ -13,11 +13,9 @@ interface KanbanColumnProps {
   isFiltered: boolean
 }
 
-function DroppableEmptyZone({ columnId }: { columnId: string }) {
-  const { setNodeRef, isOver } = useDroppable({ id: `droppable-${columnId}` })
+function EmptyDropIndicator({ isOver }: { isOver: boolean }) {
   return (
     <div
-      ref={setNodeRef}
       className={`flex min-h-[80px] flex-1 items-center justify-center rounded-lg border-2 border-dashed text-xs text-[rgb(var(--text-3))] transition ${
         isOver ? 'border-[rgb(var(--accent))] bg-[rgb(var(--accent))]/5' : 'border-[rgb(var(--border))]'
       }`}
@@ -42,6 +40,10 @@ export function KanbanColumn({ column, board, tasks, isFiltered }: KanbanColumnP
     data: { type: 'column', column },
   })
 
+  const { setNodeRef: setBodyRef, isOver: isBodyOver } = useDroppable({
+    id: `droppable-${column.id}`,
+  })
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition: isDragging ? 'none' : (transition ? 'transform 220ms cubic-bezier(0.2, 0, 0, 1)' : undefined),
@@ -52,7 +54,7 @@ export function KanbanColumn({ column, board, tasks, isFiltered }: KanbanColumnP
     <div
       ref={setSortableRef}
       style={style}
-      className="group flex h-full min-w-[220px] flex-1 flex-col"
+      className="group flex h-full w-[85vw] shrink-0 snap-start flex-col sm:w-auto sm:min-w-[220px] sm:flex-1"
     >
       <ColumnHeader
         column={column}
@@ -61,8 +63,11 @@ export function KanbanColumn({ column, board, tasks, isFiltered }: KanbanColumnP
         dragHandleProps={{ ...attributes, ...listeners }}
       />
 
-      <div className="flex flex-1 flex-col gap-2 overflow-y-auto rounded-b-xl bg-[rgb(var(--surface-2))] p-2"
-        style={{ borderTop: `3px solid ${column.color}` }}>
+      <div
+        ref={setBodyRef}
+        className="flex flex-1 flex-col gap-2 overflow-y-auto rounded-b-xl bg-[rgb(var(--surface-2))] p-2"
+        style={{ borderTop: `3px solid ${column.color}` }}
+      >
         <SortableContext items={sorted.map(t => t.id)} strategy={verticalListSortingStrategy}>
           {sorted.map(task => (
             <TaskCard key={task.id} task={task} board={board} />
@@ -70,7 +75,7 @@ export function KanbanColumn({ column, board, tasks, isFiltered }: KanbanColumnP
         </SortableContext>
 
         {sorted.length === 0 && (
-          <DroppableEmptyZone columnId={column.id} />
+          <EmptyDropIndicator isOver={isBodyOver} />
         )}
 
         {isFiltered && tasks.length === 0 && sorted.length === 0 ? null : (

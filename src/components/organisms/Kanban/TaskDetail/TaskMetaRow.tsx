@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useKanbanStore } from '../../../../store/useKanbanStore'
 import { useConfirmStore } from '../../../../store/useConfirmStore'
 import { PriorityDot } from '../../../atoms/PriorityDot'
-import { formatDate } from '../../../../utils/kanban'
+import { DueDatePicker } from './DueDatePicker'
 import type { Board, KanbanTask, Priority } from '../../../../types/kanban.types'
 import { Icon } from '../../../../icons/Icon'
 
@@ -99,16 +99,10 @@ export function TaskMetaRow({ task, board }: Props) {
       </div>
 
       {/* Due date */}
-      <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] px-2.5 py-1.5 text-xs font-medium text-[rgb(var(--text-2))] hover:border-[rgb(var(--accent))]">
-        <Icon name="calendar" size={11} />
-        {task.due ? formatDate(task.due) : 'Due date'}
-        <input
-          type="date"
-          value={task.due ? task.due.split('T')[0] : ''}
-          onChange={e => updateTask(board.id, task.id, { due: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
-          className="absolute h-0 w-0 opacity-0"
-        />
-      </label>
+      <DueDatePicker
+        value={task.due ? task.due.split('T')[0] : undefined}
+        onChange={iso => updateTask(board.id, task.id, { due: iso ? `${iso}T00:00:00.000Z` : undefined })}
+      />
 
       {/* Delete */}
       <button
