@@ -1,10 +1,12 @@
 import { Dropdown } from '../../molecules/Dropdown'
+import { SlotRenderer } from '../../molecules/SlotRenderer'
 import { ExportMenu } from './EditorExportMenu'
 import { Icon } from '../../../icons/Icon'
 import type { EditorDraftProps, SaveStatus } from '../../../types'
 
 interface EditorToolbarProps {
   note: EditorDraftProps['note']
+  noteTitle: string
   saveStatus: SaveStatus
   onSave: () => void
   exportingPDF: boolean
@@ -18,13 +20,17 @@ interface EditorToolbarProps {
 }
 
 export function EditorToolbar({
-  note, saveStatus, onSave,
+  note, noteTitle, saveStatus, onSave,
   exportingPDF, onExportPDF,
   showHistory, onToggleHistory, onReadingMode, onDelete,
   sidebarOpen, onToggleSidebar,
 }: EditorToolbarProps) {
+  const slotProps = { noteId: note.id, noteTitle }
+
   return (
     <div className="flex h-10 shrink-0 items-center gap-1.5 border-b border-border px-3">
+
+      <SlotRenderer slot="editor:toolbar:start" props={slotProps} className="flex items-center" />
 
       {/* Save status */}
       <span className={`mr-1 shrink-0 text-xs transition-all ${
@@ -88,6 +94,8 @@ export function EditorToolbar({
       >
         <Icon name="trash-2" size={14} />
       </button>
+
+      <SlotRenderer slot="editor:toolbar:end" props={slotProps} className="flex items-center" />
 
       <div className="mx-0.5 h-4 w-px bg-border" />
 

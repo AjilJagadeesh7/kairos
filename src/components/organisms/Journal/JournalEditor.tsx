@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 
 import { useJournalStore, todayDate } from '../../../store/useJournalStore'
 import { useConfirmStore } from '../../../store/useConfirmStore'
+import { SlotRenderer } from '../../molecules/SlotRenderer'
 import { MarkdownEditor } from '../Editor/MarkdownEditor'
 import { HistoryPanel } from '../Editor/HistoryPanel'
 import { useAppStore } from '../../../store/useAppStore'
@@ -137,6 +138,7 @@ export function JournalEditor({ date }: JournalEditorProps) {
           >
             <Icon name="chevron-right" size={14} />
           </button>
+          <SlotRenderer slot="journal:header:end" props={{ date }} className="flex items-center" />
 
           <span className={`hidden shrink-0 items-center gap-1 text-xs transition-all sm:inline-flex ${
             saveStatus === 'idle' ? 'pointer-events-none opacity-0' : 'opacity-100'

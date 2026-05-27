@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useReactFlow } from '@xyflow/react'
 import { useCanvasStore } from '../../../store/useCanvasStore'
 import { Icon } from '../../../icons/Icon'
+import { SlotRenderer } from '../../molecules/SlotRenderer'
 import type { Canvas } from '../../../types'
 
 function CanvasTitleEditor({ canvas }: { canvas: Canvas }) {
@@ -69,6 +70,7 @@ export function CanvasToolbar({ canvas, onAddText, onAddNote, onAddWeb, showMini
       <div className="mx-1.5 h-4 w-px bg-[rgb(var(--border))]" />
       <ToolBtn label="Fit view"   icon="crosshair"   onClick={() => fitView({ padding: 0.12, duration: 300 })} />
       <ToolBtn label={showMinimap ? 'Hide minimap' : 'Minimap'} icon="layers" onClick={onToggleMinimap} active={showMinimap} />
+      <SlotRenderer slot="canvas:toolbar:end" props={{ canvasId: canvas.id }} className="flex items-center" />
     </div>
   )
 }

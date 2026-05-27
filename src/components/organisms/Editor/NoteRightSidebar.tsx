@@ -6,8 +6,10 @@ import { TagBadge } from '../../atoms/TagBadge'
 import { FrontmatterPanel } from './FrontmatterPanel'
 import { NoteInfoPanel } from './NoteInfoPanel'
 import { Icon } from '../../../icons/Icon'
+import { SlotRenderer } from '../../molecules/SlotRenderer'
 import { SectionLabel } from '../../atoms/SectionLabel'
 import type { Note, TagRecord } from '../../../types'
+import type { NoteView } from '../../../plugins/types'
 
 interface Props {
   note: Note
@@ -114,6 +116,13 @@ export function NoteRightSidebar({
       <div className="px-2 py-2">
         <NoteInfoPanel note={note} content={content} />
       </div>
+
+      {/* ── Plugin panels ─────────────────────────────────────────────────── */}
+      <SlotRenderer
+        slot="notes:right-sidebar:panel"
+        props={{ note: note as unknown as NoteView }}
+        className="border-b border-border"
+      />
 
       {/* ── Outgoing links count at very bottom ──────────────────────────── */}
       <div className="mt-auto border-t border-border px-3 py-2">

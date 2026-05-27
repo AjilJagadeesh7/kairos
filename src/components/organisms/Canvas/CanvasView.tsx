@@ -24,14 +24,17 @@ import { NotePickerModal } from './NotePickerModal'
 import { TextNode } from './nodes/TextNode'
 import { NoteNode } from './nodes/NoteNode'
 import { WebNode } from './nodes/WebNode'
+import { useCanvasNodeTypes } from '../../../plugins/pluginContext'
 import type { Canvas, CanvasNode, CanvasEdge } from '../../../types'
 
-const NODE_TYPES = { text: TextNode, note: NoteNode, web: WebNode } as const
+const BUILTIN_NODE_TYPES = { text: TextNode, note: NoteNode, web: WebNode }
 
 function CanvasInner({ canvas }: { canvas: Canvas }) {
   const navigate            = useNavigate()
   const updateNodesAndEdges = useCanvasStore(s => s.updateNodesAndEdges)
   const colorMode           = useColorMode()
+  const pluginNodeTypes     = useCanvasNodeTypes()
+  const nodeTypes           = useMemo(() => ({ ...BUILTIN_NODE_TYPES, ...pluginNodeTypes }), [pluginNodeTypes])
 
   const [showMinimap,    setShowMinimap]    = useState(false)
   const [showNotePicker, setShowNotePicker] = useState(false)
@@ -170,7 +173,7 @@ function CanvasInner({ canvas }: { canvas: Canvas }) {
       <ReactFlow
         nodes={nodesWithCallbacks}
         edges={edges}
-        nodeTypes={NODE_TYPES as unknown as typeof NODE_TYPES}
+        nodeTypes={nodeTypes as Parameters<typeof ReactFlow>[0]['nodeTypes']}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}

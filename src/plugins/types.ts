@@ -1,14 +1,25 @@
 import type React from 'react'
 import type { IconToken } from '../icons/tokens'
+import type { SlotId, SlotPropsMap, SlotRegistration } from './slotTypes'
+import type {
+  EditorToolbarItem,
+  EditorMilkdownPlugin,
+  ThemeRegistration,
+  CommandRegistration,
+  CanvasNodeTypeRegistration,
+} from './extensionTypes'
+
+export type { SlotId, SlotPropsMap, SlotRegistration }
+export type { EditorToolbarItem, EditorMilkdownPlugin, ThemeRegistration, CommandRegistration, CanvasNodeTypeRegistration }
 
 // ─── Manifest ─────────────────────────────────────────────────────────────────
 export interface PluginManifest {
-  id: string            // must match vault folder name
+  id: string
   name: string
-  version: string       // semver
+  version: string
   description: string
   author: string
-  entryPoint: string    // relative path: "index.js"
+  entryPoint: string
   permissions: PluginPermission[]
   minAppVersion?: string
 }
@@ -22,20 +33,23 @@ export type PluginPermission =
   | 'ui:settings'
   | 'ui:header'
   | 'ui:icons'
+  | 'ui:slot'
+  | 'ui:theme'
+  | 'ui:commands'
+  | 'editor:extend'
+  | 'canvas:extend'
   | 'events'
 
 // ─── Icon rules ───────────────────────────────────────────────────────────────
-// Plugins with 'ui:icons' can call api.registerIconRules(rules) to
-// map note titles, folder names, or tags to custom emoji icons.
 export interface IconRule {
-  titleMatch?: string   // regex pattern tested against note.title (case-insensitive)
-  folder?: string       // regex pattern tested against folder name (case-insensitive)
-  tag?: string          // exact tag name match
-  emoji: string         // emoji character to display as the icon
-  color?: string        // optional CSS color for the icon emoji wrapper
+  titleMatch?: string
+  folder?: string
+  tag?: string
+  emoji: string
+  color?: string
 }
 
-// ─── App events plugins can subscribe to ──────────────────────────────────────
+// ─── App events ───────────────────────────────────────────────────────────────
 export type AppEvent =
   | 'note:created'
   | 'note:updated'
@@ -45,34 +59,38 @@ export type AppEvent =
   | 'vault:connected'
   | 'app:ready'
 
-// ─── What plugins register ─────────────────────────────────────────────────────
+// ─── UI registrations ─────────────────────────────────────────────────────────
 export interface PluginPageRegistration {
   pluginId: string
-  path: string                    // e.g. "/pomodoro"
-  navLabel: string                // text shown in header
-  navIcon?: React.ElementType     // lucide icon component (from app bundle)
-  navIconName?: IconToken         // icon token string (preferred for JS plugins)
+  path: string
+  navLabel: string
+  navIcon?: React.ElementType
+  navIconName?: IconToken
   component: React.ComponentType
 }
 
 export interface PluginSettingsRegistration {
   pluginId: string
-  id: string                      // settings section id, e.g. "pomodoro-settings"
+  id: string
   label: string
   icon?: React.ElementType
   component: React.ComponentType
 }
 
+// ─── Registry ─────────────────────────────────────────────────────────────────
 export interface PluginRegistry {
   pages: PluginPageRegistration[]
   settings: PluginSettingsRegistration[]
   iconRules: IconRule[]
+  slots: SlotRegistration[]
+  themes: ThemeRegistration[]
+  commands: CommandRegistration[]
+  editorToolbarItems: EditorToolbarItem[]
+  editorMilkdownPlugins: EditorMilkdownPlugin[]
+  canvasNodeTypes: CanvasNodeTypeRegistration[]
 }
 
 // ─── Narrow data types exposed to plugins ────────────────────────────────────
-// Plugins receive snapshots, not mutable store references.
-// The embedding vector is intentionally excluded — it's large and internal.
-
 export interface NoteListItem {
   id: string
   title: string
@@ -103,24 +121,49 @@ export interface TaskWriteData {
   tags?: string[]
 }
 
-// ─── API object handed to each plugin's setup() ───────────────────────────────
+// ─── Plugin API ───────────────────────────────────────────────────────────────
 export interface MindVaultPluginAPI {
   readonly pluginId: string
   readonly manifest: PluginManifest
 
-  // UI registration — requires 'ui:page' / 'ui:settings' / 'ui:icons'
+  // ── Pages & settings ──────────────────────────────────────────────────────
   registerPage(reg: Omit<PluginPageRegistration, 'pluginId'>): void
   registerSettingsSection(reg: Omit<PluginSettingsRegistration, 'pluginId'>): void
+
+  // ── Icons ─────────────────────────────────────────────────────────────────
   registerIconRules(rules: IconRule[]): void
-  // SVG strings (inline <svg>…</svg>) or URLs — no bundling required
   registerIconPack(pack: Partial<Record<IconToken, string>>): void
 
-  // Event bus — requires 'events'
+  // ── Slots — inject UI into any named extension point ──────────────────────
+  registerSlot<S extends SlotId>(
+    slot: S,
+    component: React.ComponentType<SlotPropsMap[S]>,
+    order?: number,
+  ): void
+
+  // ── Themes ────────────────────────────────────────────────────────────────
+  registerTheme(theme: Omit<ThemeRegistration, 'pluginId'>): void
+
+  // ── Commands ──────────────────────────────────────────────────────────────
+  registerCommand(cmd: Omit<CommandRegistration, 'pluginId'>): void
+
+  // ── Editor extensions ─────────────────────────────────────────────────────
+  editor: {
+    registerToolbarItem(item: Omit<EditorToolbarItem, 'pluginId'>): void
+    registerMilkdownPlugin(plugin: unknown): void
+  }
+
+  // ── Canvas extensions ─────────────────────────────────────────────────────
+  canvas: {
+    registerNodeType(type: string, component: React.ComponentType<unknown>): void
+  }
+
+  // ── Event bus ─────────────────────────────────────────────────────────────
   on(event: AppEvent, handler: (payload: unknown) => void): void
   off(event: AppEvent, handler: (payload: unknown) => void): void
   emit(event: AppEvent, payload?: unknown): void
 
-  // Notes API — 'read:notes' for reads, 'write:notes' for mutations
+  // ── Data APIs ─────────────────────────────────────────────────────────────
   notes: {
     list(): NoteListItem[]
     get(id: string): NoteView | null
@@ -129,22 +172,19 @@ export interface MindVaultPluginAPI {
     delete(id: string): Promise<void>
   }
 
-  // Kanban API — 'read:kanban' for reads, 'write:kanban' for mutations
   kanban: {
     getBoards(): BoardSummary[]
     createTask(boardId: string, columnId: string, title: string): string
     updateTask(boardId: string, taskId: string, updates: TaskWriteData): void
   }
 
-  // Per-plugin file storage inside vault/plugins/{id}/
+  // ── Plugin file storage ───────────────────────────────────────────────────
   readPluginData(filename: string): Promise<string | null>
   writePluginData(filename: string, content: string): Promise<void>
 
-  // Shared UI components and React (so plugins don't bundle them)
+  // ── Shared UI + React ─────────────────────────────────────────────────────
   components: typeof import('./sharedComponents')
   React: typeof import('react')
-
-
 }
 
 export type PluginSetupFn = (api: MindVaultPluginAPI) => void | Promise<void>
@@ -153,16 +193,15 @@ export interface PluginModule {
   default: PluginSetupFn
 }
 
-// ─── Persisted install record ──────────────────────────────────────────────────
+// ─── Install records ──────────────────────────────────────────────────────────
 export interface InstalledPlugin {
   id: string
   manifest: PluginManifest
   enabled: boolean
-  installedAt: string   // ISO
-  source?: string       // marketplace origin URL or 'local'
+  installedAt: string
+  source?: string
 }
 
-// ─── Install request (used by postMessage + deep link handlers) ────────────────
 export interface PluginInstallRequest {
   id: string
   manifestUrl: string

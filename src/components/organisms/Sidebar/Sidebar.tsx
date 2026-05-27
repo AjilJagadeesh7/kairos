@@ -14,6 +14,7 @@ import { SectionLabel } from '../../atoms/SectionLabel'
 import type { NoteTemplate } from '../../../types'
 import type { Note } from '../../../types'
 import { Icon } from '../../../icons/Icon'
+import { SlotRenderer } from '../../molecules/SlotRenderer'
 
 interface Props {
   onClose?: () => void
@@ -125,6 +126,7 @@ export function Sidebar({ onClose }: Props): JSX.Element {
           {onClose && (
             <IconButton icon="x" label="Close sidebar" size="xs" onClick={onClose} className="xl:hidden" />
           )}
+          <SlotRenderer slot="sidebar:header:end" props={{}} />
         </div>
 
         {/* ── Search input ── */}
@@ -224,6 +226,7 @@ export function Sidebar({ onClose }: Props): JSX.Element {
             </div>
           )}
         </div>
+        <SlotRenderer slot="sidebar:footer" props={{}} className="border-t border-border" />
       </aside>
     </>
   )

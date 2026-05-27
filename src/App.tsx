@@ -9,6 +9,7 @@ import { PaneLayout } from './components/organisms/SplitLayout/PaneLayout'
 import { LoaderBar } from './components/molecules/LoaderBar'
 import { ConfirmDialog } from './components/organisms/ConfirmDialog'
 import { PluginProvider } from './plugins/pluginContext'
+import { PluginThemeProvider } from './providers/PluginThemeProvider'
 import { IconProvider } from './icons/IconContext'
 import { OnboardingModal } from './components/organisms/Onboarding/OnboardingModal'
 import { ShortcutsModal } from './components/organisms/ShortcutsModal'
@@ -116,7 +117,9 @@ function App() {
   return (
     <IconProvider>
       <PluginProvider>
-        <AppInner />
+        <PluginThemeProvider>
+          <AppInner />
+        </PluginThemeProvider>
       </PluginProvider>
     </IconProvider>
   )

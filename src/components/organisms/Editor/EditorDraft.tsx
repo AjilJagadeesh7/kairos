@@ -6,6 +6,7 @@ import { useAppStore } from '../../../store/useAppStore'
 import { useConfirmStore } from '../../../store/useConfirmStore'
 import { TAG_COLOR_PALETTE } from '../../../utils/kanban'
 import { EditorToolbar } from './EditorToolbar'
+import { SlotRenderer } from '../../molecules/SlotRenderer'
 import { EditorBannerArea } from './EditorBannerArea'
 import { EditorReadingMode } from './EditorReadingMode'
 import { MarkdownEditor } from './MarkdownEditor'
@@ -196,6 +197,7 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
         <div className="flex h-full flex-col overflow-hidden">
           <EditorToolbar
             note={note}
+            noteTitle={title}
             saveStatus={saveStatus}
             onSave={() => void saveNote()}
             exportingPDF={exportingPDF}
@@ -241,6 +243,10 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
                   />
 
                   <hr className="my-4 border-border" />
+                  <SlotRenderer
+                    slot="editor:title:below"
+                    props={{ noteId: note.id, noteTitle: title }}
+                  />
                 </div>
 
                 {/* Editor fills remaining height — ProseMirror scrolls internally */}

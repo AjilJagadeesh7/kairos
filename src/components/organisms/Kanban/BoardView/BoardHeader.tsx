@@ -7,6 +7,7 @@ import { Select } from '../../../atoms/Select'
 import { AddColumnModal } from './AddColumnModal'
 import type { Board, DueFilter, Priority, SortMode } from '../../../../types/kanban.types'
 import { Icon } from '../../../../icons/Icon'
+import { SlotRenderer } from '../../../molecules/SlotRenderer'
 
 const PRIORITIES: Priority[] = ['urgent', 'high', 'medium', 'low']
 const PRIORITY_LABELS: Record<Priority, string> = { urgent: 'Urgent', high: 'High', medium: 'Medium', low: 'Low' }
@@ -147,6 +148,7 @@ export function BoardHeader({ board, onOpenSettings }: BoardHeaderProps): JSX.El
           className="inline-flex items-center gap-1 text-xs">
           <Icon name="settings" size={12} /> Settings
         </Button>
+        <SlotRenderer slot="kanban:toolbar:end" props={{ boardId: board.id }} className="flex items-center" />
       </div>
     </div>
 

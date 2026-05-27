@@ -147,8 +147,10 @@ export function useAppStartup() {
           useCanvasStore.getState().isLoaded  ? Promise.resolve() : useCanvasStore.getState().loadCanvases(),
         ])
 
-        // Discover plugins dropped directly into the vault folder, then load
-        const { scanLocalPlugins, loadAllPlugins } = await import('../plugins/pluginManager')
+        // Discover plugins dropped directly into the vault folder, then load.
+        // resetPluginSession() ensures a clean slate if the vault was reconnected.
+        const { scanLocalPlugins, loadAllPlugins, resetPluginSession } = await import('../plugins/pluginManager')
+        resetPluginSession()
         await scanLocalPlugins()
         await loadAllPlugins()
 

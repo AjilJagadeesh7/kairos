@@ -3,6 +3,7 @@ import { usePaneStore, pathToType } from '../../../store/usePaneStore'
 import { useAppStore } from '../../../store/useAppStore'
 import { usePluginRegistry } from '../../../plugins/pluginContext'
 import { SyncStatusBadge } from '../../molecules/SyncStatusBadge'
+import { SlotRenderer } from '../../molecules/SlotRenderer'
 import { THEME_REGISTRY } from '../../../themes/registry'
 import { todayDate } from '../../../store/useJournalStore'
 import { Icon } from '../../../icons/Icon'
@@ -242,6 +243,7 @@ export function ActivityBar() {
             </button>
           </Tooltip>
         )}
+        <SlotRenderer slot="activity-bar:bottom" props={{}} />
         <SyncStatusBadge />
         <CompactThemePicker value={theme} onChange={setTheme} />
         <NavBtn to="/settings" iconName="settings-2" label="Settings" activePath={activePath} onNav={go} />
