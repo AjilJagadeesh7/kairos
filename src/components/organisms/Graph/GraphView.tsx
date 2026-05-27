@@ -206,17 +206,23 @@ export function GraphView({
             <ForceGraph3D
               key={`3d-${rerenderKey}-${nodes.length}`}
               graphData={graphData} backgroundColor={bgColor} width={dims.w} height={dims.h}
-              nodeColor={(node: GNode) => node.id === selectedNoteId ? '#ffffff' : node.color}
-              nodeVal={(node: GNode) => node.val}
-              nodeLabel={(node: GNode) => node.label}
-              linkColor={(lnk: GLink) => {
-                if (lnk.kind === 'wikilink')  return 'rgba(45,212,191,0.5)'
-                if (lnk.kind === 'semantic')  return 'rgba(129,140,248,0.3)'
-                if (lnk.kind === 'task-note') return 'rgba(251,146,60,0.6)'
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              nodeColor={(node: any) => (node as GNode).id === selectedNoteId ? '#ffffff' : (node as GNode).color}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              nodeVal={(node: any) => (node as GNode).val}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              nodeLabel={(node: any) => (node as GNode).label}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              linkColor={(lnk: any) => {
+                const l = lnk as GLink
+                if (l.kind === 'wikilink')  return 'rgba(45,212,191,0.5)'
+                if (l.kind === 'semantic')  return 'rgba(129,140,248,0.3)'
+                if (l.kind === 'task-note') return 'rgba(251,146,60,0.6)'
                 return 'rgba(251,191,36,0.4)'
               }}
               linkWidth={1}
-              onNodeClick={(node: GNode) => handleNodeClick(node)}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              onNodeClick={(node: any) => handleNodeClick(node as GNode)}
               d3AlphaDecay={0.04} d3VelocityDecay={0.4} cooldownTicks={100}
             />
           </Suspense>

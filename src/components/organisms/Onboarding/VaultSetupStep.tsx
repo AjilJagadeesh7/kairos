@@ -32,20 +32,22 @@ function SyncOption({
 
 function WebStorageStep({ onBack, onFinish }: { onBack: () => void; onFinish: () => Promise<void> }) {
   return (
-    <div className="px-8 pb-8 pt-12">
+    <div className="px-5 pb-8 pt-8 sm:px-8">
       <div className="mb-5 text-center">
         <div className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[rgb(var(--accent)/0.1)]">
           <Icon name="cloud" size={26} className="text-[rgb(var(--accent))]" />
         </div>
         <h2 className="text-xl font-black tracking-tight text-[rgb(var(--text))]">Where to save your notes</h2>
-        <p className="mt-1.5 text-sm text-[rgb(var(--text-2))]">Notes live in your browser by default. Add sync to keep them safe.</p>
+        <p className="mt-1.5 text-sm text-[rgb(var(--text-2))]">
+          Your notes are stored in your browser. Set up sync later to back them up.
+        </p>
       </div>
 
       <div className="mb-5 flex flex-col gap-2.5">
         <SyncOption
           icon="server"
           title="S3 / object storage"
-          desc="Amazon S3, Backblaze B2, Cloudflare R2 — any S3-compatible bucket."
+          desc="Amazon S3, Backblaze B2, Cloudflare R2 — any compatible bucket."
           accentClass="bg-orange-500/10 text-orange-400"
           onClick={() => {
             void onFinish().then(() => {
@@ -75,14 +77,19 @@ function WebStorageStep({ onBack, onFinish }: { onBack: () => void; onFinish: ()
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-[rgb(var(--text))]">Browser storage only</p>
-            <p className="text-[11px] text-[rgb(var(--text-3))]">Notes stay in IndexedDB. No backup — clear browser data and they're gone.</p>
+            <p className="text-[11px] text-[rgb(var(--text-3))]">
+              Stored in your browser. Clearing browser data will remove your notes.
+            </p>
           </div>
           <Icon name="arrow-right" size={14} className="shrink-0 text-[rgb(var(--text-3))]" />
         </button>
       </div>
 
       <div className="flex gap-3">
-        <button onClick={onBack} className="flex-1 rounded-xl border border-[rgb(var(--border))] px-4 py-3 text-sm font-medium text-[rgb(var(--text-2))] transition hover:bg-[rgb(var(--surface-2))]">
+        <button
+          onClick={onBack}
+          className="flex-1 rounded-xl border border-[rgb(var(--border))] px-4 py-3 text-sm font-medium text-[rgb(var(--text-2))] transition hover:bg-[rgb(var(--surface-2))]"
+        >
           Back
         </button>
       </div>
@@ -124,7 +131,7 @@ export function VaultSetupStep({ onBack, onFinish }: VaultSetupStepProps) {
       setConnectState('done')
     } catch {
       setConnectState('error')
-      setErrorMsg('Could not open folder. Please try again.')
+      setErrorMsg('Could not open the folder. Please try again.')
     }
   }
 
@@ -144,23 +151,27 @@ export function VaultSetupStep({ onBack, onFinish }: VaultSetupStepProps) {
         setConnectState('done')
       } else {
         setConnectState('error')
-        setErrorMsg('Could not create the MindVault folder. Check storage permissions.')
+        setErrorMsg('Could not create the MindVault folder. Check your storage permissions.')
       }
     } catch {
       setConnectState('error')
-      setErrorMsg('Permission request failed. Grant storage access in device settings.')
+      setErrorMsg('Permission request failed. Grant storage access in your device settings.')
     }
   }
 
   if (isDesktop()) {
     return (
-      <div className="px-8 pb-8 pt-12">
+      <div className="px-5 pb-8 pt-8 sm:px-8">
         <div className="mb-5 text-center">
           <div className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[rgb(var(--accent)/0.1)]">
             <Icon name="hard-drive" size={26} className="text-[rgb(var(--accent))]" />
           </div>
-          <h2 className="text-xl font-black tracking-tight text-[rgb(var(--text))]">Choose your vault folder</h2>
-          <p className="mt-1.5 text-sm text-[rgb(var(--text-2))]">Notes are saved as plain .md files you always own.</p>
+          <h2 className="text-xl font-black tracking-tight text-[rgb(var(--text))]">
+            Where should your notes live?
+          </h2>
+          <p className="mt-1.5 text-sm text-[rgb(var(--text-2))]">
+            Pick any folder on your device. Notes are saved as plain text files you always own.
+          </p>
         </div>
 
         {desktopReady ? (
@@ -180,9 +191,9 @@ export function VaultSetupStep({ onBack, onFinish }: VaultSetupStepProps) {
         ) : (
           <div className="mb-5 rounded-xl border-2 border-dashed border-[rgb(var(--border))] p-6 text-center">
             <Icon name="folder-open" size={22} className="mx-auto mb-2 text-[rgb(var(--text-3))]" />
-            <p className="mb-1 text-sm font-medium text-[rgb(var(--text))]">No folder selected</p>
+            <p className="mb-1 text-sm font-semibold text-[rgb(var(--text))]">No folder selected</p>
             <p className="mb-4 text-[11px] text-[rgb(var(--text-3))]">
-              Pick any folder on your device — subdirectories are created automatically.
+              Choose any folder — subdirectories are created automatically.
             </p>
             <button
               onClick={() => void connectDesktop()}
@@ -191,20 +202,23 @@ export function VaultSetupStep({ onBack, onFinish }: VaultSetupStepProps) {
             >
               {connectState === 'connecting'
                 ? <><Icon name="loader-2" size={14} className="animate-spin" /> Opening…</>
-                : <><Icon name="folder-open" size={14} /> Choose Folder…</>}
+                : <><Icon name="folder-open" size={14} /> Choose Folder</>}
             </button>
             {errorMsg && <p className="mt-2 text-[11px] text-red-400">{errorMsg}</p>}
           </div>
         )}
 
         <div className="mb-6 flex flex-col gap-2">
-          <InfoRow icon="file-text"    text="Each note is a plain .md file — open in any editor" />
-          <InfoRow icon="refresh-cw"   text="Optional sync via your own S3 or WebDAV server" />
-          <InfoRow icon="shield-check" text="No accounts, no telemetry — your data stays local" />
+          <InfoRow icon="file-text"    text="Every note is a plain .md file — readable in any text editor" />
+          <InfoRow icon="refresh-cw"   text="Add sync via S3 or WebDAV anytime in Settings" />
+          <InfoRow icon="shield-check" text="No accounts, no telemetry — everything stays on your machine" />
         </div>
 
         <div className="flex gap-3">
-          <button onClick={onBack} className="flex-1 rounded-xl border border-[rgb(var(--border))] px-4 py-3 text-sm font-medium text-[rgb(var(--text-2))] transition hover:bg-[rgb(var(--surface-2))]">
+          <button
+            onClick={onBack}
+            className="flex-1 rounded-xl border border-[rgb(var(--border))] px-4 py-3 text-sm font-medium text-[rgb(var(--text-2))] transition hover:bg-[rgb(var(--surface-2))]"
+          >
             Back
           </button>
           <button
@@ -218,7 +232,7 @@ export function VaultSetupStep({ onBack, onFinish }: VaultSetupStepProps) {
         </div>
         {!desktopReady && (
           <p className="mt-2 text-center text-[10px] text-[rgb(var(--text-3))]">
-            You can connect a folder later from Settings → Vault
+            You can connect a folder anytime from Settings → Vault
           </p>
         )}
       </div>
@@ -227,13 +241,15 @@ export function VaultSetupStep({ onBack, onFinish }: VaultSetupStepProps) {
 
   if (isMobile()) {
     return (
-      <div className="px-8 pb-8 pt-12">
+      <div className="px-5 pb-8 pt-8 sm:px-8">
         <div className="mb-5 text-center">
           <div className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[rgb(var(--accent)/0.1)]">
             <Icon name="smartphone" size={26} className="text-[rgb(var(--accent))]" />
           </div>
           <h2 className="text-xl font-black tracking-tight text-[rgb(var(--text))]">Set up your vault</h2>
-          <p className="mt-1.5 text-sm text-[rgb(var(--text-2))]">Notes will be saved to your device's Documents folder.</p>
+          <p className="mt-1.5 text-sm text-[rgb(var(--text-2))]">
+            Notes will be saved to your device's Documents folder as plain text files.
+          </p>
         </div>
 
         {(mobileReady || connectState === 'done') ? (
@@ -247,9 +263,9 @@ export function VaultSetupStep({ onBack, onFinish }: VaultSetupStepProps) {
         ) : (
           <div className="mb-5 rounded-xl border-2 border-dashed border-[rgb(var(--border))] p-6 text-center">
             <Icon name="folder-plus" size={22} className="mx-auto mb-2 text-[rgb(var(--text-3))]" />
-            <p className="mb-1 text-sm font-medium text-[rgb(var(--text))]">MindVault/Documents</p>
+            <p className="mb-1 text-sm font-semibold text-[rgb(var(--text))]">Documents/MindVault</p>
             <p className="mb-4 text-[11px] text-[rgb(var(--text-3))]">
-              We'll create a <code className="font-mono">MindVault</code> folder in your Documents directory and ask for permission to write files there.
+              We'll create a MindVault folder in your Documents and ask for permission to write files there.
             </p>
             <button
               onClick={() => void connectMobile()}
@@ -266,12 +282,15 @@ export function VaultSetupStep({ onBack, onFinish }: VaultSetupStepProps) {
 
         <div className="mb-6 flex flex-col gap-2">
           <InfoRow icon="file-text"    text="Notes saved as plain .md files in Documents/MindVault" />
-          <InfoRow icon="cloud"        text="Set up S3 or WebDAV sync later to back up across devices" />
+          <InfoRow icon="cloud"        text="Add S3 or WebDAV sync later to back up across devices" />
           <InfoRow icon="shield-check" text="Files stay on your device — no cloud account needed" />
         </div>
 
         <div className="flex gap-3">
-          <button onClick={onBack} className="flex-1 rounded-xl border border-[rgb(var(--border))] px-4 py-3 text-sm font-medium text-[rgb(var(--text-2))] transition hover:bg-[rgb(var(--surface-2))]">
+          <button
+            onClick={onBack}
+            className="flex-1 rounded-xl border border-[rgb(var(--border))] px-4 py-3 text-sm font-medium text-[rgb(var(--text-2))] transition hover:bg-[rgb(var(--surface-2))]"
+          >
             Back
           </button>
           <button
@@ -288,4 +307,3 @@ export function VaultSetupStep({ onBack, onFinish }: VaultSetupStepProps) {
   // Web
   return <WebStorageStep onBack={onBack} onFinish={onFinish} />
 }
-

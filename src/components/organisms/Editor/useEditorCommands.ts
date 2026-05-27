@@ -75,19 +75,20 @@ export function useEditorCommands(
     closeMenu()
     const crepe = crepeRef.current
     if (!crepe) return
+    const liveCrepe = crepe
     function dispatchPaste(text: string) {
       if (!text) return
       const dt = new DataTransfer()
       dt.setData('text/plain', text)
       const event = new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true })
-      crepe.editor.action(ctx => { ctx.get(editorViewCtx).dom.dispatchEvent(event) })
+      liveCrepe.editor.action(ctx => { ctx.get(editorViewCtx).dom.dispatchEvent(event) })
     }
     import('@tauri-apps/plugin-clipboard-manager')
       .then(({ readText }) => readText())
       .then(dispatchPaste)
       .catch(() => {
         navigator.clipboard.readText().then(dispatchPaste).catch(() => {
-          crepe.editor.action(ctx => { ctx.get(editorViewCtx).focus() })
+          liveCrepe.editor.action(ctx => { ctx.get(editorViewCtx).focus() })
         })
       })
   }

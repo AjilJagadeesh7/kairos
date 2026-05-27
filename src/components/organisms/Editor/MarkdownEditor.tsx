@@ -19,10 +19,10 @@ import { useEditorCommands } from './useEditorCommands'
 import { ContextMenu } from '../../molecules/ContextMenu'
 import { NotePreviewPopover } from '../../common/NotePreviewPopover'
 import { WikilinkDropdown } from './WikilinkDropdown'
-import { ChartTypeModal, buildChartTemplate } from './ChartTypeModal'
+import { ChartTypeModal } from './ChartTypeModal'
 import type { MarkdownEditorProps } from '../../../types'
 
-export function MarkdownEditor({ noteId, initialMarkdown, noteTitle, readOnly = false, onChange, onWikilinkClick }: MarkdownEditorProps): JSX.Element {
+export function MarkdownEditor({ noteId, initialMarkdown, readOnly = false, onChange, onWikilinkClick }: MarkdownEditorProps): JSX.Element {
   const rootRef              = useRef<HTMLDivElement | null>(null)
   const crepeRef             = useRef<Crepe | null>(null)
   const editorReadyRef       = useRef(false)
