@@ -1,33 +1,28 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ReactFlow,
-  ReactFlowProvider,
-  Background,
-  Controls,
-  MiniMap,
-  addEdge,
-  applyNodeChanges,
-  applyEdgeChanges,
-  BackgroundVariant,
-  ConnectionMode,
-  type Node,
-  type Edge,
-  type Connection,
-  type NodeChange,
-  type EdgeChange,
+  ReactFlow, ReactFlowProvider, Background, Controls, MiniMap,
+  addEdge, applyNodeChanges, applyEdgeChanges, BackgroundVariant, ConnectionMode,
+  type Node, type Edge, type Connection, type NodeChange, type EdgeChange,
 } from '@xyflow/react'
 import { useCanvasStore } from '../../../store/useCanvasStore'
 import { useColorMode } from '../../../hooks/useColorMode'
+import { useCanvasHistory } from '../../../hooks/useCanvasHistory'
 import { CanvasToolbar } from './CanvasToolbar'
+import { CanvasNodeContextMenu } from './CanvasNodeContextMenu'
 import { NotePickerModal } from './NotePickerModal'
 import { TextNode } from './nodes/TextNode'
 import { NoteNode } from './nodes/NoteNode'
 import { WebNode } from './nodes/WebNode'
 import { useCanvasNodeTypes } from '../../../plugins/pluginContext'
-import type { Canvas, CanvasNode, CanvasEdge } from '../../../types'
+import { toFlowNodes, toCanvasNode, toCanvasEdge } from './canvasUtils'
+import { useCanvasKeyboard } from './useCanvasKeyboard'
+import type { Canvas, CanvasEdge } from '../../../types'
 
 const BUILTIN_NODE_TYPES = { text: TextNode, note: NoteNode, web: WebNode }
+
+interface NodeCtxMenu { x: number; y: number; nodeId: string; locked: boolean }
+interface EditingEdge  { id: string; x: number; y: number; label: string }
 
 function CanvasInner({ canvas }: { canvas: Canvas }) {
   const navigate            = useNavigate()
@@ -35,21 +30,23 @@ function CanvasInner({ canvas }: { canvas: Canvas }) {
   const colorMode           = useColorMode()
   const pluginNodeTypes     = useCanvasNodeTypes()
   const nodeTypes           = useMemo(() => ({ ...BUILTIN_NODE_TYPES, ...pluginNodeTypes }), [pluginNodeTypes])
+  const history             = useCanvasHistory()
 
+  const [nodes,          setNodes]          = useState<Node[]>(() => toFlowNodes(canvas.nodes))
+  const [edges,          setEdges]          = useState<Edge[]>(() => canvas.edges as Edge[])
   const [showMinimap,    setShowMinimap]    = useState(false)
   const [showNotePicker, setShowNotePicker] = useState(false)
+  const [selectMode,     setSelectMode]     = useState(false)
+  const [nodeCtxMenu,    setNodeCtxMenu]    = useState<NodeCtxMenu | null>(null)
+  const [editingEdge,    setEditingEdge]    = useState<EditingEdge | null>(null)
 
   const navigateRef            = useRef(navigate)
   const updateNodesAndEdgesRef = useRef(updateNodesAndEdges)
+  const nodesRef               = useRef(nodes)
+  const edgesRef               = useRef(edges)
+  const canvasIdRef            = useRef(canvas.id)
   useEffect(() => { navigateRef.current            = navigate            }, [navigate])
   useEffect(() => { updateNodesAndEdgesRef.current = updateNodesAndEdges }, [updateNodesAndEdges])
-
-  const [nodes, setNodes] = useState<Node[]>(() => toFlowNodes(canvas.nodes))
-  const [edges, setEdges] = useState<Edge[]>(() => canvas.edges as Edge[])
-
-  const nodesRef    = useRef(nodes)
-  const edgesRef    = useRef(edges)
-  const canvasIdRef = useRef(canvas.id)
   nodesRef.current  = nodes
   edgesRef.current  = edges
 
@@ -70,77 +67,108 @@ function CanvasInner({ canvas }: { canvas: Canvas }) {
       updateNodesAndEdgesRef.current(
         canvasIdRef.current,
         nodesRef.current.map(toCanvasNode),
-        edgesRef.current as unknown as CanvasEdge[],
+        edgesRef.current.map(toCanvasEdge) as unknown as CanvasEdge[],
       )
     }, 600)
   }, [])
 
-  // On unmount: cancel pending timer and flush immediately so edits are never
-  // lost and no delayed store update fires while another page is initialising.
-  useEffect(() => {
-    return () => {
-      if (saveTimer.current) {
-        clearTimeout(saveTimer.current)
-        saveTimer.current = null
-        updateNodesAndEdgesRef.current(
-          canvasIdRef.current,
-          nodesRef.current.map(toCanvasNode),
-          edgesRef.current as unknown as CanvasEdge[],
-        )
-      }
+  useEffect(() => () => {
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current)
+      saveTimer.current = null
+      updateNodesAndEdgesRef.current(
+        canvasIdRef.current,
+        nodesRef.current.map(toCanvasNode),
+        edgesRef.current.map(toCanvasEdge) as unknown as CanvasEdge[],
+      )
     }
   }, [])
 
+  // ── Keyboard shortcuts: undo/redo, duplicate ────────────────────────────
+  useCanvasKeyboard({
+    nodesRef, edgesRef, setNodes, scheduleSave,
+    undo: history.undo, redo: history.redo, pushHistory: history.push,
+    onUndoApply: p => { setNodes(p.nodes); setEdges(p.edges) },
+    onRedoApply: n => { setNodes(n.nodes); setEdges(n.edges) },
+  })
+
+  // ── Node / edge change handlers ─────────────────────────────────────────
+  const onNodesChange = useCallback((changes: NodeChange[]) => {
+    if (changes.some(c => c.type === 'remove'))
+      history.push({ nodes: nodesRef.current, edges: edgesRef.current })
+    setNodes(ns => applyNodeChanges(changes, ns))
+    scheduleSave()
+  }, [scheduleSave, history])
+
+  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
+    if (changes.some(c => c.type === 'remove'))
+      history.push({ nodes: nodesRef.current, edges: edgesRef.current })
+    setEdges(es => applyEdgeChanges(changes, es))
+    scheduleSave()
+  }, [scheduleSave, history])
+
+  const onConnect = useCallback((params: Connection) => {
+    history.push({ nodes: nodesRef.current, edges: edgesRef.current })
+    setEdges(es => addEdge({ ...params, animated: false }, es))
+    scheduleSave()
+  }, [scheduleSave, history])
+
+  const onNodeDragStart = useCallback(() => history.push({ nodes: nodesRef.current, edges: edgesRef.current }), [history])
+
+  // ── Node callbacks ──────────────────────────────────────────────────────
   const handleDelete = useCallback((nodeId: string) => {
+    history.push({ nodes: nodesRef.current, edges: edgesRef.current })
     setNodes(ns => ns.filter(n => n.id !== nodeId))
     setEdges(es => es.filter(e => e.source !== nodeId && e.target !== nodeId))
     setTimeout(() => scheduleSave(), 0)
-  }, [scheduleSave])
+  }, [scheduleSave, history])
 
-  const handleOpenNote = useCallback((noteId: string) => {
-    navigateRef.current(`/notes/${noteId}`)
-  }, [])
+  const handleOpenNote = useCallback((noteId: string) => { navigateRef.current(`/notes/${noteId}`) }, [])
 
   const handleDataChange = useCallback((nodeId: string, patch: Record<string, unknown>) => {
     setNodes(ns => ns.map(n => n.id === nodeId ? { ...n, data: { ...n.data, ...patch } } : n))
     scheduleSave()
   }, [scheduleSave])
 
-  const onNodesChange = useCallback((changes: NodeChange[]) => {
-    setNodes(ns => applyNodeChanges(changes, ns))
+  // ── Context menu ────────────────────────────────────────────────────────
+  const onNodeContextMenu = useCallback((e: React.MouseEvent, node: Node) => {
+    e.preventDefault()
+    const locked = !!(node.data as Record<string, unknown>).locked
+    setNodeCtxMenu({ x: e.clientX, y: e.clientY, nodeId: node.id, locked })
+  }, [])
+
+  function handleCtxLock()      { if (nodeCtxMenu) handleDataChange(nodeCtxMenu.nodeId, { locked: !nodeCtxMenu.locked }) }
+  function handleCtxDelete()    { if (nodeCtxMenu) handleDelete(nodeCtxMenu.nodeId) }
+  function handleCtxDuplicate() {
+    if (!nodeCtxMenu) return
+    const n = nodesRef.current.find(nd => nd.id === nodeCtxMenu.nodeId)
+    if (!n) return
+    history.push({ nodes: nodesRef.current, edges: edgesRef.current })
+    setNodes(ns => [...ns, { ...n, id: crypto.randomUUID(), position: { x: n.position.x + 30, y: n.position.y + 30 }, selected: false }])
     scheduleSave()
-  }, [scheduleSave])
+  }
 
-  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
-    setEdges(es => applyEdgeChanges(changes, es))
+  // ── Edge labels ─────────────────────────────────────────────────────────
+  const onEdgeDoubleClick = useCallback((e: React.MouseEvent, edge: Edge) => {
+    const currentLabel = (edge.label as string | undefined) ?? ''
+    setEditingEdge({ id: edge.id, x: e.clientX, y: e.clientY, label: currentLabel })
+  }, [])
+
+  function commitEdgeLabel() {
+    if (!editingEdge) return
+    setEdges(es => es.map(e => e.id === editingEdge.id ? { ...e, label: editingEdge.label || undefined } : e))
+    setEditingEdge(null)
     scheduleSave()
-  }, [scheduleSave])
+  }
 
-  const onConnect = useCallback((params: Connection) => {
-    setEdges(es => addEdge({ ...params, animated: false }, es))
-    scheduleSave()
-  }, [scheduleSave])
-
-  const nodesWithCallbacks = useMemo(() => nodes.map(n => ({
-    ...n,
-    dragHandle: '.drag-handle',
-    data: {
-      ...n.data,
-      canvasId:     canvas.id,
-      onDelete:     handleDelete,
-      onOpenNote:   handleOpenNote,
-      onDataChange: handleDataChange,
-    },
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  })), [nodes, canvas.id, handleDelete, handleOpenNote, handleDataChange])
-
+  // ── Add nodes ───────────────────────────────────────────────────────────
   function addNode(type: 'text' | 'note' | 'web', data: Record<string, unknown>, pos?: { x: number; y: number }) {
-    const id      = crypto.randomUUID()
+    const id       = crypto.randomUUID()
     const position = pos ?? { x: 160 + Math.random() * 120, y: 100 + Math.random() * 80 }
     const sizes: Record<string, { w: number; h: number }> = { text: { w: 260, h: 140 }, note: { w: 260, h: 180 }, web: { w: 420, h: 300 } }
     const { w, h } = sizes[type]
-    const node: Node = { id, type, position, data, width: w, height: h, dragHandle: '.drag-handle' }
-    setNodes(ns => [...ns, node])
+    history.push({ nodes: nodesRef.current, edges: edgesRef.current })
+    setNodes(ns => [...ns, { id, type, position, data, width: w, height: h, dragHandle: '.drag-handle' }])
     scheduleSave()
   }
 
@@ -157,6 +185,24 @@ function CanvasInner({ canvas }: { canvas: Canvas }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canvas.id])
 
+  // ── Nodes with injected callbacks + locked state ─────────────────────────
+  const nodesWithCallbacks = useMemo(() => nodes.map(n => {
+    const locked = !!(n.data as Record<string, unknown>).locked
+    return {
+      ...n,
+      dragHandle: '.drag-handle',
+      draggable: !locked,
+      data: {
+        ...n.data,
+        canvasId:     canvas.id,
+        onDelete:     handleDelete,
+        onOpenNote:   handleOpenNote,
+        onDataChange: handleDataChange,
+      },
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [nodes, canvas.id, handleDelete, handleOpenNote, handleDataChange])
+
   return (
     <div className="relative flex h-full flex-col overflow-hidden">
       <div className="absolute left-1/2 top-3 z-10 -translate-x-1/2">
@@ -167,6 +213,12 @@ function CanvasInner({ canvas }: { canvas: Canvas }) {
           onAddWeb={() => addNode('web', { url: '' })}
           showMinimap={showMinimap}
           onToggleMinimap={() => setShowMinimap(v => !v)}
+          selectMode={selectMode}
+          onToggleSelectMode={() => setSelectMode(v => !v)}
+          canUndo={history.canUndo}
+          canRedo={history.canRedo}
+          onUndo={() => { const p = history.undo({ nodes: nodesRef.current, edges: edgesRef.current }); if (p) { setNodes(p.nodes); setEdges(p.edges); scheduleSave() } }}
+          onRedo={() => { const n = history.redo({ nodes: nodesRef.current, edges: edgesRef.current }); if (n) { setNodes(n.nodes); setEdges(n.edges); scheduleSave() } }}
         />
       </div>
 
@@ -178,13 +230,17 @@ function CanvasInner({ canvas }: { canvas: Canvas }) {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onDoubleClick={onPaneDoubleClick}
+        onNodeContextMenu={onNodeContextMenu}
+        onEdgeDoubleClick={onEdgeDoubleClick}
+        onNodeDragStart={onNodeDragStart}
+        onPaneClick={() => setNodeCtxMenu(null)}
         fitView
         fitViewOptions={{ padding: 0.15 }}
         deleteKeyCode="Delete"
         multiSelectionKeyCode="Shift"
         panOnScroll
-        panOnDrag={[1, 2]}
-        selectionOnDrag={false}
+        panOnDrag={selectMode ? [2] : [1, 2]}
+        selectionOnDrag={selectMode}
         nodesDraggable
         nodesConnectable
         elementsSelectable
@@ -197,12 +253,36 @@ function CanvasInner({ canvas }: { canvas: Canvas }) {
         <Controls showZoom showFitView showInteractive={false}
           className="!border-[rgb(var(--border))] !bg-[rgb(var(--surface))] !shadow-lg [&_button]:!border-[rgb(var(--border))] [&_button]:!text-[rgb(var(--text-2))] [&_button:hover]:!bg-[rgb(var(--surface-2))]" />
         {showMinimap && (
-          <MiniMap className="!border-[rgb(var(--border))] !bg-[rgb(var(--surface))]"
+          <MiniMap zoomable pannable className="!border-[rgb(var(--border))] !bg-[rgb(var(--surface))]"
             nodeColor="rgb(var(--accent))" maskColor="rgba(0,0,0,0.5)" />
         )}
       </ReactFlow>
 
       {showNotePicker && <NotePickerModal onPick={handleAddNote} onClose={() => setShowNotePicker(false)} />}
+
+      {nodeCtxMenu && (
+        <CanvasNodeContextMenu
+          x={nodeCtxMenu.x} y={nodeCtxMenu.y} locked={nodeCtxMenu.locked}
+          onLockToggle={handleCtxLock}
+          onDuplicate={handleCtxDuplicate}
+          onDelete={handleCtxDelete}
+          onClose={() => setNodeCtxMenu(null)}
+        />
+      )}
+
+      {editingEdge && (
+        <div className="fixed z-[300]" style={{ left: editingEdge.x, top: editingEdge.y - 40 }}>
+          <input
+            autoFocus
+            value={editingEdge.label}
+            onChange={e => setEditingEdge(ev => ev ? { ...ev, label: e.target.value } : ev)}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') commitEdgeLabel() }}
+            onBlur={commitEdgeLabel}
+            placeholder="Edge label…"
+            className="min-w-[140px] rounded-lg border border-[rgb(var(--accent))] bg-[rgb(var(--surface))] px-2.5 py-1.5 text-[12px] text-[rgb(var(--text))] shadow-lg outline-none placeholder:text-[rgb(var(--text-3))]"
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -213,29 +293,4 @@ export function CanvasView({ canvas }: { canvas: Canvas }) {
       <CanvasInner canvas={canvas} />
     </ReactFlowProvider>
   )
-}
-
-function toFlowNodes(nodes: CanvasNode[]): Node[] {
-  return nodes.map(n => ({
-    id:         n.id,
-    type:       n.type,
-    position:   n.position,
-    data:       { ...n.data } as Record<string, unknown>,
-    width:      n.width,
-    height:     n.height,
-    dragHandle: '.drag-handle',
-  }))
-}
-
-function toCanvasNode(n: Node): CanvasNode {
-  // Strip runtime-only callbacks before persisting
-  const { canvasId: _a, onDelete: _b, onOpenNote: _c, onDataChange: _d, ...safeData } = n.data as Record<string, unknown>
-  return {
-    id:       n.id,
-    type:     n.type as CanvasNode['type'],
-    position: n.position,
-    data:     safeData as CanvasNode['data'],
-    width:    n.measured?.width ?? n.width,
-    height:   n.measured?.height ?? n.height,
-  }
 }

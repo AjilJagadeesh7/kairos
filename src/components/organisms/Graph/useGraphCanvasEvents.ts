@@ -1,9 +1,9 @@
-import { useEffect, type RefObject } from 'react'
+import { useEffect, type MutableRefObject, type RefObject } from 'react'
 import type { GNode, RightClickTarget } from '../../../types'
 
 interface UseGraphCanvasEventsOptions {
   canvasWrapRef: RefObject<HTMLDivElement | null>
-  hoveredIdRef: RefObject<string | null>
+  hoveredIdRef: MutableRefObject<string | null>
   dims: { w: number; h: number } | null
   nodes: GNode[]
   findNodeAt: (x: number, y: number) => GNode | null

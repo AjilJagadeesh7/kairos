@@ -27,18 +27,19 @@ function CanvasTitleEditor({ canvas }: { canvas: Canvas }) {
   }
   return (
     <button type="button" onClick={() => setEditing(true)} title="Click to rename"
-      className="max-w-[260px] truncate rounded px-2 py-0.5 text-[14px] font-semibold text-[rgb(var(--text))] transition hover:bg-[rgb(var(--surface-2))]">
+      className="max-w-[200px] truncate rounded px-2 py-0.5 text-[14px] font-semibold text-[rgb(var(--text))] transition hover:bg-[rgb(var(--surface-2))]">
       {canvas.title}
     </button>
   )
 }
 
-function ToolBtn({ label, icon, onClick, active }: {
-  label: string; icon: Parameters<typeof Icon>[0]['name']; onClick: () => void; active?: boolean
+function ToolBtn({ label, icon, onClick, active, disabled }: {
+  label: string; icon: Parameters<typeof Icon>[0]['name']
+  onClick: () => void; active?: boolean; disabled?: boolean
 }) {
   return (
-    <button type="button" title={label} onClick={onClick}
-      className={`flex h-7 items-center gap-1.5 rounded-lg px-2 text-[12px] font-medium transition ${
+    <button type="button" title={label} onClick={onClick} disabled={disabled}
+      className={`flex h-7 items-center gap-1.5 rounded-lg px-2 text-[12px] font-medium transition disabled:opacity-30 ${
         active ? 'bg-[rgb(var(--accent))]/15 text-[rgb(var(--accent))]'
                : 'text-[rgb(var(--text-2))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]'
       }`}>
@@ -48,6 +49,23 @@ function ToolBtn({ label, icon, onClick, active }: {
   )
 }
 
+function IconBtn({ label, icon, onClick, active, disabled }: {
+  label: string; icon: Parameters<typeof Icon>[0]['name']
+  onClick: () => void; active?: boolean; disabled?: boolean
+}) {
+  return (
+    <button type="button" title={label} onClick={onClick} disabled={disabled}
+      className={`flex h-7 w-7 items-center justify-center rounded-lg transition disabled:opacity-30 ${
+        active ? 'bg-[rgb(var(--accent))]/15 text-[rgb(var(--accent))]'
+               : 'text-[rgb(var(--text-2))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]'
+      }`}>
+      <Icon name={icon} size={13} />
+    </button>
+  )
+}
+
+const SEP = <div className="mx-1 h-4 w-px bg-[rgb(var(--border))]" />
+
 interface CanvasToolbarProps {
   canvas: Canvas
   onAddText: () => void
@@ -55,21 +73,37 @@ interface CanvasToolbarProps {
   onAddWeb: () => void
   showMinimap: boolean
   onToggleMinimap: () => void
+  selectMode: boolean
+  onToggleSelectMode: () => void
+  canUndo: boolean
+  canRedo: boolean
+  onUndo: () => void
+  onRedo: () => void
 }
 
-export function CanvasToolbar({ canvas, onAddText, onAddNote, onAddWeb, showMinimap, onToggleMinimap }: CanvasToolbarProps) {
+export function CanvasToolbar({
+  canvas, onAddText, onAddNote, onAddWeb,
+  showMinimap, onToggleMinimap,
+  selectMode, onToggleSelectMode,
+  canUndo, canRedo, onUndo, onRedo,
+}: CanvasToolbarProps) {
   const { fitView } = useReactFlow()
 
   return (
-    <div className="flex items-center gap-1 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-2 py-1.5 shadow-lg">
+    <div className="flex items-center gap-0.5 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-2 py-1.5 shadow-lg">
       <CanvasTitleEditor canvas={canvas} />
-      <div className="mx-1.5 h-4 w-px bg-[rgb(var(--border))]" />
-      <ToolBtn label="Text card"  icon="sticky-note" onClick={onAddText} />
-      <ToolBtn label="Note"       icon="file-text"   onClick={onAddNote} />
-      <ToolBtn label="Web page"   icon="globe"        onClick={onAddWeb} />
-      <div className="mx-1.5 h-4 w-px bg-[rgb(var(--border))]" />
-      <ToolBtn label="Fit view"   icon="crosshair"   onClick={() => fitView({ padding: 0.12, duration: 300 })} />
-      <ToolBtn label={showMinimap ? 'Hide minimap' : 'Minimap'} icon="layers" onClick={onToggleMinimap} active={showMinimap} />
+      {SEP}
+      <IconBtn label="Undo (Ctrl+Z)"  icon="undo-2" onClick={onUndo} disabled={!canUndo} />
+      <IconBtn label="Redo (Ctrl+Y)"  icon="redo-2" onClick={onRedo} disabled={!canRedo} />
+      {SEP}
+      <IconBtn label={selectMode ? 'Pan mode' : 'Select mode — drag to rubber-band'} icon="mouse-pointer-2" onClick={onToggleSelectMode} active={selectMode} />
+      {SEP}
+      <ToolBtn label="Text"     icon="sticky-note" onClick={onAddText} />
+      <ToolBtn label="Note"     icon="file-text"   onClick={onAddNote} />
+      <ToolBtn label="Web page" icon="globe"        onClick={onAddWeb} />
+      {SEP}
+      <IconBtn label="Fit view"   icon="crosshair" onClick={() => fitView({ padding: 0.12, duration: 300 })} />
+      <IconBtn label={showMinimap ? 'Hide minimap' : 'Minimap'} icon="layers" onClick={onToggleMinimap} active={showMinimap} />
       <SlotRenderer slot="canvas:toolbar:end" props={{ canvasId: canvas.id }} className="flex items-center" />
     </div>
   )
