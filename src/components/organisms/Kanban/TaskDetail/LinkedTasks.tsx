@@ -11,13 +11,6 @@ interface Props {
   task: KanbanTask
 }
 
-const PRIORITY_COLOR: Record<string, string> = {
-  high:   'text-red-500',
-  medium: 'text-orange-400',
-  low:    'text-blue-400',
-  none:   'text-[rgb(var(--text-3))]',
-}
-
 export function LinkedTasks({ boardId, board, task }: Props): JSX.Element {
   const [searching, setSearching] = useState(false)
   const [query, setQuery]         = useState('')

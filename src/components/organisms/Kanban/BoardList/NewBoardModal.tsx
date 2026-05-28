@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useKanbanStore } from '../../../../store/useKanbanStore'
 import { Button } from '../../../atoms/Button'
-import { Icon } from '../../../../icons/Icon'
 import { ModalShell } from '../../../molecules/ModalShell'
 import { IconButton } from '../../../atoms/IconButton'
 

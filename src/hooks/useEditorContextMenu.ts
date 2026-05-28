@@ -6,8 +6,8 @@ import type { ContextMenuState } from '../types'
 import { CLOSED_MENU } from '../types'
 
 export function useEditorContextMenu(
-  crepeRef: RefObject<Crepe | null>,
-  rootRef: RefObject<HTMLDivElement | null>,
+  crepeRef: RefObject<Crepe>,
+  rootRef: RefObject<HTMLDivElement>,
 ) {
   const [menu, setMenu] = useState<ContextMenuState>(CLOSED_MENU)
 

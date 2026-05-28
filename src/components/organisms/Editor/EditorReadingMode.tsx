@@ -14,7 +14,7 @@ interface EditorReadingModeProps {
   restoreKey: number
   tags: string[]
   tagMap: Map<string, TagRecord>
-  editorRootRef: React.RefObject<HTMLDivElement | null>
+  editorRootRef: React.RefObject<HTMLDivElement>
   exportingPDF: boolean
   onExportPDF: () => void
   onExitReadingMode: () => void

@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { useKanbanStore } from '../../../../store/useKanbanStore'
 import { useConfirmStore } from '../../../../store/useConfirmStore'
 import { ColorPicker } from '../../../molecules/ColorPicker'
-import { nextTagColor } from '../../../../utils/kanban'
 import type { Board } from '../../../../types/kanban.types'
 import { Icon } from '../../../../icons/Icon'
 

@@ -1,4 +1,4 @@
-import { usePaneStore, pathToType } from '../../../store/usePaneStore'
+import { usePaneStore } from '../../../store/usePaneStore'
 import { usePluginRegistry } from '../../../plugins/pluginContext'
 import { todayDate } from '../../../store/useJournalStore'
 import { Icon } from '../../../icons/Icon'

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { makeFilterActions } from './filterActions'
 import { DEFAULT_FILTERS } from './helpers'
 import type { KanbanState } from './helpers'
@@ -21,8 +21,42 @@ function makeState(overrides: Partial<KanbanState> = {}): KanbanState {
     isLoaded: false,
     filters: { ...DEFAULT_FILTERS },
     history: {},
+    loadBoards:         vi.fn().mockResolvedValue(undefined),
+    setActiveBoardId:   vi.fn(),
+    setActiveTaskId:    vi.fn(),
+    createBoard:        vi.fn(),
+    updateBoard:        vi.fn(),
+    deleteBoard:        vi.fn(),
+    duplicateBoard:     vi.fn(),
+    createColumn:       vi.fn(),
+    updateColumn:       vi.fn(),
+    deleteColumn:       vi.fn(),
+    reorderColumns:     vi.fn(),
+    createTask:         vi.fn(),
+    updateTask:         vi.fn(),
+    deleteTask:         vi.fn(),
+    commitDragState:    vi.fn(),
+    addBoardTag:        vi.fn(),
+    updateBoardTag:     vi.fn(),
+    deleteBoardTag:     vi.fn(),
+    createSubtask:      vi.fn(),
+    updateSubtask:      vi.fn(),
+    deleteSubtask:      vi.fn(),
+    reorderSubtasks:    vi.fn(),
+    createCheckpoint:   vi.fn(),
+    toggleCheckpoint:   vi.fn(),
+    deleteCheckpoint:   vi.fn(),
+    reorderCheckpoints: vi.fn(),
+    addComment:         vi.fn(),
+    deleteComment:      vi.fn(),
+    addAttachment:      vi.fn(),
+    deleteAttachment:   vi.fn(),
+    setFilters:         vi.fn(),
+    clearFilters:       vi.fn(),
+    undo:               vi.fn(),
+    redo:               vi.fn(),
     ...overrides,
-  } as KanbanState
+  }
 }
 
 function makeStore(initial: Partial<KanbanState> = {}) {

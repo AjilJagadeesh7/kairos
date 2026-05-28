@@ -1,8 +1,8 @@
-import { useCallback, useRef } from 'react'
+import { useCallback } from 'react'
 import { useAppStore } from '../store/useAppStore'
 
 /** Ref placed on the sidebar outer div — we toggle a data-resizing attr to kill CSS transitions during drag. */
-export function useSidebarResize(containerRef?: React.RefObject<HTMLDivElement | null>) {
+export function useSidebarResize(containerRef?: React.RefObject<HTMLDivElement>) {
   const sidebarWidth    = useAppStore(s => s.sidebarWidth)
   const setSidebarWidth = useAppStore(s => s.setSidebarWidth)
 

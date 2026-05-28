@@ -1,6 +1,5 @@
 
 import { stripMarkdown } from '../../../utils/stripMarkdown'
-import { useKanbanStore } from '../../../store/useKanbanStore'
 import type { GNode, GLink, GraphMode, Note } from '../../../types'
 import { Icon } from '../../../icons/Icon'
 import { IconButton } from '../../atoms/IconButton'

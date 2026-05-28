@@ -19,9 +19,6 @@ const PAGE_LABELS: Record<string, string> = {
 
 const SIDEBAR_PAGES = new Set(['notes', 'journal', 'canvas', 'graph', 'settings'])
 
-// Pages where we show a back arrow instead of hamburger (deep sub-pages)
-const DETAIL_PAGES = new Set(['notes']) // note editor is a detail of notes list
-
 function ThemeButton({ value, onChange }: { value: ThemeMode; onChange: (t: ThemeMode) => void }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)

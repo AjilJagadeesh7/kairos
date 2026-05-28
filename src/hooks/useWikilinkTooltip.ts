@@ -9,7 +9,7 @@ interface TooltipState {
 
 const INITIAL: TooltipState = { visible: false, title: '', x: 0, y: 0 }
 
-export function useWikilinkTooltip(rootRef: RefObject<HTMLElement | null>) {
+export function useWikilinkTooltip(rootRef: RefObject<HTMLElement>) {
   const [tooltip, setTooltip] = useState<TooltipState>(INITIAL)
 
   function attach() {

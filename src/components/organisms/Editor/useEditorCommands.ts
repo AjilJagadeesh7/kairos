@@ -47,7 +47,7 @@ export interface EditorCommandHandlers {
 }
 
 export function useEditorCommands(
-  crepeRef: RefObject<Crepe | null>,
+  crepeRef: RefObject<Crepe>,
   closeMenu: () => void,
   onOpenChartModal: () => void,
 ): EditorCommandHandlers {

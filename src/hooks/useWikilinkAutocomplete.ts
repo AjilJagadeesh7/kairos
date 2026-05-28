@@ -19,8 +19,8 @@ const AC_RE = /(!?\[\[)([^\]\n]*)$/
 const PASSTHROUGH_KEYS = new Set(['Escape', 'ArrowUp', 'ArrowDown', 'Enter', 'Tab'])
 
 export function useWikilinkAutocomplete(
-  crepeRef: RefObject<Crepe | null>,
-  rootRef: RefObject<HTMLElement | null>,
+  crepeRef: RefObject<Crepe>,
+  rootRef: RefObject<HTMLElement>,
 ) {
   const [ac, setAc] = useState<AutocompleteState>(HIDDEN)
 

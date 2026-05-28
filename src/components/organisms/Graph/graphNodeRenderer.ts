@@ -9,7 +9,7 @@ interface NodeRendererOptions {
   textColor: string
   degreeMap: Map<string, number>
   isLargeGraph: boolean
-  hoveredIdRef: React.RefObject<string | null>
+  hoveredIdRef: React.RefObject<string>
 }
 
 export function makeNodeRenderer(opts: NodeRendererOptions) {

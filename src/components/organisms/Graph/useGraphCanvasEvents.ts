@@ -2,7 +2,7 @@ import { useEffect, type MutableRefObject, type RefObject } from 'react'
 import type { GNode, RightClickTarget } from '../../../types'
 
 interface UseGraphCanvasEventsOptions {
-  canvasWrapRef: RefObject<HTMLDivElement | null>
+  canvasWrapRef: RefObject<HTMLDivElement>
   hoveredIdRef: MutableRefObject<string | null>
   dims: { w: number; h: number } | null
   nodes: GNode[]

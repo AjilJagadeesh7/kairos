@@ -36,7 +36,7 @@ export function UpdatesSection() {
                 <div className="flex items-center gap-2">
                   {status === 'up-to-date' && (
                     <span className="flex items-center gap-1 text-xs text-green-500">
-                      <Icon name="check-circle" size={13} /> Up to date
+                      <Icon name="check-circle-2" size={13} /> Up to date
                     </span>
                   )}
                   <Button variant="ghost" size="sm" onClick={() => void checkForUpdate()}>
@@ -69,7 +69,7 @@ export function UpdatesSection() {
               ) : status === 'ready' ? (
                 <div className="flex flex-col items-end gap-1.5">
                   <span className="flex items-center gap-1 text-xs text-green-500">
-                    <Icon name="check-circle" size={13} /> Ready to install
+                    <Icon name="check-circle-2" size={13} /> Ready to install
                   </span>
                   <Button variant="primary" size="sm" onClick={() => void restart()}>
                     Restart &amp; Update

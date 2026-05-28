@@ -1,4 +1,4 @@
-import { Code, InlineCode, Collapsible, PropRow, CalloutNote } from './PluginDocPrimitives'
+import { Code, InlineCode, Collapsible, CalloutNote } from './PluginDocPrimitives'
 
 // ─── UI Extensions tab ────────────────────────────────────────────────────────
 // Covers: slots, themes, commands, editor extensions, canvas node types
