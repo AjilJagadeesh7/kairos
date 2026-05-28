@@ -3,16 +3,16 @@
   <!-- iOS-style squircle -->
   <rect width="200" height="200" rx="44" ry="44" fill="#111111"/>
 
-  <!-- MV — Inter Black, tight tracking, vertically centred -->
+  <!-- K — Inter Black, vertically centred -->
   <text
     x="100"
     y="138"
     text-anchor="middle"
     font-family="Inter, Inter Black, sans-serif"
     font-weight="900"
-    font-size="95"
-    letter-spacing="-3"
+    font-size="110"
+    letter-spacing="-2"
     fill="white"
-  >MV</text>
+  >K</text>
 
 </svg>
