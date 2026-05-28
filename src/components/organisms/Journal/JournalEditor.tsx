@@ -45,18 +45,29 @@ export function JournalEditor({ date }: JournalEditorProps) {
   const [showHistory, setShowHistory] = useState(false)
   const [restoreKey, setRestoreKey]   = useState(0)
 
-  const contentRef  = useRef(content)
-  const prevDateRef = useRef(date)
+  const contentRef    = useRef(content)
+  const prevDateRef   = useRef(date)
+  const saveTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => { contentRef.current = content }, [content])
 
-  // Reset when date changes
+  // Reset when date changes — flush pending save for old date first
   useEffect(() => {
     if (prevDateRef.current === date) return
+    const oldDate = prevDateRef.current
+    const oldContent = contentRef.current
     prevDateRef.current = date
+
+    // Cancel any pending auto-save so it can't write old content to new date
+    if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null }
+
+    // Flush a dirty save for the old date before switching
+    const storedContent = useJournalStore.getState().entries[oldDate]?.content ?? ''
+    if (oldContent !== storedContent) void saveEntry(oldDate, oldContent)
+
     setContent(entries[date]?.content ?? '')
     setSaveStatus('idle')
     setShowHistory(false)
-  }, [date, entries])
+  }, [date, entries, saveEntry])
 
   const handleRestore = (restoredContent: string) => {
     setContent(restoredContent)
@@ -76,8 +87,8 @@ export function JournalEditor({ date }: JournalEditorProps) {
   useEffect(() => {
     if (content === (entries[date]?.content ?? '')) return
     setSaveStatus('dirty')
-    const handle = window.setTimeout(() => void persist(), 2000)
-    return () => window.clearTimeout(handle)
+    saveTimerRef.current = window.setTimeout(() => void persist(), 2000)
+    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current) }
   }, [content]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Ctrl+S shortcut
@@ -189,7 +200,7 @@ export function JournalEditor({ date }: JournalEditorProps) {
         {/* Editor */}
         <div className="min-h-0 flex-1 rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--surface))]">
           <MarkdownEditor
-            key={restoreKey}
+            key={`${date}-${restoreKey}`}
             noteId={date}
             initialMarkdown={content}
             noteTitle={formatDate(date)}
