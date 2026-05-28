@@ -1,4 +1,4 @@
-import { RefObject, useState } from 'react'
+import { type RefObject, useState } from 'react'
 import { editorViewCtx } from '@milkdown/core'
 import { Selection } from '@milkdown/prose/state'
 import type { Crepe } from '@milkdown/crepe'

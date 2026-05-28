@@ -34,7 +34,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     heading: 'App',
     items: [
-      { id: 'updates',      label: 'Updates',          iconName: 'arrow-up-circle' },
+      { id: 'updates',      label: 'Updates',          iconName: 'arrow-up-right' },
       { id: 'logs',         label: 'Logs',             iconName: 'scroll-text'     },
       { id: 'about',        label: 'About',            iconName: 'info'            },
     ],

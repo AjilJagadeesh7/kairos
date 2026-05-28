@@ -130,10 +130,7 @@ export function PaneTabBar({ paneId, draggingTabId, overDropTarget }: PaneTabBar
   const pane          = usePaneStore(s => s.panes.find(p => p.id === paneId))
   const paneCount     = usePaneStore(s => s.panes.length)
   const focusedPaneId = usePaneStore(s => s.focusedPaneId)
-  const notes         = useAppStore(
-    s => s.notes,
-    (a, b) => a.length === b.length && a.every((n, i) => n.id === b[i].id && n.title === b[i].title),
-  )
+  const notes         = useAppStore(s => s.notes)
   const newTabPage    = useAppStore(s => s.newTabPage)
 
   const {
@@ -166,7 +163,7 @@ export function PaneTabBar({ paneId, draggingTabId, overDropTarget }: PaneTabBar
   }
 
   function handleSplit() {
-    const activeTab = pane.tabs.find(t => t.id === pane.activeTabId)
+    const activeTab = pane!.tabs.find(t => t.id === pane!.activeTabId)
     const path  = activeTab?.path ?? '/notes'
     const title = deriveTitle(path, notes)
     addPane(paneId, path, title)

@@ -9,14 +9,14 @@ vi.mock('../../sync/plainFolder', () => ({
 }))
 
 function makeBoard(overrides: Partial<Board> = {}): Board {
-  return { id: 'b1', title: 'Board', columns: [], tasks: [], tags: [], createdAt: '', updatedAt: '', ...overrides }
+  return { id: 'b1', title: 'Board', columns: [], tasks: [], boardTags: [], createdAt: '', updatedAt: '', ...overrides }
 }
 
 function makeTask(overrides: Partial<KanbanTask> = {}): KanbanTask {
   return {
-    id: 't1', boardId: 'b1', columnId: 'c1', title: 'Task',
-    order: 0, tags: [], subtasks: [], linkedNotes: [], linkedTasks: [],
-    createdAt: '', ...overrides,
+    id: 't1', columnId: 'c1', title: 'Task',
+    order: 0, priority: null, tags: [], subtasks: [], linkedNotes: [], linkedTasks: [],
+    comments: [], attachments: [], createdAt: '', updatedAt: '', ...overrides,
   }
 }
 

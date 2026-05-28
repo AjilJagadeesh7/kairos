@@ -94,7 +94,7 @@ export function CalloutsSection() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [formError, setFormError] = useState('')
 
-  const allBuiltinTypes = new Set(CALLOUT_TYPES.map(c => c.type))
+  const allBuiltinTypes = new Set<string>(CALLOUT_TYPES.map(c => c.type))
 
   function handleAdd() {
     const type = form.type.trim().toLowerCase().replace(/\s+/g, '-')

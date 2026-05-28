@@ -13,7 +13,7 @@ type JournalState = {
   deleteEntry: (date: string) => Promise<void>
 }
 
-export const useJournalStore = create<JournalState>()((set, get) => ({
+export const useJournalStore = create<JournalState>()((set, _get) => ({
   entries: {},
   activeDate: null,
   isLoaded: false,

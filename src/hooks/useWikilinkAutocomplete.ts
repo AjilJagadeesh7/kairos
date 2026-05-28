@@ -1,4 +1,4 @@
-import { RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { editorViewCtx } from '@milkdown/core'
 import type { Crepe } from '@milkdown/crepe'
 import { useAppStore } from '../store/useAppStore'

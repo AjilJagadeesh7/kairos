@@ -61,7 +61,7 @@ export function buildPluginAPI(manifest: PluginManifest): MindVaultPluginAPI {
     ) {
       gate(manifest, 'ui:slot', 'registerSlot')
       const reg: SlotRegistration<S> = { pluginId: id, slot, component, order }
-      updateRegistry({ slots: [...getRegistry().slots, reg as SlotRegistration] })
+      updateRegistry({ slots: [...getRegistry().slots, reg as unknown as SlotRegistration] })
     },
 
     // ── Themes ───────────────────────────────────────────────────────────────

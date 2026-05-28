@@ -165,7 +165,7 @@ export function ChartBlock({ code }: { code: string }) {
             plugins: {
               legend: { display: isPolar || spec!.type === 'radar', position: 'bottom', labels: { color: 'rgba(160,160,160,0.9)', font: { size: 11 } } },
               title: spec!.title
-                ? { display: true, text: spec!.title, color: 'rgba(180,180,180,0.9)', font: { size: 13, weight: '600' as const } }
+                ? { display: true, text: spec!.title, color: 'rgba(180,180,180,0.9)', font: { size: 13, weight: 700 } }
                 : { display: false },
             },
             scales: isPolar || spec!.type === 'radar' ? {} : {

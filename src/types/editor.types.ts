@@ -1,3 +1,5 @@
+import type { Note } from './note.types'
+
 export type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved'
 
 export type MenuKind = 'table' | 'image' | 'text' | 'default'

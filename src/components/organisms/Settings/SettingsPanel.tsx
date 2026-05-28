@@ -26,7 +26,7 @@ const SECTION_META: Partial<Record<Section, { label: string; description: string
   'publish':      { label: 'Publish & Export', description: 'Export notes to HTML, Markdown or PDF',    icon: 'send'            },
   'plugins':      { label: 'Plugins',          description: 'Installed plugins and developer tools',     icon: 'puzzle'          },
   'marketplace':  { label: 'Marketplace',      description: 'Discover and install new plugins',          icon: 'store'           },
-  'updates':      { label: 'Updates',          description: 'App version and release notes',             icon: 'arrow-up-circle' },
+  'updates':      { label: 'Updates',          description: 'App version and release notes',             icon: 'arrow-up-right' },
   'logs':         { label: 'Logs',             description: 'Runtime and error logs',                    icon: 'scroll-text'     },
   'about':        { label: 'About',            description: 'Version info, credits, and licences',       icon: 'info'            },
 }

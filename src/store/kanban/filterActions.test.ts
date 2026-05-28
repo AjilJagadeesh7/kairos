@@ -10,7 +10,7 @@ vi.mock('./helpers', async (importOriginal) => {
 })
 
 function makeBoard(id: string): Board {
-  return { id, title: 'Board', columns: [], tasks: [], tags: [], createdAt: '', updatedAt: '' }
+  return { id, title: 'Board', columns: [], tasks: [], boardTags: [], createdAt: '', updatedAt: '' }
 }
 
 function makeState(overrides: Partial<KanbanState> = {}): KanbanState {

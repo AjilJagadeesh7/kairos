@@ -45,7 +45,7 @@ export function UpdatesSection() {
                 </div>
               ) : status === 'checking' ? (
                 <span className="flex items-center gap-1.5 text-xs text-text3">
-                  <Icon name="loader" size={13} className="animate-spin" /> Checking…
+                  <Icon name="loader-2" size={13} className="animate-spin" /> Checking…
                 </span>
               ) : status === 'available' ? (
                 <div className="flex flex-col items-end gap-1.5">

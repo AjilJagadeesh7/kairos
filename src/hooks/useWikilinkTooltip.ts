@@ -1,4 +1,4 @@
-import { RefObject, useState } from 'react'
+import { type RefObject, useState } from 'react'
 
 interface TooltipState {
   visible: boolean

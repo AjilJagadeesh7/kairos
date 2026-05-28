@@ -31,7 +31,7 @@ function inline(s: string): string {
 
 function renderTable(rows: string[]): string {
   const cells = (row: string) =>
-    row.split('|').map(c => c.trim()).filter((c, i, a) => i > 0 && i < a.length - 1)
+    row.split('|').map(c => c.trim()).filter((_c, i, a) => i > 0 && i < a.length - 1)
   const header = cells(rows[0])
   const body = rows.slice(2)
   const th = header.map(c => `<th>${inline(c)}</th>`).join('')

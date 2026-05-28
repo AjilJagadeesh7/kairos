@@ -116,7 +116,7 @@ api.registerCommand({
       </Collapsible>
 
       {/* Editor */}
-      <Collapsible title="Editor extensions — toolbar + Milkdown plugins" iconName="pen-line">
+      <Collapsible title="Editor extensions — toolbar + Milkdown plugins" iconName="pencil">
         <div className="space-y-3">
           <div>
             <p className="mb-1.5 text-xs font-medium text-[rgb(var(--text-2))]">Toolbar button</p>

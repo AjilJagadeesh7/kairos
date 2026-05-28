@@ -54,6 +54,7 @@ export function CustomNavProvider({ paneId, children }: Props) {
     hash: '',
     state: null,
     key: paneId,
+    unstable_mask: undefined,
   }), [path, paneId])
 
   const locationCtx = useMemo(() => ({

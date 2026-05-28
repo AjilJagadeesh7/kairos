@@ -29,10 +29,6 @@ export function NewBoardModal({ onClose }: NewBoardModalProps): JSX.Element {
     onClose()
   }
 
-  function handleBackdropClick(e: React.MouseEvent) {
-    if (e.target === e.currentTarget) onClose()
-  }
-
   return (
     <ModalShell onClose={onClose} className="rounded-2xl p-6">
         <div className="mb-5 flex items-center justify-between">

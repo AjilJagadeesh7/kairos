@@ -6,7 +6,6 @@ import { useConfirmStore } from '../../../store/useConfirmStore'
 import { SlotRenderer } from '../../molecules/SlotRenderer'
 import { MarkdownEditor } from '../Editor/MarkdownEditor'
 import { HistoryPanel } from '../Editor/HistoryPanel'
-import { useAppStore } from '../../../store/useAppStore'
 import { Icon } from '../../../icons/Icon'
 
 type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved'
@@ -38,7 +37,6 @@ export function JournalEditor({ date }: JournalEditorProps) {
   const entries    = useJournalStore(s => s.entries)
   const saveEntry  = useJournalStore(s => s.saveEntry)
   const deleteEntry = useJournalStore(s => s.deleteEntry)
-  const notes      = useAppStore(s => s.notes)
   const navigate   = useNavigate()
 
   const existing   = entries[date]
@@ -195,7 +193,6 @@ export function JournalEditor({ date }: JournalEditorProps) {
             noteId={date}
             initialMarkdown={content}
             noteTitle={formatDate(date)}
-            notes={notes}
             onChange={setContent}
           />
         </div>

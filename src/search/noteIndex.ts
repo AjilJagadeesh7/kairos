@@ -90,7 +90,7 @@ async function loadIndexFromCache(): Promise<boolean> {
   try {
     const result = await idbGet(SEARCH_CACHE_KEY)
     if (!result) return false
-    index = MiniSearch.loadJS<IndexDoc>(result as string, INDEX_OPTIONS)
+    index = MiniSearch.loadJS<IndexDoc>(JSON.parse(result as string) as Parameters<typeof MiniSearch.loadJS>[0], INDEX_OPTIONS)
     indexed = true
     return true
   } catch {

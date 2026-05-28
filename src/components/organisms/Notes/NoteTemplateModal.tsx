@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '../../atoms/Button'
-import { Icon } from '../../../icons/Icon'
 import { ModalShell } from '../../molecules/ModalShell'
 import { IconButton } from '../../atoms/IconButton'
 import type { NoteTemplate } from '../../../types'
@@ -20,10 +19,6 @@ export function NoteTemplateModal({ onSelect, onClose }: NoteTemplateModalProps)
   useEffect(() => {
     containerRef.current?.focus()
   }, [])
-
-  function handleBackdropClick(e: React.MouseEvent) {
-    if (e.target === e.currentTarget) onClose()
-  }
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Escape') onClose()

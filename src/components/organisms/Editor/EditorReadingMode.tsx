@@ -59,7 +59,7 @@ export function EditorReadingMode({
       </div>
 
       <div ref={editorRootRef} className="min-h-0 flex-1 overflow-y-auto">
-        {note.userFrontmatter?.banner && (
+        {!!note.userFrontmatter?.banner && (
           <div className="h-48 overflow-hidden">
             <img
               src={note.userFrontmatter.banner as string}

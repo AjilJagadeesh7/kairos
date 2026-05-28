@@ -42,7 +42,7 @@ export function useIconRules(): IconRule[] {
 
 export function usePluginSlots<S extends SlotId>(slot: S): SlotRegistration<S>[] {
   const slots = useContext(PluginRegistryContext).slots
-  return (slots as SlotRegistration<S>[]).filter(s => s.slot === slot)
+  return (slots as unknown as SlotRegistration<S>[]).filter(s => s.slot === slot)
 }
 
 export function usePluginThemes(): ThemeRegistration[] {

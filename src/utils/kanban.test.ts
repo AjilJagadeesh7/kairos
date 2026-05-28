@@ -25,9 +25,9 @@ afterEach(() => { vi.useRealTimers() })
 
 function makeTask(overrides: Partial<KanbanTask> = {}): KanbanTask {
   return {
-    id: 'task-1', boardId: 'b1', columnId: 'col-1', title: 'Task',
-    order: 0, tags: [], subtasks: [], linkedNotes: [], linkedTasks: [],
-    comments: [], attachments: [], createdAt: NOW.toISOString(),
+    id: 'task-1', columnId: 'col-1', title: 'Task',
+    order: 0, priority: null, tags: [], subtasks: [], linkedNotes: [], linkedTasks: [],
+    comments: [], attachments: [], createdAt: NOW.toISOString(), updatedAt: NOW.toISOString(),
     ...overrides,
   }
 }
@@ -38,7 +38,7 @@ function makeSubtask(overrides: Partial<Subtask> = {}): Subtask {
 
 function makeBoard(overrides: Partial<Board> = {}): Board {
   return {
-    id: 'board-1', title: 'My Board', columns: [], tasks: [], tags: [],
+    id: 'board-1', title: 'My Board', columns: [], tasks: [], boardTags: [],
     createdAt: NOW.toISOString(), updatedAt: NOW.toISOString(),
     ...overrides,
   }

@@ -62,7 +62,7 @@ function buildFromForm(type: ChartType, title: string, labels: string, datasets:
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function TypeTile({ type, label, icon, selected, onClick }: {
+function TypeTile({ type: _type, label, icon, selected, onClick }: {
   type: ChartType; label: string; icon: React.ReactNode; selected: boolean; onClick: () => void
 }) {
   return (

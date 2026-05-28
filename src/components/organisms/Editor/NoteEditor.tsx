@@ -45,7 +45,7 @@ export function NoteEditor(): JSX.Element {
       key={activeNote.id}
       noteId={activeNote.id}
       content={activeNote.content}
-      onSaveRaw={content => void onSave({ title: activeNote.title, content })}
+      onSaveRaw={content => void onSave({ title: activeNote.title, content, embedding: [], contentHash: '' })}
     >
       <EditorDraft key={activeNote.id} note={activeNote} onSave={onSave} />
     </EditorErrorBoundary>

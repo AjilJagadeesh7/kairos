@@ -28,7 +28,7 @@ function resolveField(note: Note, field: string): string {
   }
 }
 
-function compare(a: string, b: string, op: FilterOp, value: string): boolean {
+function compare(a: string, _b: string, op: FilterOp, value: string): boolean {
   const av = a.toLowerCase()
   const bv = value.toLowerCase()
 

@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 import { useAppStore } from '../../../store/useAppStore'
 import { ThemeSelect } from '../../molecules/ThemeSelect'
-import { FontSelect, FONT_WEIGHTS } from '../../molecules/FontSelect'
+import { FontSelect } from '../../molecules/FontSelect'
 import { SectionCard } from '../../molecules/SectionCard'
 import type { FontOption, FontWeight } from '../../../types'
 import { Icon } from '../../../icons/Icon'

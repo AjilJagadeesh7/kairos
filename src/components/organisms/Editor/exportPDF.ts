@@ -140,6 +140,7 @@ export async function exportPDF(editorRoot: HTMLElement | null, noteTitle: strin
       image:       { type: 'jpeg', quality: 0.95 },
       html2canvas: { scale: 2, useCORS: true, logging: false },
       jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      // @ts-expect-error — html2pdf.js types omit the pagebreak option
       pagebreak:   { mode: ['avoid-all', 'css', 'legacy'] },
     })
     .from(container)

@@ -60,10 +60,6 @@ export function BoardSettings({ board, onClose }: BoardSettingsProps): JSX.Eleme
     onClose()
   }
 
-  function handleBackdropClick(e: React.MouseEvent) {
-    if (e.target === e.currentTarget) onClose()
-  }
-
   return (
     <ModalShell onClose={onClose} maxWidth="max-w-2xl" className="flex h-[600px] flex-col overflow-hidden rounded-2xl">
         {/* Header */}
