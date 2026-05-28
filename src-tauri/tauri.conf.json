@@ -40,9 +40,9 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDgwRERFOTM0MzI2RjVENjEKUldSaFhXOHlOT25kZ1A2Z2tCdW9vVGg3SnlRS0plaC9wKytJaFlySWFJVEdyelM0bFRsWnNZNnQK",
       "endpoints": [
-        "https://github.com/ajil/mindvault/releases/latest/download/latest.json"
+        "https://github.com/AjilJagadeesh7/mindvault/releases/latest/download/latest.json"
       ]
     },
     "fs": {
