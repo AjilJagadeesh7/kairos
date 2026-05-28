@@ -19,7 +19,7 @@ assignees: ''
 
 ## Environment
 
-- **MindVault version**: (shown in Settings → About)
+- **Kairos version**: (shown in Settings → About)
 - **Platform**: Desktop (Tauri) / Mobile / Web
 - **OS**: (e.g. Linux Fedora 43, macOS 15, Windows 11, Android 14)
 

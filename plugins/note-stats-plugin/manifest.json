@@ -3,7 +3,7 @@
   "name": "Note Stats",
   "version": "2.0.0",
   "description": "Vault statistics: word count, character count, top tags, writing streak, notes created this week/month, most linked notes.",
-  "author": "MindVault",
+  "author": "Kairos",
   "entryPoint": "index.js",
   "permissions": ["read:notes", "ui:page", "events"]
 }

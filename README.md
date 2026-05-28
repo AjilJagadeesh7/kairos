@@ -1,6 +1,6 @@
-# MindVault
+# Kairos
 
-**A privacy-first, local-first knowledge base — notes, journal, kanban, canvas, and knowledge graph, all on your device.**
+**A privacy-first, local-first knowledge workspace — notes, journal, kanban, canvas, and knowledge graph, all on your device.**
 
 No accounts. No cloud required. No telemetry. Your data never leaves your machine unless you explicitly turn on sync.
 
@@ -74,7 +74,7 @@ No accounts. No cloud required. No telemetry. Your data never leaves your machin
 
 ## Plugin System
 
-MindVault has a first-class plugin system. Plugins are plain JavaScript files that live in your vault — no marketplace account required, no build pipeline needed for simple plugins.
+Kairos has a first-class plugin system. Plugins are plain JavaScript files that live in your vault — no marketplace account required, no build pipeline needed for simple plugins.
 
 ### What plugins can do
 
@@ -286,7 +286,7 @@ By submitting a PR you agree your contribution will be licensed under AGPL-3.0.
 
 GNU Affero General Public License v3.0 — see [LICENSE](./LICENSE).
 
-Any modified version of MindVault distributed over a network must also be made available under AGPL-3.0.
+Any modified version of Kairos distributed over a network must also be made available under AGPL-3.0.
 
 ---
 

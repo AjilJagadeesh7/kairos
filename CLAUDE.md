@@ -1,4 +1,4 @@
-# MindVault — Claude Instructions
+# Kairos — Claude Instructions
 
 ## Stack quick-reference
 

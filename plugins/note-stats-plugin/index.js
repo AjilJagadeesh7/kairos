@@ -1,4 +1,4 @@
-// MindVault Note Stats Plugin v2.0.0
+// Kairos Note Stats Plugin v2.0.0
 // Vault-wide statistics: word/char counts, top tags, writing streak, most linked notes.
 
 const WIKILINK_RE = /\[\[([^\]]+)\]\]/g
