@@ -20,6 +20,11 @@ const FEATURES: Array<{ iconName: IconToken; title: string; desc: string }> = [
     desc: 'Multi-board task management with drag-and-drop columns, subtasks, checkpoints, priorities, due dates, and labels.',
   },
   {
+    iconName: 'pen-tool',
+    title: 'Canvas',
+    desc: 'Infinite freeform whiteboard for sketching, diagramming, and visually connecting ideas with nodes, arrows, and sticky notes.',
+  },
+  {
     iconName: 'network',
     title: 'Knowledge Graph',
     desc: 'Force-directed 3D graph of note connections via wikilinks. Tag clusters, neighbourhood focus, and right-click link creation.',
@@ -54,6 +59,8 @@ const PRIVACY_POINTS = [
 export function AboutSection() {
   return (
     <div className="space-y-5">
+      {/* Top row: About + Author side by side on wide screens */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
       {/* About */}
       <SectionCard title="About MindVault">
         <div className="mb-4 flex items-center gap-3">
@@ -66,8 +73,8 @@ export function AboutSection() {
         <div className="space-y-3 text-sm text-[rgb(var(--text-2))]">
           <p>
             MindVault is a <strong className="text-[rgb(var(--text))]">privacy-first, local-first knowledge base</strong> combining
-            a rich markdown note editor, daily journal, kanban boards, and a visual knowledge graph — all without requiring an
-            account or sending any data to external servers.
+            a rich markdown note editor, daily journal, kanban boards, an infinite canvas, and a visual knowledge graph — all without
+            requiring an account or sending any data to external servers.
           </p>
           <p>
             Everything lives on your device. Sync is optional and always encrypted end-to-end before leaving your machine.
@@ -119,10 +126,13 @@ export function AboutSection() {
           </div>
         </div>
       </SectionCard>
+      </div>{/* end top row grid */}
 
+      {/* Features + Privacy side by side on wide screens */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
       {/* Features */}
       <SectionCard title="Features">
-        <ul className="space-y-3">
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
           {FEATURES.map(({ iconName, title, desc }) => (
             <li key={title} className="flex gap-3">
               <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[rgb(var(--accent))]/10 text-[rgb(var(--accent))]">
@@ -161,6 +171,7 @@ export function AboutSection() {
           </p>
         </div>
       </SectionCard>
+      </div>{/* end features+privacy grid */}
     </div>
   )
 }

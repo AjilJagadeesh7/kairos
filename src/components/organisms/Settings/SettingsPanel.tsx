@@ -55,7 +55,7 @@ export function SettingsPanel({ section }: SettingsPanelProps) {
       )}
 
       <div className="flex-1 overflow-y-auto p-6">
-        <div className={`mx-auto space-y-4 ${section === 'plugins' ? 'max-w-5xl' : 'max-w-2xl'}`}>
+        <div className="mx-auto max-w-5xl space-y-4">
           {section === 'general'      && <GeneralSection />}
           {section === 'storage-sync' && <SyncSection />}
           {section === 'tags'         && <TagsSection />}
