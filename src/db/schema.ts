@@ -9,7 +9,7 @@ type EmbeddingRecord = {
   contentHash: string   // sha-256 of the text that was embedded; used to skip re-runs
 }
 
-export class MindVaultDB extends Dexie {
+export class KairosDB extends Dexie {
   notes!: EntityTable<Note, 'id'>
   settings!: EntityTable<SettingRecord, 'key'>
   syncMeta!: EntityTable<SyncMeta, 'noteId'>
@@ -20,7 +20,7 @@ export class MindVaultDB extends Dexie {
   canvases!: EntityTable<Canvas, 'id'>
 
   constructor() {
-    super('mindvault')
+    super('kairos')
     this.version(1).stores({
       notes: 'id, title, *tags, createdAt, updatedAt',
       settings: 'key',
@@ -121,7 +121,7 @@ export class MindVaultDB extends Dexie {
   }
 }
 
-export const db = new MindVaultDB()
+export const db = new KairosDB()
 
 export async function upsertNote(note: Note): Promise<void> {
   await db.notes.put(note)

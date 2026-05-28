@@ -111,7 +111,7 @@ export async function uninstallPlugin(id: string): Promise<void> {
 // ─── Deep link / URL param handler ───────────────────────────────────────────
 
 export async function handleInstallDeepLink(url: string): Promise<void> {
-  // mindvault://install?id=plugin-id&source=https://marketplace.example.com
+  // kairos://install?id=plugin-id&source=https://marketplace.example.com
   try {
     const parsed = new URL(url)
     if (parsed.hostname !== 'install') return

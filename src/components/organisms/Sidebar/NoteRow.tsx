@@ -48,7 +48,7 @@ export function NoteRow({
         draggable
         onDragStart={(e) => {
           e.dataTransfer.effectAllowed = 'move'
-          e.dataTransfer.setData('mindvault/noteId', note.id)
+          e.dataTransfer.setData('kairos/noteId', note.id)
           onDragStart(note.id)
         }}
         onClick={onOpen}

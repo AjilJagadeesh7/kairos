@@ -1,10 +1,10 @@
 import type { StorageAdapter } from './StorageAdapter'
 
-const VAULT_DIR = 'MindVault'
+const VAULT_DIR = 'Kairos'
 
 /**
  * StorageAdapter for Capacitor (iOS / Android).
- * Vault root: Documents/MindVault/ via @capacitor/filesystem.
+ * Vault root: Documents/Kairos/ via @capacitor/filesystem.
  * Notes are stored as plain .md files with YAML frontmatter.
  */
 export class CapacitorFSAdapter implements StorageAdapter {

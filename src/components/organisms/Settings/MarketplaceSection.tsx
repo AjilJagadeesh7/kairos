@@ -78,7 +78,7 @@ export function MarketplaceSection() {
         src={src}
         className="h-full w-full border-0"
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-        title="MindVault Plugin Marketplace"
+        title="Kairos Plugin Marketplace"
       />
     </div>
   )

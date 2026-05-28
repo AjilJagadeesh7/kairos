@@ -196,7 +196,7 @@ export function ActivityBar() {
       className="hidden md:flex w-12 shrink-0 flex-col items-center border-r border-border bg-surface2"
     >
       {/* Logo */}
-      <Tooltip label="MindVault — Home">
+      <Tooltip label="Kairos — Home">
         <button
           type="button"
           onClick={() => {

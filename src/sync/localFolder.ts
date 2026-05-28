@@ -1,7 +1,7 @@
 import { serializeNote, deserializeNote, noteIdToPath } from '../adapters/storage/noteSerializer'
 import type { Note } from '../types'
 
-const TAURI_PATH_KEY = 'mindvault_localfolder_path'
+const TAURI_PATH_KEY = 'kairos_localfolder_path'
 
 let _tauriPath: string | null = null
 
@@ -32,7 +32,7 @@ export function getLocalFolderName(): string | null {
 
 export async function connectLocalFolder(): Promise<void> {
   const { open } = await import('@tauri-apps/plugin-dialog')
-  const selected = await open({ directory: true, multiple: false, title: 'Choose MindVault sync folder' })
+  const selected = await open({ directory: true, multiple: false, title: 'Choose Kairos sync folder' })
   if (!selected || typeof selected !== 'string') return
   _tauriPath = selected
   localStorage.setItem(TAURI_PATH_KEY, selected)

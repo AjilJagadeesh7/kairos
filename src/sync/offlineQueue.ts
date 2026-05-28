@@ -4,7 +4,7 @@
  * Uses localStorage so it survives app restarts without a DB migration.
  */
 
-const KEY = 'mindvault_offline_queue'
+const KEY = 'kairos_offline_queue'
 
 function load(): Set<string> {
   try {

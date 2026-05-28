@@ -14,7 +14,7 @@ const PAGE_LABELS: Record<string, string> = {
   canvas:   'Canvas',
   graph:    'Graph',
   settings: 'Settings',
-  home:     'MindVault',
+  home:     'Kairos',
 }
 
 const SIDEBAR_PAGES = new Set(['notes', 'journal', 'canvas', 'graph', 'settings'])
@@ -86,7 +86,7 @@ export function MobileHeader() {
   })
 
   const pageType   = pathToType(activePath)
-  const label      = PAGE_LABELS[pageType] ?? 'MindVault'
+  const label      = PAGE_LABELS[pageType] ?? 'Kairos'
   const hasSidebar = SIDEBAR_PAGES.has(pageType)
   const isDeepPage = pageType === 'notes' && activePath !== '/notes'
 

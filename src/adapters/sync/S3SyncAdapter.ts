@@ -29,7 +29,7 @@ export class S3SyncAdapter implements SyncAdapter {
   async pull(filePath: string): Promise<string> {
     this.assertConnected()
     const notes = await listS3Notes()
-    const found = notes.find((n) => `mindvault/${n.id}.md` === filePath || n.id === filePath)
+    const found = notes.find((n) => `kairos/${n.id}.md` === filePath || n.id === filePath)
     if (!found) throw new Error(`S3: object not found: ${filePath}`)
     return serializeNote(found)
   }
@@ -37,7 +37,7 @@ export class S3SyncAdapter implements SyncAdapter {
   async listRemote(): Promise<string[]> {
     this.assertConnected()
     const notes = await listS3Notes()
-    return notes.map((n) => `mindvault/${n.id}.md`)
+    return notes.map((n) => `kairos/${n.id}.md`)
   }
 
   async resolveConflict(local: string, remote: string): Promise<string> {

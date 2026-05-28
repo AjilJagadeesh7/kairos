@@ -12,7 +12,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: '0.0.1',
     date: '2026-05-28',
     highlights: [
-      'Initial release of MindVault — a local-first, privacy-first knowledge workspace.',
+      'Initial release of Kairos — a local-first, privacy-first knowledge workspace.',
     ],
     added: [
       'Notes — Markdown editor with wikilinks, transclusions, tags, backlinks, and folder organisation',

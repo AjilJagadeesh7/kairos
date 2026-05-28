@@ -63,7 +63,7 @@ export function Header() {
         )}
 
         <button onClick={() => navigate('/')} className="text-left">
-          <h1 className="text-base font-black tracking-tight sm:text-lg">MindVault</h1>
+          <h1 className="text-base font-black tracking-tight sm:text-lg">Kairos</h1>
           <p className="hidden text-[10px] text-[rgb(var(--text-2))] sm:block sm:text-xs">
             Private-by-default notes
           </p>

@@ -19,7 +19,7 @@ type IndexDoc = {
   tags: string
 }
 
-const SEARCH_CACHE_DB    = 'mindvault-search-cache'
+const SEARCH_CACHE_DB    = 'kairos-search-cache'
 const SEARCH_CACHE_STORE = 'index'
 const SEARCH_CACHE_KEY   = 'minisearch'
 const INDEXED_META_KEY   = 'indexed-meta'   // Map<id, updatedAt> snapshot

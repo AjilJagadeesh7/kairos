@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "MindVault",
+  "productName": "Kairos",
   "version": "0.0.1",
-  "identifier": "com.mindvault.app",
+  "identifier": "com.kairos.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:5173",
@@ -13,7 +13,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "MindVault",
+        "title": "Kairos",
         "width": 1200,
         "height": 800,
         "resizable": true,
@@ -42,7 +42,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDgwRERFOTM0MzI2RjVENjEKUldSaFhXOHlOT25kZ1A2Z2tCdW9vVGg3SnlRS0plaC9wKytJaFlySWFJVEdyelM0bFRsWnNZNnQK",
       "endpoints": [
-        "https://github.com/AjilJagadeesh7/mindvault/releases/latest/download/latest.json"
+        "https://github.com/AjilJagadeesh7/kairos/releases/latest/download/latest.json"
       ]
     },
     "fs": {
@@ -56,7 +56,7 @@
         { "host": "install", "pathPrefix": ["/"] }
       ],
       "desktop": {
-        "schemes": ["mindvault"]
+        "schemes": ["kairos"]
       }
     }
   }

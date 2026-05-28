@@ -1,7 +1,7 @@
 /**
  * Public component API surface exposed to plugin authors via api.components.
  * Only add exports here intentionally — this is a stable public contract.
- * Plugins receive these so they don't need to bundle React or MindVault UI themselves.
+ * Plugins receive these so they don't need to bundle React or Kairos UI themselves.
  */
 
 // Atoms

@@ -1,5 +1,5 @@
-export const SAMPLE_NOTE_2_TITLE = 'MindVault Features'
-export const SAMPLE_NOTE_2 = `## What makes MindVault different
+export const SAMPLE_NOTE_2_TITLE = 'Kairos Features'
+export const SAMPLE_NOTE_2 = `## What makes Kairos different
 
 > [!TIP] Privacy first
 > Everything is stored locally on your device. No accounts, no telemetry, no cloud lock-in. Sync is optional and always end-to-end encrypted.
@@ -38,11 +38,11 @@ Use Obsidian-style callouts anywhere in your notes. All 8 types are supported:
 Built-in **Kanban boards** for task management and a **Journal** view for daily notes — no plugins needed.
 `
 
-export const SAMPLE_NOTE_1_TITLE = 'Welcome to MindVault'
+export const SAMPLE_NOTE_1_TITLE = 'Welcome to Kairos'
 export const makeSampleNote1 = () => `## Getting started
 
 > [!NOTE]
-> These are sample notes to help you explore MindVault. Delete them whenever you're ready to start fresh.
+> These are sample notes to help you explore Kairos. Delete them whenever you're ready to start fresh.
 
 ### Wikilinks — connect your notes
 

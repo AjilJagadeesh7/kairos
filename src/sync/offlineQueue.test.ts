@@ -65,7 +65,7 @@ describe('offlineQueue', () => {
   })
 
   it('survives malformed localStorage JSON', () => {
-    ls.setItem('mindvault_offline_queue', 'not-json')
+    ls.setItem('kairos_offline_queue', 'not-json')
     expect(getPending()).toEqual([])
     expect(() => enqueue('x')).not.toThrow()
   })

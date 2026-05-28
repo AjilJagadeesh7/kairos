@@ -4,15 +4,25 @@ interface AppLogoProps {
 }
 
 export function AppLogo({ size = 32, className = '' }: AppLogoProps) {
+  const radius = Math.round(size * 0.22)
+  const fontSize = Math.round(size * 0.52)
+
   return (
-    <img
-      src="/logo.png"
-      width={size}
-      height={size}
-      alt="MindVault"
+    <div
+      aria-label="Kairos"
       draggable={false}
-      className={`shrink-0 select-none rounded-[${Math.round(size * 0.22)}px] ${className}`}
-      style={{ borderRadius: Math.round(size * 0.22) }}
-    />
+      className={`shrink-0 select-none flex items-center justify-center bg-[rgb(var(--accent))] text-white font-black ${className}`}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: radius,
+        fontSize,
+        fontFamily: 'inherit',
+        letterSpacing: '-0.02em',
+        lineHeight: 1,
+      }}
+    >
+      K
+    </div>
   )
 }

@@ -1,7 +1,7 @@
 export interface SyncAdapter {
   /**
    * Upload a file to the remote.
-   * @param filePath  Remote path / key (e.g. "mindvault/abc123.md")
+   * @param filePath  Remote path / key (e.g. "kairos/abc123.md")
    * @param content   UTF-8 file content (serialized note with frontmatter)
    */
   push(filePath: string, content: string): Promise<void>

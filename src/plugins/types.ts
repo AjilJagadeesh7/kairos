@@ -122,7 +122,7 @@ export interface TaskWriteData {
 }
 
 // ─── Plugin API ───────────────────────────────────────────────────────────────
-export interface MindVaultPluginAPI {
+export interface KairosPluginAPI {
   readonly pluginId: string
   readonly manifest: PluginManifest
 
@@ -187,7 +187,7 @@ export interface MindVaultPluginAPI {
   React: typeof import('react')
 }
 
-export type PluginSetupFn = (api: MindVaultPluginAPI) => void | Promise<void>
+export type PluginSetupFn = (api: KairosPluginAPI) => void | Promise<void>
 
 export interface PluginModule {
   default: PluginSetupFn

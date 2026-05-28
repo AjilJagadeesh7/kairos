@@ -8,7 +8,7 @@ export type EncryptedPayload = {
   updatedAt: string
 }
 
-const SALT_KEY = 'mindvault.pbkdf2.salt'
+const SALT_KEY = 'kairos.pbkdf2.salt'
 
 function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   const copy = new Uint8Array(bytes.byteLength)

@@ -97,7 +97,7 @@ function FolderRow({
         onDragLeave={() => { dragCounter.current--; if (dragCounter.current === 0) setLocalDragOver(false) }}
         onDrop={e => {
           e.preventDefault(); dragCounter.current = 0; setLocalDragOver(false)
-          const noteId = e.dataTransfer.getData('mindvault/noteId')
+          const noteId = e.dataTransfer.getData('kairos/noteId')
           if (noteId) onDrop(node.path)
         }}
         className={`group relative flex h-[26px] cursor-pointer select-none items-center gap-1 pr-1 text-[13px] font-medium transition-colors ${

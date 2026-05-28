@@ -10,7 +10,7 @@ export function TabDistribution() {
       {/* Install methods */}
       <Collapsible title="Manual install (local development)" iconName="folder-input" defaultOpen>
         <p className="text-xs text-[rgb(var(--text-2))]">
-          Drop your plugin folder into <InlineCode>{'{vault}/plugins/'}</InlineCode> and restart MindVault. The app scans that folder on startup and auto-registers any plugin it finds.
+          Drop your plugin folder into <InlineCode>{'{vault}/plugins/'}</InlineCode> and restart Kairos. The app scans that folder on startup and auto-registers any plugin it finds.
         </p>
         <Code>{`
 {vault}/plugins/
@@ -36,9 +36,9 @@ export function TabDistribution() {
         <p className="mb-2 text-xs text-[rgb(var(--text-2))]">
           Link directly from your site or documentation to trigger an install prompt in the desktop app:
         </p>
-        <Code>{`mindvault://install?id=my-plugin&source=https://your-cdn.com`}</Code>
+        <Code>{`kairos://install?id=my-plugin&source=https://your-cdn.com`}</Code>
         <p className="mt-2 mb-1 text-xs text-[rgb(var(--text-3))]">Web / PWA fallback:</p>
-        <Code>{`https://app.mindvault.app?installPlugin=my-plugin&source=https://your-cdn.com`}</Code>
+        <Code>{`https://app.kairos.app?installPlugin=my-plugin&source=https://your-cdn.com`}</Code>
         <CalloutNote>
           The app fetches <InlineCode>{'{source}/plugins/{id}/manifest.json'}</InlineCode> and <InlineCode>{'{source}/plugins/{id}/index.js'}</InlineCode> — keep those paths consistent.
         </CalloutNote>
@@ -47,7 +47,7 @@ export function TabDistribution() {
       {/* Icon packs */}
       <Collapsible title="Icon packs — override built-in icons" iconName="palette">
         <p className="mb-2 text-xs text-[rgb(var(--text-2))]">
-          Icon packs swap any of MindVault's built-in icons without writing React — just SVG files and a JSON map.
+          Icon packs swap any of Kairos's built-in icons without writing React — just SVG files and a JSON map.
         </p>
         <Code>{`
 {vault}/plugins/my-icon-pack/

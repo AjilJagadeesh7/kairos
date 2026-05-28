@@ -32,7 +32,7 @@ describe('ensureSalt', () => {
 describe('encryptText / decryptText', () => {
   it('round-trips plaintext correctly', async () => {
     const key = await deriveKey('test-password')
-    const plaintext = 'Hello, MindVault!'
+    const plaintext = 'Hello, Kairos!'
     const payload = await encryptText(plaintext, key, new Date().toISOString())
     const result = await decryptText(payload, key)
     expect(result).toBe(plaintext)

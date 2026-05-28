@@ -23,7 +23,7 @@ export function PluginsDeveloperGuide() {
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-text">Build a Plugin</h3>
         <a
-          href="https://github.com/AjilJagadeesh7/mindvault#plugin-system"
+          href="https://github.com/AjilJagadeesh7/kairos#plugin-system"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1 text-xs text-accent hover:underline"

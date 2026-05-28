@@ -44,7 +44,7 @@ export const useKanbanStore = create<KanbanState>()(
       ...makeFilterActions(set, get),
     }),
     {
-      name: 'mindvault-kanban-ui',
+      name: 'kairos-kanban-ui',
       partialize: (state) => ({
         activeBoardId: state.activeBoardId,
         filters:       state.filters,

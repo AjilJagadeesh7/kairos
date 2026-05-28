@@ -96,7 +96,7 @@ export function OnboardingModal() {
                 <AppLogo size={60} />
               </div>
               <h1 className="mb-2 text-2xl font-black tracking-tight text-[rgb(var(--text))]">
-                Welcome to MindVault
+                Welcome to Kairos
               </h1>
               <p className="mb-7 text-sm leading-relaxed text-[rgb(var(--text-2))]">
                 Your notes, tasks, and ideas — all on your device. No accounts. No tracking. Nothing sent to the cloud.

@@ -62,17 +62,17 @@ export function AboutSection() {
       {/* Top row: About + Author side by side on wide screens */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
       {/* About */}
-      <SectionCard title="About MindVault">
+      <SectionCard title="About Kairos">
         <div className="mb-4 flex items-center gap-3">
           <AppLogo size={48} />
           <div>
-            <p className="font-bold text-text">MindVault</p>
+            <p className="font-bold text-text">Kairos</p>
             <p className="text-xs text-text3">Privacy-first, local-first knowledge base</p>
           </div>
         </div>
         <div className="space-y-3 text-sm text-[rgb(var(--text-2))]">
           <p>
-            MindVault is a <strong className="text-[rgb(var(--text))]">privacy-first, local-first knowledge base</strong> combining
+            Kairos is a <strong className="text-[rgb(var(--text))]">privacy-first, local-first knowledge base</strong> combining
             a rich markdown note editor, daily journal, kanban boards, an infinite canvas, and a visual knowledge graph — all without
             requiring an account or sending any data to external servers.
           </p>
@@ -81,13 +81,13 @@ export function AboutSection() {
           </p>
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <span className="rounded-full bg-[rgb(var(--surface-2))] px-2.5 py-1 font-mono text-xs text-[rgb(var(--text-3))]">
-              v0.1.0
+              v0.0.1
             </span>
             <span className="rounded-full bg-[rgb(var(--surface-2))] px-2.5 py-1 font-mono text-xs text-[rgb(var(--text-3))]">
               AGPL-3.0
             </span>
             <a
-              href="https://github.com/AjilJagadeesh7/mindvault"
+              href="https://github.com/AjilJagadeesh7/kairos"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 rounded-full bg-[rgb(var(--surface-2))] px-2.5 py-1 font-mono text-xs text-[rgb(var(--accent))] transition hover:underline"
@@ -106,7 +106,7 @@ export function AboutSection() {
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-[rgb(var(--text))]">Ajil Jagadeesh</p>
-            <p className="mt-0.5 text-xs text-[rgb(var(--text-3))]">Designer & developer of MindVault</p>
+            <p className="mt-0.5 text-xs text-[rgb(var(--text-3))]">Designer & developer of Kairos</p>
             <div className="mt-2 flex flex-wrap gap-2">
               <a
                 href="https://github.com/AjilJagadeesh7"
@@ -153,7 +153,7 @@ export function AboutSection() {
           <div className="flex items-start gap-2.5 rounded-lg border border-[rgb(var(--accent))]/20 bg-[rgb(var(--accent))]/5 px-3 py-2.5">
             <Icon name="shield-check" size={15} className="mt-0.5 shrink-0 text-[rgb(var(--accent))]" />
             <p className="text-xs leading-relaxed text-[rgb(var(--text-2))]">
-              MindVault is designed to keep your data yours. Here is exactly what we do and do not do.
+              Kairos is designed to keep your data yours. Here is exactly what we do and do not do.
             </p>
           </div>
           <ul className="space-y-2">
@@ -165,7 +165,7 @@ export function AboutSection() {
             ))}
           </ul>
           <p className="pt-1 text-[11px] text-[rgb(var(--text-3))]">
-            MindVault is open-source software released under the GNU Affero General Public License v3.0. You can read,
+            Kairos is open-source software released under the GNU Affero General Public License v3.0. You can read,
             audit, and modify the source code. Any modified version distributed over a network must also be made available
             under AGPL-3.0.
           </p>

@@ -28,6 +28,6 @@ export const usePluginStore = create<PluginStoreState>()(
       getPlugin: (id) => get().plugins.find(p => p.id === id),
       isInstalled: (id) => get().plugins.some(p => p.id === id),
     }),
-    { name: 'mindvault-plugins' },
+    { name: 'kairos-plugins' },
   ),
 )

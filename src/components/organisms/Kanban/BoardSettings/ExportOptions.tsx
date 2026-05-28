@@ -39,7 +39,7 @@ export function ExportOptions({ board }: ExportOptionsProps): JSX.Element {
         </div>
         <div>
           <p className="text-sm font-medium text-[rgb(var(--text))]">Export as JSON</p>
-          <p className="text-xs text-[rgb(var(--text-3))]">Full board data — importable back into MindVault</p>
+          <p className="text-xs text-[rgb(var(--text-3))]">Full board data — importable back into Kairos</p>
         </div>
         <Icon name="download" size={14} className="ml-auto text-[rgb(var(--text-3))]" />
       </button>

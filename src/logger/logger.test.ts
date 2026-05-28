@@ -93,14 +93,14 @@ describe('logger.clear', () => {
   it('removes the localStorage key', () => {
     logger.info('x')
     logger.clear()
-    expect(localStorage.getItem('mindvault_diagnostic_log')).toBeNull()
+    expect(localStorage.getItem('kairos_diagnostic_log')).toBeNull()
   })
 })
 
 describe('localStorage persistence', () => {
   it('entries are written to localStorage', () => {
     logger.info('persisted')
-    const raw = localStorage.getItem('mindvault_diagnostic_log')
+    const raw = localStorage.getItem('kairos_diagnostic_log')
     expect(raw).not.toBeNull()
     const entries = JSON.parse(raw!)
     expect(entries.some((e: { msg: string }) => e.msg === 'persisted')).toBe(true)

@@ -1,6 +1,6 @@
 import type { StorageAdapter } from './StorageAdapter'
 
-const VAULT_ROOT_KEY = 'mindvault_vault_root'
+const VAULT_ROOT_KEY = 'kairos_vault_root'
 
 /**
  * StorageAdapter for Tauri desktop.
@@ -23,12 +23,12 @@ export class TauriFSAdapter implements StorageAdapter {
     const { open } = await import('@tauri-apps/plugin-dialog')
     const selected = await open({
       directory: true,
-      title: 'Choose your MindVault folder',
+      title: 'Choose your Kairos folder',
       multiple: false,
     })
 
     if (!selected || typeof selected !== 'string') {
-      throw new Error('No vault folder selected. MindVault cannot open without a storage location.')
+      throw new Error('No vault folder selected. Kairos cannot open without a storage location.')
     }
 
     localStorage.setItem(VAULT_ROOT_KEY, selected)

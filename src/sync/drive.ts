@@ -73,7 +73,7 @@ export async function listRemoteNotes(): Promise<RemoteEncryptedNote[]> {
   const notes: RemoteEncryptedNote[] = []
 
   for (const file of files) {
-    if (!file.id || !file.name || !file.name.startsWith('mindvault-note-')) continue
+    if (!file.id || !file.name || !file.name.startsWith('kairos-note-')) continue
     try {
       const content = await window.gapi.client.drive.files.get({
         fileId: file.id,
@@ -92,7 +92,7 @@ export async function listRemoteNotes(): Promise<RemoteEncryptedNote[]> {
 
 export async function upsertRemoteNote(remote: RemoteEncryptedNote, fileId?: string): Promise<string> {
   const metadata = {
-    name: `mindvault-note-${remote.noteId}.json`,
+    name: `kairos-note-${remote.noteId}.json`,
     mimeType: 'application/json',
     parents: ['appDataFolder'],
   }

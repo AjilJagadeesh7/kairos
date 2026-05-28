@@ -24,7 +24,7 @@ export class EditorErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error) {
-    console.error('[MindVault] Editor crashed:', error)
+    console.error('[Kairos] Editor crashed:', error)
   }
 
   // Reset when the note changes so a good note doesn't stay in fallback mode

@@ -10,7 +10,7 @@ export interface LogEntry {
 
 const MAX_MEMORY = 500
 const MAX_LOCAL  = 100
-const LS_KEY     = 'mindvault_diagnostic_log'
+const LS_KEY     = 'kairos_diagnostic_log'
 
 const memoryBuffer: LogEntry[] = []
 

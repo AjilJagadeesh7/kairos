@@ -1,9 +1,9 @@
 import { useAppStore } from '../store/useAppStore'
 import { indexNote } from '../search/noteIndex'
 import { gate } from './permissionGate'
-import type { PluginManifest, MindVaultPluginAPI, NoteListItem, NoteView, NoteWriteData } from './types'
+import type { PluginManifest, KairosPluginAPI, NoteListItem, NoteView, NoteWriteData } from './types'
 
-export function buildNotesApi(manifest: PluginManifest): MindVaultPluginAPI['notes'] {
+export function buildNotesApi(manifest: PluginManifest): KairosPluginAPI['notes'] {
   return {
     list(): NoteListItem[] {
       gate(manifest, 'read:notes', 'notes.list')

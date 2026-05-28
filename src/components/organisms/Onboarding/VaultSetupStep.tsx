@@ -151,7 +151,7 @@ export function VaultSetupStep({ onBack, onFinish }: VaultSetupStepProps) {
         setConnectState('done')
       } else {
         setConnectState('error')
-        setErrorMsg('Could not create the MindVault folder. Check your storage permissions.')
+        setErrorMsg('Could not create the Kairos folder. Check your storage permissions.')
       }
     } catch {
       setConnectState('error')
@@ -256,16 +256,16 @@ export function VaultSetupStep({ onBack, onFinish }: VaultSetupStepProps) {
           <div className="mb-5 flex items-center gap-3 rounded-xl border border-green-500/30 bg-green-500/[0.07] px-4 py-3.5">
             <Icon name="check-circle-2" size={18} className="shrink-0 text-green-500" />
             <div>
-              <p className="text-sm font-semibold text-[rgb(var(--text))]">Documents/MindVault ready</p>
+              <p className="text-sm font-semibold text-[rgb(var(--text))]">Documents/Kairos ready</p>
               <p className="text-[11px] text-[rgb(var(--text-3))]">notes/ · kanban/ · config/ created</p>
             </div>
           </div>
         ) : (
           <div className="mb-5 rounded-xl border-2 border-dashed border-[rgb(var(--border))] p-6 text-center">
             <Icon name="folder-plus" size={22} className="mx-auto mb-2 text-[rgb(var(--text-3))]" />
-            <p className="mb-1 text-sm font-semibold text-[rgb(var(--text))]">Documents/MindVault</p>
+            <p className="mb-1 text-sm font-semibold text-[rgb(var(--text))]">Documents/Kairos</p>
             <p className="mb-4 text-[11px] text-[rgb(var(--text-3))]">
-              We'll create a MindVault folder in your Documents and ask for permission to write files there.
+              We'll create a Kairos folder in your Documents and ask for permission to write files there.
             </p>
             <button
               onClick={() => void connectMobile()}
@@ -281,7 +281,7 @@ export function VaultSetupStep({ onBack, onFinish }: VaultSetupStepProps) {
         )}
 
         <div className="mb-6 flex flex-col gap-2">
-          <InfoRow icon="file-text"    text="Notes saved as plain .md files in Documents/MindVault" />
+          <InfoRow icon="file-text"    text="Notes saved as plain .md files in Documents/Kairos" />
           <InfoRow icon="cloud"        text="Add S3 or WebDAV sync later to back up across devices" />
           <InfoRow icon="shield-check" text="Files stay on your device — no cloud account needed" />
         </div>

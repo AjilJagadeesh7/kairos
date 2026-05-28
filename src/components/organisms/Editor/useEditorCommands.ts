@@ -60,7 +60,7 @@ export function useEditorCommands(
         ctx.get(editorViewCtx).focus()
       })
     } catch (err) {
-      console.warn('[MindVault] Editor command failed:', err)
+      console.warn('[Kairos] Editor command failed:', err)
     }
     closeMenu()
   }

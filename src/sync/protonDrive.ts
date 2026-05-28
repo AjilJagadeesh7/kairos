@@ -12,8 +12,8 @@
 import type { RemoteEncryptedNote } from './types'
 
 const BASE = '/proton-dav'
-const DIR = `${BASE}/MindVault`
-const FILE_PREFIX = 'mindvault-note-'
+const DIR = `${BASE}/Kairos`
+const FILE_PREFIX = 'kairos-note-'
 
 type Creds = { username: string; password: string }
 
@@ -36,14 +36,14 @@ export function isProtonConnected(): boolean {
 }
 
 /**
- * Verify credentials against the WebDAV root and create the MindVault
+ * Verify credentials against the WebDAV root and create the Kairos
  * directory if it does not already exist.
  */
 export async function connectProton(username: string, password: string): Promise<void> {
   const creds: Creds = { username, password }
 
   // Verify credentials by attempting to create (or confirm existence of) the
-  // MindVault directory. MKCOL returns:
+  // Kairos directory. MKCOL returns:
   //   201 = directory created  → auth OK, dir created
   //   405 = method not allowed → directory already exists, auth OK
   //   401 = unauthorized       → wrong credentials

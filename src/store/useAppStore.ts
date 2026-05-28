@@ -86,10 +86,10 @@ type AppState = {
 
 function readLegacyStorageChoices(): StorageTarget[] {
   try {
-    const raw = localStorage.getItem('mindvault_storage_choices')
+    const raw = localStorage.getItem('kairos_storage_choices')
     if (raw) return JSON.parse(raw) as StorageTarget[]
   } catch { /* ignore */ }
-  const legacy = localStorage.getItem('mindvault_storage_choice')
+  const legacy = localStorage.getItem('kairos_storage_choice')
   return legacy === 'local' ? ['indexdb', 'local'] : ['indexdb']
 }
 
@@ -110,9 +110,9 @@ export const useAppStore = create<AppState>()(
       sidebarOpen: true,
       sidebarWidth: 260,
       storageChoices: readLegacyStorageChoices(),
-      theme: (localStorage.getItem('mindvault.theme') as ThemeMode | null) ?? 'light',
-      font: (localStorage.getItem('mindvault.font') as FontOption | null) ?? 'manrope',
-      fontWeight: (localStorage.getItem('mindvault.fontWeight') as FontWeight | null) ?? 'regular',
+      theme: (localStorage.getItem('kairos.theme') as ThemeMode | null) ?? 'light',
+      font: (localStorage.getItem('kairos.font') as FontOption | null) ?? 'manrope',
+      fontWeight: (localStorage.getItem('kairos.fontWeight') as FontWeight | null) ?? 'regular',
       aiUrl: 'http://localhost:11434',
       userName: '',
       newTabPage: '/',
@@ -475,7 +475,7 @@ export const useAppStore = create<AppState>()(
       },
     }),
     {
-      name: 'mindvault-ui-store',
+      name: 'kairos-ui-store',
       partialize: (state) => ({
         activeNoteId:    state.activeNoteId,
         searchMode:      state.searchMode,

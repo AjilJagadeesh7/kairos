@@ -35,7 +35,7 @@ export function LogsSection() {
             Errors and warnings are logged locally on your device only — nothing is sent anywhere.
             Copy the log to attach it to a{' '}
             <a
-              href="https://github.com/AjilJagadeesh7/mindvault/issues"
+              href="https://github.com/AjilJagadeesh7/kairos/issues"
               target="_blank"
               rel="noopener noreferrer"
               className="text-[rgb(var(--accent))] hover:underline"

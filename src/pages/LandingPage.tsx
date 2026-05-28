@@ -10,7 +10,7 @@ import { Icon } from '../icons/Icon'
 function greeting(name: string): string {
   const h = new Date().getHours()
   const base = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'
-  return name.trim() ? `${base}, ${name.trim().split(' ')[0]}` : 'MindVault'
+  return name.trim() ? `${base}, ${name.trim().split(' ')[0]}` : 'Kairos'
 }
 
 export function LandingPage() {

@@ -66,18 +66,18 @@ export function useAppStartup() {
     root.dataset.theme = theme
     if (theme === 'light') root.classList.remove('dark')
     else root.classList.add('dark')
-    localStorage.setItem('mindvault.theme', theme)
+    localStorage.setItem('kairos.theme', theme)
   }, [theme])
 
   useEffect(() => {
     const family = FONT_FAMILIES[font] ?? FONT_FAMILIES['manrope']
     document.documentElement.style.setProperty('--font-sans', family)
-    localStorage.setItem('mindvault.font', font)
+    localStorage.setItem('kairos.font', font)
   }, [font])
 
   useEffect(() => {
     document.documentElement.style.setProperty('--font-weight', FONT_WEIGHT_MAP[fontWeight] ?? '400')
-    localStorage.setItem('mindvault.fontWeight', fontWeight)
+    localStorage.setItem('kairos.fontWeight', fontWeight)
   }, [fontWeight])
 
   useEffect(() => {
@@ -155,9 +155,9 @@ export function useAppStartup() {
         await loadAllPlugins()
 
         // Handle pending URL-param install (web/PWA — deferred because vault wasn't ready)
-        const pending = sessionStorage.getItem('mindvault_pending_install')
+        const pending = sessionStorage.getItem('kairos_pending_install')
         if (pending) {
-          sessionStorage.removeItem('mindvault_pending_install')
+          sessionStorage.removeItem('kairos_pending_install')
           const req = JSON.parse(pending) as { id: string; source: string }
           const { installPlugin } = await import('../plugins/installPlugin')
           await installPlugin({
@@ -189,7 +189,7 @@ export function useAppStartup() {
             })
           } else {
             // Vault not yet connected — defer install until after vault setup
-            sessionStorage.setItem('mindvault_pending_install', JSON.stringify({ id: installId, source }))
+            sessionStorage.setItem('kairos_pending_install', JSON.stringify({ id: installId, source }))
           }
         }
       }
@@ -215,7 +215,7 @@ export function useAppStartup() {
           const update = await check()
           if (update?.available) {
             toast(`Update available — v${update.version}`, {
-              description: update.body || 'A new version of MindVault is ready to install.',
+              description: update.body || 'A new version of Kairos is ready to install.',
               duration: Infinity,
               action: {
                 label: 'Install & relaunch',

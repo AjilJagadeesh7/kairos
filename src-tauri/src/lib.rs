@@ -80,7 +80,7 @@ fn open_app_browser(app: AppHandle, url: String) -> Result<(), String> {
     let label = format!("appbrowser-{}", std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis());
     WebviewWindowBuilder::new(&app, label, WebviewUrl::External(parsed))
-        .title("MindVault — Browser").inner_size(1100.0, 760.0).resizable(true)
+        .title("Kairos — Browser").inner_size(1100.0, 760.0).resizable(true)
         .build().map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -282,5 +282,5 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .run(tauri::generate_context!())
-        .expect("error while running MindVault");
+        .expect("error while running Kairos");
 }

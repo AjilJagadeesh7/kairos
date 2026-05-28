@@ -30,7 +30,7 @@ export function isS3Connected(): boolean {
     && Boolean(_config.endpoint && _config.bucket && _config.accessKey && _config.secretKey)
 }
 
-const KEY_PREFIX = 'mindvault/notes/'
+const KEY_PREFIX = 'kairos/notes/'
 
 // ---------------------------------------------------------------------------
 // AWS Signature V4 — pure Web Crypto

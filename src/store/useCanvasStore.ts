@@ -105,7 +105,7 @@ export const useCanvasStore = create<CanvasState>()(
       },
     }),
     {
-      name: 'mindvault-canvas',
+      name: 'kairos-canvas',
       partialize: () => ({}),
     },
   ),

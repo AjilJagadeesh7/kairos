@@ -8,7 +8,7 @@ import { buildNotesApi } from './notesApi'
 import { buildKanbanApi } from './kanbanApi'
 import type {
   PluginManifest,
-  MindVaultPluginAPI,
+  KairosPluginAPI,
   AppEvent,
   PluginPageRegistration,
   PluginSettingsRegistration,
@@ -18,7 +18,7 @@ import type { IconToken } from '../icons/tokens'
 import type { SlotId, SlotPropsMap, SlotRegistration } from './slotTypes'
 import type { ThemeRegistration, CommandRegistration, EditorToolbarItem, CanvasNodeTypeRegistration } from './extensionTypes'
 
-export function buildPluginAPI(manifest: PluginManifest): MindVaultPluginAPI {
+export function buildPluginAPI(manifest: PluginManifest): KairosPluginAPI {
   const id = manifest.id
 
   return {

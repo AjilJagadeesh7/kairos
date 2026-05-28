@@ -8,7 +8,7 @@
  *   {vault}/plugins/{id}/   — plugin bundles + data
  *
  * Desktop (Tauri) — uses plugin-fs + plugin-dialog.
- * Mobile (Capacitor) — uses @capacitor/filesystem (Documents/MindVault).
+ * Mobile (Capacitor) — uses @capacitor/filesystem (Documents/Kairos).
  */
 import { isDesktop } from '../utils/platform'
 import { serializeNote, deserializeNote, noteIdToPath } from '../adapters/storage/noteSerializer'
@@ -16,7 +16,7 @@ import type { Note, JournalEntry, ContentVersion } from '../types'
 import type { Board } from '../types/kanban.types'
 import type { Canvas } from '../types/canvas.types'
 
-const TAURI_KEY = 'mindvault_plain_folder_path'
+const TAURI_KEY = 'kairos_plain_folder_path'
 
 let _tauriPath: string | null = null
 
@@ -100,7 +100,7 @@ export async function initPlainFolder(): Promise<'ok' | 'missing' | 'none'> {
 
   // Mobile — always available
   try {
-    await mobileMkdir('MindVault')
+    await mobileMkdir('Kairos')
     return 'ok'
   } catch {
     return 'missing'
@@ -114,7 +114,7 @@ export async function initPlainFolder(): Promise<'ok' | 'missing' | 'none'> {
 export async function connectPlainFolder(): Promise<void> {
   if (isDesktop()) {
     const { open } = await import('@tauri-apps/plugin-dialog')
-    const selected = await open({ directory: true, multiple: false, title: 'Choose MindVault folder' })
+    const selected = await open({ directory: true, multiple: false, title: 'Choose Kairos folder' })
     if (!selected || typeof selected !== 'string') return
     _tauriPath = selected
     localStorage.setItem(TAURI_KEY, selected)
@@ -122,7 +122,7 @@ export async function connectPlainFolder(): Promise<void> {
     return
   }
 
-  // Mobile — folder is always Documents/MindVault
+  // Mobile — folder is always Documents/Kairos
   await _ensureVaultDirs()
 }
 
@@ -142,12 +142,12 @@ export function getVaultPath(): string | null { return _tauriPath }
 
 export function isPlainFolderConnected(): boolean {
   if (isDesktop()) return _tauriPath !== null
-  return true // mobile always has Documents/MindVault
+  return true // mobile always has Documents/Kairos
 }
 
 export function getPlainFolderName(): string | null {
   if (isDesktop()) return _tauriPath ? (_tauriPath.split(/[/\\]/).pop() ?? _tauriPath) : null
-  return 'MindVault'
+  return 'Kairos'
 }
 
 // ---------------------------------------------------------------------------
@@ -172,7 +172,7 @@ async function _subdirPath(name: 'notes' | 'kanban' | 'config' | 'journal' | 'ca
     try { await mkdir(dir, { recursive: true }) } catch { /* already exists */ }
     return dir
   }
-  const dir = `MindVault/${name}`
+  const dir = `Kairos/${name}`
   await mobileMkdir(dir)
   return dir
 }
@@ -205,7 +205,7 @@ export async function deletePlainNote(noteId: string): Promise<void> {
     try { await remove(`${_tauriPath}/notes/${fileName}`) } catch { /* already gone */ }
     return
   }
-  await mobileDelete(`MindVault/notes/${fileName}`)
+  await mobileDelete(`Kairos/notes/${fileName}`)
 }
 
 export async function readAllNotes(): Promise<Note[]> {
@@ -223,7 +223,7 @@ export async function readAllNotes(): Promise<Note[]> {
     return results.flatMap(r => r.status === 'fulfilled' ? [r.value] : [])
   }
 
-  const notesPath = 'MindVault/notes'
+  const notesPath = 'Kairos/notes'
   await mobileMkdir(notesPath)
   const { Filesystem, Directory } = await import('@capacitor/filesystem')
   try {
@@ -267,7 +267,7 @@ export async function deletePlainBoard(boardId: string): Promise<void> {
     try { await remove(`${_tauriPath}/kanban/${fileName}`) } catch { /* already gone */ }
     return
   }
-  await mobileDelete(`MindVault/kanban/${fileName}`)
+  await mobileDelete(`Kairos/kanban/${fileName}`)
 }
 
 export async function readAllBoards(): Promise<Board[]> {
@@ -287,7 +287,7 @@ export async function readAllBoards(): Promise<Board[]> {
     return boards
   }
 
-  const kanbanPath = 'MindVault/kanban'
+  const kanbanPath = 'Kairos/kanban'
   await mobileMkdir(kanbanPath)
   const { Filesystem, Directory } = await import('@capacitor/filesystem')
   try {
@@ -322,7 +322,7 @@ export async function readPlainConfig(filename: string): Promise<string | null> 
       return null
     }
   }
-  return mobileRead(`MindVault/config/${filename}`)
+  return mobileRead(`Kairos/config/${filename}`)
 }
 
 export async function writePlainConfig(filename: string, content: string): Promise<void> {
@@ -380,7 +380,7 @@ export async function deleteJournalEntryFile(date: string): Promise<void> {
     try { await remove(`${_tauriPath}/journal/${fileName}`) } catch { /* already gone */ }
     return
   }
-  await mobileDelete(`MindVault/journal/${fileName}`)
+  await mobileDelete(`Kairos/journal/${fileName}`)
 }
 
 export async function readAllJournalEntries(): Promise<JournalEntry[]> {
@@ -401,7 +401,7 @@ export async function readAllJournalEntries(): Promise<JournalEntry[]> {
     return result
   }
 
-  const journalPath = 'MindVault/journal'
+  const journalPath = 'Kairos/journal'
   await mobileMkdir(journalPath)
   const { Filesystem, Directory } = await import('@capacitor/filesystem')
   try {
@@ -436,7 +436,7 @@ async function _historyFilePath(sub: HistorySub, id: string): Promise<string> {
     await mkdir(dir, { recursive: true }).catch(() => {})
     return `${dir}/${id}.json`
   }
-  const dir = `MindVault/history/${sub}`
+  const dir = `Kairos/history/${sub}`
   await mobileMkdir(dir)
   return `${dir}/${id}.json`
 }
@@ -487,7 +487,7 @@ export async function deleteNoteHistory(noteId: string): Promise<void> {
     await remove(`${_tauriPath}/history/notes/${noteId}.json`).catch(() => {})
     return
   }
-  await mobileDelete(`MindVault/history/notes/${noteId}.json`)
+  await mobileDelete(`Kairos/history/notes/${noteId}.json`)
 }
 
 export async function appendJournalVersion(date: string, version: ContentVersion): Promise<void> {
@@ -534,7 +534,7 @@ export async function listPluginIds(): Promise<string[]> {
         .map(e => e.name!)
     } catch { return [] }
   }
-  const pluginsPath = 'MindVault/plugins'
+  const pluginsPath = 'Kairos/plugins'
   await mobileMkdir(pluginsPath)
   const { Filesystem, Directory } = await import('@capacitor/filesystem')
   try {
@@ -553,7 +553,7 @@ export async function readPluginFile(pluginId: string, filename: string): Promis
       return await readTextFile(path)
     } catch { return null }
   }
-  return mobileRead(`MindVault/plugins/${pluginId}/${filename}`)
+  return mobileRead(`Kairos/plugins/${pluginId}/${filename}`)
 }
 
 export async function writePluginFile(pluginId: string, filename: string, content: string): Promise<void> {
@@ -565,7 +565,7 @@ export async function writePluginFile(pluginId: string, filename: string, conten
     await writeTextFile(`${dir}/${filename}`, content)
     return
   }
-  const dir = `MindVault/plugins/${pluginId}`
+  const dir = `Kairos/plugins/${pluginId}`
   await mobileMkdir(dir)
   await mobileWrite(`${dir}/${filename}`, content)
 }
@@ -577,7 +577,7 @@ export async function deletePluginFolder(pluginId: string): Promise<void> {
     await remove(`${_tauriPath}/plugins/${pluginId}`, { recursive: true }).catch(() => {})
     return
   }
-  await mobileRmdir(`MindVault/plugins/${pluginId}`)
+  await mobileRmdir(`Kairos/plugins/${pluginId}`)
 }
 
 // ---------------------------------------------------------------------------
@@ -606,7 +606,7 @@ export async function deletePlainCanvas(canvasId: string): Promise<void> {
     try { await remove(`${_tauriPath}/canvas/${fileName}`) } catch { /* already gone */ }
     return
   }
-  await mobileDelete(`MindVault/canvas/${fileName}`)
+  await mobileDelete(`Kairos/canvas/${fileName}`)
 }
 
 export async function readAllCanvases(): Promise<Canvas[]> {
@@ -626,7 +626,7 @@ export async function readAllCanvases(): Promise<Canvas[]> {
     return canvases
   }
 
-  const canvasPath = 'MindVault/canvas'
+  const canvasPath = 'Kairos/canvas'
   await mobileMkdir(canvasPath)
   const { Filesystem, Directory } = await import('@capacitor/filesystem')
   try {
