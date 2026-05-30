@@ -44,30 +44,38 @@ export function JournalEditor({ date }: JournalEditorProps) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
   const [showHistory, setShowHistory] = useState(false)
   const [restoreKey, setRestoreKey]   = useState(0)
+  const [shownDate, setShownDate]     = useState(date)
+  const [pendingFlush, setPendingFlush] = useState<{ date: string; content: string } | null>(null)
 
   const contentRef    = useRef(content)
-  const prevDateRef   = useRef(date)
   const saveTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => { contentRef.current = content }, [content])
 
-  // Reset when date changes — flush pending save for old date first
+  // Reset editor content *during render* when the date changes — not in an
+  // effect. The editor is keyed by `date`, so it remounts and captures `content`
+  // as its defaultValue on mount. Resetting in a post-commit effect would let
+  // the new editor mount with the PREVIOUS date's content (stale text stays
+  // visible and gets auto-saved into the new date's file). `content` here still
+  // holds the leaving date's text, so queue it for the flush effect below.
+  if (shownDate !== date) {
+    setPendingFlush({ date: shownDate, content })
+    setShownDate(date)
+    setContent(entries[date]?.content ?? '')
+    setSaveStatus('idle')
+    setShowHistory(false)
+  }
+
+  // Flush the unsaved content of the date we just left. `pendingFlush` is a
+  // fresh object per date switch, so this runs exactly once per switch.
   useEffect(() => {
-    if (prevDateRef.current === date) return
-    const oldDate = prevDateRef.current
-    const oldContent = contentRef.current
-    prevDateRef.current = date
+    if (!pendingFlush) return
 
     // Cancel any pending auto-save so it can't write old content to new date
     if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null }
 
-    // Flush a dirty save for the old date before switching
-    const storedContent = useJournalStore.getState().entries[oldDate]?.content ?? ''
-    if (oldContent !== storedContent) void saveEntry(oldDate, oldContent)
-
-    setContent(entries[date]?.content ?? '')
-    setSaveStatus('idle')
-    setShowHistory(false)
-  }, [date, entries, saveEntry])
+    const storedContent = useJournalStore.getState().entries[pendingFlush.date]?.content ?? ''
+    if (pendingFlush.content !== storedContent) void saveEntry(pendingFlush.date, pendingFlush.content)
+  }, [pendingFlush, saveEntry])
 
   const handleRestore = (restoredContent: string) => {
     setContent(restoredContent)
