@@ -1,7 +1,7 @@
 import * as yaml from 'js-yaml'
 import type { Note } from '../../types'
 
-const SYSTEM_KEYS = new Set(['id', 'title', 'tags', 'createdAt', 'updatedAt', 'folder'])
+const SYSTEM_KEYS = new Set(['id', 'title', 'tags', 'createdAt', 'updatedAt', 'folder', 'noSync'])
 
 /** Serialize a Note to a markdown string with YAML-style frontmatter. */
 export function serializeNote(note: Note): string {
@@ -14,6 +14,7 @@ export function serializeNote(note: Note): string {
     `updatedAt: ${note.updatedAt}`,
   ]
   if (note.folder) lines.push(`folder: ${JSON.stringify(note.folder)}`)
+  if (note.noSync) lines.push('noSync: true')
 
   if (note.userFrontmatter) {
     for (const [key, val] of Object.entries(note.userFrontmatter)) {
@@ -41,6 +42,7 @@ export function deserializeNote(raw: string): Note {
   // Regex extractor for system fields (keeps backward compat with old format)
   const get = (key: string) => fm.match(new RegExp(`^${key}: (.+)$`, 'm'))?.[1] ?? ''
   const rawFolder = get('folder')
+  const noSync = get('noSync') === 'true'
 
   // Extract user-defined (non-system) fields via js-yaml
   let userFrontmatter: Record<string, unknown> | undefined
@@ -63,6 +65,7 @@ export function deserializeNote(raw: string): Note {
     embedding: [], // embeddings live in the db.embeddings table, not in the note record
     folder: rawFolder ? (JSON.parse(rawFolder) as string) || undefined : undefined,
     userFrontmatter,
+    ...(noSync ? { noSync: true } : {}),
   }
 }
 

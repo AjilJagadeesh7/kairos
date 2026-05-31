@@ -19,6 +19,7 @@ export interface KanbanState {
 
   createBoard: (title: string, description?: string) => string
   updateBoard: (boardId: string, updates: Partial<Pick<Board, 'title' | 'description'>>) => void
+  setBoardNoSync: (boardId: string, value: boolean) => void
   deleteBoard: (boardId: string) => void
   duplicateBoard: (boardId: string) => string
 
@@ -114,6 +115,8 @@ export async function fsUpsertBoard(board: Board): Promise<void> {
   if (isPlainFolderConnected()) {
     writePlainBoard(board).catch(e => console.warn('[kanban] save failed:', e))
   }
+  const { schedulePush } = await import('../../sync/debouncedCloudPush')
+  schedulePush('kanban', board.id, board)
 }
 
 export async function fsDeleteBoard(id: string): Promise<void> {
@@ -121,4 +124,6 @@ export async function fsDeleteBoard(id: string): Promise<void> {
   if (isPlainFolderConnected()) {
     deletePlainBoard(id).catch(e => console.warn('[kanban] delete failed:', e))
   }
+  const { pushDelete } = await import('../../sync/debouncedCloudPush')
+  pushDelete('kanban', id, `${id}.json`)
 }

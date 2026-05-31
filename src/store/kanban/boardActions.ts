@@ -24,6 +24,10 @@ export function makeBoardActions(set: SetFn, get: GetFn) {
       mutateBoard(get, set, boardId, b => ({ ...b, ...updates }), false)
     },
 
+    setBoardNoSync: (boardId: string, value: boolean) => {
+      mutateBoard(get, set, boardId, b => ({ ...b, noSync: value || undefined }), false)
+    },
+
     deleteBoard: (boardId: string) => {
       set(s => ({
         boards: s.boards.filter(b => b.id !== boardId),

@@ -9,18 +9,20 @@ interface NoteContextMenuProps {
   note: Note
   isPinned: boolean
   isCopied: boolean
+  isSynced: boolean
   allFolderPaths: string[]
   onPin: () => void
   onCopyLink: () => void
   onOpenInNewTab: () => void
   onMove: (folder: string) => void
+  onToggleSync: () => void
   onDelete: () => void
   onClose: () => void
 }
 
 export function NoteContextMenu({
-  x, y, note, isPinned, isCopied, allFolderPaths,
-  onPin, onCopyLink, onOpenInNewTab, onMove, onDelete, onClose,
+  x, y, note, isPinned, isCopied, isSynced, allFolderPaths,
+  onPin, onCopyLink, onOpenInNewTab, onMove, onToggleSync, onDelete, onClose,
 }: NoteContextMenuProps) {
   const ref = useRef<HTMLDivElement>(null)
   const [showMove, setShowMove] = useState(false)
@@ -95,6 +97,14 @@ export function NoteContextMenu({
       >
         <Icon name="external-link" size={13} aria-hidden />
         Open in new tab
+      </button>
+
+      <button type="button" role="menuitem"
+        onClick={e => { e.stopPropagation(); onToggleSync(); onClose() }}
+        className="flex w-full items-center gap-2 px-3 py-2 text-xs text-text transition hover:bg-surface2"
+      >
+        <Icon name={isSynced ? 'cloud-off' : 'cloud'} size={13} aria-hidden />
+        {isSynced ? "Don't sync this note" : 'Sync this note'}
       </button>
 
       <div className="my-0.5 border-t border-border/50" />

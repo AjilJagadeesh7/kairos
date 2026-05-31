@@ -4,7 +4,8 @@
  * Uses AWS Signature V4 built entirely from the Web Crypto API — no SDK required.
  */
 import { serializeNote, deserializeNote, noteIdToPath } from '../adapters/storage/noteSerializer'
-import type { Note } from '../types'
+import type { Note, SyncCategory } from '../types'
+import type { RemoteBlob, RemoteProvider } from './remoteProvider'
 
 // ---------------------------------------------------------------------------
 // Config
@@ -30,7 +31,8 @@ export function isS3Connected(): boolean {
     && Boolean(_config.endpoint && _config.bucket && _config.accessKey && _config.secretKey)
 }
 
-const KEY_PREFIX = 'kairos/notes/'
+const ROOT_PREFIX = 'kairos/'
+const KEY_PREFIX = `${ROOT_PREFIX}notes/`
 
 // ---------------------------------------------------------------------------
 // AWS Signature V4 — pure Web Crypto
@@ -169,6 +171,76 @@ export async function deleteS3Note(noteId: string): Promise<void> {
     const text = await res.text().catch(() => '')
     throw new Error(`S3 DELETE ${url.pathname} → ${res.status}: ${text.slice(0, 200)}`)
   }
+}
+
+// ---------------------------------------------------------------------------
+// Generic blob API — keyed by category subfolder (kairos/{category}/{file})
+// ---------------------------------------------------------------------------
+
+function contentTypeFor(filename: string): string {
+  return filename.endsWith('.json')
+    ? 'application/json; charset=utf-8'
+    : 'text/markdown; charset=utf-8'
+}
+
+function categoryPrefix(category: SyncCategory): string {
+  return `${ROOT_PREFIX}${category}/`
+}
+
+function parseAllKeys(xml: string, prefix: string): string[] {
+  const doc = new DOMParser().parseFromString(xml, 'text/xml')
+  return Array.from(doc.querySelectorAll('Contents'))
+    .map((el) => el.querySelector('Key')?.textContent ?? '')
+    .filter((k) => k.length > prefix.length && !k.endsWith('/'))
+}
+
+export async function putS3Blob(category: SyncCategory, filename: string, content: string): Promise<void> {
+  const cfg = _config
+  if (!cfg) throw new Error('S3 not configured')
+  await s3Fetch('PUT', objectUrl(cfg, `${categoryPrefix(category)}${filename}`), content, cfg, { 'content-type': contentTypeFor(filename) })
+}
+
+export async function listS3Blob(category: SyncCategory): Promise<RemoteBlob[]> {
+  const cfg = _config
+  if (!cfg) throw new Error('S3 not configured')
+  const prefix = categoryPrefix(category)
+  const url = new URL(`${cfg.endpoint.replace(/\/$/, '')}/${cfg.bucket}`)
+  url.searchParams.set('list-type', '2')
+  url.searchParams.set('prefix', prefix)
+
+  const res  = await s3Fetch('GET', url, null, cfg)
+  const keys = parseAllKeys(await res.text(), prefix)
+
+  const blobs: RemoteBlob[] = []
+  for (const key of keys) {
+    try {
+      const getRes = await s3Fetch('GET', objectUrl(cfg, key), null, cfg)
+      blobs.push({ name: key.slice(prefix.length), content: await getRes.text() })
+    } catch (err) {
+      console.warn('S3: skipping', key, err)
+    }
+  }
+  return blobs
+}
+
+export async function deleteS3Blob(category: SyncCategory, filename: string): Promise<void> {
+  const cfg = _config
+  if (!cfg) throw new Error('S3 not configured')
+  const url     = objectUrl(cfg, `${categoryPrefix(category)}${filename}`)
+  const headers = await buildAuthHeaders('DELETE', url, '', cfg)
+  const res     = await fetch(url.toString(), { method: 'DELETE', headers })
+  if (!res.ok && res.status !== 404) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`S3 DELETE ${url.pathname} → ${res.status}: ${text.slice(0, 200)}`)
+  }
+}
+
+export const s3Provider: RemoteProvider = {
+  id: 's3',
+  isConnected: isS3Connected,
+  putBlob: putS3Blob,
+  listBlob: listS3Blob,
+  deleteBlob: deleteS3Blob,
 }
 
 /** Verify credentials and bucket access. Throws a descriptive error on failure. */

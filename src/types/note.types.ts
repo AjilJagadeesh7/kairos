@@ -8,6 +8,7 @@ export type Note = {
   updatedAt: string
   folder?: string  // vault-relative path: "Projects/Work", "" or undefined = root
   userFrontmatter?: Record<string, unknown>
+  noSync?: boolean  // when true, this note stays local-only (never pushed to remotes)
 }
 
 export type TagRecord = {

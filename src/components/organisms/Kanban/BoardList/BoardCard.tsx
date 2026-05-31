@@ -16,6 +16,7 @@ export function BoardCard({ board }: BoardCardProps): JSX.Element {
   const navigate = useNavigate()
   const deleteBoard = useKanbanStore(s => s.deleteBoard)
   const duplicateBoard = useKanbanStore(s => s.duplicateBoard)
+  const setBoardNoSync = useKanbanStore(s => s.setBoardNoSync)
 
   const overdueCount = board.tasks.filter(t => {
     if (!t.due || t.completedAt) return false
@@ -37,6 +38,11 @@ export function BoardCard({ board }: BoardCardProps): JSX.Element {
   function handleDuplicate(e: React.MouseEvent) {
     e.stopPropagation()
     duplicateBoard(board.id)
+  }
+
+  function handleToggleSync(e: React.MouseEvent) {
+    e.stopPropagation()
+    setBoardNoSync(board.id, !board.noSync)
   }
 
   return (
@@ -64,6 +70,13 @@ export function BoardCard({ board }: BoardCardProps): JSX.Element {
               <Icon name="copy" size={13} /> Duplicate
             </button>
             <button
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-[rgb(var(--text-2))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]"
+              onClick={handleToggleSync}
+            >
+              <Icon name={board.noSync ? 'cloud' : 'cloud-off'} size={13} />
+              {board.noSync ? 'Sync this board' : "Don't sync this board"}
+            </button>
+            <button
               className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
               onClick={handleDelete}
             >
@@ -81,6 +94,11 @@ export function BoardCard({ board }: BoardCardProps): JSX.Element {
         <span>{board.tasks.length} task{board.tasks.length !== 1 ? 's' : ''}</span>
         {overdueCount > 0 && (
           <span className="font-medium text-red-500">{overdueCount} overdue</span>
+        )}
+        {board.noSync && (
+          <span className="inline-flex items-center gap-1" title="Local only — not synced">
+            <Icon name="cloud-off" size={11} /> Local
+          </span>
         )}
         <span className="ml-auto">{timeAgo(board.updatedAt)}</span>
       </div>

@@ -1,5 +1,6 @@
 import { serializeNote, deserializeNote, noteIdToPath } from '../adapters/storage/noteSerializer'
-import type { Note } from '../types'
+import type { Note, SyncCategory } from '../types'
+import type { RemoteBlob, RemoteProvider } from './remoteProvider'
 
 const TAURI_PATH_KEY = 'kairos_localfolder_path'
 
@@ -59,6 +60,49 @@ export async function deleteLocalNote(noteId: string): Promise<void> {
   if (!_tauriPath) return
   const { remove } = await import('@tauri-apps/plugin-fs')
   try { await remove(`${_tauriPath}/${noteIdToPath(noteId)}`) } catch { /* already gone */ }
+}
+
+// ---------------------------------------------------------------------------
+// Generic blob API — keyed by category subfolder ({path}/{category}/{file})
+// ---------------------------------------------------------------------------
+
+export async function putLocalBlob(category: SyncCategory, filename: string, content: string): Promise<void> {
+  if (!_tauriPath) throw new Error('Local folder not connected')
+  const { writeTextFile, mkdir } = await import('@tauri-apps/plugin-fs')
+  const dir = `${_tauriPath}/${category}`
+  await mkdir(dir, { recursive: true }).catch(() => { /* already exists */ })
+  await writeTextFile(`${dir}/${filename}`, content)
+}
+
+export async function listLocalBlob(category: SyncCategory): Promise<RemoteBlob[]> {
+  if (!_tauriPath) return []
+  const { readDir, readTextFile, mkdir } = await import('@tauri-apps/plugin-fs')
+  const dir = `${_tauriPath}/${category}`
+  try { await mkdir(dir, { recursive: true }) } catch { /* exists */ }
+  const entries = await readDir(dir)
+  const blobs: RemoteBlob[] = []
+  for (const entry of entries) {
+    const name = entry.name ?? ''
+    if (!name || entry.isDirectory) continue
+    try {
+      blobs.push({ name, content: await readTextFile(`${dir}/${name}`) })
+    } catch { /* skip */ }
+  }
+  return blobs
+}
+
+export async function deleteLocalBlob(category: SyncCategory, filename: string): Promise<void> {
+  if (!_tauriPath) return
+  const { remove } = await import('@tauri-apps/plugin-fs')
+  try { await remove(`${_tauriPath}/${category}/${filename}`) } catch { /* already gone */ }
+}
+
+export const localFolderProvider: RemoteProvider = {
+  id: 'localFolder',
+  isConnected: isLocalFolderConnected,
+  putBlob: putLocalBlob,
+  listBlob: listLocalBlob,
+  deleteBlob: deleteLocalBlob,
 }
 
 // ---------------------------------------------------------------------------

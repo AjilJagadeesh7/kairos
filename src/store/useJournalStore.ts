@@ -51,6 +51,8 @@ export const useJournalStore = create<JournalState>()((set, _get) => ({
       appendJournalVersion(date, { savedAt: now, content })
         .catch(err => console.warn('[history] journal append failed:', err))
     }
+    const { schedulePush } = await import('../sync/debouncedCloudPush')
+    schedulePush('journal', date, entry)
   },
 
   deleteEntry: async (date) => {
@@ -63,6 +65,8 @@ export const useJournalStore = create<JournalState>()((set, _get) => ({
     if (isPlainFolderConnected()) {
       deleteJournalEntryFile(date).catch(() => { /* best-effort */ })
     }
+    const { pushDelete } = await import('../sync/debouncedCloudPush')
+    pushDelete('journal', date, `${date}.md`)
   },
 }))
 

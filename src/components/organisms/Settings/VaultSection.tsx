@@ -53,11 +53,14 @@ export function VaultSection() {
   return (
     <SectionCard title="Vault Folder">
       <p className="mb-4 text-xs text-[rgb(var(--text-2))]">
-        Your single source of truth. All notes, boards, and config are stored inside this folder
-        as plain files — easy to back up, version-control, or move to another device.
-        The folder will contain <code className="rounded bg-[rgb(var(--surface-2))] px-1">notes/</code>,{' '}
-        <code className="rounded bg-[rgb(var(--surface-2))] px-1">kanban/</code>, and{' '}
+        Your single source of truth. Notes, journal, boards, canvases, and config are stored inside
+        this folder as plain files — easy to back up, version-control, or move to another device.
+        The folder contains <code className="rounded bg-[rgb(var(--surface-2))] px-1">notes/</code>,{' '}
+        <code className="rounded bg-[rgb(var(--surface-2))] px-1">journal/</code>,{' '}
+        <code className="rounded bg-[rgb(var(--surface-2))] px-1">kanban/</code>,{' '}
+        <code className="rounded bg-[rgb(var(--surface-2))] px-1">canvas/</code>, and{' '}
         <code className="rounded bg-[rgb(var(--surface-2))] px-1">config/</code> subdirectories.
+        Connect a remote below to sync any of these across devices.
       </p>
 
       {vaultConnected ? (
@@ -66,7 +69,7 @@ export function VaultSection() {
             <Icon name="check-circle-2" size={15} className="shrink-0 text-green-500" />
             <div>
               <p className="text-sm font-medium text-[rgb(var(--text))]">{vaultName ?? 'Connected'}</p>
-              <p className="text-[10px] text-[rgb(var(--text-3))]">notes/ · kanban/ · config/</p>
+              <p className="text-[10px] text-[rgb(var(--text-3))]">notes/ · journal/ · kanban/ · canvas/ · config/</p>
             </div>
           </div>
           <div className="flex gap-2">
