@@ -24,7 +24,7 @@ const { provider, adapter } = vi.hoisted(() => {
 })
 
 vi.mock('./remoteProvider', () => ({ connectedProviders: () => [provider], anyRemoteConnected: () => true }))
-vi.mock('./syncScope', () => ({ canPush: () => true, canPull: () => true }))
+vi.mock('./syncRules', () => ({ canPush: () => true, canPull: () => true }))
 vi.mock('./categoryRegistry', () => ({ CONTENT_ADAPTERS: { kanban: adapter } }))
 vi.mock('./settingsSync', () => ({ syncConfigWithCloud: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('./plainFolder', () => ({

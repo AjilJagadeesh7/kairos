@@ -37,10 +37,11 @@ interface JournalEditorProps {
 }
 
 export function JournalEditor({ date }: JournalEditorProps) {
-  const entries     = useJournalStore(s => s.entries)
-  const saveEntry   = useJournalStore(s => s.saveEntry)
-  const deleteEntry = useJournalStore(s => s.deleteEntry)
-  const navigate    = useNavigate()
+  const entries        = useJournalStore(s => s.entries)
+  const saveEntry      = useJournalStore(s => s.saveEntry)
+  const setEntryNoSync = useJournalStore(s => s.setEntryNoSync)
+  const deleteEntry    = useJournalStore(s => s.deleteEntry)
+  const navigate       = useNavigate()
 
   const existing   = entries[date]
   const [content, setContent]         = useState(existing?.content ?? '')
@@ -213,6 +214,20 @@ export function JournalEditor({ date }: JournalEditorProps) {
         >
           <Icon name="history" size={14} />
         </button>
+
+        {/* Sync this entry (opt out keeps it local-only) */}
+        {existing && (
+          <button type="button"
+            title={existing.noSync ? 'Sync this entry' : "Don't sync this entry — keep it local-only"}
+            aria-pressed={!!existing.noSync}
+            onClick={() => void setEntryNoSync(date, !existing.noSync)}
+            className={`flex h-7 w-7 items-center justify-center rounded transition ${
+              existing.noSync ? 'bg-accent/10 text-accent' : 'text-text3 hover:bg-surface3 hover:text-text'
+            }`}
+          >
+            <Icon name={existing.noSync ? 'cloud-off' : 'cloud'} size={14} />
+          </button>
+        )}
 
         {/* Delete */}
         {existing && (

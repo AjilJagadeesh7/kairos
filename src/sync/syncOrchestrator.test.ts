@@ -21,7 +21,7 @@ vi.mock('./remoteProvider', () => ({
 }))
 
 // Sync everything by default; individual tests can override.
-vi.mock('./syncScope', () => ({
+vi.mock('./syncRules', () => ({
   canPush: vi.fn().mockReturnValue(true),
   canPull: vi.fn().mockReturnValue(true),
 }))

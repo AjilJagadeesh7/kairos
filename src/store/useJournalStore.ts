@@ -10,6 +10,7 @@ type JournalState = {
   loadEntries: () => Promise<void>
   setActiveDate: (date: string | null) => void
   saveEntry: (date: string, content: string) => Promise<void>
+  setEntryNoSync: (date: string, value: boolean) => Promise<void>
   deleteEntry: (date: string) => Promise<void>
 }
 
@@ -53,6 +54,21 @@ export const useJournalStore = create<JournalState>()((set, _get) => ({
     }
     const { schedulePush } = await import('../sync/debouncedCloudPush')
     schedulePush('journal', date, entry)
+  },
+
+  setEntryNoSync: async (date, value) => {
+    const existing = useJournalStore.getState().entries[date]
+    if (!existing) return
+    const entry: JournalEntry = { ...existing, noSync: value || undefined, updatedAt: new Date().toISOString() }
+    set(s => ({ entries: { ...s.entries, [date]: entry } }))
+
+    const { writeJournalEntry, isPlainFolderConnected } = await import('../sync/plainFolder')
+    if (isPlainFolderConnected()) {
+      writeJournalEntry(entry).catch(err => console.warn('[journal] write failed:', err))
+    }
+    // Push immediately so opting out deletes the cloud copy right away.
+    const { pushContentToAll } = await import('../sync/syncOrchestrator')
+    void pushContentToAll('journal', entry)
   },
 
   deleteEntry: async (date) => {

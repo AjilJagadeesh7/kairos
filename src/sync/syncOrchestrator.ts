@@ -1,18 +1,34 @@
 import { serializeNote, deserializeNote, noteIdToPath } from '../adapters/storage/noteSerializer'
-import { connectedProviders, anyRemoteConnected } from './remoteProvider'
-import { canPush, canPull } from './syncScope'
+import { connectedProviders, anyRemoteConnected, type RemoteProvider } from './remoteProvider'
+import { canPush, canPull } from './syncRules'
 import { CONTENT_ADAPTERS, type CategoryAdapter, type ContentCategory } from './categoryRegistry'
 import { db } from '../db/schema'
 import { useConflictStore } from '../store/useConflictStore'
 import type { Note, SyncStatus, SyncCategory } from '../types'
 
 // ---------------------------------------------------------------------------
-// syncMeta keys: notes keep their bare id (backward compat); other categories
-// are namespaced so ids never collide across content types.
+// Provider selection — the sync matrix decides which providers a category may
+// be pushed to / pulled from. Everything below routes through these helpers.
 // ---------------------------------------------------------------------------
 
+/** Connected providers this category is allowed to push to. */
+function pushTargets(category: SyncCategory): RemoteProvider[] {
+  return connectedProviders().filter((p) => canPush(category, p.id))
+}
+
+/** Connected providers this category is allowed to pull from. */
+function pullSources(category: SyncCategory): RemoteProvider[] {
+  return connectedProviders().filter((p) => canPull(category, p.id))
+}
+
+/** syncMeta keys: notes keep their bare id (backward compat); other categories
+ *  are namespaced so ids never collide across content types. */
 function syncMetaKey(category: SyncCategory, id: string): string {
   return category === 'notes' ? id : `${category}:${id}`
+}
+
+async function markSynced(category: SyncCategory, id: string): Promise<void> {
+  await db.syncMeta.put({ noteId: syncMetaKey(category, id), lastSynced: new Date().toISOString() })
 }
 
 // ---------------------------------------------------------------------------
@@ -20,37 +36,27 @@ function syncMetaKey(category: SyncCategory, id: string): string {
 // ---------------------------------------------------------------------------
 
 export async function pushNoteToAll(note: Note): Promise<void> {
-  const providers = connectedProviders()
-  if (providers.length === 0) return
   const filename = noteIdToPath(note.id)
 
-  // Opted out → make sure no stale cloud copy lingers.
-  if (note.noSync) {
-    await Promise.allSettled(providers.map((p) => p.deleteBlob('notes', filename)))
-    await db.syncMeta.delete(note.id).catch(() => {})
-    return
-  }
+  // Opted out → make sure no stale cloud copy lingers on any provider.
+  if (note.noSync) return deleteNoteFromAll(note.id)
 
-  if (!canPush('notes')) return
+  const targets = pushTargets('notes')
+  if (targets.length === 0) return
 
   const content = serializeNote(note)
-  const results = await Promise.allSettled(providers.map((p) => p.putBlob('notes', filename, content)))
+  const results = await Promise.allSettled(targets.map((p) => p.putBlob('notes', filename, content)))
 
-  if (results.some((r) => r.status === 'fulfilled')) {
-    await db.syncMeta.put({ noteId: note.id, lastSynced: new Date().toISOString() })
-  }
+  if (results.some((r) => r.status === 'fulfilled')) await markSynced('notes', note.id)
   results.forEach((r, i) => {
-    if (r.status === 'rejected') console.warn(`[sync] ${providers[i].id} note push failed:`, r.reason)
+    if (r.status === 'rejected') console.warn(`[sync] ${targets[i].id} note push failed:`, r.reason)
   })
 }
 
 export async function deleteNoteFromAll(noteId: string): Promise<void> {
-  const providers = connectedProviders()
-  const filename  = noteIdToPath(noteId)
-  const results   = await Promise.allSettled(providers.map((p) => p.deleteBlob('notes', filename)))
-  results.forEach((r, i) => {
-    if (r.status === 'rejected') console.warn(`[sync] ${providers[i].id} note delete failed:`, r.reason)
-  })
+  const filename = noteIdToPath(noteId)
+  // Delete is cleanup — remove from every connected provider regardless of rules.
+  await Promise.allSettled(connectedProviders().map((p) => p.deleteBlob('notes', filename)))
   await db.syncMeta.delete(noteId).catch(() => {})
 }
 
@@ -59,31 +65,22 @@ export async function deleteNoteFromAll(noteId: string): Promise<void> {
 // ---------------------------------------------------------------------------
 
 export async function pushContentToAll(category: ContentCategory, item: unknown): Promise<void> {
-  const adapter   = CONTENT_ADAPTERS[category]
-  const synced    = adapter.toSynced(item)
-  const providers = connectedProviders()
-  if (providers.length === 0) return
+  const synced = CONTENT_ADAPTERS[category].toSynced(item)
 
-  if (synced.noSync) {
-    await Promise.allSettled(providers.map((p) => p.deleteBlob(category, synced.filename)))
-    await db.syncMeta.delete(syncMetaKey(category, synced.id)).catch(() => {})
-    return
-  }
+  if (synced.noSync) return deleteContentFromAll(category, synced.id, synced.filename)
 
-  if (!canPush(category)) return
+  const targets = pushTargets(category)
+  if (targets.length === 0) return
 
-  const results = await Promise.allSettled(providers.map((p) => p.putBlob(category, synced.filename, synced.content)))
-  if (results.some((r) => r.status === 'fulfilled')) {
-    await db.syncMeta.put({ noteId: syncMetaKey(category, synced.id), lastSynced: new Date().toISOString() })
-  }
+  const results = await Promise.allSettled(targets.map((p) => p.putBlob(category, synced.filename, synced.content)))
+  if (results.some((r) => r.status === 'fulfilled')) await markSynced(category, synced.id)
   results.forEach((r, i) => {
-    if (r.status === 'rejected') console.warn(`[sync] ${providers[i].id} ${category} push failed:`, r.reason)
+    if (r.status === 'rejected') console.warn(`[sync] ${targets[i].id} ${category} push failed:`, r.reason)
   })
 }
 
 export async function deleteContentFromAll(category: ContentCategory, id: string, filename: string): Promise<void> {
-  const providers = connectedProviders()
-  await Promise.allSettled(providers.map((p) => p.deleteBlob(category, filename)))
+  await Promise.allSettled(connectedProviders().map((p) => p.deleteBlob(category, filename)))
   await db.syncMeta.delete(syncMetaKey(category, id)).catch(() => {})
 }
 
@@ -91,12 +88,11 @@ export async function deleteContentFromAll(category: ContentCategory, id: string
 // Full two-way sync — startup + "Sync Now"
 // ---------------------------------------------------------------------------
 
-async function listRemoteNotes(): Promise<Note[]> {
+async function listRemoteNotes(sources: RemoteProvider[]): Promise<Note[]> {
   const out: Note[] = []
-  for (const p of connectedProviders()) {
+  for (const p of sources) {
     try {
-      const blobs = await p.listBlob('notes')
-      for (const blob of blobs) {
+      for (const blob of await p.listBlob('notes')) {
         try {
           const n = deserializeNote(blob.content)
           out.push({ ...n, embedding: n.embedding ?? [] })
@@ -112,10 +108,11 @@ async function listRemoteNotes(): Promise<Note[]> {
 async function syncNotes(): Promise<void> {
   const { readAllNotes, writePlainNote, isPlainFolderConnected } = await import('./plainFolder')
 
-  // Pull: merge remotes by updatedAt, detect conflicts when both sides changed.
-  if (canPull('notes')) {
+  // Pull from allowed sources: merge by updatedAt, flag genuine conflicts.
+  const sources = pullSources('notes')
+  if (sources.length > 0) {
     const remoteMap = new Map<string, Note>()
-    for (const note of await listRemoteNotes()) {
+    for (const note of await listRemoteNotes(sources)) {
       const existing = remoteMap.get(note.id)
       if (!existing || new Date(note.updatedAt) > new Date(existing.updatedAt)) remoteMap.set(note.id, note)
     }
@@ -144,29 +141,28 @@ async function syncNotes(): Promise<void> {
 
       if (!local || remoteTs > localTs) {
         if (isPlainFolderConnected()) await writePlainNote({ ...remote, embedding: local?.embedding ?? [] })
-        await db.syncMeta.put({ noteId: remote.id, lastSynced: new Date().toISOString() })
+        await markSynced('notes', remote.id)
       }
     }
   }
 
-  // Push: all local notes (pushNoteToAll skips noSync + honors scope).
-  if (canPush('notes')) {
+  // Push every local note (pushNoteToAll honors per-provider rules + noSync).
+  if (pushTargets('notes').length > 0) {
     const freshNotes = isPlainFolderConnected() ? await readAllNotes() : []
     await Promise.allSettled(freshNotes.map((n) => pushNoteToAll(n)))
   }
 }
 
 async function syncContentCategory(adapter: CategoryAdapter): Promise<void> {
-  const providers = connectedProviders()
-  const cat       = adapter.category
-  const pull      = canPull(cat)
-  const push      = canPush(cat)
-  if (!pull && !push) return
-  let changed     = false
+  const cat     = adapter.category
+  const sources = pullSources(cat)
+  const targets = pushTargets(cat)
+  if (sources.length === 0 && targets.length === 0) return
+  let changed   = false
 
-  // Gather remotes (merged by newest updatedAt across providers).
+  // Gather remotes from allowed sources (merged by newest updatedAt).
   const remoteMap = new Map<string, { filename: string; content: string; updatedAt: string }>()
-  for (const p of providers) {
+  for (const p of sources) {
     let blobs
     try { blobs = await p.listBlob(cat) } catch (err) { console.warn(`[sync] ${p.id} list ${cat} failed:`, err); continue }
     for (const blob of blobs) {
@@ -188,7 +184,7 @@ async function syncContentCategory(adapter: CategoryAdapter): Promise<void> {
 
     // Opted out locally → never pull, and remove any cloud copy when pushing.
     if (local?.noSync) {
-      if (push && remote) await Promise.allSettled(providers.map((p) => p.deleteBlob(cat, local.filename)))
+      if (remote) await Promise.allSettled(targets.map((p) => p.deleteBlob(cat, local.filename)))
       continue
     }
 
@@ -196,20 +192,14 @@ async function syncContentCategory(adapter: CategoryAdapter): Promise<void> {
     const remoteTs = remote ? new Date(remote.updatedAt).getTime() : -Infinity
 
     if (remote && remoteTs > localTs) {
-      // Remote is newest → pull down.
-      if (pull) {
-        await adapter.writeLocal({ name: remote.filename, content: remote.content })
-        await db.syncMeta.put({ noteId: syncMetaKey(cat, id), lastSynced: new Date().toISOString() })
-        changed = true
-      }
-    } else if (local && localTs > remoteTs) {
-      // Local is newest (or remote absent) → push up.
-      if (push) {
-        const results = await Promise.allSettled(providers.map((p) => p.putBlob(cat, local.filename, local.content)))
-        if (results.some((r) => r.status === 'fulfilled')) {
-          await db.syncMeta.put({ noteId: syncMetaKey(cat, id), lastSynced: new Date().toISOString() })
-        }
-      }
+      // Remote is newest → pull down (a source produced it, so pull is allowed).
+      await adapter.writeLocal({ name: remote.filename, content: remote.content })
+      await markSynced(cat, id)
+      changed = true
+    } else if (local && localTs > remoteTs && targets.length > 0) {
+      // Local is newest (or remote absent) → push to allowed targets.
+      const results = await Promise.allSettled(targets.map((p) => p.putBlob(cat, local.filename, local.content)))
+      if (results.some((r) => r.status === 'fulfilled')) await markSynced(cat, id)
     }
     // Equal timestamps → already in sync, nothing to do.
   }
@@ -224,7 +214,7 @@ export async function syncAllProviders(onStatus: (s: SyncStatus) => void): Promi
     for (const adapter of Object.values(CONTENT_ADAPTERS)) {
       await syncContentCategory(adapter)
     }
-    // Settings + secrets (each gated by its own scope inside).
+    // Settings + secrets (each gated per provider inside).
     const { syncConfigWithCloud } = await import('./settingsSync')
     await syncConfigWithCloud()
 

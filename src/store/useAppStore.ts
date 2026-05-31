@@ -3,8 +3,8 @@ import { persist } from 'zustand/middleware'
 import { v4 as uuidv4 } from 'uuid'
 import { upsertEmbedding } from '../db/schema'
 import { useLoaderStore } from './useLoaderStore'
-import type { Note, SearchMode, SyncStatus, ThemeMode, StorageTarget, FontOption, FontWeight, VaultStatus, CustomCallout, SyncScope, SyncCategory, SyncDirection } from '../types'
-import { DEFAULT_SYNC_SCOPE } from '../types'
+import type { Note, SearchMode, SyncStatus, ThemeMode, StorageTarget, FontOption, FontWeight, VaultStatus, CustomCallout, SyncRules, SyncCategory, SyncProviderId, SyncDirection } from '../types'
+import { DEFAULT_SYNC_RULES } from '../types'
 import type { S3Config } from '../sync/s3'
 import type { WebDAVConfig } from '../sync/webdav'
 import { parseTags, rewriteWikilinksInContent } from '../utils/wikilinks'
@@ -24,7 +24,7 @@ type AppState = {
   aiUrl: string
   s3Config: S3Config | null
   webdavConfig: WebDAVConfig | null
-  syncScope: SyncScope
+  syncRules: SyncRules
   mobileSidebarOpen: boolean
   noteTagColors: Record<string, string>
   calloutColors: Record<string, string>
@@ -54,7 +54,7 @@ type AppState = {
   setSyncStatus: (status: SyncStatus) => void
   setS3Config: (cfg: S3Config | null) => void
   setWebDAVConfig: (cfg: WebDAVConfig | null) => void
-  setSyncCategory: (category: SyncCategory, direction: keyof SyncDirection, value: boolean) => void
+  setSyncRule: (category: SyncCategory, provider: SyncProviderId, direction: keyof SyncDirection, value: boolean) => void
   applySharedSettings: (patch: Partial<Pick<AppState, 'theme' | 'font' | 'fontWeight' | 'aiUrl' | 'noteTagColors' | 'calloutColors' | 'customCallouts' | 'keyBindings' | 'userName' | 'newTabPage'>>) => void
   setActiveNoteId: (id?: string) => void
   setMobileSidebarOpen: (open: boolean) => void
@@ -108,7 +108,7 @@ export const useAppStore = create<AppState>()(
       syncStatus: 'idle',
       s3Config: null,
       webdavConfig: null,
-      syncScope: DEFAULT_SYNC_SCOPE,
+      syncRules: DEFAULT_SYNC_RULES,
       mobileSidebarOpen: false,
       noteTagColors: {},
       calloutColors: {},
@@ -159,10 +159,13 @@ export const useAppStore = create<AppState>()(
       },
       setS3Config: (s3Config) => set({ s3Config }),
       setWebDAVConfig: (webdavConfig) => set({ webdavConfig }),
-      setSyncCategory: (category, direction, value) => set((s) => ({
-        syncScope: {
-          ...s.syncScope,
-          [category]: { ...s.syncScope[category], [direction]: value },
+      setSyncRule: (category, provider, direction, value) => set((s) => ({
+        syncRules: {
+          ...s.syncRules,
+          [category]: {
+            ...s.syncRules[category],
+            [provider]: { ...s.syncRules[category][provider], [direction]: value },
+          },
         },
       })),
       applySharedSettings: (patch) => set((s) => ({
@@ -520,7 +523,7 @@ export const useAppStore = create<AppState>()(
         searchMode:      state.searchMode,
         s3Config:        state.s3Config,
         webdavConfig:    state.webdavConfig,
-        syncScope:       state.syncScope,
+        syncRules:       state.syncRules,
         storageChoices:  state.storageChoices,
         noteTagColors:   state.noteTagColors,
         calloutColors:   state.calloutColors,

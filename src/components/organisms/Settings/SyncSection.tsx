@@ -6,7 +6,7 @@ import { syncAllProviders } from '../../../sync/syncOrchestrator'
 import { VaultSection } from './VaultSection'
 import { S3Section } from './S3Section'
 import { WebDAVSection } from './WebDAVSection'
-import { SyncScopeSection } from './SyncScopeSection'
+import { SyncMatrixSection } from './SyncMatrixSection'
 import { Icon } from '../../../icons/Icon'
 import { SectionLabel } from '../../atoms/SectionLabel'
 
@@ -45,7 +45,7 @@ export function SyncSection() {
       <S3Section onConnectionChange={setS3Connected} />
       <WebDAVSection onConnectionChange={setDavConnected} />
 
-      {anyRemoteConnected && <SyncScopeSection />}
+      {anyRemoteConnected && <SyncMatrixSection />}
 
       {anyRemoteConnected && (
         <div className="flex items-center justify-between rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-3">

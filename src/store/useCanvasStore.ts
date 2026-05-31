@@ -63,7 +63,7 @@ export const useCanvasStore = create<CanvasState>()(
           canvases: s.canvases.map(c => c.id === canvasId ? { ...c, noSync: value || undefined, updatedAt: now } : c),
         }))
         const canvas = get().canvases.find(c => c.id === canvasId)
-        if (canvas) void fsUpsert(canvas)  // fsUpsert pushes; cloud copy is deleted when noSync
+        if (canvas) void persistAndPushNow(canvas)  // immediate, not debounced
       },
 
       deleteCanvas: (canvasId) => {
@@ -137,4 +137,14 @@ async function fsDel(id: string): Promise<void> {
   }
   const { pushDelete } = await import('../sync/debouncedCloudPush')
   pushDelete('canvas', id, `${id}.json`)
+}
+
+/** Write locally and push to the cloud immediately (used for sync opt-out toggles). */
+async function persistAndPushNow(canvas: Canvas): Promise<void> {
+  const { writePlainCanvas, isPlainFolderConnected } = await import('../sync/plainFolder')
+  if (isPlainFolderConnected()) {
+    writePlainCanvas(canvas).catch(e => console.warn('[canvas] save failed:', e))
+  }
+  const { pushContentToAll } = await import('../sync/syncOrchestrator')
+  void pushContentToAll('canvas', canvas)  // deletes cloud copy when noSync
 }

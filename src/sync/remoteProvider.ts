@@ -6,7 +6,7 @@
  * serializes each content type to a string and pushes/pulls it through here, so
  * it never needs provider-specific code.
  */
-import type { SyncCategory } from '../types'
+import type { SyncCategory, SyncProviderId } from '../types'
 import { isS3Connected, s3Provider } from './s3'
 import { isWebDAVConnected, webdavProvider } from './webdav'
 import { isLocalFolderConnected, localFolderProvider } from './localFolder'
@@ -18,7 +18,7 @@ export interface RemoteBlob {
 }
 
 export interface RemoteProvider {
-  id: 's3' | 'webdav' | 'localFolder'
+  id: SyncProviderId
   isConnected(): boolean
   putBlob(category: SyncCategory, filename: string, content: string): Promise<void>
   listBlob(category: SyncCategory): Promise<RemoteBlob[]>

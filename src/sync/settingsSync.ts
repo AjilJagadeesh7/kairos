@@ -13,7 +13,7 @@
  */
 import { isPlainFolderConnected, readPlainConfig, writePlainConfig } from './plainFolder'
 import { connectedProviders } from './remoteProvider'
-import { canPush, canPull } from './syncScope'
+import { canPush, canPull } from './syncRules'
 import { getDeviceId } from './deviceId'
 import { useAppStore } from '../store/useAppStore'
 import { setS3Config } from './s3'
@@ -157,21 +157,21 @@ function buildSecrets(): SecretSettings {
 // ---------------------------------------------------------------------------
 
 export async function pushConfigToCloud(): Promise<void> {
-  const providers = connectedProviders()
-  if (providers.length === 0) return
+  const settingsTargets = connectedProviders().filter((p) => canPush('settings', p.id))
+  const secretsTargets  = connectedProviders().filter((p) => canPush('secrets', p.id))
 
-  if (canPush('settings')) {
+  if (settingsTargets.length > 0) {
     const shared = JSON.stringify(buildShared(), null, 2)
     const device = JSON.stringify(buildDevice(), null, 2)
-    await Promise.allSettled(providers.flatMap((p) => [
+    await Promise.allSettled(settingsTargets.flatMap((p) => [
       p.putBlob('settings', SHARED_FILE, shared),
       p.putBlob('settings', deviceFile(), device),
     ]))
   }
 
-  if (canPush('secrets')) {
+  if (secretsTargets.length > 0) {
     const secrets = JSON.stringify(buildSecrets(), null, 2)
-    await Promise.allSettled(providers.map((p) => p.putBlob('secrets', SECRETS_FILE, secrets)))
+    await Promise.allSettled(secretsTargets.map((p) => p.putBlob('secrets', SECRETS_FILE, secrets)))
   }
 }
 
@@ -188,15 +188,14 @@ function newest<T extends { updatedAt: string }>(items: T[]): T | null {
 }
 
 async function pullConfigFromCloud(): Promise<void> {
-  const providers = connectedProviders()
-  if (providers.length === 0) return
   const store = useAppStore.getState()
 
-  if (canPull('settings')) {
+  const settingsSources = connectedProviders().filter((p) => canPull('settings', p.id))
+  if (settingsSources.length > 0) {
     const shareds: SharedSettings[] = []
     const devices: DeviceSettings[] = []
     const myDevice = deviceFile()
-    for (const p of providers) {
+    for (const p of settingsSources) {
       let blobs
       try { blobs = await p.listBlob('settings') } catch (err) { console.warn(`[settings] ${p.id} list failed:`, err); continue }
       for (const blob of blobs) {
@@ -224,9 +223,10 @@ async function pullConfigFromCloud(): Promise<void> {
     }
   }
 
-  if (canPull('secrets')) {
+  const secretsSources = connectedProviders().filter((p) => canPull('secrets', p.id))
+  if (secretsSources.length > 0) {
     const secrets: SecretSettings[] = []
-    for (const p of providers) {
+    for (const p of secretsSources) {
       let blobs
       try { blobs = await p.listBlob('secrets') } catch { continue }
       for (const blob of blobs) {

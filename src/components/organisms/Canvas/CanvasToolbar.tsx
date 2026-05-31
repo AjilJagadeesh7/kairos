@@ -88,6 +88,7 @@ export function CanvasToolbar({
   canUndo, canRedo, onUndo, onRedo,
 }: CanvasToolbarProps) {
   const { fitView } = useReactFlow()
+  const setCanvasNoSync = useCanvasStore(s => s.setCanvasNoSync)
 
   return (
     <div className="flex items-center gap-0.5 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-2 py-1.5 shadow-lg">
@@ -104,6 +105,13 @@ export function CanvasToolbar({
       {SEP}
       <IconBtn label="Fit view"   icon="crosshair" onClick={() => fitView({ padding: 0.12, duration: 300 })} />
       <IconBtn label={showMinimap ? 'Hide minimap' : 'Minimap'} icon="layers" onClick={onToggleMinimap} active={showMinimap} />
+      {SEP}
+      <IconBtn
+        label={canvas.noSync ? 'Local only — click to sync this canvas' : "Don't sync this canvas"}
+        icon={canvas.noSync ? 'cloud-off' : 'cloud'}
+        onClick={() => setCanvasNoSync(canvas.id, !canvas.noSync)}
+        active={canvas.noSync}
+      />
       <SlotRenderer slot="canvas:toolbar:end" props={{ canvasId: canvas.id }} className="flex items-center" />
     </div>
   )

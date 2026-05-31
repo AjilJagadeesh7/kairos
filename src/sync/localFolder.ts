@@ -98,7 +98,7 @@ export async function deleteLocalBlob(category: SyncCategory, filename: string):
 }
 
 export const localFolderProvider: RemoteProvider = {
-  id: 'localFolder',
+  id: 'local',
   isConnected: isLocalFolderConnected,
   putBlob: putLocalBlob,
   listBlob: listLocalBlob,

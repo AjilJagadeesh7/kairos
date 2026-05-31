@@ -4,6 +4,7 @@
  * Uses AWS Signature V4 built entirely from the Web Crypto API — no SDK required.
  */
 import { serializeNote, deserializeNote, noteIdToPath } from '../adapters/storage/noteSerializer'
+import { isDesktop, isMobile } from '../utils/platform'
 import type { Note, SyncCategory } from '../types'
 import type { RemoteBlob, RemoteProvider } from './remoteProvider'
 
@@ -63,7 +64,7 @@ async function buildAuthHeaders(
   extraSignedHeaders: Record<string, string> = {},
 ): Promise<Record<string, string>> {
   const now       = new Date()
-  const amzDate   = now.toISOString().replace(/[:\-]|\.\d{3}/g, '').slice(0, 15) + 'Z'
+  const amzDate   = now.toISOString().replace(/[:-]|\.\d{3}/g, '').slice(0, 15) + 'Z'
   const dateStamp = amzDate.slice(0, 8)
   const bodyHash  = await sha256Hex(bodyStr)
 
@@ -91,13 +92,45 @@ async function buildAuthHeaders(
 }
 
 // ---------------------------------------------------------------------------
-// Low-level fetch
+// Low-level transport
+//
+// SigV4 requests carry "non-simple" headers (Authorization, x-amz-*), so a
+// plain browser fetch fires a CORS preflight the bucket answers with 403 →
+// the request never runs. We bypass the WebView network stack exactly like
+// WebDAV does:
+//   - Desktop (Tauri): rewrite https:// → mvproxy:// so the Rust scheme handler
+//     performs the request server-side (it answers preflight locally, forwards
+//     every header/verb/body, and sets Host from the URL — which still matches
+//     the signed host header).
+//   - Mobile (Capacitor): native HTTP bridge, not subject to CORS.
+//   - Web: plain fetch (works only if the bucket sends CORS headers).
 // ---------------------------------------------------------------------------
 
+interface S3Result {
+  status: number
+  ok: boolean
+  text: () => Promise<string>
+}
+
+async function s3Send(method: string, url: URL, body: string | null, headers: Record<string, string>): Promise<S3Result> {
+  if (isMobile()) {
+    const { CapacitorHttp } = await import('@capacitor/core')
+    const res = await CapacitorHttp.request({
+      url: url.toString(), method, headers, data: body ?? undefined, responseType: 'text',
+    })
+    const text = typeof res.data === 'string' ? res.data : (res.data == null ? '' : String(res.data))
+    return { status: res.status, ok: res.status >= 200 && res.status < 300, text: () => Promise.resolve(text) }
+  }
+
+  const target = isDesktop() ? url.toString().replace(/^https?:\/\//, 'mvproxy://') : url.toString()
+  const res = await fetch(target, { method, headers, body: body ?? undefined })
+  return { status: res.status, ok: res.ok, text: () => res.text() }
+}
+
 async function s3Fetch(method: string, url: URL, body: string | null, cfg: S3Config,
-  extraSignedHeaders: Record<string, string> = {}): Promise<Response> {
+  extraSignedHeaders: Record<string, string> = {}): Promise<S3Result> {
   const authHeaders = await buildAuthHeaders(method, url, body ?? '', cfg, extraSignedHeaders)
-  const res = await fetch(url.toString(), { method, headers: authHeaders, body: body ?? undefined })
+  const res = await s3Send(method, url, body, authHeaders)
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     throw new Error(`S3 ${method} ${url.pathname} → ${res.status}: ${text.slice(0, 300)}`)
@@ -109,12 +142,24 @@ async function s3Fetch(method: string, url: URL, body: string | null, cfg: S3Con
 // URL helpers
 // ---------------------------------------------------------------------------
 
+/** Normalize the endpoint: strip whitespace, default to https://, drop trailing slash. */
+function endpointBase(cfg: S3Config): string {
+  let ep = (cfg.endpoint ?? '').replace(/\s+/g, '')
+  if (!ep) throw new Error('S3 endpoint is empty')
+  if (!/^https?:\/\//i.test(ep)) ep = `https://${ep}`
+  return ep.replace(/\/+$/, '')
+}
+
+function bucketName(cfg: S3Config): string {
+  return (cfg.bucket ?? '').replace(/\s+/g, '').replace(/^\/+|\/+$/g, '')
+}
+
 function objectUrl(cfg: S3Config, key: string): URL {
-  return new URL(`${cfg.endpoint.replace(/\/$/, '')}/${cfg.bucket}/${key}`)
+  return new URL(`${endpointBase(cfg)}/${bucketName(cfg)}/${key}`)
 }
 
 function listUrl(cfg: S3Config, maxKeys?: number): URL {
-  const url = new URL(`${cfg.endpoint.replace(/\/$/, '')}/${cfg.bucket}`)
+  const url = new URL(`${endpointBase(cfg)}/${bucketName(cfg)}`)
   url.searchParams.set('list-type', '2')
   url.searchParams.set('prefix', KEY_PREFIX)
   if (maxKeys !== undefined) url.searchParams.set('max-keys', String(maxKeys))
@@ -166,7 +211,7 @@ export async function deleteS3Note(noteId: string): Promise<void> {
   if (!cfg) throw new Error('S3 not configured')
   const url     = objectUrl(cfg, `${KEY_PREFIX}${noteIdToPath(noteId)}`)
   const headers = await buildAuthHeaders('DELETE', url, '', cfg)
-  const res     = await fetch(url.toString(), { method: 'DELETE', headers })
+  const res     = await s3Send('DELETE', url, null, headers)
   if (!res.ok && res.status !== 404) {
     const text = await res.text().catch(() => '')
     throw new Error(`S3 DELETE ${url.pathname} → ${res.status}: ${text.slice(0, 200)}`)
@@ -204,7 +249,7 @@ export async function listS3Blob(category: SyncCategory): Promise<RemoteBlob[]> 
   const cfg = _config
   if (!cfg) throw new Error('S3 not configured')
   const prefix = categoryPrefix(category)
-  const url = new URL(`${cfg.endpoint.replace(/\/$/, '')}/${cfg.bucket}`)
+  const url = new URL(`${endpointBase(cfg)}/${bucketName(cfg)}`)
   url.searchParams.set('list-type', '2')
   url.searchParams.set('prefix', prefix)
 
@@ -228,7 +273,7 @@ export async function deleteS3Blob(category: SyncCategory, filename: string): Pr
   if (!cfg) throw new Error('S3 not configured')
   const url     = objectUrl(cfg, `${categoryPrefix(category)}${filename}`)
   const headers = await buildAuthHeaders('DELETE', url, '', cfg)
-  const res     = await fetch(url.toString(), { method: 'DELETE', headers })
+  const res     = await s3Send('DELETE', url, null, headers)
   if (!res.ok && res.status !== 404) {
     const text = await res.text().catch(() => '')
     throw new Error(`S3 DELETE ${url.pathname} → ${res.status}: ${text.slice(0, 200)}`)
@@ -246,10 +291,7 @@ export const s3Provider: RemoteProvider = {
 /** Verify credentials and bucket access. Throws a descriptive error on failure. */
 export async function testS3Connection(cfg: S3Config): Promise<void> {
   const url = listUrl(cfg, 1)
-  const res = await fetch(url.toString(), {
-    method: 'GET',
-    headers: await buildAuthHeaders('GET', url, '', cfg),
-  })
+  const res = await s3Send('GET', url, null, await buildAuthHeaders('GET', url, '', cfg))
   if (res.status === 403) throw new Error('Access denied — check your access key and secret')
   if (res.status === 404) throw new Error('Bucket not found — check bucket name and endpoint')
   if (!res.ok)            throw new Error(`S3 error ${res.status}`)
