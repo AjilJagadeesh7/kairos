@@ -8,6 +8,7 @@ export function CanvasList() {
   const canvases     = useCanvasStore(s => s.canvases)
   const createCanvas = useCanvasStore(s => s.createCanvas)
   const deleteCanvas = useCanvasStore(s => s.deleteCanvas)
+  const setCanvasNoSync = useCanvasStore(s => s.setCanvasNoSync)
 
   function handleNew() {
     const id = createCanvas()
@@ -85,15 +86,25 @@ export function CanvasList() {
                   </p>
                 </button>
 
-                {/* Delete on hover */}
-                <button
-                  type="button"
-                  onClick={() => deleteCanvas(canvas.id)}
-                  title="Delete canvas"
-                  className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded text-[rgb(var(--text-3))] opacity-0 transition hover:text-red-400 group-hover:opacity-100"
-                >
-                  <Icon name="trash-2" size={13} />
-                </button>
+                {/* Sync toggle + delete on hover (sync toggle stays visible when local-only) */}
+                <div className={`absolute right-2 top-2 flex gap-1 transition ${canvas.noSync ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                  <button
+                    type="button"
+                    onClick={() => setCanvasNoSync(canvas.id, !canvas.noSync)}
+                    title={canvas.noSync ? 'Local only — click to sync this canvas' : "Don't sync this canvas"}
+                    className={`flex h-6 w-6 items-center justify-center rounded transition hover:text-[rgb(var(--accent))] ${canvas.noSync ? 'text-[rgb(var(--text-2))]' : 'text-[rgb(var(--text-3))]'}`}
+                  >
+                    <Icon name={canvas.noSync ? 'cloud-off' : 'cloud'} size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteCanvas(canvas.id)}
+                    title="Delete canvas"
+                    className="flex h-6 w-6 items-center justify-center rounded text-[rgb(var(--text-3))] transition hover:text-red-400"
+                  >
+                    <Icon name="trash-2" size={13} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>

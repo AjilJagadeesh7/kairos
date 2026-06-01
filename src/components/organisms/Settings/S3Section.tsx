@@ -33,8 +33,13 @@ export function S3Section({ onConnectionChange }: Props) {
 
   async function onSave() {
     setError(''); setSaving(true)
+    // Strip all whitespace and default to https:// so a stray space or missing
+    // scheme can't produce an unparseable URL later.
+    let ep = endpoint.replace(/\s+/g, '')
+    if (ep && !/^https?:\/\//i.test(ep)) ep = `https://${ep}`
     const cfg: S3Config = {
-      endpoint: endpoint.trim(), bucket: bucket.trim(),
+      endpoint: ep.replace(/\/+$/, ''),
+      bucket: bucket.replace(/\s+/g, '').replace(/^\/+|\/+$/g, ''),
       region: region.trim() || 'auto',
       accessKey: accessKey.trim(), secretKey,
     }

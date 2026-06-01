@@ -10,6 +10,7 @@ interface CanvasState {
   loadCanvases: () => Promise<void>
   createCanvas: (title?: string) => string
   updateCanvasTitle: (canvasId: string, title: string) => void
+  setCanvasNoSync: (canvasId: string, value: boolean) => void
   deleteCanvas: (canvasId: string) => void
   updateNodes: (canvasId: string, nodes: CanvasNode[]) => void
   updateEdges: (canvasId: string, edges: CanvasEdge[]) => void
@@ -54,6 +55,15 @@ export const useCanvasStore = create<CanvasState>()(
         }))
         const canvas = get().canvases.find(c => c.id === canvasId)
         if (canvas) void fsUpsert(canvas)
+      },
+
+      setCanvasNoSync: (canvasId, value) => {
+        const now = new Date().toISOString()
+        set(s => ({
+          canvases: s.canvases.map(c => c.id === canvasId ? { ...c, noSync: value || undefined, updatedAt: now } : c),
+        }))
+        const canvas = get().canvases.find(c => c.id === canvasId)
+        if (canvas) void persistAndPushNow(canvas)  // immediate, not debounced
       },
 
       deleteCanvas: (canvasId) => {
@@ -116,6 +126,8 @@ async function fsUpsert(canvas: Canvas): Promise<void> {
   if (isPlainFolderConnected()) {
     writePlainCanvas(canvas).catch(e => console.warn('[canvas] save failed:', e))
   }
+  const { schedulePush } = await import('../sync/debouncedCloudPush')
+  schedulePush('canvas', canvas.id, canvas)
 }
 
 async function fsDel(id: string): Promise<void> {
@@ -123,4 +135,16 @@ async function fsDel(id: string): Promise<void> {
   if (isPlainFolderConnected()) {
     deletePlainCanvas(id).catch(e => console.warn('[canvas] delete failed:', e))
   }
+  const { pushDelete } = await import('../sync/debouncedCloudPush')
+  pushDelete('canvas', id, `${id}.json`)
+}
+
+/** Write locally and push to the cloud immediately (used for sync opt-out toggles). */
+async function persistAndPushNow(canvas: Canvas): Promise<void> {
+  const { writePlainCanvas, isPlainFolderConnected } = await import('../sync/plainFolder')
+  if (isPlainFolderConnected()) {
+    writePlainCanvas(canvas).catch(e => console.warn('[canvas] save failed:', e))
+  }
+  const { pushContentToAll } = await import('../sync/syncOrchestrator')
+  void pushContentToAll('canvas', canvas)  // deletes cloud copy when noSync
 }

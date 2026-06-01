@@ -28,6 +28,7 @@ export function NoteRow({
   const isPinned  = useAppStore(s => s.pinnedNoteIds.includes(note.id))
   const pinNote   = useAppStore(s => s.pinNote)
   const unpinNote = useAppStore(s => s.unpinNote)
+  const setNoteNoSync = useAppStore(s => s.setNoteNoSync)
   const iconRules = useIconRules()
   const iconRule  = resolveNoteIcon(note.title, note.tags, iconRules)
 
@@ -72,6 +73,9 @@ export function NoteRow({
           }
         </span>
         <span className="min-w-0 flex-1 truncate">{label}</span>
+        {note.noSync && (
+          <Icon name="cloud-off" size={11} className="shrink-0 text-text3" aria-label="Local only — not synced" />
+        )}
       </div>
 
       {ctxMenu && (
@@ -81,11 +85,13 @@ export function NoteRow({
           note={note}
           isPinned={isPinned}
           isCopied={isCopied}
+          isSynced={!note.noSync}
           allFolderPaths={allFolderPaths}
           onPin={() => isPinned ? unpinNote(note.id) : pinNote(note.id)}
           onCopyLink={onCopyLink}
           onOpenInNewTab={handleOpenInNewTab}
           onMove={onMove}
+          onToggleSync={() => void setNoteNoSync(note.id, !note.noSync)}
           onDelete={onDelete}
           onClose={() => setCtxMenu(null)}
         />

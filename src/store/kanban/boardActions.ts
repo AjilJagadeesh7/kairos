@@ -24,6 +24,21 @@ export function makeBoardActions(set: SetFn, get: GetFn) {
       mutateBoard(get, set, boardId, b => ({ ...b, ...updates }), false)
     },
 
+    setBoardNoSync: (boardId: string, value: boolean) => {
+      const board = get().boards.find(b => b.id === boardId)
+      if (!board) return
+      const updated: Board = { ...board, noSync: value || undefined, updatedAt: new Date().toISOString() }
+      set({ boards: get().boards.map(b => b.id === boardId ? updated : b) })
+      // Write locally and push to the cloud immediately (not debounced) so
+      // opting out deletes the cloud copy right away.
+      void (async () => {
+        const { writePlainBoard, isPlainFolderConnected } = await import('../../sync/plainFolder')
+        if (isPlainFolderConnected()) writePlainBoard(updated).catch(e => console.warn('[kanban] save failed:', e))
+        const { pushContentToAll } = await import('../../sync/syncOrchestrator')
+        void pushContentToAll('kanban', updated)
+      })()
+    },
+
     deleteBoard: (boardId: string) => {
       set(s => ({
         boards: s.boards.filter(b => b.id !== boardId),

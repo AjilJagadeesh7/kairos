@@ -22,6 +22,29 @@ const STRIP_RESPONSE_HEADERS: &[&str] = &[
 ];
 
 async fn proxy_fetch(request: Request<Vec<u8>>) -> Response<Vec<u8>> {
+    // The webview issues a CORS preflight (OPTIONS) before WebDAV verbs such as
+    // PROPFIND/PUT/MKCOL and before requests carrying custom headers (Depth,
+    // Authorization, Destination). Approve it locally — never forward upstream.
+    if request.method().as_str().eq_ignore_ascii_case("OPTIONS") {
+        let allow_headers = request
+            .headers()
+            .get("access-control-request-headers")
+            .and_then(|v| v.to_str().ok())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "Authorization, Content-Type, Depth, Destination, Overwrite".to_string());
+        return Response::builder()
+            .status(204)
+            .header("Access-Control-Allow-Origin", "*")
+            .header(
+                "Access-Control-Allow-Methods",
+                "GET, HEAD, POST, PUT, DELETE, OPTIONS, PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, LOCK, UNLOCK",
+            )
+            .header("Access-Control-Allow-Headers", allow_headers)
+            .header("Access-Control-Max-Age", "86400")
+            .body(Vec::new())
+            .unwrap();
+    }
+
     let uri = request.uri().to_string();
     let target = match uri.strip_prefix("mvproxy://") {
         Some(rest) => format!("https://{}", rest),
@@ -31,24 +54,32 @@ async fn proxy_fetch(request: Request<Vec<u8>>) -> Response<Vec<u8>> {
     let client = match reqwest::Client::builder()
         .user_agent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36")
         .redirect(reqwest::redirect::Policy::limited(5))
-        .timeout(std::time::Duration::from_secs(20))
+        .timeout(std::time::Duration::from_secs(60))
         .build()
     {
         Ok(c) => c,
         Err(e) => return Response::builder().status(500).body(format!("client error: {e}").into_bytes()).unwrap(),
     };
 
-    let method = match request.method().as_str() {
-        "POST" => reqwest::Method::POST,
-        _ => reqwest::Method::GET,
-    };
-    let mut req = client.request(method, &target);
+    // Preserve the real HTTP method — WebDAV relies on PROPFIND, PUT, MKCOL,
+    // DELETE, MOVE, COPY, etc. Anything unparseable falls back to GET.
+    let method = reqwest::Method::from_bytes(request.method().as_str().as_bytes())
+        .unwrap_or(reqwest::Method::GET);
+
+    // Copy forwardable headers before consuming the request to take its body.
+    let mut fwd_headers: Vec<(String, String)> = Vec::new();
     for (name, value) in request.headers() {
         let n = name.as_str().to_lowercase();
         if !matches!(n.as_str(), "host" | "origin" | "referer") {
-            if let Ok(v) = value.to_str() { req = req.header(name.as_str(), v); }
+            if let Ok(v) = value.to_str() { fwd_headers.push((name.as_str().to_string(), v.to_string())); }
         }
     }
+    let body = request.into_body();
+
+    let mut req = client.request(method, &target);
+    for (name, v) in fwd_headers { req = req.header(name.as_str(), v); }
+    // PROPFIND carries an XML query body; PUT carries the file contents.
+    if !body.is_empty() { req = req.body(body); }
 
     match req.send().await {
         Ok(resp) => {
@@ -65,6 +96,7 @@ async fn proxy_fetch(request: Request<Vec<u8>>) -> Response<Vec<u8>> {
         }
         Err(e) => Response::builder().status(502)
             .header("Content-Type", "text/plain; charset=utf-8")
+            .header("Access-Control-Allow-Origin", "*")
             .body(format!("proxy error: {e}").into_bytes())
             .unwrap(),
     }

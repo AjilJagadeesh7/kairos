@@ -29,6 +29,7 @@ export function BoardHeader({ board, onOpenSettings }: BoardHeaderProps): JSX.El
   const redo         = useKanbanStore(s => s.redo)
   const history      = useKanbanStore(s => s.history)
   const createColumn = useKanbanStore(s => s.createColumn)
+  const setBoardNoSync = useKanbanStore(s => s.setBoardNoSync)
   const filters      = useKanbanStore(s => s.filters)
   const setFilters   = useKanbanStore(s => s.setFilters)
   const clearFilters = useKanbanStore(s => s.clearFilters)
@@ -131,6 +132,20 @@ export function BoardHeader({ board, onOpenSettings }: BoardHeaderProps): JSX.El
         </Button>
 
         <div className="mx-1 h-4 w-px bg-[rgb(var(--border))]" />
+
+        {/* Sync this board (opt out keeps it local-only) */}
+        <button type="button"
+          onClick={() => setBoardNoSync(board.id, !board.noSync)}
+          title={board.noSync ? 'Local only — click to sync this board' : "Don't sync this board"}
+          aria-pressed={!!board.noSync}
+          className={`flex h-6 w-6 items-center justify-center rounded transition ${
+            board.noSync
+              ? 'bg-[rgb(var(--accent))]/15 text-[rgb(var(--accent))]'
+              : 'text-[rgb(var(--text-3))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]'
+          }`}
+        >
+          <Icon name={board.noSync ? 'cloud-off' : 'cloud'} size={12} />
+        </button>
 
         <Button variant="ghost" size="xs" onClick={onOpenSettings}
           className="inline-flex items-center gap-1 text-xs">

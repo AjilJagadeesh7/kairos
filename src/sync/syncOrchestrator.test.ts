@@ -1,136 +1,107 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { syncAllProviders, pushNoteToAll } from './syncOrchestrator'
 import { useConflictStore } from '../store/useConflictStore'
+import { serializeNote } from '../adapters/storage/noteSerializer'
 import { db } from '../db/schema'
 import type { Note } from '../types'
+import type { RemoteProvider } from './remoteProvider'
 
-// Mock storage and sync modules
-vi.mock('./localFolder', () => ({
-  isLocalFolderConnected: vi.fn(),
-  listLocalNotes: vi.fn(),
-  upsertLocalNote: vi.fn(),
-  deleteLocalNote: vi.fn(),
+// A single fake remote provider whose blob ops we can assert against.
+const provider = {
+  id: 's3' as const,
+  isConnected: vi.fn().mockReturnValue(true),
+  putBlob: vi.fn().mockResolvedValue(undefined),
+  listBlob: vi.fn().mockResolvedValue([]),
+  deleteBlob: vi.fn().mockResolvedValue(undefined),
+} satisfies RemoteProvider
+
+vi.mock('./remoteProvider', () => ({
+  connectedProviders: () => [provider],
+  anyRemoteConnected: () => true,
 }))
 
-vi.mock('./s3', () => ({
-  isS3Connected: vi.fn(),
-  listS3Notes: vi.fn(),
-  upsertS3Note: vi.fn(),
-  deleteS3Note: vi.fn(),
+// Sync everything by default; individual tests can override.
+vi.mock('./syncRules', () => ({
+  canPush: vi.fn().mockReturnValue(true),
+  canPull: vi.fn().mockReturnValue(true),
 }))
 
-vi.mock('./webdav', () => ({
-  isWebDAVConnected: vi.fn(),
-  listWebDAVNotes: vi.fn(),
-  upsertWebDAVNote: vi.fn(),
-  deleteWebDAVNote: vi.fn(),
-}))
+// No content categories / config exercised in these note-focused tests.
+vi.mock('./categoryRegistry', () => ({ CONTENT_ADAPTERS: {} }))
+vi.mock('./settingsSync', () => ({ syncConfigWithCloud: vi.fn().mockResolvedValue(undefined) }))
 
 vi.mock('./plainFolder', () => ({
-  isPlainFolderConnected: vi.fn(),
-  readAllNotes: vi.fn(),
-  writePlainNote: vi.fn(),
-  deletePlainNote: vi.fn(),
+  isPlainFolderConnected: vi.fn().mockReturnValue(true),
+  readAllNotes: vi.fn().mockResolvedValue([]),
+  writePlainNote: vi.fn().mockResolvedValue(undefined),
 }))
 
-// Mock Dexie db schema
 vi.mock('../db/schema', () => ({
-  db: {
-    syncMeta: {
-      put: vi.fn(),
-      get: vi.fn(),
-      delete: vi.fn(),
-    },
-  },
+  db: { syncMeta: { put: vi.fn().mockResolvedValue(undefined), get: vi.fn().mockResolvedValue(undefined), delete: vi.fn().mockResolvedValue(undefined) } },
 }))
 
-import { isLocalFolderConnected, upsertLocalNote } from './localFolder'
-import { isS3Connected, listS3Notes, upsertS3Note } from './s3'
-import { isWebDAVConnected } from './webdav'
+import { isPlainFolderConnected, readAllNotes, writePlainNote } from './plainFolder'
+
+const note = (over: Partial<Note> = {}): Note =>
+  ({ id: 'n', title: 'T', content: 'C', tags: [], createdAt: '', updatedAt: '', embedding: [], ...over })
 
 describe('syncOrchestrator', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    provider.isConnected.mockReturnValue(true)
+    provider.putBlob.mockResolvedValue(undefined)
+    provider.listBlob.mockResolvedValue([])
+    provider.deleteBlob.mockResolvedValue(undefined)
+    vi.mocked(isPlainFolderConnected).mockReturnValue(true)
+    vi.mocked(readAllNotes).mockResolvedValue([])
     useConflictStore.setState({ conflicts: [] })
   })
 
   describe('pushNoteToAll', () => {
-    it('pushes to all connected providers and updates lastSynced in Dexie', async () => {
-      vi.mocked(isLocalFolderConnected).mockReturnValue(true)
-      vi.mocked(isS3Connected).mockReturnValue(true)
-      vi.mocked(isWebDAVConnected).mockReturnValue(false)
+    it('pushes the note to every connected provider and records lastSynced', async () => {
+      await pushNoteToAll(note({ id: 'note-1' }))
+      expect(provider.putBlob).toHaveBeenCalledWith('notes', 'note-1.md', expect.any(String))
+      expect(db.syncMeta.put).toHaveBeenCalledWith(expect.objectContaining({ noteId: 'note-1' }))
+    })
 
-      vi.mocked(upsertLocalNote).mockResolvedValue('path-local')
-      vi.mocked(upsertS3Note).mockResolvedValue('path-s3')
-
-      const note: Note = { id: 'note-1', title: 'Test', content: 'Hello', tags: [], createdAt: '', updatedAt: '', embedding: [] }
-      await pushNoteToAll(note)
-
-      expect(upsertLocalNote).toHaveBeenCalledWith(note)
-      expect(upsertS3Note).toHaveBeenCalledWith(note)
-      expect(db.syncMeta.put).toHaveBeenCalledWith(expect.objectContaining({
-        noteId: 'note-1',
-        lastSynced: expect.any(String),
-      }))
+    it('deletes the cloud copy (no push) when the note is opted out', async () => {
+      await pushNoteToAll(note({ id: 'note-x', noSync: true }))
+      expect(provider.deleteBlob).toHaveBeenCalledWith('notes', 'note-x.md')
+      expect(provider.putBlob).not.toHaveBeenCalled()
     })
   })
 
   describe('syncAllProviders', () => {
     it('detects a conflict when both local and remote changed since last sync', async () => {
-      // Connect S3
-      vi.mocked(isS3Connected).mockReturnValue(true)
-      vi.mocked(isLocalFolderConnected).mockReturnValue(false)
-      vi.mocked(isWebDAVConnected).mockReturnValue(false)
+      const local  = note({ id: 'c', content: 'Local content',  updatedAt: '2026-05-20T10:00:00Z' })
+      const remote = note({ id: 'c', content: 'Remote content', updatedAt: '2026-05-20T11:00:00Z' })
+      vi.mocked(readAllNotes).mockResolvedValue([local])
+      provider.listBlob.mockImplementation((cat: string) =>
+        Promise.resolve(cat === 'notes' ? [{ name: 'c.md', content: serializeNote(remote) }] : []))
+      vi.mocked(db.syncMeta.get).mockResolvedValue({ noteId: 'c', lastSynced: '2026-05-20T09:00:00Z' })
 
-      // Connect plain local folder
-      const plainFolder = await import('./plainFolder')
-      vi.mocked(plainFolder.isPlainFolderConnected).mockReturnValue(true)
+      const onStatus = vi.fn()
+      await syncAllProviders(onStatus)
 
-      const localNote: Note = { id: 'note-conflict', title: 'Local title', content: 'Local content', tags: [], createdAt: '', updatedAt: '2026-05-20T10:00:00Z', embedding: [] }
-      const remoteNote: Note = { id: 'note-conflict', title: 'Remote title', content: 'Remote content', tags: [], createdAt: '', updatedAt: '2026-05-20T11:00:00Z', embedding: [] }
-
-      vi.mocked(plainFolder.readAllNotes).mockResolvedValue([localNote])
-      vi.mocked(listS3Notes).mockResolvedValue([remoteNote])
-
-      // Last sync was at 2026-05-20T09:00:00Z
-      vi.mocked(db.syncMeta.get).mockResolvedValue({ noteId: 'note-conflict', lastSynced: '2026-05-20T09:00:00Z', driveFileId: '' })
-
-      const statusCallback = vi.fn()
-      await syncAllProviders(statusCallback)
-
-      expect(statusCallback).toHaveBeenCalledWith('syncing')
       expect(useConflictStore.getState().conflicts).toHaveLength(1)
-      expect(useConflictStore.getState().conflicts[0].noteId).toBe('note-conflict')
-      expect(plainFolder.writePlainNote).not.toHaveBeenCalled()
-      expect(statusCallback).toHaveBeenLastCalledWith('ok')
+      expect(useConflictStore.getState().conflicts[0].noteId).toBe('c')
+      expect(writePlainNote).not.toHaveBeenCalled()
+      expect(onStatus).toHaveBeenLastCalledWith('ok')
     })
 
-    it('downloads newer remote notes without conflict if local was not changed since last sync', async () => {
-      vi.mocked(isS3Connected).mockReturnValue(true)
-      vi.mocked(isLocalFolderConnected).mockReturnValue(false)
-      vi.mocked(isWebDAVConnected).mockReturnValue(false)
+    it('downloads a newer remote note when local was unchanged since last sync', async () => {
+      const local  = note({ id: 's', content: 'Local content',  updatedAt: '2026-05-20T08:00:00Z' })
+      const remote = note({ id: 's', content: 'Remote content', updatedAt: '2026-05-20T11:00:00Z' })
+      vi.mocked(readAllNotes).mockResolvedValue([local])
+      provider.listBlob.mockImplementation((cat: string) =>
+        Promise.resolve(cat === 'notes' ? [{ name: 's.md', content: serializeNote(remote) }] : []))
+      vi.mocked(db.syncMeta.get).mockResolvedValue({ noteId: 's', lastSynced: '2026-05-20T09:00:00Z' })
 
-      const plainFolder = await import('./plainFolder')
-      vi.mocked(plainFolder.isPlainFolderConnected).mockReturnValue(true)
+      const onStatus = vi.fn()
+      await syncAllProviders(onStatus)
 
-      // Local has older timestamp, but has NOT changed since last sync (which was at 2026-05-20T09:00:00Z)
-      const localNote: Note = { id: 'note-sync', title: 'Local', content: 'Local content', tags: [], createdAt: '', updatedAt: '2026-05-20T08:00:00Z', embedding: [] }
-      const remoteNote: Note = { id: 'note-sync', title: 'Remote', content: 'Remote content', tags: [], createdAt: '', updatedAt: '2026-05-20T11:00:00Z', embedding: [] }
-
-      vi.mocked(plainFolder.readAllNotes).mockResolvedValue([localNote])
-      vi.mocked(listS3Notes).mockResolvedValue([remoteNote])
-
-      // Last sync was after local was modified, so local is unchanged since sync
-      vi.mocked(db.syncMeta.get).mockResolvedValue({ noteId: 'note-sync', lastSynced: '2026-05-20T09:00:00Z', driveFileId: '' })
-
-      const statusCallback = vi.fn()
-      await syncAllProviders(statusCallback)
-
-      expect(plainFolder.writePlainNote).toHaveBeenCalledWith(expect.objectContaining({
-        id: 'note-sync',
-        content: 'Remote content',
-      }))
-      expect(statusCallback).toHaveBeenLastCalledWith('ok')
+      expect(writePlainNote).toHaveBeenCalledWith(expect.objectContaining({ id: 's', content: 'Remote content' }))
+      expect(onStatus).toHaveBeenLastCalledWith('ok')
     })
   })
 })

@@ -8,10 +8,14 @@ import './index.css'
 import App from './App.tsx'
 import { logger } from './logger/logger'
 
-// Suppress the browser/WebView native context menu globally.
-// The app implements its own right-click menus; the native one shows
-// "Reload / Inspect Element" in dev and varies by platform in production.
-document.addEventListener('contextmenu', e => e.preventDefault())
+// Suppress the browser/WebView native context menu — but only in production
+// builds. In dev (`tauri dev`, where devtools are enabled), letting the native
+// menu through keeps the right-click "Inspect Element" option available so the
+// console and network tabs are reachable. Release builds keep the menu off and
+// have no devtools compiled in, so the option never shows up for users.
+if (import.meta.env.PROD) {
+  document.addEventListener('contextmenu', e => e.preventDefault())
+}
 
 window.onerror = (_msg, _source, _line, _col, error) => {
   logger.captureError(error ?? new Error(String(_msg)), 'window.onerror')

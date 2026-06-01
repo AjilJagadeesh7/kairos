@@ -340,11 +340,13 @@ export async function writePlainConfig(filename: string, content: string): Promi
 // Journal entries — vault/journal/YYYY-MM-DD.md
 // ---------------------------------------------------------------------------
 
-function serializeJournalEntry(entry: JournalEntry): string {
-  return `---\ndate: ${entry.date}\nupdatedAt: ${entry.updatedAt}\n---\n\n${entry.content}`
+export function serializeJournalEntry(entry: JournalEntry): string {
+  const fm = [`date: ${entry.date}`, `updatedAt: ${entry.updatedAt}`]
+  if (entry.noSync) fm.push('noSync: true')
+  return `---\n${fm.join('\n')}\n---\n\n${entry.content}`
 }
 
-function deserializeJournalEntry(raw: string, fallbackDate: string): JournalEntry {
+export function deserializeJournalEntry(raw: string, fallbackDate: string): JournalEntry {
   if (raw.startsWith('---\n')) {
     const rest = raw.slice(4)
     const closeIdx = rest.indexOf('\n---\n')
@@ -352,7 +354,13 @@ function deserializeJournalEntry(raw: string, fallbackDate: string): JournalEntr
       const fm = rest.slice(0, closeIdx)
       const body = rest.slice(closeIdx + 5).replace(/^\n/, '')
       const get = (key: string) => fm.match(new RegExp(`^${key}: (.+)$`, 'm'))?.[1] ?? ''
-      return { date: get('date') || fallbackDate, content: body, updatedAt: get('updatedAt') || new Date().toISOString() }
+      const entry: JournalEntry = {
+        date: get('date') || fallbackDate,
+        content: body,
+        updatedAt: get('updatedAt') || new Date().toISOString(),
+      }
+      if (get('noSync') === 'true') entry.noSync = true
+      return entry
     }
   }
   return { date: fallbackDate, content: raw, updatedAt: new Date().toISOString() }

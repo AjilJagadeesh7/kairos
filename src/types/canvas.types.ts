@@ -46,4 +46,5 @@ export interface Canvas {
   edges: CanvasEdge[]
   createdAt: string
   updatedAt: string
+  noSync?: boolean  // when true, this canvas stays local-only (never pushed to remotes)
 }

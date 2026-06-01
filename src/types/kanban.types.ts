@@ -74,6 +74,7 @@ export interface Board {
   columns: KanbanColumn[]
   tasks: KanbanTask[]
   boardTags: KanbanTag[]
+  noSync?: boolean  // when true, this board stays local-only (never pushed to remotes)
 }
 
 export interface KanbanFilters {

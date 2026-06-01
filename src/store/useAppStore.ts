@@ -3,7 +3,8 @@ import { persist } from 'zustand/middleware'
 import { v4 as uuidv4 } from 'uuid'
 import { upsertEmbedding } from '../db/schema'
 import { useLoaderStore } from './useLoaderStore'
-import type { Note, SearchMode, SyncStatus, ThemeMode, StorageTarget, FontOption, FontWeight, VaultStatus, CustomCallout } from '../types'
+import type { Note, SearchMode, SyncStatus, ThemeMode, StorageTarget, FontOption, FontWeight, VaultStatus, CustomCallout, SyncRules, SyncCategory, SyncProviderId, SyncDirection } from '../types'
+import { DEFAULT_SYNC_RULES } from '../types'
 import type { S3Config } from '../sync/s3'
 import type { WebDAVConfig } from '../sync/webdav'
 import { parseTags, rewriteWikilinksInContent } from '../utils/wikilinks'
@@ -23,6 +24,7 @@ type AppState = {
   aiUrl: string
   s3Config: S3Config | null
   webdavConfig: WebDAVConfig | null
+  syncRules: SyncRules
   mobileSidebarOpen: boolean
   noteTagColors: Record<string, string>
   calloutColors: Record<string, string>
@@ -52,6 +54,8 @@ type AppState = {
   setSyncStatus: (status: SyncStatus) => void
   setS3Config: (cfg: S3Config | null) => void
   setWebDAVConfig: (cfg: WebDAVConfig | null) => void
+  setSyncRule: (category: SyncCategory, provider: SyncProviderId, direction: keyof SyncDirection, value: boolean) => void
+  applySharedSettings: (patch: Partial<Pick<AppState, 'theme' | 'font' | 'fontWeight' | 'aiUrl' | 'noteTagColors' | 'calloutColors' | 'customCallouts' | 'keyBindings' | 'userName' | 'newTabPage'>>) => void
   setActiveNoteId: (id?: string) => void
   setMobileSidebarOpen: (open: boolean) => void
   setStorageChoices: (choices: StorageTarget[]) => void
@@ -75,6 +79,7 @@ type AppState = {
   updateActiveNote: (patch: Pick<Note, 'title' | 'content' | 'embedding'> & { contentHash: string }) => Promise<void>
   updateNote: (noteId: string, patch: Pick<Note, 'title' | 'content' | 'embedding'> & { contentHash: string }) => Promise<void>
   updateNoteTags: (noteId: string, tags: string[]) => Promise<void>
+  setNoteNoSync: (noteId: string, value: boolean) => Promise<void>
   updateNoteFrontmatter: (noteId: string, fm: Record<string, unknown>) => Promise<void>
   appendWikilink: (noteId: string, targetTitle: string) => Promise<void>
   deleteNoteById: (id: string) => Promise<void>
@@ -103,6 +108,7 @@ export const useAppStore = create<AppState>()(
       syncStatus: 'idle',
       s3Config: null,
       webdavConfig: null,
+      syncRules: DEFAULT_SYNC_RULES,
       mobileSidebarOpen: false,
       noteTagColors: {},
       calloutColors: {},
@@ -153,6 +159,27 @@ export const useAppStore = create<AppState>()(
       },
       setS3Config: (s3Config) => set({ s3Config }),
       setWebDAVConfig: (webdavConfig) => set({ webdavConfig }),
+      setSyncRule: (category, provider, direction, value) => set((s) => ({
+        syncRules: {
+          ...s.syncRules,
+          [category]: {
+            ...s.syncRules[category],
+            [provider]: { ...s.syncRules[category][provider], [direction]: value },
+          },
+        },
+      })),
+      applySharedSettings: (patch) => set((s) => ({
+        theme:          patch.theme          ?? s.theme,
+        font:           patch.font           ?? s.font,
+        fontWeight:     patch.fontWeight     ?? s.fontWeight,
+        aiUrl:          patch.aiUrl          ?? s.aiUrl,
+        noteTagColors:  patch.noteTagColors  ?? s.noteTagColors,
+        calloutColors:  patch.calloutColors  ?? s.calloutColors,
+        customCallouts: patch.customCallouts ?? s.customCallouts,
+        keyBindings:    patch.keyBindings    ?? s.keyBindings,
+        userName:       patch.userName       ?? s.userName,
+        newTabPage:     patch.newTabPage     ?? s.newTabPage,
+      })),
       setActiveNoteId: (activeNoteId) => set({ activeNoteId }),
       setStorageChoices: (storageChoices) => set({ storageChoices }),
       setNoteTagColor: (tagName, color) => set(s => ({ noteTagColors: { ...s.noteTagColors, [tagName]: color } })),
@@ -346,6 +373,21 @@ export const useAppStore = create<AppState>()(
         }
       },
 
+      setNoteNoSync: async (noteId, value) => {
+        const { notes } = get()
+        const existing = notes.find(n => n.id === noteId)
+        if (!existing) return
+        const updated: Note = { ...existing, noSync: value || undefined, updatedAt: new Date().toISOString() }
+        set(s => ({ notes: s.notes.map(n => n.id === noteId ? updated : n) }))
+        const { writePlainNote, isPlainFolderConnected } = await import('../sync/plainFolder')
+        if (isPlainFolderConnected()) {
+          writePlainNote(updated).catch(err => console.warn('[storage] write failed:', err))
+        }
+        // pushNoteToAll deletes the cloud copy when noSync, or re-pushes when re-enabled.
+        const { pushNoteToAll, anySyncProviderConnected } = await import('../sync/syncOrchestrator')
+        if (anySyncProviderConnected()) void pushNoteToAll(updated)
+      },
+
       updateNoteFrontmatter: async (noteId, fm) => {
         const { notes } = get()
         const existing = notes.find(n => n.id === noteId)
@@ -481,6 +523,7 @@ export const useAppStore = create<AppState>()(
         searchMode:      state.searchMode,
         s3Config:        state.s3Config,
         webdavConfig:    state.webdavConfig,
+        syncRules:       state.syncRules,
         storageChoices:  state.storageChoices,
         noteTagColors:   state.noteTagColors,
         calloutColors:   state.calloutColors,

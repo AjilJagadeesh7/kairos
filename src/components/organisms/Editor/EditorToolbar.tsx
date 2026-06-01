@@ -2,6 +2,7 @@ import { Dropdown } from '../../molecules/Dropdown'
 import { SlotRenderer } from '../../molecules/SlotRenderer'
 import { ExportMenu } from './EditorExportMenu'
 import { Icon } from '../../../icons/Icon'
+import { useAppStore } from '../../../store/useAppStore'
 import type { EditorDraftProps, SaveStatus } from '../../../types'
 
 interface EditorToolbarProps {
@@ -26,6 +27,10 @@ export function EditorToolbar({
   sidebarOpen, onToggleSidebar,
 }: EditorToolbarProps) {
   const slotProps = { noteId: note.id, noteTitle }
+
+  // Live sync opt-out state for this note (reflects the stored note, not the draft).
+  const setNoteNoSync = useAppStore((s) => s.setNoteNoSync)
+  const isSynced      = useAppStore((s) => !s.notes.find((n) => n.id === note.id)?.noSync)
 
   return (
     <div className="flex h-10 shrink-0 items-center gap-1.5 border-b border-border px-3">
@@ -86,6 +91,18 @@ export function EditorToolbar({
         }`}
       >
         <Icon name="history" size={14} />
+      </button>
+
+      {/* Sync this note (opt out keeps it local-only) */}
+      <button type="button"
+        title={isSynced ? "Don't sync this note — keep it local-only" : 'Sync this note'}
+        aria-pressed={!isSynced}
+        onClick={() => void setNoteNoSync(note.id, isSynced)}
+        className={`flex h-7 w-7 items-center justify-center rounded transition ${
+          isSynced ? 'text-text3 hover:bg-surface3 hover:text-text' : 'bg-accent/10 text-accent'
+        }`}
+      >
+        <Icon name={isSynced ? 'cloud' : 'cloud-off'} size={14} />
       </button>
 
       {/* Delete */}

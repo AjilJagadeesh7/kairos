@@ -6,6 +6,7 @@ import { syncAllProviders } from '../../../sync/syncOrchestrator'
 import { VaultSection } from './VaultSection'
 import { S3Section } from './S3Section'
 import { WebDAVSection } from './WebDAVSection'
+import { SyncMatrixSection } from './SyncMatrixSection'
 import { Icon } from '../../../icons/Icon'
 import { SectionLabel } from '../../atoms/SectionLabel'
 
@@ -37,18 +38,20 @@ export function SyncSection() {
         <SectionLabel className="mb-3">Remote Sync (optional)</SectionLabel>
         <p className="mb-4 text-xs text-[rgb(var(--text-2))]">
           Connect one or more remote providers to sync your vault across devices.
-          Notes are pushed after every save and pulled on startup.
+          Choose exactly what syncs below — notes, journal, kanban, canvas, settings, and secrets.
         </p>
       </div>
 
       <S3Section onConnectionChange={setS3Connected} />
       <WebDAVSection onConnectionChange={setDavConnected} />
 
+      {anyRemoteConnected && <SyncMatrixSection />}
+
       {anyRemoteConnected && (
         <div className="flex items-center justify-between rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-3">
           <div>
             <p className="text-sm font-medium text-[rgb(var(--text))]">Sync Now</p>
-            <p className="text-xs text-[rgb(var(--text-3))]">Push & pull notes across all connected remote providers.</p>
+            <p className="text-xs text-[rgb(var(--text-3))]">Push & pull all enabled types across every connected remote.</p>
           </div>
           <Button variant="primary" size="sm" onClick={() => void onSyncNow()} disabled={syncing}
             className="inline-flex items-center gap-1.5 shrink-0">

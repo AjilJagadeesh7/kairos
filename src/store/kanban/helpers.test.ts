@@ -33,6 +33,7 @@ function makeKanbanState(overrides: Partial<KanbanState> = {}): KanbanState {
     setActiveTaskId:    vi.fn(),
     createBoard:        vi.fn(),
     updateBoard:        vi.fn(),
+    setBoardNoSync:     vi.fn(),
     deleteBoard:        vi.fn(),
     duplicateBoard:     vi.fn(),
     createColumn:       vi.fn(),
