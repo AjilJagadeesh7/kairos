@@ -60,7 +60,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: 'MindVault ${{ github.ref_name }}'
+          releaseName: 'Kairos ${{ github.ref_name }}'
           releaseBody: |
             See the [changelog](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
           releaseDraft: true
