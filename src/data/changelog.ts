@@ -9,6 +9,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.0.3',
+    date: '2026-06-05',
+    highlights: [
+      'Auto-update reliability fixes.',
+    ],
+    fixed: [
+      'Auto-updater now correctly detects, downloads, and verifies new releases',
+      '"Restart & Update" button now relaunches the app after an update instead of hanging',
+    ],
+  },
+  {
     version: '0.0.1',
     date: '2026-05-28',
     highlights: [
