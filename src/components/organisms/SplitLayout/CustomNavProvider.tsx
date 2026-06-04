@@ -40,7 +40,7 @@ export function CustomNavProvider({ paneId, children }: Props) {
     basename: '',
     navigator,
     static: false,
-    unstable_useTransitions: undefined as boolean | undefined,
+    useTransitions: undefined as boolean | undefined,
     future: {} as Record<string, never>,
   }), [navigator])
 
