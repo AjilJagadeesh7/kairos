@@ -72,8 +72,13 @@ export function useAppUpdater() {
 
   const restart = useCallback(async () => {
     if (!isDesktop()) return
-    const { relaunch } = await import('@tauri-apps/plugin-process')
-    await relaunch()
+    try {
+      const { relaunch } = await import('@tauri-apps/plugin-process')
+      await relaunch()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Relaunch failed')
+      setStatus('error')
+    }
   }, [])
 
   const progressPct = total > 0 ? Math.min(Math.round((downloaded / total) * 100), 99) : 0
