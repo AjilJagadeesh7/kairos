@@ -14,6 +14,11 @@ export type {
   TableCommandRunner,
 } from './editor.types'
 export { CLOSED_MENU } from './editor.types'
+export type { Stroke, StrokePoint } from './pen.types'
+export type { Annotation } from './annotation.types'
+export { ANNOTATION_COLORS } from './annotation.types'
+export type { PenNote, PenStroke, PenTool, PenNoteVersion } from './penNote.types'
+export { PEN_COLORS, HIGHLIGHTER_COLORS, PEN_SIZES, HIGHLIGHTER_SIZE, AUTO_INK } from './penNote.types'
 export type { EdgeKind, GraphEdge, GNode, GLink, GraphPopover, GraphMode, RightClickTarget } from './graph.types'
 export type { Section, CustomCallout } from './settings.types'
 export type { SettingRecord, EmbeddingRecord } from './db.types'

@@ -2,6 +2,7 @@ import type React from 'react'
 import { Dropdown } from '../../molecules/Dropdown'
 import { ExportMenu } from './EditorExportMenu'
 import { MarkdownEditor } from './MarkdownEditor'
+import { AnnotationLayer } from './Annotations/AnnotationLayer'
 import { TagBadge } from '../../atoms/TagBadge'
 import { Icon } from '../../../icons/Icon'
 import type { EditorDraftProps } from '../../../types'
@@ -74,15 +75,17 @@ export function EditorReadingMode({
         <div className="p-4">
         <h1 className="mb-4 text-2xl font-bold leading-tight text-text">{title || 'Untitled note'}</h1>
         <div className="reading-view">
-          <MarkdownEditor
-            key={restoreKey}
-            noteId={note.id}
-            initialMarkdown={content}
-            noteTitle={title}
-            readOnly
-            onChange={onContentChange}
-            onWikilinkClick={onWikilinkClick}
-          />
+          <AnnotationLayer docId={note.id}>
+            <MarkdownEditor
+              key={restoreKey}
+              noteId={note.id}
+              initialMarkdown={content}
+              noteTitle={title}
+              readOnly
+              onChange={onContentChange}
+              onWikilinkClick={onWikilinkClick}
+            />
+          </AnnotationLayer>
         </div>
         </div>
       </div>

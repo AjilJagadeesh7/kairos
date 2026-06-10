@@ -10,6 +10,7 @@ import { Icon } from './icons/Icon'
 const GraphPage   = lazy(() => import('./pages/GraphPage').then(m => ({ default: m.GraphPage })))
 const KanbanPage  = lazy(() => import('./pages/KanbanPage').then(m => ({ default: m.KanbanPage })))
 const CanvasPage  = lazy(() => import('./pages/CanvasPage').then(m => ({ default: m.CanvasPage })))
+const PenNotePage = lazy(() => import('./pages/PenNotePage').then(m => ({ default: m.PenNotePage })))
 const JournalPage      = lazy(() => import('./pages/JournalPage').then(m => ({ default: m.JournalPage })))
 const PeriodicNotesPage = lazy(() => import('./pages/PeriodicNotesPage').then(m => ({ default: m.PeriodicNotesPage })))
 
@@ -51,6 +52,12 @@ export function AppRoutes() {
       } />
       <Route path="/canvas/:canvasId" element={
         <Suspense fallback={<PageLoader />}><CanvasPage /></Suspense>
+      } />
+      <Route path="/pennote" element={
+        <Suspense fallback={<PageLoader />}><PenNotePage /></Suspense>
+      } />
+      <Route path="/pennote/:penNoteId" element={
+        <Suspense fallback={<PageLoader />}><PenNotePage /></Suspense>
       } />
 
       <Route path="/periodic" element={

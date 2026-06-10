@@ -3,6 +3,7 @@ import { useAppStore } from '../../store/useAppStore'
 import { useJournalStore } from '../../store/useJournalStore'
 import { useKanbanStore } from '../../store/useKanbanStore'
 import { useCanvasStore } from '../../store/useCanvasStore'
+import { usePenNoteStore } from '../../store/usePenNoteStore'
 import { usePaneStore } from '../../store/usePaneStore'
 import { buildUniversalIndex, searchUniversal } from '../../search/universalSearch'
 import { todayDate } from '../../store/useJournalStore'
@@ -24,6 +25,7 @@ export function CommandPalette({ onClose }: Props) {
   const journalEntries     = useMemo(() => Object.values(journalEntriesMap), [journalEntriesMap])
   const boards             = useKanbanStore(s => s.boards)
   const canvases           = useCanvasStore(s => s.canvases)
+  const penNotes           = usePenNoteStore(s => s.penNotes)
 
   const [query, setQuery]   = useState('')
   const [active, setActive] = useState(0)
@@ -31,7 +33,7 @@ export function CommandPalette({ onClose }: Props) {
   const listRef   = useRef<HTMLUListElement>(null)
 
   useEffect(() => {
-    buildUniversalIndex(notes, journalEntries, boards, canvases)
+    buildUniversalIndex(notes, journalEntries, boards, canvases, penNotes)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -50,6 +52,7 @@ export function CommandPalette({ onClose }: Props) {
   }, [boards])
   const journalMap = useMemo(() => new Map(journalEntries.map(e => [e.date, e])), [journalEntries])
   const canvasMap  = useMemo(() => new Map(canvases.map(c => [c.id, c])), [canvases])
+  const penNoteMap = useMemo(() => new Map(penNotes.map(p => [p.id, p])), [penNotes])
 
   const results: ResultItem[] = useMemo(() => {
     const q = query.trim()
@@ -83,6 +86,9 @@ export function CommandPalette({ onClose }: Props) {
       } else if (hit.kind === 'canvas') {
         const canvas = canvasMap.get(hit.id.slice(7))
         if (canvas) searchItems.push({ kind: 'canvas', canvas, score: hit.score })
+      } else if (hit.kind === 'pennote') {
+        const penNote = penNoteMap.get(hit.id.slice(8))
+        if (penNote) searchItems.push({ kind: 'pennote', penNote, score: hit.score })
       }
     }
 
@@ -91,7 +97,7 @@ export function CommandPalette({ onClose }: Props) {
       n => n.label.toLowerCase().includes(ql) || n.hint.toLowerCase().includes(ql),
     )
     return [...matchedNav, ...searchItems]
-  }, [query, notes, journalMap, noteMap, taskMap, taskBoardMap, canvasMap])
+  }, [query, notes, journalMap, noteMap, taskMap, taskBoardMap, canvasMap, penNoteMap])
 
   const flatItems = results
   useEffect(() => { setActive(0) }, [results])
@@ -108,6 +114,7 @@ export function CommandPalette({ onClose }: Props) {
     else if (item.kind === 'journal') go(`/journal/${item.entry.date}`)
     else if (item.kind === 'task')    go(`/kanban/${item.board.id}`)
     else if (item.kind === 'canvas')  go(`/canvas/${item.canvas.id}`)
+    else if (item.kind === 'pennote') go(`/pennote/${item.penNote.id}`)
     else if (item.kind === 'nav') {
       if (item.id === 'nav-new-note') void createNote().then(id => go(`/notes/${id}`))
       else if (item.path) go(item.path)

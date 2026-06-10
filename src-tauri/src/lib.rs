@@ -285,6 +285,37 @@ async fn search_fulltext(
 }
 
 // ---------------------------------------------------------------------------
+// Handwriting recognition (to-text pen mode)
+//
+// The real Windows Ink (Windows.UI.Input.Inking.InkRecognizer) implementation
+// lives in src/adapters/handwriting/native/tauri/recognize_ink_windows.rs and
+// requires adding the `windows` crate. Until that is wired in, these commands
+// report "unavailable" so the editor hides to-text mode on desktop (correct on
+// Linux/macOS, which have no native engine).
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+struct IpcStroke {
+    #[allow(dead_code)] x: Vec<f64>,
+    #[allow(dead_code)] y: Vec<f64>,
+}
+
+#[tauri::command]
+fn recognize_ink_available() -> bool {
+    false
+}
+
+#[tauri::command]
+fn recognize_ink(
+    _strokes: Vec<IpcStroke>,
+    _width: u32,
+    _height: u32,
+    _language: String,
+) -> Result<String, String> {
+    Err("handwriting recognition is not available on this platform".into())
+}
+
+// ---------------------------------------------------------------------------
 // App entry point
 // ---------------------------------------------------------------------------
 
@@ -300,6 +331,8 @@ pub fn run() {
             update_note_index,
             remove_note_index,
             search_fulltext,
+            recognize_ink_available,
+            recognize_ink,
         ])
         .register_asynchronous_uri_scheme_protocol("mvproxy", |_app, request, responder| {
             tauri::async_runtime::spawn(async move {

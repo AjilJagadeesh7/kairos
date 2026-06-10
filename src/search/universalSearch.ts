@@ -11,7 +11,7 @@
  *  - Recency boost applied post-search so stale results don't outrank fresh ones
  */
 import MiniSearch from 'minisearch'
-import type { Note, JournalEntry, Canvas } from '../types'
+import type { Note, JournalEntry, Canvas, PenNote } from '../types'
 import type { Board, KanbanTask } from '../types/kanban.types'
 
 // ─── Document shape ──────────────────────────────────────────────────────────
@@ -27,7 +27,7 @@ interface UnifiedDoc {
 
 // ─── Result types ─────────────────────────────────────────────────────────────
 
-export type ResultKind = 'note' | 'journal' | 'task' | 'canvas'
+export type ResultKind = 'note' | 'journal' | 'task' | 'canvas' | 'pennote'
 
 export interface UniversalHit {
   id: string
@@ -120,6 +120,17 @@ function canvasDoc(canvas: Canvas): UnifiedDoc {
   }
 }
 
+function penNoteDoc(penNote: PenNote): UnifiedDoc {
+  return {
+    id: `pennote:${penNote.id}`,
+    kind: 'pennote',
+    title: penNote.title || 'Untitled pen note',
+    meta: [penNote.folder, ...penNote.tags, 'pen handwriting'].filter(Boolean).join(' '),
+    body: '',
+    updatedAt: penNote.updatedAt,
+  }
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
@@ -131,6 +142,7 @@ export function buildUniversalIndex(
   journalEntries: JournalEntry[],
   boards: Board[],
   canvases: Canvas[],
+  penNotes: PenNote[] = [],
 ): void {
   const idx = getIndex()
   if (_built) idx.removeAll()
@@ -143,6 +155,7 @@ export function buildUniversalIndex(
     for (const task of board.tasks) docs.push(taskDoc(task, board.title))
   }
   for (const canvas of canvases) docs.push(canvasDoc(canvas))
+  for (const penNote of penNotes) docs.push(penNoteDoc(penNote))
 
   idx.addAll(docs)
   _built = true

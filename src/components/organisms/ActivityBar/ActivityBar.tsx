@@ -16,6 +16,7 @@ import type { ThemeMode } from '../../../types'
 
 const TOP_NAV: Array<{ to: string; iconName: IconToken; label: string }> = [
   { to: '/notes',   iconName: 'book-open',        label: 'Notes'   },
+  { to: '/pennote', iconName: 'pen-line',         label: 'Pen notes' },
   { to: '/journal', iconName: 'calendar-days',    label: 'Journal' },
   { to: '/kanban',  iconName: 'square-kanban',    label: 'Kanban'  },
   { to: '/canvas',  iconName: 'pen-tool',          label: 'Canvas'  },

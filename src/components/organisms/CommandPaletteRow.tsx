@@ -25,6 +25,7 @@ function rowContent(item: ResultItem): { iconName: IconToken; primary: string; s
   if (item.kind === 'journal') return { iconName: 'calendar-days', primary: formatJournalDate(item.entry.date), secondary: excerpt(item.entry.content) }
   if (item.kind === 'task')    return { iconName: 'check-square',  primary: item.task.title, secondary: item.board.title }
   if (item.kind === 'canvas')  return { iconName: 'pen-tool',      primary: item.canvas.title || 'Untitled canvas', secondary: 'Canvas' }
+  if (item.kind === 'pennote') return { iconName: 'pen-line',      primary: item.penNote.title || 'Untitled pen note', secondary: item.penNote.folder || 'Pen note' }
   return { iconName: item.iconName, primary: item.label, secondary: item.hint }
 }
 

@@ -26,3 +26,6 @@ src-tauri/target
 *.sln
 *.sw?
 .env*
+
+# Claude Code local state
+.claude/
