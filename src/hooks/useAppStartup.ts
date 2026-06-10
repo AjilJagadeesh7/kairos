@@ -131,20 +131,23 @@ export function useAppStartup() {
         await store.loadNotes()
         await store.loadFolders()
 
-        // Kanban, journal, and canvas are independent — load in parallel
+        // Kanban, journal, canvas, and pen notes are independent — load in parallel
         const [
           { useKanbanStore },
           { useJournalStore },
           { useCanvasStore },
+          { usePenNoteStore },
         ] = await Promise.all([
           import('../store/useKanbanStore'),
           import('../store/useJournalStore'),
           import('../store/useCanvasStore'),
+          import('../store/usePenNoteStore'),
         ])
         await Promise.all([
           useKanbanStore.getState().isLoaded  ? Promise.resolve() : useKanbanStore.getState().loadBoards(),
           useJournalStore.getState().isLoaded ? Promise.resolve() : useJournalStore.getState().loadEntries(),
           useCanvasStore.getState().isLoaded  ? Promise.resolve() : useCanvasStore.getState().loadCanvases(),
+          usePenNoteStore.getState().isLoaded ? Promise.resolve() : usePenNoteStore.getState().loadPenNotes(),
         ])
 
         // Discover plugins dropped directly into the vault folder, then load.

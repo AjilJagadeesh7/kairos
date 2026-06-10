@@ -15,6 +15,7 @@ import { serializeNote, deserializeNote, noteIdToPath } from '../adapters/storag
 import type { Note, JournalEntry, ContentVersion } from '../types'
 import type { Board } from '../types/kanban.types'
 import type { Canvas } from '../types/canvas.types'
+import type { PenNote } from '../types/penNote.types'
 
 const TAURI_KEY = 'kairos_plain_folder_path'
 
@@ -161,10 +162,11 @@ async function _ensureVaultDirs(): Promise<void> {
     _subdirPath('config'),
     _subdirPath('journal'),
     _subdirPath('canvas'),
+    _subdirPath('pennotes'),
   ]).catch(() => { /* best-effort */ })
 }
 
-async function _subdirPath(name: 'notes' | 'kanban' | 'config' | 'journal' | 'canvas'): Promise<string> {
+async function _subdirPath(name: 'notes' | 'kanban' | 'config' | 'journal' | 'canvas' | 'pennotes'): Promise<string> {
   if (isDesktop()) {
     if (!_tauriPath) throw new Error('Plain folder not connected')
     const { mkdir } = await import('@tauri-apps/plugin-fs')
@@ -651,4 +653,84 @@ export async function readAllCanvases(): Promise<Canvas[]> {
   } catch {
     return []
   }
+}
+
+// ---------------------------------------------------------------------------
+// Pen notes — vault/pennotes/*.json
+// ---------------------------------------------------------------------------
+
+export async function writePlainPenNote(penNote: PenNote): Promise<void> {
+  const content  = JSON.stringify(penNote, null, 2)
+  const fileName = `${penNote.id}.json`
+  const dir      = await _subdirPath('pennotes')
+
+  if (isDesktop()) {
+    const { writeTextFile } = await import('@tauri-apps/plugin-fs')
+    await writeTextFile(`${dir}/${fileName}`, content)
+    return
+  }
+  await mobileWrite(`${dir}/${fileName}`, content)
+}
+
+export async function deletePlainPenNote(penNoteId: string): Promise<void> {
+  const fileName = `${penNoteId}.json`
+
+  if (isDesktop()) {
+    if (!_tauriPath) return
+    const { remove } = await import('@tauri-apps/plugin-fs')
+    try { await remove(`${_tauriPath}/pennotes/${fileName}`) } catch { /* already gone */ }
+    return
+  }
+  await mobileDelete(`Kairos/pennotes/${fileName}`)
+}
+
+export async function readAllPenNotes(): Promise<PenNote[]> {
+  if (isDesktop()) {
+    if (!_tauriPath) return []
+    const { readDir, readTextFile, mkdir } = await import('@tauri-apps/plugin-fs')
+    const penPath = `${_tauriPath}/pennotes`
+    try { await mkdir(penPath, { recursive: true }) } catch { /* exists */ }
+    const entries = await readDir(penPath)
+    const penNotes: PenNote[] = []
+    for (const entry of entries) {
+      if (!entry.name?.endsWith('.json')) continue
+      try {
+        penNotes.push(JSON.parse(await readTextFile(`${penPath}/${entry.name}`)) as PenNote)
+      } catch { /* skip malformed */ }
+    }
+    return penNotes
+  }
+
+  const penPath = 'Kairos/pennotes'
+  await mobileMkdir(penPath)
+  const { Filesystem, Directory } = await import('@capacitor/filesystem')
+  try {
+    const result = await Filesystem.readdir({ path: penPath, directory: Directory.Documents })
+    const penNotes: PenNote[] = []
+    for (const entry of result.files) {
+      if (!entry.name.endsWith('.json')) continue
+      const raw = await mobileRead(`${penPath}/${entry.name}`)
+      if (raw) {
+        try { penNotes.push(JSON.parse(raw) as PenNote) } catch {}
+      }
+    }
+    return penNotes
+  } catch {
+    return []
+  }
+}
+
+/** Explicit pen-note folder list (so empty folders survive) — config/pennote-folders.json. */
+export async function readPenNoteFolderList(): Promise<string[]> {
+  try {
+    const raw = await readPlainConfig('pennote-folders.json')
+    if (!raw) return []
+    return (JSON.parse(raw) as { folders: string[] }).folders ?? []
+  } catch {
+    return []
+  }
+}
+
+export async function writePenNoteFolderList(folders: string[]): Promise<void> {
+  await writePlainConfig('pennote-folders.json', JSON.stringify({ folders }))
 }

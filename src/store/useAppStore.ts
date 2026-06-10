@@ -540,6 +540,17 @@ export const useAppStore = create<AppState>()(
         keyBindings:     state.keyBindings,
         pinnedNoteIds:   state.pinnedNoteIds,
       }),
+      // Deep-merge syncRules so categories added in newer versions (e.g. pennote)
+      // gain their on-by-default rule instead of being absent (which canPush/
+      // canPull would read as "off").
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<typeof current>
+        return {
+          ...current,
+          ...p,
+          syncRules: { ...DEFAULT_SYNC_RULES, ...(p.syncRules ?? {}) },
+        }
+      },
     },
   ),
 )

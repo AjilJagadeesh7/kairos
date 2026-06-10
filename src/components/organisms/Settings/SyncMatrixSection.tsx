@@ -10,6 +10,7 @@ const CATEGORY_LABELS: Record<SyncCategory, string> = {
   journal:  'Journal',
   kanban:   'Kanban',
   canvas:   'Canvas',
+  pennote:  'Pen notes',
   settings: 'Settings',
   secrets:  'Secrets',
 }

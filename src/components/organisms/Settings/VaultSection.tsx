@@ -37,6 +37,8 @@ export function VaultSection() {
       await store.loadFolders()
       const { useKanbanStore } = await import('../../../store/useKanbanStore')
       await useKanbanStore.getState().loadBoards()
+      const { usePenNoteStore } = await import('../../../store/usePenNoteStore')
+      await usePenNoteStore.getState().loadPenNotes()
       const { saveCurrentSettings } = await import('../../../sync/settingsSync')
       void saveCurrentSettings()
     } catch { /* user cancelled */ }

@@ -9,9 +9,10 @@ import type { RemoteBlob } from './remoteProvider'
 import type { SyncCategory, JournalEntry } from '../types'
 import type { Board } from '../types/kanban.types'
 import type { Canvas } from '../types/canvas.types'
+import type { PenNote } from '../types/penNote.types'
 
 /** Content categories that sync as plain last-write-wins blobs. */
-export type ContentCategory = 'journal' | 'kanban' | 'canvas'
+export type ContentCategory = 'journal' | 'kanban' | 'canvas' | 'pennote'
 
 export interface SyncedItem {
   id: string
@@ -148,12 +149,43 @@ const canvasAdapter: CategoryAdapter = {
   },
 }
 
+// ---------------------------------------------------------------------------
+// Pen notes — vault/pennotes/{id}.json
+// ---------------------------------------------------------------------------
+
+const penNoteAdapter: CategoryAdapter = {
+  category: 'pennote',
+  toSynced(item) {
+    const p = item as PenNote
+    return { id: p.id, filename: `${p.id}.json`, updatedAt: p.updatedAt, content: JSON.stringify(p, null, 2), noSync: !!p.noSync }
+  },
+  async listLocal() {
+    const { readAllPenNotes } = await import('./plainFolder')
+    return (await readAllPenNotes()).map((p) => penNoteAdapter.toSynced(p))
+  },
+  parse(blob) {
+    try {
+      const p = JSON.parse(blob.content) as PenNote
+      return { id: p.id, filename: blob.name, updatedAt: p.updatedAt, content: blob.content, noSync: !!p.noSync }
+    } catch { return null }
+  },
+  async writeLocal(blob) {
+    const { writePlainPenNote } = await import('./plainFolder')
+    await writePlainPenNote(JSON.parse(blob.content) as PenNote)
+  },
+  async reload() {
+    const { usePenNoteStore } = await import('../store/usePenNoteStore')
+    await usePenNoteStore.getState().loadPenNotes()
+  },
+}
+
 export const CONTENT_ADAPTERS: Record<ContentCategory, CategoryAdapter> = {
   journal: journalAdapter,
   kanban: kanbanAdapter,
   canvas: canvasAdapter,
+  pennote: penNoteAdapter,
 }
 
 export function isContentCategory(category: SyncCategory): category is ContentCategory {
-  return category === 'journal' || category === 'kanban' || category === 'canvas'
+  return category === 'journal' || category === 'kanban' || category === 'canvas' || category === 'pennote'
 }

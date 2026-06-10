@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { usePenNoteStore } from '../store/usePenNoteStore'
 import { useConfirmStore } from '../store/useConfirmStore'
@@ -11,7 +12,13 @@ export function PenNotePage() {
   const penNotes = usePenNoteStore(s => s.penNotes)
   const create = usePenNoteStore(s => s.create)
   const remove = usePenNoteStore(s => s.remove)
+  const isLoaded = usePenNoteStore(s => s.isLoaded)
+  const loadPenNotes = usePenNoteStore(s => s.loadPenNotes)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!isLoaded) void loadPenNotes()
+  }, [isLoaded, loadPenNotes])
 
   const active = penNoteId ? penNotes.find(p => p.id === penNoteId) ?? null : null
 

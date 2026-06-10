@@ -39,9 +39,9 @@ export const SYNC_PROVIDER_META: Record<SyncProviderId, SyncProviderMeta> = {
 // ---------------------------------------------------------------------------
 
 /** Content/config buckets the user can independently choose to sync. */
-export type SyncCategory = 'notes' | 'journal' | 'kanban' | 'canvas' | 'settings' | 'secrets'
+export type SyncCategory = 'notes' | 'journal' | 'kanban' | 'canvas' | 'pennote' | 'settings' | 'secrets'
 
-export const SYNC_CATEGORIES: SyncCategory[] = ['notes', 'journal', 'kanban', 'canvas', 'settings', 'secrets']
+export const SYNC_CATEGORIES: SyncCategory[] = ['notes', 'journal', 'kanban', 'canvas', 'pennote', 'settings', 'secrets']
 
 /** Direction toggles for one (category, provider) pair. */
 export type SyncDirection = { push: boolean; pull: boolean }
@@ -70,6 +70,7 @@ export const DEFAULT_SYNC_RULES: SyncRules = {
   journal:  everyProvider(true,  true),
   kanban:   everyProvider(true,  true),
   canvas:   everyProvider(true,  true),
+  pennote:  everyProvider(true,  true),
   settings: everyProvider(true,  true),
   secrets:  everyProvider(false, false),
 }
