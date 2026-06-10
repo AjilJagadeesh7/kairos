@@ -30,7 +30,7 @@ export function EditorReadingMode({
 }: EditorReadingModeProps) {
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-2">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2 md:px-6">
         <div className="flex flex-wrap gap-1">
           {tags.map((tagName) => {
             const tag = tagMap.get(tagName)

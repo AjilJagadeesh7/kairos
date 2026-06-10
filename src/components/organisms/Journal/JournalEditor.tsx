@@ -3,13 +3,12 @@ import { useNavigate } from 'react-router-dom'
 
 import { useJournalStore, todayDate } from '../../../store/useJournalStore'
 import { useConfirmStore } from '../../../store/useConfirmStore'
-import { SlotRenderer } from '../../molecules/SlotRenderer'
 import { MarkdownEditor } from '../Editor/MarkdownEditor'
 import { HistoryPanel } from '../Editor/HistoryPanel'
 import { JournalRightSidebar } from './JournalRightSidebar'
 import { JournalReadingMode } from './JournalReadingMode'
-import { JournalExportMenu } from './JournalExportMenu'
-import { Icon } from '../../../icons/Icon'
+import { JournalToolbar } from './JournalToolbar'
+import { useIsMobile } from '../../../hooks/useIsMobile'
 
 type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved'
 
@@ -23,6 +22,13 @@ function formatDate(date: string): string {
   const [y, m, d] = date.split('-').map(Number)
   const dow = new Date(y, m - 1, d).getDay()
   return `${DAY_NAMES[dow]}, ${MONTH_NAMES[m - 1]} ${d}, ${y}`
+}
+
+// Compact form for mobile, e.g. "Wed, Jun 11"
+function formatShortDate(date: string): string {
+  const [y, m, d] = date.split('-').map(Number)
+  const dow = new Date(y, m - 1, d).getDay()
+  return `${DAY_NAMES[dow].slice(0, 3)}, ${MONTH_NAMES[m - 1].slice(0, 3)} ${d}`
 }
 
 function offsetDate(date: string, days: number): string {
@@ -47,7 +53,9 @@ export function JournalEditor({ date }: JournalEditorProps) {
   const [content, setContent]         = useState(existing?.content ?? '')
   const [saveStatus, setSaveStatus]   = useState<SaveStatus>('idle')
   const [showHistory, setShowHistory] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const isMobile = useIsMobile()
+  // On mobile the sidebar is an overlay drawer — start closed so content is the hero.
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768)
   const [readingMode, setReadingMode] = useState(false)
   const [restoreKey, setRestoreKey]   = useState(0)
   const [shownDate, setShownDate]     = useState(date)
@@ -132,123 +140,35 @@ export function JournalEditor({ date }: JournalEditorProps) {
 
   const today    = todayDate()
   const isToday  = date === today
-  const label    = formatDate(date)
+  const label      = formatDate(date)
+  const shortLabel = formatShortDate(date)
   const prevDate = offsetDate(date, -1)
   const nextDate = offsetDate(date, 1)
 
   return (
     <section className="relative flex h-full flex-col bg-bg">
-      {/* ── Toolbar (mirrors EditorToolbar) ─────────────────────────────── */}
-      <div className="flex h-10 shrink-0 items-center gap-1.5 border-b border-border px-3">
-        <button
-          type="button"
-          title="Previous day"
-          onClick={() => navigate(`/journal/${prevDate}`)}
-          className="flex h-7 w-7 items-center justify-center rounded text-text3 transition hover:bg-surface3 hover:text-text"
-        >
-          <Icon name="chevron-left" size={14} />
-        </button>
-
-        <div className="min-w-0">
-          <span className="truncate text-sm font-semibold text-text">{label}</span>
-          {isToday && <span className="ml-2 text-[11px] font-medium text-accent">Today</span>}
-        </div>
-
-        <button
-          type="button"
-          title="Next day"
-          onClick={() => navigate(`/journal/${nextDate}`)}
-          className="flex h-7 w-7 items-center justify-center rounded text-text3 transition hover:bg-surface3 hover:text-text"
-        >
-          <Icon name="chevron-right" size={14} />
-        </button>
-
-        <SlotRenderer slot="journal:header:end" props={{ date }} className="flex items-center" />
-
-        {/* Save status */}
-        <span className={`mr-1 shrink-0 text-xs transition-all ${
-          saveStatus === 'idle' ? 'opacity-0 pointer-events-none' : 'opacity-100'
-        } ${saveStatus === 'saved' ? 'text-green-500' : 'text-text3'}`}>
-          {saveStatus === 'saving' && 'Saving…'}
-          {saveStatus === 'saved'  && <span className="flex items-center gap-0.5"><Icon name="check" size={11} /> Saved</span>}
-          {saveStatus === 'dirty'  && 'Unsaved'}
-        </span>
-
-        <div className="flex-1" />
-
-        {/* Save */}
-        <button
-          type="button"
-          onClick={() => void persist()}
-          disabled={saveStatus === 'saving' || saveStatus === 'idle'}
-          title={saveStatus === 'dirty' ? 'Save (⌘S)' : 'No unsaved changes'}
-          className={`flex h-7 items-center gap-1 rounded px-2.5 text-xs font-medium transition ${
-            saveStatus === 'dirty'
-              ? 'bg-accent/10 text-accent hover:bg-accent/20'
-              : 'cursor-default text-text3 opacity-40'
-          }`}
-        >
-          <Icon name="save" size={12} />
-          Save
-        </button>
-
-        {/* Export */}
-        <JournalExportMenu title={label} markdown={content} editorRootRef={editorRootRef} />
-
-        <div className="mx-0.5 h-4 w-px bg-border" />
-
-        {/* Reading mode */}
-        <button type="button" title="Reading mode" onClick={() => setReadingMode(v => !v)}
-          className={`flex h-7 w-7 items-center justify-center rounded transition ${
-            readingMode ? 'bg-accent/10 text-accent' : 'text-text3 hover:bg-surface3 hover:text-text'
-          }`}
-        >
-          <Icon name="eye" size={14} />
-        </button>
-
-        {/* History */}
-        <button type="button" title="Version history" onClick={() => setShowHistory(v => !v)}
-          className={`flex h-7 w-7 items-center justify-center rounded transition ${
-            showHistory ? 'bg-accent/10 text-accent' : 'text-text3 hover:bg-surface3 hover:text-text'
-          }`}
-        >
-          <Icon name="history" size={14} />
-        </button>
-
-        {/* Sync this entry (opt out keeps it local-only) */}
-        {existing && (
-          <button type="button"
-            title={existing.noSync ? 'Sync this entry' : "Don't sync this entry — keep it local-only"}
-            aria-pressed={!!existing.noSync}
-            onClick={() => void setEntryNoSync(date, !existing.noSync)}
-            className={`flex h-7 w-7 items-center justify-center rounded transition ${
-              existing.noSync ? 'bg-accent/10 text-accent' : 'text-text3 hover:bg-surface3 hover:text-text'
-            }`}
-          >
-            <Icon name={existing.noSync ? 'cloud-off' : 'cloud'} size={14} />
-          </button>
-        )}
-
-        {/* Delete */}
-        {existing && (
-          <button type="button" title="Delete this entry" onClick={handleDelete}
-            className="flex h-7 w-7 items-center justify-center rounded text-text3 transition hover:bg-red-500/10 hover:text-red-400"
-          >
-            <Icon name="trash-2" size={14} />
-          </button>
-        )}
-
-        <div className="mx-0.5 h-4 w-px bg-border" />
-
-        {/* Sidebar toggle */}
-        <button type="button" title={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'} onClick={() => setSidebarOpen(v => !v)}
-          className={`flex h-7 w-7 items-center justify-center rounded transition ${
-            sidebarOpen ? 'bg-accent/10 text-accent' : 'text-text3 hover:bg-surface3 hover:text-text'
-          }`}
-        >
-          <Icon name={sidebarOpen ? 'panel-right-close' : 'panel-right-open'} size={14} />
-        </button>
-      </div>
+      <JournalToolbar
+        date={date}
+        label={label}
+        shortLabel={shortLabel}
+        isToday={isToday}
+        content={content}
+        editorRootRef={editorRootRef}
+        saveStatus={saveStatus}
+        readingMode={readingMode}
+        showHistory={showHistory}
+        sidebarOpen={sidebarOpen}
+        entryExists={!!existing}
+        entryNoSync={!!existing?.noSync}
+        onPrev={() => navigate(`/journal/${prevDate}`)}
+        onNext={() => navigate(`/journal/${nextDate}`)}
+        onSave={() => void persist()}
+        onToggleReading={() => setReadingMode(v => !v)}
+        onToggleHistory={() => setShowHistory(v => !v)}
+        onToggleSync={() => { if (existing) void setEntryNoSync(date, !existing.noSync) }}
+        onDelete={handleDelete}
+        onToggleSidebar={() => setSidebarOpen(v => !v)}
+      />
 
       {/* ── Body ────────────────────────────────────────────────────────── */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -266,10 +186,29 @@ export function JournalEditor({ date }: JournalEditorProps) {
           )}
         </div>
 
-        {sidebarOpen && (
-          <div className="w-[268px] shrink-0 border-l border-border">
-            <JournalRightSidebar date={date} label={label} />
-          </div>
+        {/* Mobile: overlay drawer so it never steals reading width. Desktop: inline panel. */}
+        {isMobile ? (
+          sidebarOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-30 bg-black/40 backdrop-blur-[1px]"
+                onClick={() => setSidebarOpen(false)}
+                aria-hidden
+              />
+              <div
+                className="fixed inset-y-0 right-0 z-40 overflow-hidden border-l border-border bg-surface2"
+                style={{ width: Math.min(320, window.innerWidth * 0.85), paddingTop: 'env(safe-area-inset-top)' }}
+              >
+                <JournalRightSidebar date={date} label={label} />
+              </div>
+            </>
+          )
+        ) : (
+          sidebarOpen && (
+            <div className="w-[268px] shrink-0 border-l border-border">
+              <JournalRightSidebar date={date} label={label} />
+            </div>
+          )
         )}
       </div>
 

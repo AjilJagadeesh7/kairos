@@ -27,7 +27,7 @@ function CanvasTitleEditor({ canvas }: { canvas: Canvas }) {
   }
   return (
     <button type="button" onClick={() => setEditing(true)} title="Click to rename"
-      className="max-w-[200px] truncate rounded px-2 py-0.5 text-[14px] font-semibold text-[rgb(var(--text))] transition hover:bg-[rgb(var(--surface-2))]">
+      className="max-w-[110px] truncate rounded px-2 py-0.5 text-[14px] font-semibold text-[rgb(var(--text))] transition hover:bg-[rgb(var(--surface-2))] md:max-w-[200px]">
       {canvas.title}
     </button>
   )
@@ -44,7 +44,7 @@ function ToolBtn({ label, icon, onClick, active, disabled }: {
                : 'text-[rgb(var(--text-2))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]'
       }`}>
       <Icon name={icon} size={13} />
-      <span>{label}</span>
+      <span className="hidden md:inline">{label}</span>
     </button>
   )
 }
@@ -91,7 +91,7 @@ export function CanvasToolbar({
   const setCanvasNoSync = useCanvasStore(s => s.setCanvasNoSync)
 
   return (
-    <div className="flex items-center gap-0.5 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-2 py-1.5 shadow-lg">
+    <div className="touch-compact flex shrink-0 items-center gap-0.5 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-2 py-1.5 shadow-lg">
       <CanvasTitleEditor canvas={canvas} />
       {SEP}
       <IconBtn label="Undo (Ctrl+Z)"  icon="undo-2" onClick={onUndo} disabled={!canUndo} />

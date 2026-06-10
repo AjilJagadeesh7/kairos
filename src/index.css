@@ -17,7 +17,9 @@
 /* ─── TOUCH TARGETS ───────────────────────────────────────────────────────── */
 /* Ensures interactive elements meet WCAG 2.5.5 minimum 44×44 px on touch. */
 @media (pointer: coarse) {
-  button, [role="button"], a, select, input[type="checkbox"], input[type="radio"] {
+  /* role="switch" toggles size themselves (a 44px min turns the round track into a
+     giant circle); the surrounding row provides the touch target instead. */
+  button:not([role="switch"]), [role="button"], a, select, input[type="checkbox"], input[type="radio"] {
     min-height: 44px;
     min-width: 44px;
   }

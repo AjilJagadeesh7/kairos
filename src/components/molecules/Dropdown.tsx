@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Icon } from '../../icons/Icon'
 
@@ -11,7 +11,18 @@ interface DropdownProps {
 
 export function Dropdown({ children, trigger, className = '', onOpenChange }: DropdownProps): JSX.Element {
   const [isOpen, setIsOpen] = useState(false)
+  const [alignRight, setAlignRight] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // Flip the menu to right-align if it would overflow the viewport's right edge.
+  useLayoutEffect(() => {
+    if (!isOpen) { setAlignRight(false); return }
+    const el = menuRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    if (rect.right > window.innerWidth - 8) setAlignRight(true)
+  }, [isOpen])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -68,7 +79,12 @@ export function Dropdown({ children, trigger, className = '', onOpenChange }: Dr
       )}
 
       {isOpen && (
-        <div className="absolute left-0 top-full z-50 mt-1 rounded-md border border-border bg-surface p-1 shadow-lg">
+        <div
+          ref={menuRef}
+          className={`absolute top-full z-50 mt-1 max-w-[calc(100vw-1rem)] rounded-md border border-border bg-surface p-1 shadow-lg ${
+            alignRight ? 'right-0' : 'left-0'
+          }`}
+        >
           {resolvedContent}
         </div>
       )}

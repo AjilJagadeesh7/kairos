@@ -32,13 +32,15 @@ export function EditorToolbar({
   const setNoteNoSync = useAppStore((s) => s.setNoteNoSync)
   const isSynced      = useAppStore((s) => !s.notes.find((n) => n.id === note.id)?.noSync)
 
+  const overflowItemCls = 'flex w-full items-center gap-2 px-3 py-1.5 text-xs text-text transition hover:bg-surface3'
+
   return (
-    <div className="flex h-10 shrink-0 items-center gap-1.5 border-b border-border px-3">
+    <div className="touch-compact flex h-10 shrink-0 items-center gap-1.5 border-b border-border px-2 md:px-3">
 
       <SlotRenderer slot="editor:toolbar:start" props={slotProps} className="flex items-center" />
 
-      {/* Save status */}
-      <span className={`mr-1 shrink-0 text-xs transition-all ${
+      {/* Save status — hidden on mobile to save horizontal room */}
+      <span className={`mr-1 hidden shrink-0 text-xs transition-all md:inline ${
         saveStatus === 'idle' ? 'opacity-0 pointer-events-none' : 'opacity-100'
       } ${saveStatus === 'saved' ? 'text-green-500' : 'text-text3'}`}>
         {saveStatus === 'saving' && 'Saving…'}
@@ -61,56 +63,89 @@ export function EditorToolbar({
         }`}
       >
         <Icon name="save" size={12} />
-        Save
+        <span className="hidden md:inline">Save</span>
       </button>
 
-      {/* Export */}
-      <Dropdown trigger={
-        <div className="flex h-7 items-center gap-1 rounded px-2.5 text-xs font-medium text-text3 transition hover:bg-surface3 hover:text-text">
-          <Icon name="share" size={12} />
-          Export
-          <Icon name="chevron-down" size={10} />
-        </div>
-      }>
-        <ExportMenu note={note} exportingPDF={exportingPDF} onExportPDF={onExportPDF} size="md" />
-      </Dropdown>
+      {/* ── Actions: full inline set on desktop ─────────────────────── */}
+      <div className="hidden items-center gap-1.5 md:flex">
+        {/* Export */}
+        <Dropdown trigger={
+          <div className="flex h-7 items-center gap-1 rounded px-2.5 text-xs font-medium text-text3 transition hover:bg-surface3 hover:text-text">
+            <Icon name="share" size={12} />
+            Export
+            <Icon name="chevron-down" size={10} />
+          </div>
+        }>
+          <ExportMenu note={note} exportingPDF={exportingPDF} onExportPDF={onExportPDF} size="md" />
+        </Dropdown>
 
-      <div className="mx-0.5 h-4 w-px bg-border" />
+        <div className="mx-0.5 h-4 w-px bg-border" />
 
-      {/* Reading mode */}
-      <button type="button" title="Reading mode" onClick={onReadingMode}
-        className="flex h-7 w-7 items-center justify-center rounded text-text3 transition hover:bg-surface3 hover:text-text"
-      >
-        <Icon name="eye" size={14} />
-      </button>
+        {/* Reading mode */}
+        <button type="button" title="Reading mode" onClick={onReadingMode}
+          className="flex h-7 w-7 items-center justify-center rounded text-text3 transition hover:bg-surface3 hover:text-text"
+        >
+          <Icon name="eye" size={14} />
+        </button>
 
-      {/* History */}
-      <button type="button" title="Version history" onClick={onToggleHistory}
-        className={`flex h-7 w-7 items-center justify-center rounded transition ${
-          showHistory ? 'bg-accent/10 text-accent' : 'text-text3 hover:bg-surface3 hover:text-text'
-        }`}
-      >
-        <Icon name="history" size={14} />
-      </button>
+        {/* History */}
+        <button type="button" title="Version history" onClick={onToggleHistory}
+          className={`flex h-7 w-7 items-center justify-center rounded transition ${
+            showHistory ? 'bg-accent/10 text-accent' : 'text-text3 hover:bg-surface3 hover:text-text'
+          }`}
+        >
+          <Icon name="history" size={14} />
+        </button>
 
-      {/* Sync this note (opt out keeps it local-only) */}
-      <button type="button"
-        title={isSynced ? "Don't sync this note — keep it local-only" : 'Sync this note'}
-        aria-pressed={!isSynced}
-        onClick={() => void setNoteNoSync(note.id, isSynced)}
-        className={`flex h-7 w-7 items-center justify-center rounded transition ${
-          isSynced ? 'text-text3 hover:bg-surface3 hover:text-text' : 'bg-accent/10 text-accent'
-        }`}
-      >
-        <Icon name={isSynced ? 'cloud' : 'cloud-off'} size={14} />
-      </button>
+        {/* Sync this note (opt out keeps it local-only) */}
+        <button type="button"
+          title={isSynced ? "Don't sync this note — keep it local-only" : 'Sync this note'}
+          aria-pressed={!isSynced}
+          onClick={() => void setNoteNoSync(note.id, isSynced)}
+          className={`flex h-7 w-7 items-center justify-center rounded transition ${
+            isSynced ? 'text-text3 hover:bg-surface3 hover:text-text' : 'bg-accent/10 text-accent'
+          }`}
+        >
+          <Icon name={isSynced ? 'cloud' : 'cloud-off'} size={14} />
+        </button>
 
-      {/* Delete */}
-      <button type="button" title="Delete note" onClick={onDelete}
-        className="flex h-7 w-7 items-center justify-center rounded text-text3 transition hover:bg-red-500/10 hover:text-red-400"
-      >
-        <Icon name="trash-2" size={14} />
-      </button>
+        {/* Delete */}
+        <button type="button" title="Delete note" onClick={onDelete}
+          className="flex h-7 w-7 items-center justify-center rounded text-text3 transition hover:bg-red-500/10 hover:text-red-400"
+        >
+          <Icon name="trash-2" size={14} />
+        </button>
+      </div>
+
+      {/* ── Mobile: reading inline + overflow (⋯) menu ───────────────── */}
+      <div className="flex items-center gap-1.5 md:hidden">
+        <button type="button" title="Reading mode" onClick={onReadingMode}
+          className="flex h-7 w-7 items-center justify-center rounded text-text3 transition hover:bg-surface3 hover:text-text"
+        >
+          <Icon name="eye" size={14} />
+        </button>
+
+        <Dropdown trigger={
+          <div className="flex h-7 w-7 items-center justify-center rounded text-text3 transition hover:bg-surface3 hover:text-text">
+            <Icon name="more-horizontal" size={16} />
+          </div>
+        }>
+          <div className="w-44 py-1">
+            <div className="px-3 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-wide text-text3">Export</div>
+            <ExportMenu note={note} exportingPDF={exportingPDF} onExportPDF={onExportPDF} size="md" />
+            <div className="my-1 h-px bg-border" />
+            <button type="button" onClick={onToggleHistory} className={overflowItemCls}>
+              <Icon name="history" size={14} /> Version history
+            </button>
+            <button type="button" onClick={() => void setNoteNoSync(note.id, isSynced)} className={overflowItemCls}>
+              <Icon name={isSynced ? 'cloud' : 'cloud-off'} size={14} /> {isSynced ? "Don't sync" : 'Enable sync'}
+            </button>
+            <button type="button" onClick={onDelete} className={`${overflowItemCls} hover:text-red-400`}>
+              <Icon name="trash-2" size={14} /> Delete note
+            </button>
+          </div>
+        </Dropdown>
+      </div>
 
       <SlotRenderer slot="editor:toolbar:end" props={slotProps} className="flex items-center" />
 

@@ -15,6 +15,7 @@ import { NoteRightSidebar } from './NoteRightSidebar'
 import { ConflictBanner } from './ConflictBanner'
 import { useConflictStore } from '../../../store/useConflictStore'
 import { eventMatchesAction } from '../../../hooks/useShortcutKey'
+import { useIsMobile } from '../../../hooks/useIsMobile'
 import { Icon } from '../../../icons/Icon'
 import type { EditorDraftProps, SaveStatus, TagRecord } from '../../../types'
 
@@ -31,7 +32,9 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
   const [showHistory, setShowHistory] = useState(false)
   const [readingMode, setReadingMode] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const isMobile = useIsMobile()
+  // On mobile the sidebar is an overlay drawer — start closed so content is the hero.
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768)
   const [sidebarWidth, setSidebarWidth] = useState(268)
   const [restoreKey, setRestoreKey]   = useState(0)
   const [exportingPDF, setExportingPDF] = useState(false)
@@ -215,7 +218,7 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
             {/* No overflow here — .ProseMirror is the scroll container (see index.css).
                 min-h-0 lets the flex chain constrain ProseMirror's height so it scrolls. */}
             <div className="flex flex-1 min-h-0 flex-col">
-              <div ref={editorRootRef} className="flex flex-1 min-h-0 flex-col pt-6 pl-24 pr-8 md:pl-28 md:pr-12">
+              <div ref={editorRootRef} className="flex flex-1 min-h-0 flex-col pt-6 px-4 md:pl-28 md:pr-12">
                 {/* Pre-editor elements — shrink-0 so they don't compete with the editor for height */}
                 <div className="shrink-0">
                   <EditorBannerArea
@@ -264,30 +267,58 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
             </div>
 
             {/* ── Resize handle + right sidebar ─────────────────────────── */}
-            {sidebarOpen && (
-              <>
-                {/* Drag handle — sits on the border, widens hit area with padding */}
-                <div
-                  className="group relative z-10 w-1 shrink-0 cursor-col-resize bg-border transition-colors hover:bg-accent/50 active:bg-accent"
-                  onMouseDown={startResize}
-                >
-                  {/* Wider invisible hit area */}
-                  <div className="absolute inset-y-0 -left-1.5 -right-1.5" />
-                </div>
-
-                <div style={{ width: sidebarWidth }} className="shrink-0 overflow-hidden">
-                  <NoteRightSidebar
-                    note={note}
-                    content={content}
-                    title={title}
-                    tags={tags}
-                    tagMap={tagMap}
-                    allTags={allTags}
-                    onTagsChange={saveTags}
-                    onTagCreate={(name, color) => setNoteTagColor(name, color)}
+            {/* Mobile: render as an overlay drawer so it never steals reading width. */}
+            {isMobile ? (
+              sidebarOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-30 bg-black/40 backdrop-blur-[1px]"
+                    onClick={() => setSidebarOpen(false)}
+                    aria-hidden
                   />
-                </div>
-              </>
+                  <div
+                    className="fixed inset-y-0 right-0 z-40 overflow-hidden border-l border-border bg-surface2"
+                    style={{ width: Math.min(320, window.innerWidth * 0.85), paddingTop: 'env(safe-area-inset-top)' }}
+                  >
+                    <NoteRightSidebar
+                      note={note}
+                      content={content}
+                      title={title}
+                      tags={tags}
+                      tagMap={tagMap}
+                      allTags={allTags}
+                      onTagsChange={saveTags}
+                      onTagCreate={(name, color) => setNoteTagColor(name, color)}
+                    />
+                  </div>
+                </>
+              )
+            ) : (
+              sidebarOpen && (
+                <>
+                  {/* Drag handle — sits on the border, widens hit area with padding */}
+                  <div
+                    className="group relative z-10 w-1 shrink-0 cursor-col-resize bg-border transition-colors hover:bg-accent/50 active:bg-accent"
+                    onMouseDown={startResize}
+                  >
+                    {/* Wider invisible hit area */}
+                    <div className="absolute inset-y-0 -left-1.5 -right-1.5" />
+                  </div>
+
+                  <div style={{ width: sidebarWidth }} className="shrink-0 overflow-hidden">
+                    <NoteRightSidebar
+                      note={note}
+                      content={content}
+                      title={title}
+                      tags={tags}
+                      tagMap={tagMap}
+                      allTags={allTags}
+                      onTagsChange={saveTags}
+                      onTagCreate={(name, color) => setNoteTagColor(name, color)}
+                    />
+                  </div>
+                </>
+              )
             )}
           </div>
         </div>

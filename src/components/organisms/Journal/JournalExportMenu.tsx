@@ -41,9 +41,9 @@ export function JournalExportMenu({ title, markdown, editorRootRef }: JournalExp
 
   return (
     <Dropdown trigger={
-      <div className="flex h-7 items-center gap-1 rounded px-2.5 text-xs font-medium text-text3 transition hover:bg-surface3 hover:text-text">
+      <div className="flex h-7 items-center gap-1 rounded px-2 text-xs font-medium text-text3 transition hover:bg-surface3 hover:text-text md:px-2.5">
         <Icon name="share" size={12} />
-        Export
+        <span className="hidden md:inline">Export</span>
         <Icon name="chevron-down" size={10} />
       </div>
     }>

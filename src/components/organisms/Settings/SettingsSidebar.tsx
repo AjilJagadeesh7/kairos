@@ -1,6 +1,7 @@
 import { Icon } from '../../../icons/Icon'
 import { IconButton } from '../../atoms/IconButton'
 import { SectionLabel } from '../../atoms/SectionLabel'
+import { useIsMobile } from '../../../hooks/useIsMobile'
 import type { IconToken } from '../../../icons/tokens'
 import type { Section } from '../../../types'
 
@@ -41,7 +42,15 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ]
 
+// Sections that don't apply on touch devices (keyboard shortcuts aren't usable on mobile).
+const MOBILE_HIDDEN_SECTIONS = new Set<Section>(['keyboard'])
+
 export function SettingsSidebar({ section, onSectionChange, onClose }: SettingsSidebarProps) {
+  const isMobile = useIsMobile()
+  const navGroups = isMobile
+    ? NAV_GROUPS.map(g => ({ ...g, items: g.items.filter(i => !MOBILE_HIDDEN_SECTIONS.has(i.id)) }))
+    : NAV_GROUPS
+
   return (
     <aside className="flex h-full w-full flex-col border-r border-border bg-surface2">
       <div className="flex items-center gap-2 border-b border-border px-4 py-3.5">
@@ -53,7 +62,7 @@ export function SettingsSidebar({ section, onSectionChange, onClose }: SettingsS
       </div>
 
       <nav className="flex flex-col gap-4 overflow-y-auto p-3">
-        {NAV_GROUPS.map(group => (
+        {navGroups.map(group => (
           <div key={group.heading}>
             {group.heading && (
               <p className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-widest text-text3">

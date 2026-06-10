@@ -33,6 +33,7 @@ export function SidebarWrapper({ children, className = '' }: SidebarWrapperProps
           style={{
             width: Math.min(sidebarWidth, window.innerWidth * 0.85),
             transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+            paddingTop: 'env(safe-area-inset-top)',
           }}
         >
           {children}

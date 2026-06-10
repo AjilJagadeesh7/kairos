@@ -102,10 +102,15 @@ export function MobileHeader() {
     navigatePane(focusedPaneId, '/settings')
   }
 
+  function goHome() {
+    const { focusedPaneId, navigatePane } = usePaneStore.getState()
+    navigatePane(focusedPaneId, '/')
+  }
+
   return (
     <header
       className="md:hidden flex shrink-0 items-center border-b border-border bg-surface2 px-1"
-      style={{ height: 48, paddingTop: 'env(safe-area-inset-top)' }}
+      style={{ height: 'calc(48px + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)' }}
     >
       {/* Left: back or hamburger */}
       {isDeepPage ? (
@@ -130,11 +135,18 @@ export function MobileHeader() {
         <span className="w-9" />
       )}
 
-      {/* Center: page title */}
-      <span className="flex-1 text-center text-sm font-semibold text-text">{label}</span>
+      {/* Center: page title — tap to go to the home dashboard */}
+      <button
+        type="button"
+        onClick={goHome}
+        aria-label="Home"
+        className="flex-1 truncate px-2 text-center text-sm font-semibold text-text"
+      >
+        {label}
+      </button>
 
       {/* Right: sync + theme + settings */}
-      <div className="flex items-center">
+      <div className="flex shrink-0 items-center">
         <SyncStatusBadge />
         <ThemeButton value={theme} onChange={setTheme} />
         {pageType !== 'settings' && (

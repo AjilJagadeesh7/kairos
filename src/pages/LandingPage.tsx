@@ -35,7 +35,7 @@ export function LandingPage() {
     .slice(0, 3)
 
   return (
-    <main className="flex-1 overflow-y-auto bg-[rgb(var(--bg))] px-6 py-8">
+    <main className="h-full overflow-y-auto bg-[rgb(var(--bg))] px-4 py-6 md:px-6 md:py-8">
       <div className="mx-auto max-w-5xl">
         {/* Hero */} 
         <div className="mb-10">

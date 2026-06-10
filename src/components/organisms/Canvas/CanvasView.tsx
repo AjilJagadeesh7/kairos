@@ -209,7 +209,7 @@ function CanvasInner({ canvas }: { canvas: Canvas }) {
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden">
-      <div className="absolute left-1/2 top-3 z-10 -translate-x-1/2">
+      <div className="absolute inset-x-2 top-3 z-10 flex overflow-x-auto md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:overflow-visible">
         <CanvasToolbar
           canvas={canvas}
           onAddText={() => addNode('text', { text: '' })}

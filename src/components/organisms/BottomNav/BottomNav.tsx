@@ -5,6 +5,7 @@ import { Icon } from '../../../icons/Icon'
 import type { IconToken } from '../../../icons/tokens'
 
 const TABS: Array<{ to: string; iconName: IconToken; label: string }> = [
+  { to: '/',        iconName: 'home',          label: 'Home'    },
   { to: '/notes',   iconName: 'book-open',     label: 'Notes'   },
   { to: '/journal', iconName: 'calendar-days', label: 'Journal' },
   { to: '/kanban',  iconName: 'square-kanban', label: 'Kanban'  },
