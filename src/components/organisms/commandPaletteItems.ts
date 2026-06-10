@@ -1,5 +1,5 @@
 import type { IconToken } from '../../icons/tokens'
-import type { Note, JournalEntry, Canvas } from '../../types'
+import type { Note, JournalEntry, Canvas, PenNote } from '../../types'
 import type { KanbanTask, Board } from '../../types/kanban.types'
 import { todayDate } from '../../store/useJournalStore'
 
@@ -18,6 +18,7 @@ export type ResultItem =
   | { kind: 'journal'; entry: JournalEntry;             score: number }
   | { kind: 'task';    task: KanbanTask; board: Board;  score: number }
   | { kind: 'canvas';  canvas: Canvas;                  score: number }
+  | { kind: 'pennote'; penNote: PenNote;                score: number }
   | NavItem
 
 export interface GroupedSection {
@@ -30,6 +31,7 @@ export function itemKey(item: ResultItem): string {
   if (item.kind === 'journal') return `journal:${item.entry.date}`
   if (item.kind === 'task')    return `task:${item.task.id}`
   if (item.kind === 'canvas')  return `canvas:${item.canvas.id}`
+  if (item.kind === 'pennote') return `pennote:${item.penNote.id}`
   return item.id
 }
 
@@ -39,10 +41,12 @@ export function groupResults(items: ResultItem[]): GroupedSection[] {
   const journal  = items.filter(i => i.kind === 'journal')
   const tasks    = items.filter(i => i.kind === 'task')
   const canvases = items.filter(i => i.kind === 'canvas')
+  const penNotes = items.filter(i => i.kind === 'pennote')
 
   const sections: GroupedSection[] = []
   if (nav.length)      sections.push({ label: 'Navigate',     items: nav })
   if (notes.length)    sections.push({ label: 'Notes',        items: notes })
+  if (penNotes.length) sections.push({ label: 'Pen notes',    items: penNotes })
   if (journal.length)  sections.push({ label: 'Journal',      items: journal })
   if (tasks.length)    sections.push({ label: 'Kanban tasks', items: tasks })
   if (canvases.length) sections.push({ label: 'Canvases',     items: canvases })
@@ -51,6 +55,7 @@ export function groupResults(items: ResultItem[]): GroupedSection[] {
 
 export const NAV_ITEMS: NavItem[] = [
   { kind: 'nav', id: 'nav-notes',      label: 'Notes',              hint: 'Open Notes',                    iconName: 'file-text',    path: '/notes' },
+  { kind: 'nav', id: 'nav-pennote',    label: 'Pen notes',          hint: 'Open handwriting pen notes',     iconName: 'pen-line',     path: '/pennote' },
   { kind: 'nav', id: 'nav-journal',    label: 'Journal',            hint: "Open today's journal",           iconName: 'calendar-days', path: `/journal/${todayDate()}` },
   { kind: 'nav', id: 'nav-kanban',     label: 'Kanban',             hint: 'Open Kanban boards',             iconName: 'layout-list',  path: '/kanban' },
   { kind: 'nav', id: 'nav-canvas',     label: 'Canvas',             hint: 'Open Canvases',                  iconName: 'pen-tool',     path: '/canvas' },
