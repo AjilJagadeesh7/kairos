@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { isDesktop } from '../../../utils/platform'
+import { useIsMobile } from '../../../hooks/useIsMobile'
 import { Icon } from '../../../icons/Icon'
 import type { Note } from '../../../types'
 
@@ -9,8 +10,13 @@ interface Props {
 }
 
 export function EditorBannerArea({ note, onUpdateFrontmatter }: Props) {
+  const isMobile = useIsMobile()
   const [showUrlInput, setShowUrlInput] = useState(false)
   const [urlValue, setUrlValue]         = useState('')
+
+  // On mobile the cover image is hidden entirely — that vertical space is
+  // reclaimed for the editor (no add-cover affordance, no banner render).
+  if (isMobile) return null
 
   const banner = note.userFrontmatter?.banner as string | undefined
   const bx     = ((note.userFrontmatter?.banner_x as number) ?? 0.5) * 100

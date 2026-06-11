@@ -17,7 +17,7 @@ import { CommandPalette } from './components/organisms/CommandPalette'
 import { SHORTCUT_REGISTRY, matchesBinding, bindingHasModifier } from './shortcuts/registry'
 import { todayDate } from './store/useJournalStore'
 import { useCalloutStyles } from './hooks/useCalloutStyles'
-import { BottomNav } from './components/organisms/BottomNav/BottomNav'
+import { MobileNav } from './components/organisms/MobileNav/MobileNav'
 import { MobileHeader } from './components/organisms/MobileHeader/MobileHeader'
 
 const DARK_THEMES = new Set(['dark', 'cyberpunk', 'dracula', 'nord', 'catppuccin'])
@@ -101,7 +101,7 @@ function AppInner() {
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <PaneLayout />
         </div>
-        <BottomNav />
+        <MobileNav />
       </div>
       <Toaster
         position="bottom-right"

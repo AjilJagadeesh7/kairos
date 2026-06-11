@@ -131,7 +131,7 @@ function CompactThemePicker({ value, onChange }: { value: ThemeMode; onChange: (
 
 // ─── Activity bar ─────────────────────────────────────────────────────────────
 
-const SIDEBAR_TYPES = new Set(['notes', 'journal', 'canvas', 'graph', 'settings'])
+const SIDEBAR_TYPES = new Set(['notes', 'pennote', 'journal', 'canvas', 'graph', 'settings'])
 
 function NavBtn({ to, iconName, label, NavIconComponent, activePath, onNav }: {
   to: string

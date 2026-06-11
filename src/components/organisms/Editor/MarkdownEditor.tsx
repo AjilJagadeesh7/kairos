@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAppStore } from '../../../store/useAppStore'
 import { Crepe } from '@milkdown/crepe'
 import { editorViewCtx } from '@milkdown/core'
 import { TextSelection } from '@milkdown/prose/state'
@@ -12,6 +13,8 @@ import { pasteSanitizePlugin } from './pasteSanitizePlugin'
 import { imageLazyPlugin } from './imageLazyPlugin'
 import { queryBlockPlugin } from './queryBlockPlugin'
 import { chartCodeBlockPlugin } from './chartCodeBlockPlugin'
+import { mobileAddBlockPlugin } from './mobileAddBlockPlugin'
+import { clickBelowAppendPlugin } from './clickBelowAppendPlugin'
 import { useWikilinkTooltip } from '../../../hooks/useWikilinkTooltip'
 import { useWikilinkAutocomplete } from '../../../hooks/useWikilinkAutocomplete'
 import { useEditorContextMenu } from '../../../hooks/useEditorContextMenu'
@@ -32,6 +35,40 @@ export function MarkdownEditor({ noteId, initialMarkdown, readOnly = false, onCh
   const onChangeRef          = useRef(onChange)
   const onWikilinkClickRef   = useRef(onWikilinkClick)
   const readOnlyRef          = useRef(readOnly)
+
+  const editorZoom    = useAppStore(s => s.editorZoom)
+  const setEditorZoom = useAppStore(s => s.setEditorZoom)
+
+  // Pinch-to-zoom (touch): two-finger gesture scales the editor content.
+  useEffect(() => {
+    const root = rootRef.current
+    if (!root) return
+    let startDist = 0
+    let startZoom = 1
+    const distance = (t: TouchList) =>
+      Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
+    const onStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        startDist = distance(e.touches)
+        startZoom = useAppStore.getState().editorZoom
+      }
+    }
+    const onMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && startDist > 0) {
+        e.preventDefault()
+        setEditorZoom(startZoom * (distance(e.touches) / startDist))
+      }
+    }
+    const onEnd = (e: TouchEvent) => { if (e.touches.length < 2) startDist = 0 }
+    root.addEventListener('touchstart', onStart, { passive: true })
+    root.addEventListener('touchmove', onMove, { passive: false })
+    root.addEventListener('touchend', onEnd)
+    return () => {
+      root.removeEventListener('touchstart', onStart)
+      root.removeEventListener('touchmove', onMove)
+      root.removeEventListener('touchend', onEnd)
+    }
+  }, [setEditorZoom])
 
   useEffect(() => { onChangeRef.current = onChange }, [onChange])
   useEffect(() => { onWikilinkClickRef.current = onWikilinkClick }, [onWikilinkClick])
@@ -156,6 +193,8 @@ export function MarkdownEditor({ noteId, initialMarkdown, readOnly = false, onCh
     crepe.editor.use(imageLazyPlugin)
     crepe.editor.use(queryBlockPlugin)
     crepe.editor.use(chartCodeBlockPlugin)
+    crepe.editor.use(mobileAddBlockPlugin)
+    crepe.editor.use(clickBelowAppendPlugin)
     crepe.on(listener => { listener.markdownUpdated((_ctx, md) => onChangeRef.current(md)) })
 
     void crepe.create().then(() => {
@@ -213,6 +252,7 @@ export function MarkdownEditor({ noteId, initialMarkdown, readOnly = false, onCh
       data-readonly={readOnly || undefined}
       onContextMenu={readOnly ? undefined : handleContextMenu}
       onClick={handleLinkClick}
+      style={{ '--editor-zoom': editorZoom } as React.CSSProperties}
     >
       <div ref={rootRef} className="h-full min-h-[320px]" />
 

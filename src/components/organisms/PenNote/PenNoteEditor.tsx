@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useIsMobile } from '../../../hooks/useIsMobile'
 import { usePenNoteStore } from '../../../store/usePenNoteStore'
 import { usePenNoteHistoryStore } from '../../../store/usePenNoteHistoryStore'
 import { IconButton } from '../../atoms/IconButton'
@@ -21,7 +22,8 @@ export function PenNoteEditor({ penNote, onDelete, onSelectionToText, toTextAvai
   const updateTitle = usePenNoteStore(s => s.updateTitle)
   const record = usePenNoteHistoryStore(s => s.record)
 
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const isMobile = useIsMobile()
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile)
   const [showHistory, setShowHistory] = useState(false)
   const [lastSavedAt, setLastSavedAt] = useState(penNote.updatedAt)
   const [justSaved, setJustSaved] = useState(false)
@@ -102,9 +104,25 @@ export function PenNoteEditor({ penNote, onDelete, onSelectionToText, toTextAvai
         </div>
 
         {sidebarOpen && (
-          <div className="w-64 shrink-0 border-l border-border">
-            <PenNoteRightSidebar penNote={penNote} />
-          </div>
+          isMobile ? (
+            <>
+              <div
+                className="fixed inset-0 z-30 bg-black/40 backdrop-blur-[1px]"
+                onClick={() => setSidebarOpen(false)}
+                aria-hidden
+              />
+              <div
+                className="fixed inset-y-0 right-0 z-40 w-[min(20rem,85vw)] overflow-y-auto border-l border-border bg-surface2"
+                style={{ paddingTop: 'env(safe-area-inset-top)' }}
+              >
+                <PenNoteRightSidebar penNote={penNote} />
+              </div>
+            </>
+          ) : (
+            <div className="w-64 shrink-0 border-l border-border">
+              <PenNoteRightSidebar penNote={penNote} />
+            </div>
+          )
         )}
 
         {showHistory && (

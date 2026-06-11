@@ -1,9 +1,10 @@
 import { create } from 'zustand'
 import { v4 as uuid } from 'uuid'
 
-export type TabType = 'notes' | 'journal' | 'kanban' | 'canvas' | 'graph' | 'settings' | 'home'
+export type TabType = 'notes' | 'pennote' | 'journal' | 'kanban' | 'canvas' | 'graph' | 'settings' | 'home'
 
 export function pathToType(path: string): TabType {
+  if (path.startsWith('/pennote'))  return 'pennote'
   if (path.startsWith('/notes'))    return 'notes'
   if (path.startsWith('/journal'))  return 'journal'
   if (path.startsWith('/kanban'))   return 'kanban'

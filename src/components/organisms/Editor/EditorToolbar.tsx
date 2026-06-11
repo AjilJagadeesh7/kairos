@@ -32,7 +32,26 @@ export function EditorToolbar({
   const setNoteNoSync = useAppStore((s) => s.setNoteNoSync)
   const isSynced      = useAppStore((s) => !s.notes.find((n) => n.id === note.id)?.noSync)
 
+  const editorZoom    = useAppStore((s) => s.editorZoom)
+  const setEditorZoom = useAppStore((s) => s.setEditorZoom)
+  const zoomPct       = Math.round(editorZoom * 100)
+
   const overflowItemCls = 'flex w-full items-center gap-2 px-3 py-1.5 text-xs text-text transition hover:bg-surface3'
+
+  const stepBtnCls = 'flex h-7 w-7 items-center justify-center rounded text-base leading-none text-text3 transition hover:bg-surface3 hover:text-text'
+  const ZoomStepper = () => (
+    <div className="flex items-center gap-0.5">
+      <button type="button" title="Zoom out" aria-label="Zoom out"
+        onClick={() => setEditorZoom(editorZoom - 0.1)} className={stepBtnCls}>−</button>
+      <button type="button" title="Reset zoom" aria-label="Reset zoom"
+        onClick={() => setEditorZoom(1)}
+        className="min-w-[3.5ch] rounded px-1 text-center text-[11px] font-medium tabular-nums text-text3 transition hover:bg-surface3 hover:text-text">
+        {zoomPct}%
+      </button>
+      <button type="button" title="Zoom in" aria-label="Zoom in"
+        onClick={() => setEditorZoom(editorZoom + 0.1)} className={stepBtnCls}>+</button>
+    </div>
+  )
 
   return (
     <div className="touch-compact flex h-10 shrink-0 items-center gap-1.5 border-b border-border px-2 md:px-3">
@@ -78,6 +97,11 @@ export function EditorToolbar({
         }>
           <ExportMenu note={note} exportingPDF={exportingPDF} onExportPDF={onExportPDF} size="md" />
         </Dropdown>
+
+        <div className="mx-0.5 h-4 w-px bg-border" />
+
+        {/* Zoom */}
+        <ZoomStepper />
 
         <div className="mx-0.5 h-4 w-px bg-border" />
 
@@ -131,6 +155,11 @@ export function EditorToolbar({
           </div>
         }>
           <div className="w-44 py-1">
+            <div className="flex items-center justify-between px-3 pb-1.5 pt-0.5">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-text3">Zoom</span>
+              <ZoomStepper />
+            </div>
+            <div className="my-1 h-px bg-border" />
             <div className="px-3 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-wide text-text3">Export</div>
             <ExportMenu note={note} exportingPDF={exportingPDF} onExportPDF={onExportPDF} size="md" />
             <div className="my-1 h-px bg-border" />

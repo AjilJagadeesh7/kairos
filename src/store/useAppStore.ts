@@ -31,6 +31,7 @@ type AppState = {
   customCallouts: CustomCallout[]
   sidebarOpen: boolean
   sidebarWidth: number
+  editorZoom: number
   userName: string
   newTabPage: string
   onboardingDone: boolean
@@ -63,6 +64,7 @@ type AppState = {
   removeNoteTag: (tagName: string) => void
   setSidebarOpen: (open: boolean) => void
   setSidebarWidth: (width: number) => void
+  setEditorZoom: (zoom: number) => void
   setCalloutColor: (type: string, color: string) => void
   resetCalloutColor: (type: string) => void
   addCustomCallout: (callout: CustomCallout) => void
@@ -115,6 +117,7 @@ export const useAppStore = create<AppState>()(
       customCallouts: [],
       sidebarOpen: true,
       sidebarWidth: 260,
+      editorZoom: 1,
       storageChoices: readLegacyStorageChoices(),
       theme: (localStorage.getItem('kairos.theme') as ThemeMode | null) ?? 'light',
       font: (localStorage.getItem('kairos.font') as FontOption | null) ?? 'manrope',
@@ -189,6 +192,7 @@ export const useAppStore = create<AppState>()(
       }),
       setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
       setSidebarWidth: (sidebarWidth) => set({ sidebarWidth: Math.max(180, Math.min(520, sidebarWidth)) }),
+      setEditorZoom: (editorZoom) => set({ editorZoom: Math.round(Math.max(0.7, Math.min(2, editorZoom)) * 100) / 100 }),
       setCalloutColor: (type, color) => set(s => ({ calloutColors: { ...s.calloutColors, [type]: color } })),
       resetCalloutColor: (type) => set(s => {
         const { [type]: _, ...rest } = s.calloutColors
@@ -530,6 +534,7 @@ export const useAppStore = create<AppState>()(
         customCallouts:  state.customCallouts,
         sidebarOpen:     state.sidebarOpen,
         sidebarWidth:    state.sidebarWidth,
+        editorZoom:      state.editorZoom,
         theme:           state.theme,
         font:            state.font,
         fontWeight:      state.fontWeight,

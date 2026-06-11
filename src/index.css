@@ -712,6 +712,13 @@ body {
   caret-color: rgb(var(--accent));
 }
 
+/* ── Editor zoom (useAppStore.editorZoom / pinch-to-zoom) ─────────────────── */
+/* `zoom` scales text, spacing and tables together and keeps the scroll        */
+/* container working, unlike a root font-size (headings are sized in px).      */
+.milkdown .ProseMirror {
+  zoom: var(--editor-zoom, 1);
+}
+
 /* ── Links ─────────────────────────────────────────────────────────────────── */
 .milkdown .ProseMirror a[href] {
   color: #60a5fa;             /* blue-400 — works in both light and dark */
@@ -783,11 +790,59 @@ body {
   }
 }
 
+/* ── Touch: focused-line "+" affordance (mobileAddBlockPlugin) ───────────── */
+/* No hover on touch, so the block-insert "+" is anchored to the focused line  */
+/* in a reserved left gutter. The button is an overlay OUTSIDE the editable     */
+/* DOM (positioned via JS) so it never interferes with tap-to-place-caret.      */
+@media (pointer: coarse) {
+  .milkdown .ProseMirror[contenteditable="true"] {
+    padding-left: 44px;
+  }
+  /* Let the final lines scroll clear of the floating nav button + home bar. */
+  .milkdown .ProseMirror {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 7rem);
+  }
+  .milkdown .mv-add-block {
+    position: absolute;
+    left: 6px;
+    width: 30px;
+    /* Override the global 44px touch-target rule so the button stays inside    */
+    /* the gutter and never overlaps the text column.                          */
+    min-width: 30px;
+    min-height: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    color: rgb(var(--text-3));
+    background: transparent;
+    transition: background 0.15s, color 0.15s;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+    z-index: 1;
+  }
+  .milkdown .mv-add-block:active {
+    background: rgb(var(--surface-3));
+    color: rgb(var(--text));
+  }
+}
+
 /* Tables can overflow — contain them with scroll */
 .milkdown .ProseMirror table {
   display: block;
   overflow-x: auto;
   max-width: 100%;
+}
+
+/* On touch, keep table cells from collapsing into mid-word breaks; let the    */
+/* table scroll horizontally instead of squishing columns to nothing.          */
+@media (pointer: coarse) {
+  .milkdown .ProseMirror table th,
+  .milkdown .ProseMirror table td {
+    word-break: normal;
+    overflow-wrap: break-word;
+    min-width: 5rem;
+  }
 }
 
 /* ── Images: left-aligned, not centered ──────────────────────────────────── */
@@ -818,7 +873,9 @@ body {
   overflow-x: hidden;
   max-width: 100%;
   min-width: 0;
-  word-break: break-word;
+  /* normal word-break (not break-word) so short words like "Supported" are
+     never split mid-word; long/unbreakable strings still wrap. */
+  word-break: normal;
   overflow-wrap: break-word;
 }
 
@@ -853,7 +910,7 @@ body {
   font-size: 0.9rem;
   line-height: 1.65;
   overflow-wrap: break-word;
-  word-break: break-word;
+  word-break: normal;
 }
 
 /* Allow inline code inside callouts to wrap instead of blowing out the width */

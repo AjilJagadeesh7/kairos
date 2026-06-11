@@ -1,7 +1,11 @@
+import { createPortal } from 'react-dom'
 import { useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { usePenNoteStore } from '../store/usePenNoteStore'
 import { useConfirmStore } from '../store/useConfirmStore'
+import { usePaneStore } from '../store/usePaneStore'
+import { usePaneId, useSidebarSlot } from '../contexts/PaneContext'
+import { SidebarWrapper } from '../components/organisms/Sidebar/SidebarWrapper'
 import { PenNoteEditor } from '../components/organisms/PenNote/PenNoteEditor'
 import { PenNoteSidebar } from '../components/organisms/PenNote/PenNoteSidebar'
 import { EmptyState } from '../components/molecules/EmptyState'
@@ -15,6 +19,12 @@ export function PenNotePage() {
   const isLoaded = usePenNoteStore(s => s.isLoaded)
   const loadPenNotes = usePenNoteStore(s => s.loadPenNotes)
   const navigate = useNavigate()
+
+  const paneId        = usePaneId()
+  const focusedPaneId = usePaneStore(s => s.focusedPaneId)
+  const isMultiPane   = usePaneStore(s => s.panes.length > 1)
+  const isFocused     = paneId === focusedPaneId
+  const slot          = useSidebarSlot()
 
   useEffect(() => {
     if (!isLoaded) void loadPenNotes()
@@ -30,14 +40,16 @@ export function PenNotePage() {
       .then(ok => { if (ok) { remove(id); navigate('/pennote') } })
   }
 
+  const sidebar = <PenNoteSidebar />
+
   return (
     <main className="relative flex h-full flex-col overflow-hidden">
       <VaultBanner />
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
-        {/* Folder-structured sidebar */}
-        <aside className="flex w-60 shrink-0 flex-col border-r border-border">
-          <PenNoteSidebar />
-        </aside>
+        {isMultiPane
+          ? isFocused && slot ? createPortal(sidebar, slot) : null
+          : <SidebarWrapper>{sidebar}</SidebarWrapper>
+        }
 
         {/* Main */}
         <section className="flex min-w-0 flex-1 flex-col overflow-hidden">
