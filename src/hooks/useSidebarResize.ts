@@ -6,21 +6,23 @@ export function useSidebarResize(containerRef?: React.RefObject<HTMLDivElement>)
   const sidebarWidth    = useAppStore(s => s.sidebarWidth)
   const setSidebarWidth = useAppStore(s => s.setSidebarWidth)
 
-  const startResize = useCallback((e: React.MouseEvent) => {
+  // Pointer events (not mouse events) so touch/pen can resize on tablets.
+  const startResize = useCallback((e: React.PointerEvent) => {
     e.preventDefault()
     const startX     = e.clientX
     const startWidth = sidebarWidth
     const el         = containerRef?.current
 
-    // Kill the CSS transition so the div tracks the cursor 1:1
+    // Kill the CSS transition so the div tracks the pointer 1:1
     if (el) el.style.transition = 'none'
 
-    function onMove(ev: MouseEvent) {
+    function onMove(ev: PointerEvent) {
       setSidebarWidth(startWidth + ev.clientX - startX)
     }
     function onUp() {
-      document.removeEventListener('mousemove', onMove)
-      document.removeEventListener('mouseup', onUp)
+      document.removeEventListener('pointermove', onMove)
+      document.removeEventListener('pointerup', onUp)
+      document.removeEventListener('pointercancel', onUp)
       document.body.style.cursor     = ''
       document.body.style.userSelect = ''
       // Restore transition for open/close toggle
@@ -29,8 +31,9 @@ export function useSidebarResize(containerRef?: React.RefObject<HTMLDivElement>)
 
     document.body.style.cursor     = 'col-resize'
     document.body.style.userSelect = 'none'
-    document.addEventListener('mousemove', onMove)
-    document.addEventListener('mouseup', onUp)
+    document.addEventListener('pointermove', onMove)
+    document.addEventListener('pointerup', onUp)
+    document.addEventListener('pointercancel', onUp)
   }, [sidebarWidth, setSidebarWidth, containerRef])
 
   return { startResize }

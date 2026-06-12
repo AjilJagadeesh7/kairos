@@ -4,6 +4,7 @@ import { useKanbanStore } from '../../../../store/useKanbanStore'
 import { useConfirmStore } from '../../../../store/useConfirmStore'
 import { ColorPicker } from '../../../molecules/ColorPicker'
 import type { Board } from '../../../../types/kanban.types'
+import { Button } from '../../../atoms/Button'
 import { Icon } from '../../../../icons/Icon'
 
 interface TagManagerProps {
@@ -101,13 +102,9 @@ export function TagManager({ board }: TagManagerProps): JSX.Element {
           placeholder="New tag name…"
           className="flex-1 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] px-3 py-2 text-sm text-[rgb(var(--text))] outline-none focus:border-[rgb(var(--accent))]"
         />
-        <button
-          onClick={handleAdd}
-          disabled={!newName.trim()}
-          className="flex items-center gap-1.5 rounded-lg bg-[rgb(var(--accent))] px-3 py-2 text-sm font-medium text-[rgb(var(--accent-fg))] transition hover:opacity-90 disabled:opacity-40"
-        >
+        <Button variant="submit" size="md" onClick={handleAdd} disabled={!newName.trim()}>
           <Icon name="plus" size={14} /> Add
-        </button>
+        </Button>
       </div>
     </div>
   )

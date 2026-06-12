@@ -3,7 +3,9 @@ import { Toaster } from 'sonner'
 import { useAppStore } from './store/useAppStore'
 import { usePaneStore } from './store/usePaneStore'
 import { useAppStartup } from './hooks/useAppStartup'
+import { useAutoSync } from './hooks/useAutoSync'
 import { useVaultWatcher } from './hooks/useVaultWatcher'
+import { useAndroidBack } from './hooks/useAndroidBack'
 import { ActivityBar } from './components/organisms/ActivityBar/ActivityBar'
 import { PaneLayout } from './components/organisms/SplitLayout/PaneLayout'
 import { LoaderBar } from './components/molecules/LoaderBar'
@@ -30,7 +32,9 @@ function AppInner() {
   const [showShortcuts, setShowShortcuts]           = useState(false)
   const [showCommandPalette, setShowCommandPalette] = useState(false)
   useAppStartup()
+  useAutoSync()
   useCalloutStyles()
+  useAndroidBack()
 
 
   // Hot-reload notes when the vault directory is modified externally
@@ -83,7 +87,7 @@ function AppInner() {
   }, [keyBindings, createNote])
 
   return (
-    <div className="flex h-screen overflow-hidden bg-bg text-text">
+    <div className="app-shell flex h-dvh overflow-hidden bg-bg text-text">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[99999] focus:rounded-lg focus:bg-[rgb(var(--accent))] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-[rgb(var(--accent-fg))] focus:shadow-lg"

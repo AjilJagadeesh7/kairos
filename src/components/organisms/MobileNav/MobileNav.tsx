@@ -6,6 +6,8 @@ import { todayDate } from '../../../store/useJournalStore'
 import { THEME_REGISTRY } from '../../../themes/registry'
 import { Icon } from '../../../icons/Icon'
 import { SectionLabel } from '../../atoms/SectionLabel'
+import { registerBackHandler } from '../../../utils/backHandler'
+import { useFabSuppressed } from '../../../hooks/useFabSuppressed'
 import type { IconToken } from '../../../icons/tokens'
 
 type NavEntry = { to: string; iconName: IconToken; label: string }
@@ -53,11 +55,17 @@ export function MobileNav() {
   const setTheme = useAppStore(s => s.setTheme)
   const [open, setOpen]       = useState(false)
   const [visible, setVisible] = useState(false)
+  const fabSuppressed         = useFabSuppressed()
 
   const activePath = usePaneStore(s => {
     const pane = s.panes.find(p => p.id === s.focusedPaneId)
     return pane?.tabs.find(t => t.id === pane.activeTabId)?.path ?? '/'
   })
+
+  function close() {
+    setVisible(false)
+    setTimeout(() => setOpen(false), 180)
+  }
 
   // Mount → next frame reveal; close after the exit transition.
   useEffect(() => {
@@ -66,17 +74,17 @@ export function MobileNav() {
     return () => cancelAnimationFrame(id)
   }, [open])
 
+  // Escape and the Android back button both dismiss the open panel.
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close() }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    const unregister = registerBackHandler(close)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      unregister()
+    }
   }, [open])
-
-  function close() {
-    setVisible(false)
-    setTimeout(() => setOpen(false), 180)
-  }
 
   function go(to: string) {
     const { focusedPaneId, navigatePane } = usePaneStore.getState()
@@ -154,7 +162,9 @@ export function MobileNav() {
         aria-label={open ? 'Close navigation' : 'Open navigation'}
         aria-expanded={open}
         onClick={() => (open ? close() : setOpen(true))}
-        className="fixed right-4 z-50 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-accent-fg shadow-lg shadow-black/25 transition-transform active:scale-95"
+        className={`fixed right-4 z-50 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-accent-fg shadow-lg shadow-black/25 transition-[transform,opacity] active:scale-95 ${
+          fabSuppressed && !open ? 'pointer-events-none opacity-0' : 'opacity-100'
+        }`}
         style={{ bottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
       >
         <Icon

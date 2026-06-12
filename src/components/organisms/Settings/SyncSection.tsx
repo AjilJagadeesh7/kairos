@@ -53,7 +53,7 @@ export function SyncSection() {
             <p className="text-sm font-medium text-[rgb(var(--text))]">Sync Now</p>
             <p className="text-xs text-[rgb(var(--text-3))]">Push & pull all enabled types across every connected remote.</p>
           </div>
-          <Button variant="primary" size="sm" onClick={() => void onSyncNow()} disabled={syncing}
+          <Button variant="primary" size="md" onClick={() => void onSyncNow()} disabled={syncing}
             className="inline-flex items-center gap-1.5 shrink-0">
             <Icon name="refresh-cw" size={13} className={syncing ? 'animate-spin' : ''} />
             {syncing ? 'Syncing…' : 'Sync Now'}

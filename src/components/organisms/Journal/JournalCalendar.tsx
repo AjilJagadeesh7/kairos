@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { useJournalStore, todayDate } from '../../../store/useJournalStore'
+import { Button } from '../../atoms/Button'
 import { Icon } from '../../../icons/Icon'
 import { IconButton } from '../../atoms/IconButton'
 
@@ -201,12 +202,9 @@ export function JournalCalendar({ activeDate, onClose }: JournalCalendarProps) {
           </div>
 
           {!isCurrentMonth && (
-            <button
-              onClick={goToday}
-              className="mt-4 w-full rounded-md border border-[rgb(var(--border))] py-1.5 text-xs font-medium text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent)/0.5)] hover:text-[rgb(var(--accent))]"
-            >
+            <Button variant="hollow" size="sm" fullWidth className="mt-4" onClick={goToday}>
               Today
-            </button>
+            </Button>
           )}
         </div>
       )}

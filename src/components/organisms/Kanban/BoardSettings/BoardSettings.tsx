@@ -7,6 +7,7 @@ import { ColumnManager } from './ColumnManager'
 import { TagManager } from './TagManager'
 import { ExportOptions } from './ExportOptions'
 import type { Board } from '../../../../types/kanban.types'
+import { Button } from '../../../atoms/Button'
 import { Icon } from '../../../../icons/Icon'
 import { ModalShell } from '../../../molecules/ModalShell'
 import { IconButton } from '../../../atoms/IconButton'
@@ -112,18 +113,12 @@ export function BoardSettings({ board, onClose }: BoardSettingsProps): JSX.Eleme
                   />
                 </div>
                 <div className="border-t border-[rgb(var(--border))] pt-4 flex flex-col gap-2">
-                  <button
-                    onClick={handleDuplicate}
-                    className="flex items-center gap-2 rounded-lg border border-[rgb(var(--border))] px-3 py-2 text-sm text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--text))]"
-                  >
+                  <Button variant="hollow" size="md" onClick={handleDuplicate}>
                     <Icon name="copy" size={14} /> Duplicate board
-                  </button>
-                  <button
-                    onClick={handleDelete}
-                    className="flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm text-red-500 transition hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/30"
-                  >
+                  </Button>
+                  <Button variant="hollow" size="md" className="!border-red-500/40 !text-red-500" onClick={handleDelete}>
                     <Icon name="trash-2" size={14} /> Delete board
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}

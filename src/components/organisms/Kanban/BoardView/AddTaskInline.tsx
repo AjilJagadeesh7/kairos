@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { useKanbanStore } from '../../../../store/useKanbanStore'
+import { Button } from '../../../atoms/Button'
+import { IconButton } from '../../../atoms/IconButton'
 import { Icon } from '../../../../icons/Icon'
 
 interface AddTaskInlineProps {
@@ -62,19 +64,10 @@ export function AddTaskInline({ boardId, columnId }: AddTaskInlineProps): JSX.El
         className="w-full resize-none bg-transparent text-sm text-[rgb(var(--text))] placeholder-[rgb(var(--text-3))] outline-none"
       />
       <div className="mt-2 flex items-center gap-1.5">
-        <button
-          onClick={handleSubmit}
-          disabled={!title.trim()}
-          className="rounded-md bg-[rgb(var(--accent))] px-2.5 py-1 text-xs font-medium text-[rgb(var(--accent-fg))] transition hover:opacity-90 disabled:opacity-40"
-        >
+        <Button variant="submit" size="xs" onClick={handleSubmit} disabled={!title.trim()}>
           Add
-        </button>
-        <button
-          onClick={() => { setIsOpen(false); setTitle('') }}
-          className="rounded-md p-1 text-[rgb(var(--text-3))] transition hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]"
-        >
-          <Icon name="x" size={13} />
-        </button>
+        </Button>
+        <IconButton icon="x" label="Cancel" size="xs" onClick={() => { setIsOpen(false); setTitle('') }} />
       </div>
     </div>
   )

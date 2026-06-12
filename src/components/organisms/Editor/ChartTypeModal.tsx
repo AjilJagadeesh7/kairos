@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { ModalShell } from '../../molecules/ModalShell'
+import { Button } from '../../atoms/Button'
+import { IconButton } from '../../atoms/IconButton'
 import { Icon } from '../../../icons/Icon'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -141,13 +143,11 @@ export function ChartTypeModal({ onInsert, onClose }: ChartTypeModalProps) {
       <div className="p-5">
         {/* Header with type switcher */}
         <div className="mb-4 flex items-center gap-2">
-          <button type="button" onClick={() => setStep('type')}
-            className="flex items-center gap-1.5 rounded-md border border-border bg-surface2 px-2.5 py-1 text-xs text-text2 transition hover:bg-surface3"
-          >
+          <Button variant="hollow" size="xs" onClick={() => setStep('type')}>
             {selectedMeta.icon}
             {selectedMeta.label}
             <Icon name="chevron-down" size={11} className="text-text3" />
-          </button>
+          </Button>
           <span className="text-sm font-semibold text-text">Chart data</span>
         </div>
 
@@ -207,35 +207,25 @@ export function ChartTypeModal({ onInsert, onClose }: ChartTypeModalProps) {
                 />
                 {/* Remove */}
                 {datasets.length > 1 && (
-                  <button type="button" onClick={() => removeDataset(i)}
-                    className="shrink-0 text-text3 transition hover:text-red-400"
-                  >
-                    <Icon name="x" size={13} />
-                  </button>
+                  <IconButton icon="x" label="Remove series" size="xs" onClick={() => removeDataset(i)} />
                 )}
               </div>
             ))}
           </div>
 
-          <button type="button" onClick={addDataset}
-            className="mt-2 flex items-center gap-1 text-xs text-text3 transition hover:text-accent"
-          >
+          <Button variant="link" size="xs" className="mt-2" onClick={addDataset}>
             <Icon name="plus" size={12} /> Add series
-          </button>
+          </Button>
         </div>
 
         {/* Footer */}
         <div className="mt-4 flex justify-end gap-2 border-t border-border pt-4">
-          <button type="button" onClick={onClose}
-            className="rounded-md px-3 py-1.5 text-xs text-text3 transition hover:text-text"
-          >
+          <Button variant="hollow" size="md" onClick={onClose}>
             Cancel
-          </button>
-          <button type="button" onClick={handleInsert}
-            className="rounded-md bg-accent px-4 py-1.5 text-xs font-medium text-white transition hover:opacity-90"
-          >
+          </Button>
+          <Button variant="submit" size="md" onClick={handleInsert}>
             Insert Chart
-          </button>
+          </Button>
         </div>
       </div>
     </ModalShell>

@@ -4,6 +4,7 @@ import { useAppStore } from '../../../store/useAppStore'
 import { usePaneStore } from '../../../store/usePaneStore'
 import { isDesktop, isMobile } from '../../../utils/platform'
 import { InfoRow } from './OnboardingAtoms'
+import { Button } from '../../atoms/Button'
 import { Icon } from '../../../icons/Icon'
 
 type ConnectState = 'idle' | 'connecting' | 'done' | 'error'
@@ -86,12 +87,9 @@ function WebStorageStep({ onBack, onFinish }: { onBack: () => void; onFinish: ()
       </div>
 
       <div className="flex gap-3">
-        <button
-          onClick={onBack}
-          className="flex-1 rounded-xl border border-[rgb(var(--border))] px-4 py-3 text-sm font-medium text-[rgb(var(--text-2))] transition hover:bg-[rgb(var(--surface-2))]"
-        >
+        <Button variant="hollow" size="lg" className="flex-1" onClick={onBack}>
           Back
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -183,12 +181,9 @@ export function VaultSetupStep({ onBack, onFinish }: VaultSetupStepProps) {
               <p className="truncate text-sm font-semibold text-[rgb(var(--text))]">{folderName ?? 'Vault connected'}</p>
               <p className="text-[11px] text-[rgb(var(--text-3))]">notes/ · kanban/ · config/ ready</p>
             </div>
-            <button
-              onClick={() => void connectDesktop()}
-              className="shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-[rgb(var(--text-3))] transition hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]"
-            >
+            <Button variant="link" size="xs" className="shrink-0" onClick={() => void connectDesktop()}>
               Change
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="mb-5 rounded-xl border-2 border-dashed border-[rgb(var(--border))] p-6 text-center">
@@ -197,15 +192,16 @@ export function VaultSetupStep({ onBack, onFinish }: VaultSetupStepProps) {
             <p className="mb-4 text-[11px] text-[rgb(var(--text-3))]">
               Choose any folder — subdirectories are created automatically.
             </p>
-            <button
+            <Button
+              variant="submit"
+              size="lg"
               onClick={() => void connectDesktop()}
               disabled={connectState === 'connecting'}
-              className="inline-flex items-center gap-2 rounded-xl bg-[rgb(var(--accent))] px-5 py-2.5 text-sm font-semibold text-[rgb(var(--accent-fg))] transition hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
             >
               {connectState === 'connecting'
                 ? <><Icon name="loader-2" size={14} className="animate-spin" /> Opening…</>
                 : <><Icon name="folder-open" size={14} /> Choose Folder</>}
-            </button>
+            </Button>
             {errorMsg && <p className="mt-2 text-[11px] text-red-400">{errorMsg}</p>}
           </div>
         )}
@@ -217,20 +213,14 @@ export function VaultSetupStep({ onBack, onFinish }: VaultSetupStepProps) {
         </div>
 
         <div className="flex gap-3">
-          <button
-            onClick={onBack}
-            className="flex-1 rounded-xl border border-[rgb(var(--border))] px-4 py-3 text-sm font-medium text-[rgb(var(--text-2))] transition hover:bg-[rgb(var(--surface-2))]"
-          >
+          <Button variant="hollow" size="lg" className="flex-1" onClick={onBack}>
             Back
-          </button>
-          <button
-            onClick={() => void onFinish()}
-            className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-[rgb(var(--accent))] px-6 py-3 text-sm font-semibold text-[rgb(var(--accent-fg))] transition hover:opacity-90 active:scale-[0.98]"
-          >
+          </Button>
+          <Button variant="submit" size="lg" className="flex-[2]" onClick={() => void onFinish()}>
             {desktopReady
               ? <><Icon name="check" size={15} /> Start writing</>
               : <><Icon name="arrow-right" size={15} /> Skip for now</>}
-          </button>
+          </Button>
         </div>
         {!desktopReady && (
           <p className="mt-2 text-center text-[10px] text-[rgb(var(--text-3))]">
@@ -269,15 +259,16 @@ export function VaultSetupStep({ onBack, onFinish }: VaultSetupStepProps) {
             <p className="mb-4 text-[11px] text-[rgb(var(--text-3))]">
               We'll create a Kairos folder in your Documents and ask for permission to write files there.
             </p>
-            <button
+            <Button
+              variant="submit"
+              size="lg"
               onClick={() => void connectMobile()}
               disabled={connectState === 'connecting'}
-              className="inline-flex items-center gap-2 rounded-xl bg-[rgb(var(--accent))] px-5 py-2.5 text-sm font-semibold text-[rgb(var(--accent-fg))] transition hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
             >
               {connectState === 'connecting'
                 ? <><Icon name="loader-2" size={14} className="animate-spin" /> Setting up…</>
                 : <><Icon name="folder-plus" size={14} /> Create Vault Folder</>}
-            </button>
+            </Button>
             {errorMsg && <p className="mt-2 text-[11px] text-red-400">{errorMsg}</p>}
           </div>
         )}
@@ -289,18 +280,12 @@ export function VaultSetupStep({ onBack, onFinish }: VaultSetupStepProps) {
         </div>
 
         <div className="flex gap-3">
-          <button
-            onClick={onBack}
-            className="flex-1 rounded-xl border border-[rgb(var(--border))] px-4 py-3 text-sm font-medium text-[rgb(var(--text-2))] transition hover:bg-[rgb(var(--surface-2))]"
-          >
+          <Button variant="hollow" size="lg" className="flex-1" onClick={onBack}>
             Back
-          </button>
-          <button
-            onClick={() => void onFinish()}
-            className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-[rgb(var(--accent))] px-6 py-3 text-sm font-semibold text-[rgb(var(--accent-fg))] transition hover:opacity-90 active:scale-[0.98]"
-          >
+          </Button>
+          <Button variant="submit" size="lg" className="flex-[2]" onClick={() => void onFinish()}>
             <Icon name="check" size={15} /> Start writing
-          </button>
+          </Button>
         </div>
       </div>
     )

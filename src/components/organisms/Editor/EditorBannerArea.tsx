@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { isDesktop } from '../../../utils/platform'
 import { useIsMobile } from '../../../hooks/useIsMobile'
+import { Button } from '../../atoms/Button'
+import { IconButton } from '../../atoms/IconButton'
 import { Icon } from '../../../icons/Icon'
 import type { Note } from '../../../types'
 
@@ -100,8 +102,8 @@ export function EditorBannerArea({ note, onUpdateFrontmatter }: Props) {
             placeholder="Paste image URL…"
             className="flex-1 bg-transparent text-sm text-text outline-none placeholder:text-text3"
           />
-          <button type="button" onClick={commitUrl} className="shrink-0 rounded bg-accent/10 px-2 py-0.5 text-xs text-accent hover:bg-accent/20">Add</button>
-          <button type="button" onClick={() => { setShowUrlInput(false); setUrlValue('') }} className="text-text3 hover:text-text"><Icon name="x" size={12} /></button>
+          <Button variant="submit" size="xs" className="shrink-0" onClick={commitUrl}>Add</Button>
+          <IconButton icon="x" label="Cancel" size="xs" onClick={() => { setShowUrlInput(false); setUrlValue('') }} />
         </div>
       ) : (
         <button

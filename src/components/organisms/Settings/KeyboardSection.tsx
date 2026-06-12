@@ -7,6 +7,7 @@ import {
 } from '../../../shortcuts/registry'
 import { SectionCard } from '../../molecules/SectionCard'
 import type { ShortcutContext } from '../../../shortcuts/registry'
+import { IconButton } from '../../atoms/IconButton'
 import { Icon } from '../../../icons/Icon'
 
 const CONTEXT_ORDER: ShortcutContext[] = ['Global', 'Notes', 'Kanban', 'Journal']
@@ -57,10 +58,7 @@ function BuiltinRow({ def }: { def: typeof DEFAULT_SHORTCUTS[number] }) {
       </div>
       <div className="flex shrink-0 items-center gap-2">
         {isCustom && (
-          <button type="button" onClick={() => resetKeyBinding(def.id)} title="Reset to default"
-            className="flex h-6 w-6 items-center justify-center rounded text-[rgb(var(--text-3))] transition hover:text-[rgb(var(--accent))]">
-            <Icon name="rotate-ccw" size={12} />
-          </button>
+          <IconButton icon="rotate-ccw" label="Reset to default" size="xs" onClick={() => resetKeyBinding(def.id)} />
         )}
         {recording ? (
           <KeyCapture onCapture={key => { setKeyBinding(def.id, key); setRecording(false) }} onCancel={() => setRecording(false)} />
@@ -107,10 +105,7 @@ function CustomRow({ id }: { id: string }) {
             {displayKey(boundKey)}
           </button>
         )}
-        <button type="button" onClick={() => resetKeyBinding(id)} title="Remove shortcut"
-          className="flex h-6 w-6 items-center justify-center rounded text-[rgb(var(--text-3))] transition hover:text-red-400">
-          <Icon name="trash-2" size={12} />
-        </button>
+        <IconButton icon="trash-2" label="Remove shortcut" size="xs" onClick={() => resetKeyBinding(id)} />
       </div>
     </div>
   )
@@ -145,9 +140,7 @@ function AddPicker({ onClose }: AddPickerProps) {
     return (
       <div className="rounded-lg border border-[rgb(var(--accent)/0.3)] bg-[rgb(var(--accent)/0.04)] p-4">
         <div className="mb-3 flex items-center gap-2">
-          <button type="button" onClick={() => setSelected(null)} className="text-[rgb(var(--text-3))] hover:text-[rgb(var(--text))]">
-            <Icon name="x" size={14} />
-          </button>
+          <IconButton icon="x" label="Cancel" size="xs" onClick={() => setSelected(null)} />
           <span className="text-xs text-[rgb(var(--text-2))]">
             Press a key for <span className="font-medium text-[rgb(var(--text))]">{def.label}</span>
           </span>
@@ -161,9 +154,7 @@ function AddPicker({ onClose }: AddPickerProps) {
     <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))]">
       <div className="flex items-center justify-between border-b border-[rgb(var(--border))] px-4 py-2">
         <span className="text-xs font-medium text-[rgb(var(--text))]">Pick an action</span>
-        <button type="button" onClick={onClose} className="text-[rgb(var(--text-3))] hover:text-[rgb(var(--text))]">
-          <Icon name="x" size={14} />
-        </button>
+        <IconButton icon="x" label="Close" size="xs" onClick={onClose} />
       </div>
       {available.length === 0 ? (
         <p className="px-4 py-4 text-xs text-[rgb(var(--text-3))]">All available actions are already bound.</p>

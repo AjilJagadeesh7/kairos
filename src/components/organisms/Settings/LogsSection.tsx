@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { SectionCard } from '../../molecules/SectionCard'
 import { logger } from '../../../logger/logger'
+import { Button } from '../../atoms/Button'
 import { Icon } from '../../../icons/Icon'
 
 export function LogsSection() {
@@ -58,29 +59,17 @@ export function LogsSection() {
           </div>
 
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-1.5 text-xs font-medium text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent)/0.4)] hover:text-[rgb(var(--accent))]"
-            >
+            <Button variant="hollow" size="sm" onClick={handleCopy}>
               <Icon name="clipboard-copy" size={12} />
               {copied ? 'Copied!' : 'Copy log'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setExpanded(v => !v)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-1.5 text-xs font-medium text-[rgb(var(--text-2))] transition hover:bg-[rgb(var(--surface-2))]"
-            >
+            </Button>
+            <Button variant="hollow" size="sm" onClick={() => setExpanded(v => !v)}>
               {expanded ? 'Hide preview' : 'Preview'}
-            </button>
-            <button
-              type="button"
-              onClick={handleClear}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-1.5 text-xs font-medium text-[rgb(var(--text-2))] transition hover:border-red-500/40 hover:text-red-400"
-            >
+            </Button>
+            <Button variant="hollow" size="sm" onClick={handleClear}>
               <Icon name="trash-2" size={12} />
               {cleared ? 'Cleared' : 'Clear'}
-            </button>
+            </Button>
           </div>
 
           {expanded && (

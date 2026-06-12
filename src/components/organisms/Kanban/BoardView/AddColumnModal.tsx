@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { ColorPicker } from '../../../molecules/ColorPicker'
-import { Icon } from '../../../../icons/Icon'
+import { Button } from '../../../atoms/Button'
+import { IconButton } from '../../../atoms/IconButton'
 
 const PALETTE = [
   '#ef4444', '#f97316', '#f59e0b', '#eab308',
@@ -38,12 +39,7 @@ export function AddColumnModal({ onConfirm, onClose, defaultColor }: AddColumnMo
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-[rgb(var(--text))]">New column</h2>
-          <button
-            onClick={onClose}
-            className="rounded p-1 text-[rgb(var(--text-3))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]"
-          >
-            <Icon name="x" size={14} />
-          </button>
+          <IconButton icon="x" label="Close" size="sm" onClick={onClose} />
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -84,20 +80,12 @@ export function AddColumnModal({ onConfirm, onClose, defaultColor }: AddColumnMo
 
           {/* Actions */}
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 rounded-lg border border-[rgb(var(--border))] px-3 py-2 text-sm text-[rgb(var(--text-2))] hover:bg-[rgb(var(--surface-2))]"
-            >
+            <Button variant="hollow" size="md" className="flex-1" onClick={onClose}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!name.trim()}
-              className="flex-1 rounded-lg bg-[rgb(var(--accent))] px-3 py-2 text-sm font-medium text-[rgb(var(--accent-fg))] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
+            </Button>
+            <Button variant="submit" size="md" className="flex-1" disabled={!name.trim()}>
               Add column
-            </button>
+            </Button>
           </div>
         </form>
       </div>

@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { registerBackHandler } from '../../utils/backHandler'
 
 interface ModalShellProps {
   onClose: () => void
@@ -18,13 +19,19 @@ export function ModalShell({
   blur = false,
   className = '',
 }: ModalShellProps): JSX.Element {
+  // Android back closes the topmost modal. Registered once per mount (via ref)
+  // so stacked modals keep their open order in the back-handler stack.
+  const onCloseRef = useRef(onClose)
+  useEffect(() => { onCloseRef.current = onClose })
+  useEffect(() => registerBackHandler(() => onCloseRef.current()), [])
+
   return createPortal(
     <div
       className={`fixed inset-0 ${zIndex} flex items-center justify-center bg-black/50 p-4 ${blur ? 'backdrop-blur-sm' : ''}`}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
-        className={`w-full ${maxWidth} rounded-xl border border-border bg-surface shadow-2xl ${className}`}
+        className={`w-full ${maxWidth} max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-xl border border-border bg-surface shadow-2xl ${className}`}
         onClick={e => e.stopPropagation()}
       >
         {children}

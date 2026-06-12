@@ -153,6 +153,16 @@ async function syncNotes(): Promise<void> {
   }
 }
 
+/** Parse an updatedAt into a comparable number. Items written by older app
+ *  versions can lack the field entirely; an invalid date yields NaN, and every
+ *  NaN comparison is false — which used to freeze such items out of sync in
+ *  BOTH directions. Mapping invalid → 0 means any side with a real timestamp
+ *  wins, and an existing-but-undated side still beats an absent one (-Infinity). */
+function tsOf(updatedAt: string | undefined): number {
+  const t = new Date(updatedAt ?? '').getTime()
+  return Number.isNaN(t) ? 0 : t
+}
+
 async function syncContentCategory(adapter: CategoryAdapter): Promise<void> {
   const cat     = adapter.category
   const sources = pullSources(cat)
@@ -169,7 +179,7 @@ async function syncContentCategory(adapter: CategoryAdapter): Promise<void> {
       const parsed = adapter.parse(blob)
       if (!parsed) continue
       const existing = remoteMap.get(parsed.id)
-      if (!existing || new Date(parsed.updatedAt) > new Date(existing.updatedAt)) {
+      if (!existing || tsOf(parsed.updatedAt) > tsOf(existing.updatedAt)) {
         remoteMap.set(parsed.id, { filename: parsed.filename, content: parsed.content, updatedAt: parsed.updatedAt })
       }
     }
@@ -178,30 +188,36 @@ async function syncContentCategory(adapter: CategoryAdapter): Promise<void> {
   const localMap = new Map((await adapter.listLocal()).map((i) => [i.id, i]))
 
   // One pass over every id — whichever side has the newer updatedAt wins.
+  // Each item is isolated: one malformed blob or failed write must not abort
+  // the rest of the category.
   for (const id of new Set([...remoteMap.keys(), ...localMap.keys()])) {
-    const local  = localMap.get(id)
-    const remote = remoteMap.get(id)
+    try {
+      const local  = localMap.get(id)
+      const remote = remoteMap.get(id)
 
-    // Opted out locally → never pull, and remove any cloud copy when pushing.
-    if (local?.noSync) {
-      if (remote) await Promise.allSettled(targets.map((p) => p.deleteBlob(cat, local.filename)))
-      continue
+      // Opted out locally → never pull, and remove any cloud copy when pushing.
+      if (local?.noSync) {
+        if (remote) await Promise.allSettled(targets.map((p) => p.deleteBlob(cat, local.filename)))
+        continue
+      }
+
+      const localTs  = local  ? tsOf(local.updatedAt)  : -Infinity
+      const remoteTs = remote ? tsOf(remote.updatedAt) : -Infinity
+
+      if (remote && remoteTs > localTs) {
+        // Remote is newest → pull down (a source produced it, so pull is allowed).
+        await adapter.writeLocal({ name: remote.filename, content: remote.content })
+        await markSynced(cat, id)
+        changed = true
+      } else if (local && localTs > remoteTs && targets.length > 0) {
+        // Local is newest (or remote absent) → push to allowed targets.
+        const results = await Promise.allSettled(targets.map((p) => p.putBlob(cat, local.filename, local.content)))
+        if (results.some((r) => r.status === 'fulfilled')) await markSynced(cat, id)
+      }
+      // Equal timestamps → already in sync, nothing to do.
+    } catch (err) {
+      console.warn(`[sync] ${cat} item ${id} failed:`, err)
     }
-
-    const localTs  = local  ? new Date(local.updatedAt).getTime()  : -Infinity
-    const remoteTs = remote ? new Date(remote.updatedAt).getTime() : -Infinity
-
-    if (remote && remoteTs > localTs) {
-      // Remote is newest → pull down (a source produced it, so pull is allowed).
-      await adapter.writeLocal({ name: remote.filename, content: remote.content })
-      await markSynced(cat, id)
-      changed = true
-    } else if (local && localTs > remoteTs && targets.length > 0) {
-      // Local is newest (or remote absent) → push to allowed targets.
-      const results = await Promise.allSettled(targets.map((p) => p.putBlob(cat, local.filename, local.content)))
-      if (results.some((r) => r.status === 'fulfilled')) await markSynced(cat, id)
-    }
-    // Equal timestamps → already in sync, nothing to do.
   }
 
   if (changed) await adapter.reload()
@@ -209,20 +225,35 @@ async function syncContentCategory(adapter: CategoryAdapter): Promise<void> {
 
 export async function syncAllProviders(onStatus: (s: SyncStatus) => void): Promise<void> {
   onStatus('syncing')
+  let failed = false
+
+  // Categories are isolated — a failure in one must not abort the others.
   try {
     await syncNotes()
-    for (const adapter of Object.values(CONTENT_ADAPTERS)) {
+  } catch (err) {
+    failed = true
+    console.error('[sync] notes sync failed:', err)
+  }
+
+  for (const adapter of Object.values(CONTENT_ADAPTERS)) {
+    try {
       await syncContentCategory(adapter)
+    } catch (err) {
+      failed = true
+      console.error(`[sync] ${adapter.category} sync failed:`, err)
     }
-    // Settings + secrets (each gated per provider inside).
+  }
+
+  // Settings + secrets (each gated per provider inside).
+  try {
     const { syncConfigWithCloud } = await import('./settingsSync')
     await syncConfigWithCloud()
-
-    onStatus('ok')
   } catch (err) {
-    console.error('[sync] syncAllProviders failed:', err)
-    onStatus('error')
+    failed = true
+    console.error('[sync] settings sync failed:', err)
   }
+
+  onStatus(failed ? 'error' : 'ok')
 }
 
 // ---------------------------------------------------------------------------

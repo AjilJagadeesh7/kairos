@@ -2,6 +2,7 @@
 import { stripMarkdown } from '../../../utils/stripMarkdown'
 import type { GNode, GLink, GraphMode, Note } from '../../../types'
 import { Icon } from '../../../icons/Icon'
+import { Button } from '../../atoms/Button'
 import { IconButton } from '../../atoms/IconButton'
 import { ToggleSwitch } from '../../atoms/ToggleSwitch'
 import { SectionLabel } from '../../atoms/SectionLabel'
@@ -172,12 +173,9 @@ export function GraphSidebar({
                 {stripMarkdown(selectedNote.content).slice(0, 160)}
               </p>
             )}
-            <button
-              onClick={() => onOpenNote(selectedNote.id)}
-              className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-surface2 px-2 py-1.5 text-[10px] font-semibold text-text transition hover:opacity-80"
-            >
+            <Button variant="ghost" size="sm" fullWidth onClick={() => onOpenNote(selectedNote.id)}>
               Open note <Icon name="arrow-right" size={10} />
-            </button>
+            </Button>
           </section>
         )}
 
@@ -193,12 +191,9 @@ export function GraphSidebar({
             <p className="mb-1 text-[10px] text-text3">
               {selectedTaskInfo.boardName} · {selectedTaskInfo.columnName}
             </p>
-            <button
-              onClick={() => onOpenTask(selectedTaskInfo.nodeId)}
-              className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-surface2 px-2 py-1.5 text-[10px] font-semibold text-text transition hover:opacity-80"
-            >
+            <Button variant="ghost" size="sm" fullWidth onClick={() => onOpenTask(selectedTaskInfo.nodeId)}>
               Open task <Icon name="arrow-right" size={10} />
-            </button>
+            </Button>
           </section>
         )}
 
@@ -211,12 +206,9 @@ export function GraphSidebar({
                 {selectedCanvasInfo.title || 'Untitled Canvas'}
               </p>
             </div>
-            <button
-              onClick={() => onOpenCanvas(selectedCanvasInfo.canvasId)}
-              className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-surface2 px-2 py-1.5 text-[10px] font-semibold text-text transition hover:opacity-80"
-            >
+            <Button variant="ghost" size="sm" fullWidth onClick={() => onOpenCanvas(selectedCanvasInfo.canvasId)}>
               Open canvas <Icon name="arrow-right" size={10} />
-            </button>
+            </Button>
           </section>
         )}
       </div>

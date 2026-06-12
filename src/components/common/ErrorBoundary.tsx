@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 
 import { logger } from '../../logger/logger'
+import { Button } from '../atoms/Button'
 import { Icon } from '../../icons/Icon'
 
 interface Props {
@@ -58,12 +59,9 @@ export class ErrorBoundary extends Component<Props, State> {
             {this.state.error.message || 'An unexpected error occurred in this section.'}
           </p>
         </div>
-        <button
-          onClick={() => this.reset()}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-1.5 text-xs font-medium text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent)/0.5)] hover:text-[rgb(var(--accent))]"
-        >
+        <Button variant="hollow" size="sm" onClick={() => this.reset()}>
           <Icon name="refresh-cw" size={12} /> Try again
-        </button>
+        </Button>
         <details className="max-w-sm text-left">
           <summary className="cursor-pointer text-[11px] text-[rgb(var(--text-3))] hover:text-[rgb(var(--text-2))]">
             Show details

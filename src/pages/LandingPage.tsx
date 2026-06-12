@@ -5,6 +5,7 @@ import { useKanbanStore } from '../store/useKanbanStore'
 import { useJournalStore, todayDate } from '../store/useJournalStore'
 import { timeAgo } from '../utils/timeAgo'
 import { getDueState } from '../utils/kanban'
+import { Button } from '../components/atoms/Button'
 import { Icon } from '../icons/Icon'
 
 function greeting(name: string): string {
@@ -60,12 +61,9 @@ export function LandingPage() {
                   {Object.keys(dailyNotes).length}
                 </span>
               </div>
-              <button
-                onClick={() => navigate(`/journal/${today}`)}
-                className="text-xs text-[rgb(var(--accent))] hover:underline"
-              >
+              <Button variant="link" size="xs" onClick={() => navigate(`/journal/${today}`)}>
                 Today →
-              </button>
+              </Button>
             </div>
 
             <div className="flex flex-col gap-2">
@@ -133,12 +131,9 @@ export function LandingPage() {
                   {notes.length}
                 </span>
               </div>
-              <button
-                onClick={() => navigate('/notes')}
-                className="text-xs text-[rgb(var(--accent))] hover:underline"
-              >
+              <Button variant="link" size="xs" onClick={() => navigate('/notes')}>
                 View all →
-              </button>
+              </Button>
             </div>
 
             <div className="flex flex-col gap-2">
@@ -192,12 +187,9 @@ export function LandingPage() {
                   {boards.length}
                 </span>
               </div>
-              <button
-                onClick={() => navigate('/kanban')}
-                className="text-xs text-[rgb(var(--accent))] hover:underline"
-              >
+              <Button variant="link" size="xs" onClick={() => navigate('/kanban')}>
                 View all →
-              </button>
+              </Button>
             </div>
 
             <div className="flex flex-col gap-2">
@@ -253,24 +245,15 @@ export function LandingPage() {
 
         {/* Quick links row */}
         <div className="mt-8 flex flex-wrap gap-3 border-t border-[rgb(var(--border))] pt-6">
-          <button
-            onClick={() => navigate(`/journal/${today}`)}
-            className="flex items-center gap-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-2.5 text-sm text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--text))]"
-          >
+          <Button variant="hollow" size="md" onClick={() => navigate(`/journal/${today}`)}>
             <Icon name="calendar-days" size={15} className="text-[rgb(var(--accent))]" /> Today's entry
-          </button>
-          <button
-            onClick={() => navigate('/graph')}
-            className="flex items-center gap-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-2.5 text-sm text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--text))]"
-          >
+          </Button>
+          <Button variant="hollow" size="md" onClick={() => navigate('/graph')}>
             <Icon name="network" size={15} className="text-[rgb(var(--accent))]" /> Graph view
-          </button>
-          <button
-            onClick={() => navigate('/settings')}
-            className="flex items-center gap-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-4 py-2.5 text-sm text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--text))]"
-          >
+          </Button>
+          <Button variant="hollow" size="md" onClick={() => navigate('/settings')}>
             <Icon name="settings-2" size={15} className="text-[rgb(var(--accent))]" /> Settings
-          </button>
+          </Button>
         </div>
       </div>
     </main>

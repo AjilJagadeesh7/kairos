@@ -3,11 +3,9 @@ import { useState } from 'react'
 import {
   DndContext,
   closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
   type DragEndEvent,
 } from '@dnd-kit/core'
+import { useDndSensors } from '../../../../hooks/useDndSensors'
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useKanbanStore } from '../../../../store/useKanbanStore'
@@ -66,7 +64,7 @@ function SubtaskRow({ sub, boardId, taskId }: { sub: Subtask; boardId: string; t
   const deleteSubtask = useKanbanStore(s => s.deleteSubtask)
   const createCheckpoint = useKanbanStore(s => s.createCheckpoint)
   const reorderCheckpoints = useKanbanStore(s => s.reorderCheckpoints)
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
+  const sensors = useDndSensors()
 
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: sub.id })
   const style = { transform: CSS.Transform.toString(transform), transition }
@@ -167,7 +165,7 @@ export function SubtaskList({ boardId, task }: SubtaskListProps): JSX.Element {
   const [isAdding, setIsAdding] = useState(false)
   const createSubtask = useKanbanStore(s => s.createSubtask)
   const reorderSubtasks = useKanbanStore(s => s.reorderSubtasks)
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
+  const sensors = useDndSensors()
 
   const sorted = [...task.subtasks].sort((a, b) => a.order - b.order)
 

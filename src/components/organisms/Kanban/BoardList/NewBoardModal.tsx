@@ -64,10 +64,10 @@ export function NewBoardModal({ onClose }: NewBoardModalProps): JSX.Element {
           </div>
 
           <div className="flex justify-end gap-2 pt-1">
-            <Button variant="ghost" size="sm" type="button" onClick={onClose}>
+            <Button variant="hollow" size="md" onClick={onClose}>
               Cancel
             </Button>
-            <Button variant="primary" size="sm" type="submit" disabled={!title.trim()}>
+            <Button variant="submit" size="md" disabled={!title.trim()}>
               Create Board
             </Button>
           </div>

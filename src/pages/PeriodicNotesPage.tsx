@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
+import { Button } from '../components/atoms/Button'
+import { IconButton } from '../components/atoms/IconButton'
 import { Icon } from '../icons/Icon'
 
 // ── ISO week helper ────────────────────────────────────────────────────────────
@@ -122,55 +124,28 @@ export function PeriodicNotesPage() {
 
         {/* Period navigator */}
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setCursor(d => shiftDate(tab, d, -1))}
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-surface text-text2 hover:text-text transition-colors"
-            aria-label="Previous period"
-          >
-            <Icon name="chevron-left" size={16} />
-          </button>
+          <IconButton icon="chevron-left" label="Previous period" size="md" onClick={() => setCursor(d => shiftDate(tab, d, -1))} />
 
           <span className="min-w-[160px] text-center font-medium text-text">{currentKey}</span>
 
-          <button
-            type="button"
-            onClick={() => setCursor(d => shiftDate(tab, d, 1))}
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-surface text-text2 hover:text-text transition-colors"
-            aria-label="Next period"
-          >
-            <Icon name="chevron-right" size={16} />
-          </button>
+          <IconButton icon="chevron-right" label="Next period" size="md" onClick={() => setCursor(d => shiftDate(tab, d, 1))} />
 
-          <button
-            type="button"
-            onClick={() => setCursor(new Date())}
-            className="ml-2 rounded-md border border-border bg-surface px-3 py-1 text-xs text-text2 hover:text-text transition-colors"
-          >
+          <Button variant="hollow" size="sm" className="ml-2" onClick={() => setCursor(new Date())}>
             Today
-          </button>
+          </Button>
         </div>
 
         {/* Open / Create */}
         {existingNote ? (
-          <button
-            type="button"
-            onClick={() => navigate(`/notes/${existingNote.id}`)}
-            className="flex w-fit items-center gap-2 rounded-lg border border-accent/40 bg-accent/10 px-4 py-2 text-sm font-medium text-accent transition hover:bg-accent/20"
-          >
+          <Button variant="submit" size="md" className="w-fit" onClick={() => navigate(`/notes/${existingNote.id}`)}>
             <Icon name="file-text" size={15} />
             Open note
-          </button>
+          </Button>
         ) : (
-          <button
-            type="button"
-            onClick={() => void handleCreate()}
-            disabled={creating}
-            className="flex w-fit items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text2 transition hover:text-text disabled:opacity-50"
-          >
+          <Button variant="hollow" size="md" className="w-fit" onClick={() => void handleCreate()} disabled={creating}>
             <Icon name={creating ? 'loader-2' : 'plus'} size={15} className={creating ? 'animate-spin' : ''} />
             Create this note
-          </button>
+          </Button>
         )}
 
         {/* All periodic notes for this tab */}

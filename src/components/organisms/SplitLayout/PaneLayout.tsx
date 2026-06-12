@@ -1,10 +1,10 @@
 import { useState, useRef } from 'react'
 import { useIsMobile } from '../../../hooks/useIsMobile'
 import {
-  DndContext, DragOverlay, PointerSensor,
-  useSensor, useSensors, closestCenter,
+  DndContext, DragOverlay, closestCenter,
   type DragStartEvent, type DragEndEvent, type DragOverEvent,
 } from '@dnd-kit/core'
+import { useDndSensors } from '../../../hooks/useDndSensors'
 import { arrayMove } from '@dnd-kit/sortable'
 import { usePaneStore, type PaneTab } from '../../../store/usePaneStore'
 import { useAppStore } from '../../../store/useAppStore'
@@ -68,9 +68,7 @@ export function PaneLayout() {
   const focusedHasSidebar = focusedActiveTab ? SIDEBAR_TYPES.has(focusedActiveTab.type) : false
   const showSlot = isMultiPane && focusedHasSidebar && sidebarOpen
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-  )
+  const sensors = useDndSensors(8)
 
   function onDragStart({ active }: DragStartEvent) {
     setDraggingId(String(active.id))
@@ -143,16 +141,16 @@ export function PaneLayout() {
               ref={slotContainerRef}
               className="relative shrink-0 overflow-hidden"
               style={{ transition: 'width 150ms ease',
-                width:           showSlot ? sidebarWidth : 0,
+                width:           showSlot ? `min(${sidebarWidth}px, 40vw)` : 0,
                 borderRight:     showSlot ? '1px solid rgb(var(--border))' : 'none',
               }}
             >
-              <div ref={setSidebarSlot} className="absolute inset-0" style={{ width: sidebarWidth }} />
-              {/* Drag-to-resize handle */}
+              <div ref={setSidebarSlot} className="absolute inset-0" style={{ width: `min(${sidebarWidth}px, 40vw)` }} />
+              {/* Drag-to-resize handle (pointer events so touch can resize too) */}
               <div
                 aria-hidden
-                className="absolute right-0 top-0 z-10 h-full w-1 cursor-col-resize opacity-0 transition-opacity hover:opacity-100 hover:bg-accent/40 active:opacity-100"
-                onMouseDown={startResize}
+                className="pane-resize-handle absolute right-0 top-0 z-10 h-full w-1 cursor-col-resize touch-none opacity-0 transition-opacity hover:opacity-100 hover:bg-accent/40 active:opacity-100"
+                onPointerDown={startResize}
               />
             </div>
           )}

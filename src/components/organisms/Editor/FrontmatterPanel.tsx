@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import * as yaml from 'js-yaml'
 import { useFrontmatter } from '../../../hooks/useFrontmatter'
 import { Icon } from '../../../icons/Icon'
+import { Button } from '../../atoms/Button'
 import { IconButton } from '../../atoms/IconButton'
 import { FrontmatterFieldRow } from './FrontmatterField'
 import type { FrontmatterFieldType, FrontmatterPanelMode } from '../../../types'
@@ -102,17 +103,14 @@ export function FrontmatterPanel({ note }: Props) {
 
         {!collapsed && (
           <div className="flex items-center gap-1">
-            <button
-              type="button"
+            <Button
+              variant="pill"
+              size="xs"
+              className={mode === 'yaml' ? 'active' : ''}
               onClick={() => mode === 'yaml' ? commitYaml() : enterYaml()}
-              className={`rounded px-2 py-0.5 text-[11px] font-medium transition ${
-                mode === 'yaml'
-                  ? 'bg-accent/10 text-accent'
-                  : 'text-text3 hover:text-text2'
-              }`}
             >
               {mode === 'yaml' ? 'Done' : 'YAML'}
-            </button>
+            </Button>
             {mode === 'visual' && (
               <IconButton icon="plus" label="Add property" size="xs" onClick={openAdd} />
             )}
@@ -177,13 +175,9 @@ export function FrontmatterPanel({ note }: Props) {
                       <option key={ft.type} value={ft.type}>{ft.label}</option>
                     ))}
                   </select>
-                  <button
-                    type="button"
-                    onClick={commitAdd}
-                    className="rounded bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent hover:bg-accent/20"
-                  >
+                  <Button variant="submit" size="xs" onClick={commitAdd}>
                     Add
-                  </button>
+                  </Button>
                   <IconButton icon="x" label="Cancel" size="xs" onClick={() => setAddOpen(false)} />
                 </div>
               )}

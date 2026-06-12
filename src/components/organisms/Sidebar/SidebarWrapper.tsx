@@ -1,7 +1,8 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useAppStore } from '../../../store/useAppStore'
 import { useSidebarResize } from '../../../hooks/useSidebarResize'
 import { useIsMobile } from '../../../hooks/useIsMobile'
+import { registerBackHandler } from '../../../utils/backHandler'
 
 interface SidebarWrapperProps {
   children: React.ReactNode
@@ -15,6 +16,12 @@ export function SidebarWrapper({ children, className = '' }: SidebarWrapperProps
   const containerRef  = useRef<HTMLDivElement>(null)
   const { startResize } = useSidebarResize(containerRef)
   const isMobile = useIsMobile()
+
+  // Android back closes the mobile drawer before navigating.
+  useEffect(() => {
+    if (!isMobile || !sidebarOpen) return
+    return registerBackHandler(() => setSidebarOpen(false))
+  }, [isMobile, sidebarOpen, setSidebarOpen])
 
   if (isMobile) {
     return (
@@ -42,25 +49,29 @@ export function SidebarWrapper({ children, className = '' }: SidebarWrapperProps
     )
   }
 
+  // Clamp so a wide saved width can't swallow a portrait tablet (no-op on
+  // large desktop screens where 40vw exceeds the resize limit anyway).
+  const clampedWidth = `min(${sidebarWidth}px, 40vw)`
+
   return (
     <div
       ref={containerRef}
       className={`relative shrink-0 overflow-hidden border-r border-border ${className}`}
       style={{
-        width:      sidebarOpen ? sidebarWidth : 0,
+        width:      sidebarOpen ? clampedWidth : 0,
         transition: 'width 150ms ease',
       }}
     >
       {/* Fixed-width inner so content doesn't squash during open/close animation */}
-      <div className="absolute inset-0" style={{ width: sidebarWidth }}>
+      <div className="absolute inset-0" style={{ width: clampedWidth }}>
         {children}
       </div>
 
-      {/* Drag handle — right edge */}
+      {/* Drag handle — right edge (pointer events so touch can resize too) */}
       <div
         aria-hidden
-        className="absolute right-0 top-0 z-10 h-full w-1 cursor-col-resize opacity-0 transition-opacity hover:opacity-100 hover:bg-accent/40 active:opacity-100 active:bg-accent/60"
-        onMouseDown={startResize}
+        className="pane-resize-handle absolute right-0 top-0 z-10 h-full w-1 cursor-col-resize touch-none opacity-0 transition-opacity hover:opacity-100 hover:bg-accent/40 active:opacity-100 active:bg-accent/60"
+        onPointerDown={startResize}
       />
     </div>
   )

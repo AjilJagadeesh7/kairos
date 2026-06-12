@@ -31,7 +31,7 @@ export function IconButton({
     <button
       type="button"
       aria-label={label}
-      className={`flex ${btn} shrink-0 items-center justify-center rounded-md text-text2 transition hover:bg-surface3 hover:text-text ${className}`}
+      className={`btn-icon flex ${btn} shrink-0 items-center justify-center rounded-md text-text2 transition hover:bg-surface3 hover:text-text ${className}`}
       {...props}
     >
       <Icon name={icon} size={iconSize} aria-hidden className={iconClassName || undefined} />

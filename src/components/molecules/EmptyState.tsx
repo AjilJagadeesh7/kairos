@@ -19,7 +19,7 @@ export function EmptyState({ icon, title, description, action, className = '' }:
         {description && <p className="mt-0.5 text-xs text-text3">{description}</p>}
       </div>
       {action && (
-        <Button variant="ghost" size="sm" onClick={action.onClick}>{action.label}</Button>
+        <Button variant="ghost" size="md" onClick={action.onClick}>{action.label}</Button>
       )}
     </div>
   )

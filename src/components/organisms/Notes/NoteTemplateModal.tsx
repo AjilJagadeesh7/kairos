@@ -78,8 +78,8 @@ export function NoteTemplateModal({ onSelect, onClose }: NoteTemplateModalProps)
         </div>
 
         <div className="flex items-center justify-end gap-2 border-t border-[rgb(var(--border))] pt-4">
-          <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" size="sm" onClick={handleCreate}>
+          <Button variant="hollow" size="md" onClick={onClose}>Cancel</Button>
+          <Button variant="submit" size="md" onClick={handleCreate}>
             Create note
           </Button>
         </div>

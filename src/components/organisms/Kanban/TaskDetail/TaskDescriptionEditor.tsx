@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useKanbanStore } from '../../../../store/useKanbanStore'
+import { Button } from '../../../atoms/Button'
 import { MarkdownEditor } from '../../Editor/MarkdownEditor'
 import type { KanbanTask } from '../../../../types/kanban.types'
 
@@ -41,21 +42,20 @@ export function TaskDescriptionEditor({ boardId, task }: TaskDescriptionEditorPr
             />
           </div>
           <div className="flex gap-2 border-t border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] p-2 flex-shrink-0">
-            <button
-              onClick={handleSave}
-              className="flex-1 rounded-lg border border-[rgb(var(--accent))] bg-[rgb(var(--accent))] px-3 py-1.5 text-xs font-medium text-[rgb(var(--accent-fg))] hover:bg-[rgb(var(--accent))]/90"
-            >
+            <Button variant="submit" size="sm" className="flex-1" onClick={handleSave}>
               Save
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="hollow"
+              size="sm"
+              className="flex-1"
               onClick={() => {
                 setDescription(task.description ?? '')
                 setIsEditing(false)
               }}
-              className="flex-1 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface))] px-3 py-1.5 text-xs font-medium text-[rgb(var(--text))] hover:bg-[rgb(var(--surface-2))]"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       ) : (

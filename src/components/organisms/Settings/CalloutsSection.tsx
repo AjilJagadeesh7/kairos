@@ -3,6 +3,7 @@ import Picker from '@emoji-mart/react'
 import data from '@emoji-mart/data'
 import { useAppStore } from '../../../store/useAppStore'
 import { SectionCard } from '../../molecules/SectionCard'
+import { Button } from '../../atoms/Button'
 import { Icon } from '../../../icons/Icon'
 import type { CustomCallout } from '../../../types'
 
@@ -234,14 +235,10 @@ export function CalloutsSection() {
               </div>
             </div>
             <div className="flex-1" />
-            <button
-              type="button"
-              onClick={handleAdd}
-              className="flex items-center gap-1.5 rounded-lg bg-[rgb(var(--accent))] px-3 py-1.5 text-sm font-medium text-[rgb(var(--accent-fg))] transition hover:opacity-90"
-            >
+            <Button variant="submit" size="md" onClick={handleAdd}>
               <Icon name="plus" size={14} />
               Add
-            </button>
+            </Button>
           </div>
           {formError && (
             <p className="text-xs text-red-400">{formError}</p>

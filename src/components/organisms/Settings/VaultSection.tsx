@@ -92,7 +92,7 @@ export function VaultSection() {
               Pick a folder on your device. Subdirectories will be created automatically.
             </p>
           </div>
-          <Button variant="primary" size="sm" onClick={() => void onConnectVault()}>
+          <Button variant="primary" size="md" onClick={() => void onConnectVault()}>
             <Icon name="folder-open" size={13} className="mr-1.5" /> Choose Folder…
           </Button>
         </div>

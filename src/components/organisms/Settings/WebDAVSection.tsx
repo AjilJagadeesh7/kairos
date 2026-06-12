@@ -71,7 +71,7 @@ export function WebDAVSection({ onConnectionChange }: Props) {
             <Field label="Password / App Password" type="password" value={pass} onChange={setPass} />
           </div>
           {error && <p className="text-xs text-red-400">{error}</p>}
-          <Button variant="primary" size="sm" onClick={() => void onSave()}
+          <Button variant="primary" size="md" onClick={() => void onSave()}
             disabled={saving || !url || !user || !pass}>
             {saving ? 'Connecting…' : 'Test & Connect'}
           </Button>

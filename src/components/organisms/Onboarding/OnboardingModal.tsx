@@ -4,6 +4,7 @@ import { usePaneStore } from '../../../store/usePaneStore'
 import { FeatureCard } from './OnboardingAtoms'
 import { VaultSetupStep } from './VaultSetupStep'
 import { AppLogo } from '../../atoms/AppLogo'
+import { Button } from '../../atoms/Button'
 import { Icon } from '../../../icons/Icon'
 import {
   SAMPLE_NOTE_1_TITLE, SAMPLE_NOTE_2_TITLE,
@@ -42,19 +43,13 @@ export function OnboardingModal() {
   const navButtons = (showBack = true) => (
     <div className="flex gap-3">
       {showBack && (
-        <button
-          onClick={prev}
-          className="flex-1 rounded-xl border border-[rgb(var(--border))] px-4 py-3 text-sm font-medium text-[rgb(var(--text-2))] transition hover:bg-[rgb(var(--surface-2))]"
-        >
+        <Button variant="hollow" size="lg" className="flex-1" onClick={prev}>
           Back
-        </button>
+        </Button>
       )}
-      <button
-        onClick={next}
-        className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-[rgb(var(--accent))] px-6 py-3 text-sm font-semibold text-[rgb(var(--accent-fg))] transition hover:opacity-90 active:scale-[0.98]"
-      >
+      <Button variant="submit" size="lg" className="flex-[2]" onClick={next}>
         Next <Icon name="arrow-right" size={15} />
-      </button>
+      </Button>
     </div>
   )
 
@@ -77,13 +72,9 @@ export function OnboardingModal() {
             ))}
           </div>
           {step < TOTAL_STEPS - 1 && (
-            <button
-              type="button"
-              onClick={skip}
-              className="text-[11px] text-[rgb(var(--text-3))] transition hover:text-[rgb(var(--text-2))]"
-            >
+            <Button variant="link" size="xs" onClick={skip}>
               Skip tour
-            </button>
+            </Button>
           )}
         </div>
 
@@ -116,12 +107,9 @@ export function OnboardingModal() {
                   className="w-full rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-4 py-3 text-sm text-[rgb(var(--text))] outline-none transition placeholder:text-[rgb(var(--text-3))] focus:border-[rgb(var(--accent)/0.6)] focus:ring-2 focus:ring-[rgb(var(--accent)/0.15)]"
                 />
               </div>
-              <button
-                onClick={next}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[rgb(var(--accent))] px-6 py-3.5 text-sm font-semibold text-[rgb(var(--accent-fg))] transition hover:opacity-90 active:scale-[0.98]"
-              >
+              <Button variant="submit" size="lg" fullWidth onClick={next}>
                 Get started <Icon name="arrow-right" size={16} />
-              </button>
+              </Button>
             </div>
           )}
 

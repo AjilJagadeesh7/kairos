@@ -28,6 +28,48 @@
     min-height: unset;
     min-width: unset;
   }
+
+  /* Design-system buttons (Button/IconButton atoms) keep their fixed visual
+     height on touch — inflating them to 44px made every size render identical
+     and oversized. The 44px WCAG tap target is provided invisibly instead, by
+     a centered pseudo-element that extends the hit area beyond the bounds. */
+  .btn, .btn-icon {
+    min-height: 0;
+    min-width: 0;
+    position: relative;
+    overflow: visible; /* don't clip the tap-target overlay */
+  }
+  .btn::after, .btn-icon::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+
+  /* Hover-revealed row actions (delete, rename, …) have no hover to reveal
+     them on touch (tablets get the desktop layout) — keep them visible. */
+  .group-hover\:opacity-100 { opacity: 1; }
+  .group-hover\:block { display: block; }
+
+  /* Pane/sidebar resize handles are a 4px sliver — give touch a real grip. */
+  .pane-resize-handle { width: 14px; }
+}
+
+/* ─── TABLET SAFE AREAS ───────────────────────────────────────────────────── */
+/* At ≥md the desktop chrome renders (ActivityBar + pane header) and the
+   MobileHeader — which normally absorbs the status-bar inset — is hidden.
+   On native tablets (viewport-fit=cover) pad the whole shell instead.
+   env() resolves to 0 in desktop browsers, so this is a no-op there. */
+@media (min-width: 768px) {
+  .app-shell {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
 }
 
 /* ─── WIKILINK TOKENS ─────────────────────────────────────────────────────── */
@@ -421,16 +463,28 @@ body {
   cursor: pointer;
   border: none;
   white-space: nowrap;
-  transition: opacity 0.15s, box-shadow 0.15s;
+  transition: opacity 0.15s, box-shadow 0.15s, background-color 0.15s, border-color 0.15s, color 0.15s;
   line-height: 1;
+  user-select: none;
+  /* respect the container: never overflow it */
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   /* prevent any @layer override from mutating size */
   letter-spacing: 0 !important;
   text-transform: none !important;
 }
 
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .btn-xs { font-size: 11px; padding: 4px 8px;  height: 24px; }
 .btn-sm { font-size: 12px; padding: 5px 10px; height: 28px; }
 .btn-md { font-size: 13px; padding: 6px 14px; height: 34px; }
+.btn-lg { font-size: 14px; padding: 8px 18px; height: 40px; }
 
 .btn-primary {
   background-color: rgb(var(--accent));
@@ -444,6 +498,31 @@ body {
   color: rgb(var(--text));
 }
 .btn-ghost:hover { background-color: rgb(var(--surface-3)); }
+
+.btn-hollow {
+  background-color: transparent;
+  color: rgb(var(--text-2));
+  border: 1px solid rgb(var(--border));
+}
+.btn-hollow:hover {
+  border-color: rgb(var(--accent) / 0.5);
+  color: rgb(var(--text));
+}
+
+.btn-link {
+  background-color: transparent;
+  color: rgb(var(--accent));
+  padding-left: 4px;
+  padding-right: 4px;
+}
+.btn-link:hover { text-decoration: underline; }
+
+.btn-danger {
+  background-color: rgb(239 68 68);
+  color: #fff;
+  font-weight: 600;
+}
+.btn-danger:hover { opacity: 0.88; }
 
 .btn-pill {
   border-radius: 9999px;

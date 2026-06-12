@@ -232,7 +232,7 @@ export function NotesHome() {
           </span>
 
           {/* New note button */}
-          <Button variant="primary" size="sm" onClick={handleNew} className="inline-flex items-center gap-1.5">
+          <Button variant="primary" size="md" onClick={handleNew} className="inline-flex items-center gap-1.5">
             <Icon name="plus" size={14} /> New note
           </Button>
         </div>

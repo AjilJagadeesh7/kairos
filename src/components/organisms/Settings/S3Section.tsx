@@ -85,7 +85,7 @@ export function S3Section({ onConnectionChange }: Props) {
           </div>
           <Field label="Secret Access Key" type="password" mono value={secretKey} onChange={setSecretKey} />
           {error && <p className="text-xs text-red-400">{error}</p>}
-          <Button variant="primary" size="sm" onClick={() => void onSave()}
+          <Button variant="primary" size="md" onClick={() => void onSave()}
             disabled={saving || !endpoint || !bucket || !accessKey || !secretKey}>
             {saving ? 'Testing…' : 'Test & Connect'}
           </Button>

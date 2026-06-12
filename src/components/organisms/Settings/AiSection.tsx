@@ -30,7 +30,7 @@ export function AiSection() {
             value={localAiUrl}
             onChange={setLocalAiUrl}
           />
-          <Button variant="primary" size="sm" onClick={() => void saveAiUrl()}>Save</Button>
+          <Button variant="primary" size="md" onClick={() => void saveAiUrl()}>Save</Button>
         </div>
       </SectionCard>
     </div>

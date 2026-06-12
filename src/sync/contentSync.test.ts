@@ -71,4 +71,53 @@ describe('content category latest-wins', () => {
     expect(provider.putBlob).not.toHaveBeenCalledWith('kanban', 'b1.json', 'LOCAL')
     expect(adapter.reload).toHaveBeenCalled()
   })
+
+  it('pushes over a remote with a missing/invalid updatedAt (valid side wins)', async () => {
+    adapter.listLocal.mockResolvedValue([{ id: 'b1', filename: 'b1.json', updatedAt: '2026-01-02T00:00:00Z', content: 'LOCAL', noSync: false }])
+    provider.listBlob.mockImplementation((cat: string) =>
+      Promise.resolve(cat === 'kanban' ? [remoteBlob({ id: 'b1', filename: 'b1.json', content: 'REMOTE', noSync: false })] : []))
+
+    await syncAllProviders(vi.fn())
+
+    expect(provider.putBlob).toHaveBeenCalledWith('kanban', 'b1.json', 'LOCAL')
+    expect(adapter.writeLocal).not.toHaveBeenCalled()
+  })
+
+  it('pulls a remote with a valid updatedAt over an undated local', async () => {
+    adapter.listLocal.mockResolvedValue([{ id: 'b1', filename: 'b1.json', updatedAt: undefined, content: 'LOCAL', noSync: false }])
+    provider.listBlob.mockImplementation((cat: string) =>
+      Promise.resolve(cat === 'kanban' ? [remoteBlob({ id: 'b1', filename: 'b1.json', updatedAt: '2026-01-03T00:00:00Z', content: 'REMOTE', noSync: false })] : []))
+
+    await syncAllProviders(vi.fn())
+
+    expect(adapter.writeLocal).toHaveBeenCalledWith({ name: 'b1.json', content: expect.stringContaining('REMOTE') })
+    expect(provider.putBlob).not.toHaveBeenCalledWith('kanban', 'b1.json', 'LOCAL')
+  })
+
+  it('still pushes a local item with no updatedAt when the remote copy is absent', async () => {
+    adapter.listLocal.mockResolvedValue([{ id: 'b1', filename: 'b1.json', updatedAt: undefined, content: 'LOCAL', noSync: false }])
+    provider.listBlob.mockResolvedValue([])
+
+    await syncAllProviders(vi.fn())
+
+    expect(provider.putBlob).toHaveBeenCalledWith('kanban', 'b1.json', 'LOCAL')
+  })
+
+  it('continues with remaining items when one item fails to write locally', async () => {
+    adapter.listLocal.mockResolvedValue([])
+    provider.listBlob.mockImplementation((cat: string) =>
+      Promise.resolve(cat === 'kanban' ? [
+        { name: 'bad.json', content: JSON.stringify({ id: 'bad', filename: 'bad.json', updatedAt: '2026-01-03T00:00:00Z', content: 'BAD', noSync: false }) },
+        { name: 'good.json', content: JSON.stringify({ id: 'good', filename: 'good.json', updatedAt: '2026-01-03T00:00:00Z', content: 'GOOD', noSync: false }) },
+      ] : []))
+    adapter.writeLocal.mockImplementation(({ name }: { name: string }) =>
+      name === 'bad.json' ? Promise.reject(new Error('disk full')) : Promise.resolve())
+
+    const onStatus = vi.fn()
+    await syncAllProviders(onStatus)
+
+    expect(adapter.writeLocal).toHaveBeenCalledWith({ name: 'good.json', content: expect.stringContaining('GOOD') })
+    // The run completes — a single bad item must not flip the whole sync to error.
+    expect(onStatus).toHaveBeenLastCalledWith('ok')
+  })
 })

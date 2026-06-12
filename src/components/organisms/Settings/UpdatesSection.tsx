@@ -39,7 +39,7 @@ export function UpdatesSection() {
                       <Icon name="check-circle-2" size={13} /> Up to date
                     </span>
                   )}
-                  <Button variant="ghost" size="sm" onClick={() => void checkForUpdate()}>
+                  <Button variant="ghost" size="md" onClick={() => void checkForUpdate()}>
                     Check for updates
                   </Button>
                 </div>
@@ -52,7 +52,7 @@ export function UpdatesSection() {
                   <span className="text-xs font-medium text-accent">
                     v{info?.version} available
                   </span>
-                  <Button variant="primary" size="sm" onClick={() => void downloadAndInstall()}>
+                  <Button variant="primary" size="md" onClick={() => void downloadAndInstall()}>
                     Download &amp; Install
                   </Button>
                 </div>
@@ -71,7 +71,7 @@ export function UpdatesSection() {
                   <span className="flex items-center gap-1 text-xs text-green-500">
                     <Icon name="check-circle-2" size={13} /> Ready to install
                   </span>
-                  <Button variant="primary" size="sm" onClick={() => void restart()}>
+                  <Button variant="primary" size="md" onClick={() => void restart()}>
                     Restart &amp; Update
                   </Button>
                 </div>
@@ -80,7 +80,7 @@ export function UpdatesSection() {
                   <span className="text-xs text-red-400">
                     {error ?? 'Update check failed'}
                   </span>
-                  <Button variant="ghost" size="sm" onClick={() => void checkForUpdate()}>
+                  <Button variant="ghost" size="md" onClick={() => void checkForUpdate()}>
                     Retry
                   </Button>
                 </div>

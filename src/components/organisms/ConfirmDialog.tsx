@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react'
+import { Button } from '../atoms/Button'
 import { useConfirmStore } from '../../store/useConfirmStore'
+import { registerBackHandler } from '../../utils/backHandler'
 
 /**
  * App-wide confirmation dialog.
@@ -26,6 +28,12 @@ export function ConfirmDialog(): JSX.Element | null {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
+  }, [open, _answer])
+
+  // Android back = cancel, same as Escape
+  useEffect(() => {
+    if (!open) return
+    return registerBackHandler(() => _answer(false))
   }, [open, _answer])
 
   if (!open) return null
@@ -56,26 +64,17 @@ export function ConfirmDialog(): JSX.Element | null {
         {!opts.message && <div className="mb-5" />}
 
         <div className="flex justify-end gap-2">
-          <button
-            ref={cancelBtnRef}
-            type="button"
-            onClick={() => _answer(false)}
-            className="btn btn-ghost btn-sm"
-          >
+          <Button ref={cancelBtnRef} variant="ghost" size="md" onClick={() => _answer(false)}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             ref={confirmBtnRef}
-            type="button"
+            variant={opts.danger ? 'danger' : 'primary'}
+            size="md"
             onClick={() => _answer(true)}
-            className={`btn btn-sm font-semibold ${
-              opts.danger
-                ? 'bg-red-500 text-white hover:bg-red-600'
-                : 'btn-primary'
-            }`}
           >
             {confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

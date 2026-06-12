@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useCanvasStore } from '../../../store/useCanvasStore'
 import { timeAgo } from '../../../utils/timeAgo'
+import { Button } from '../../atoms/Button'
 import { Icon } from '../../../icons/Icon'
 
 export function CanvasList() {
@@ -27,14 +28,10 @@ export function CanvasList() {
               {canvases.length}
             </span>
           </div>
-          <button
-            type="button"
-            onClick={handleNew}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[rgb(var(--accent))] px-3 py-1.5 text-[13px] font-medium text-[rgb(var(--accent-fg))] transition hover:opacity-90"
-          >
+          <Button variant="submit" size="md" onClick={handleNew}>
             <Icon name="plus" size={14} />
             New canvas
-          </button>
+          </Button>
         </div>
 
         {/* Empty state */}

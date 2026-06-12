@@ -23,7 +23,7 @@ export function BoardList({ boards }: BoardListProps): JSX.Element {
               {boards.length === 0 ? 'No boards yet' : `${boards.length} board${boards.length !== 1 ? 's' : ''}`}
             </p>
           </div>
-          <Button variant="primary" size="sm" className="inline-flex items-center gap-1.5" onClick={() => setShowModal(true)}>
+          <Button variant="primary" size="md" className="inline-flex items-center gap-1.5" onClick={() => setShowModal(true)}>
             <Icon name="plus" size={14} /> New Board
           </Button>
         </div>
@@ -31,7 +31,7 @@ export function BoardList({ boards }: BoardListProps): JSX.Element {
         {boards.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[rgb(var(--border))] p-16 text-center">
             <p className="mb-4 text-[rgb(var(--text-2))]">No boards yet. Create your first board to get started.</p>
-            <Button variant="primary" size="sm" className="inline-flex items-center gap-1.5" onClick={() => setShowModal(true)}>
+            <Button variant="primary" size="md" className="inline-flex items-center gap-1.5" onClick={() => setShowModal(true)}>
               <Icon name="plus" size={14} /> Create Board
             </Button>
           </div>

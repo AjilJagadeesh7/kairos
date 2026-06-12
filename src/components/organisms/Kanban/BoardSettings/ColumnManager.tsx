@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
+import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core'
+import { useDndSensors } from '../../../../hooks/useDndSensors'
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useKanbanStore } from '../../../../store/useKanbanStore'
@@ -97,7 +98,7 @@ export function ColumnManager({ board }: ColumnManagerProps): JSX.Element {
   const [showModal, setShowModal] = useState(false)
   const createColumn = useKanbanStore(s => s.createColumn)
   const reorderColumns = useKanbanStore(s => s.reorderColumns)
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
+  const sensors = useDndSensors()
 
   const sorted = [...board.columns].sort((a, b) => a.order - b.order)
 

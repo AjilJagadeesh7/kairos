@@ -5,6 +5,7 @@ import { ThemeSelect } from '../../molecules/ThemeSelect'
 import { FontSelect } from '../../molecules/FontSelect'
 import { SectionCard } from '../../molecules/SectionCard'
 import type { FontOption, FontWeight } from '../../../types'
+import { Button } from '../../atoms/Button'
 import { Icon } from '../../../icons/Icon'
 
 const NEW_TAB_OPTIONS = [
@@ -70,25 +71,20 @@ export function GeneralSection() {
             maxLength={40}
             className="flex-1 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-3 py-2 text-sm text-[rgb(var(--text))] outline-none transition placeholder:text-[rgb(var(--text-3))] focus:border-[rgb(var(--accent)/0.6)]"
           />
-          <button
+          <Button
+            variant="submit"
+            size="md"
+            className={nameSaved ? '!bg-green-500/10 !text-green-500' : ''}
             onClick={handleNameSave}
-            className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition ${
-              nameSaved
-                ? 'bg-green-500/10 text-green-500'
-                : 'bg-[rgb(var(--accent))] text-[rgb(var(--accent-fg))] hover:opacity-90'
-            }`}
           >
             {nameSaved ? <><Icon name="check" size={14} /> Saved</> : 'Save'}
-          </button>
+          </Button>
         </div>
 
         <div className="mt-3 border-t border-[rgb(var(--border))] pt-3">
-          <button
-            onClick={replayTour}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-[rgb(var(--border))] px-3 py-1.5 text-xs text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent)/0.5)] hover:text-[rgb(var(--text))]"
-          >
+          <Button variant="hollow" size="sm" onClick={replayTour}>
             <Icon name="rotate-ccw" size={12} /> Replay welcome tour
-          </button>
+          </Button>
         </div>
       </SectionCard>
 

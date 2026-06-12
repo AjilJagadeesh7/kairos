@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react'
 import { invoke } from '@tauri-apps/api/core'
+import { Button } from '../../../atoms/Button'
 import { Icon } from '../../../../icons/Icon'
 import type { CanvasWebData } from '../../../../types'
 
@@ -226,11 +227,10 @@ export function WebNode({ id, data, selected }: NodeProps & { data: WebNodeData 
                   This site uses security headers or JavaScript to refuse iframe embedding.
                 </p>
                 {IS_TAURI && (
-                  <button type="button" onPointerDown={e => e.stopPropagation()}
-                    onClick={() => invoke('open_app_browser', { url: liveUrl }).catch(() => {})}
-                    className="nodrag nopan inline-flex items-center gap-1.5 rounded-lg bg-[rgb(var(--accent))] px-3 py-1.5 text-[12px] font-medium text-[rgb(var(--accent-fg))] transition hover:opacity-90">
+                  <Button variant="submit" size="sm" className="nodrag nopan" onPointerDown={e => e.stopPropagation()}
+                    onClick={() => invoke('open_app_browser', { url: liveUrl }).catch(() => {})}>
                     <Icon name="globe" size={12} /> Open in app browser
-                  </button>
+                  </Button>
                 )}
                 <a href={liveUrl} target="_blank" rel="noreferrer"
                   onPointerDown={e => e.stopPropagation()}
@@ -251,10 +251,9 @@ export function WebNode({ id, data, selected }: NodeProps & { data: WebNodeData 
               {editing ? 'Enter a URL above and press Enter' : 'Click the URL bar to set a page'}
             </p>
             {!editing && (
-              <button type="button" onPointerDown={e => e.stopPropagation()} onClick={startEdit}
-                className="nodrag nopan mt-1 rounded-lg border border-[rgb(var(--border))] px-3 py-1 text-[11px] transition hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--accent))]">
+              <Button variant="hollow" size="xs" className="nodrag nopan mt-1" onPointerDown={e => e.stopPropagation()} onClick={startEdit}>
                 Set URL
-              </button>
+              </Button>
             )}
           </div>
         )}

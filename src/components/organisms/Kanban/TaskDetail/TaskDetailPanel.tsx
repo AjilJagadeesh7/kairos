@@ -11,6 +11,7 @@ import { TaskAttachments } from './TaskAttachments'
 import { TaskTitleEditor } from './TaskTitleEditor'
 import { TaskMetaRow } from './TaskMetaRow'
 import { calcTaskProgress, formatDate, tagTextColor } from '../../../../utils/kanban'
+import { IconButton } from '../../../atoms/IconButton'
 import type { Board, KanbanTask } from '../../../../types/kanban.types'
 import { Icon } from '../../../../icons/Icon'
 
@@ -54,16 +55,13 @@ export function TaskDetailPanel({ task, board, onClose }: Props): JSX.Element {
     <div className="flex h-full flex-col overflow-hidden bg-[rgb(var(--surface))]">
       <div className="flex flex-shrink-0 items-center justify-between border-b border-[rgb(var(--border))] px-4 py-3">
         <div className="flex items-center gap-2">
+          {/* Mobile: the drawer is full-screen, so give it an explicit back affordance */}
+          <IconButton icon="arrow-left" label="Back" size="md" className="-ml-2 md:hidden" onClick={onClose} />
           {progress.total > 0 && (
             <ProgressBar done={progress.done} total={progress.total} className="w-24" />
           )}
         </div>
-        <button
-          onClick={onClose}
-          className="rounded-lg p-1 text-[rgb(var(--text-3))] hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]"
-        >
-          <Icon name="x" size={16} />
-        </button>
+        <IconButton icon="x" label="Close" size="md" className="hidden md:flex" onClick={onClose} />
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">

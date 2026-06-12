@@ -160,21 +160,24 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
     return () => window.clearTimeout(handle)
   }, [title, content]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  function startResize(e: React.MouseEvent) {
+  // Pointer events (not mouse events) so touch/pen can resize on tablets.
+  function startResize(e: React.PointerEvent) {
     e.preventDefault()
     const startX = e.clientX
     const startW = sidebarWidth
 
-    const onMove = (ev: MouseEvent) => {
+    const onMove = (ev: PointerEvent) => {
       const delta = startX - ev.clientX   // drag left → wider
       setSidebarWidth(Math.max(200, Math.min(520, startW + delta)))
     }
     const onUp = () => {
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
     }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onUp)
   }
 
   return (
@@ -298,8 +301,8 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
                 <>
                   {/* Drag handle — sits on the border, widens hit area with padding */}
                   <div
-                    className="group relative z-10 w-1 shrink-0 cursor-col-resize bg-border transition-colors hover:bg-accent/50 active:bg-accent"
-                    onMouseDown={startResize}
+                    className="group relative z-10 w-1 shrink-0 cursor-col-resize touch-none bg-border transition-colors hover:bg-accent/50 active:bg-accent"
+                    onPointerDown={startResize}
                   >
                     {/* Wider invisible hit area */}
                     <div className="absolute inset-y-0 -left-1.5 -right-1.5" />

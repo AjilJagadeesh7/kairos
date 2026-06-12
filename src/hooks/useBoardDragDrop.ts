@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react'
 import {
-  PointerSensor,
   defaultDropAnimationSideEffects,
-  useSensor,
-  useSensors,
   type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
   type DropAnimation,
 } from '@dnd-kit/core'
+import { useDndSensors } from './useDndSensors'
 import { arrayMove } from '@dnd-kit/sortable'
 import { useKanbanStore } from '../store/useKanbanStore'
 import { filterAndSortTasks } from '../utils/kanban'
@@ -37,9 +35,7 @@ export function useBoardDragDrop(board: Board) {
     }
   }, [board.tasks, board.columns, activeDrag])
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-  )
+  const sensors = useDndSensors()
 
   const dropAnimation: DropAnimation = {
     duration: 320,
