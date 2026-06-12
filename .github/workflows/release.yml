@@ -82,7 +82,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'  # Capacitor 7 android compiles with source/target 21
       - name: Install frontend dependencies
         run: npm ci
       - name: Build web assets & sync Capacitor
