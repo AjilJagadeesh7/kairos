@@ -114,7 +114,7 @@ Types that are genuinely private to a single file and never exported are exempt.
 
 ### Reusable atoms — always use these, never inline the pattern
 
-- **`Button`** (`atoms/Button`) — all text buttons; variant: primary/ghost/pill, size: xs/sm/md
+- **`Button`** (`atoms/Button`) — all text buttons; variant: `submit` (filled accent, defaults `type="submit"`), `primary` (same style, `type="button"`), `hollow` (bordered outline), `link` (accent text, hover underline), `ghost`, `danger` (red filled), `pill`; size: xs/sm/md/lg (24/28/34/40px fixed heights); `fullWidth` prop for w-full. Size conventions: **md** for modal footers and page-level actions, **sm** for compact inline actions, **xs** for micro actions inside dense panels, **lg** for onboarding/mobile CTAs. Forwards refs.
 - **`IconButton`** (`atoms/IconButton`) — icon-only buttons; size xs/sm/md = h-6/h-7/h-8; use `iconClassName` for icon-level styles like `animate-spin`
 - **`ToggleSwitch`** (`atoms/ToggleSwitch`) — on/off toggles with `role="switch"`; size sm/md
 - **`SectionLabel`** (`atoms/SectionLabel`) — `uppercase tracking-widest` section headers; use `className` prop for margin/padding

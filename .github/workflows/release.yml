@@ -62,3 +62,65 @@ jobs:
           releaseDraft: true
           prerelease: false
           includeUpdaterJson: true
+
+  android:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    # Wait for the desktop job so the draft release exists; still run if a
+    # single desktop leg failed (the APK shouldn't depend on e.g. macOS).
+    needs: release
+    if: ${{ !cancelled() }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Build web assets & sync Capacitor
+        run: npm run build:mobile
+      - name: Build APK
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          cd android
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            # Proper release build signed with the keystore from repo secrets
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > release.keystore
+            ./gradlew assembleRelease
+            BUILD_TOOLS="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n1)"
+            "$BUILD_TOOLS/zipalign" -f 4 \
+              app/build/outputs/apk/release/app-release-unsigned.apk aligned.apk
+            "$BUILD_TOOLS/apksigner" sign \
+              --ks release.keystore \
+              --ks-pass env:ANDROID_KEYSTORE_PASSWORD \
+              --ks-key-alias "$ANDROID_KEY_ALIAS" \
+              --key-pass env:ANDROID_KEY_PASSWORD \
+              --out "Kairos-${GITHUB_REF_NAME}.apk" aligned.apk
+          else
+            # No keystore configured — ship a debug-signed APK (sideloadable)
+            ./gradlew assembleDebug
+            cp app/build/outputs/apk/debug/app-debug.apk "Kairos-${GITHUB_REF_NAME}.apk"
+          fi
+      - name: Attach APK to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "$GITHUB_REF_NAME" \
+            "android/Kairos-${GITHUB_REF_NAME}.apk" \
+            --clobber --repo "$GITHUB_REPOSITORY" \
+          || gh release create "$GITHUB_REF_NAME" \
+            "android/Kairos-${GITHUB_REF_NAME}.apk" \
+            --draft --title "Kairos $GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY"
