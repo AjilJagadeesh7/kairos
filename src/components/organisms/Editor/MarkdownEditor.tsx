@@ -14,6 +14,7 @@ import { imageLazyPlugin } from './imageLazyPlugin'
 import { queryBlockPlugin } from './queryBlockPlugin'
 import { chartCodeBlockPlugin } from './chartCodeBlockPlugin'
 import { mobileAddBlockPlugin } from './mobileAddBlockPlugin'
+import { mobileListToolbarPlugin } from './mobileListToolbarPlugin'
 import { clickBelowAppendPlugin } from './clickBelowAppendPlugin'
 import { useWikilinkTooltip } from '../../../hooks/useWikilinkTooltip'
 import { useWikilinkAutocomplete } from '../../../hooks/useWikilinkAutocomplete'
@@ -194,6 +195,7 @@ export function MarkdownEditor({ noteId, initialMarkdown, readOnly = false, onCh
     crepe.editor.use(queryBlockPlugin)
     crepe.editor.use(chartCodeBlockPlugin)
     crepe.editor.use(mobileAddBlockPlugin)
+    crepe.editor.use(mobileListToolbarPlugin)
     crepe.editor.use(clickBelowAppendPlugin)
     crepe.on(listener => { listener.markdownUpdated((_ctx, md) => onChangeRef.current(md)) })
 

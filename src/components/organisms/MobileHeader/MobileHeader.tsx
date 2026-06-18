@@ -38,11 +38,6 @@ export function MobileHeader() {
     navigatePane(focusedPaneId, root)
   }
 
-  function goHome() {
-    const { focusedPaneId, navigatePane } = usePaneStore.getState()
-    navigatePane(focusedPaneId, '/')
-  }
-
   return (
     <header
       className="md:hidden flex shrink-0 items-center border-b border-border bg-surface2 px-1"
@@ -71,15 +66,11 @@ export function MobileHeader() {
         <span className="w-9" />
       )}
 
-      {/* Center: page title — tap to go to the home dashboard */}
-      <button
-        type="button"
-        onClick={goHome}
-        aria-label="Home"
-        className="flex-1 truncate px-2 text-center text-sm font-semibold text-text"
-      >
+      {/* Center: page title — static label. Home is reachable via the floating
+          nav; making this a button caused accidental navigation on mis-taps. */}
+      <span className="flex-1 truncate px-2 text-center text-sm font-semibold text-text">
         {label}
-      </button>
+      </span>
 
       {/* Right: sync status (theme + settings now live in the floating nav) */}
       <div className="flex shrink-0 items-center">

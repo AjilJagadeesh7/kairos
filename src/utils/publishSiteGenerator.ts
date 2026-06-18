@@ -65,7 +65,7 @@ export async function exportVaultNotes(
   notes: Note[],
   format: 'html' | 'markdown',
   onProgress?: (p: ExportProgress) => void,
-): Promise<{ exported: number; errors: string[] }> {
+): Promise<{ exported: number; errors: string[]; outDir?: string }> {
   const errors: string[] = []
   let done = 0
 
@@ -96,6 +96,7 @@ export async function exportVaultNotes(
         errors.push(`${note.title}: ${String(e)}`)
       }
     }
+    return { exported: done, errors, outDir: dir }
   } else {
     // Web: sequential downloads with small delay
     for (const note of notes) {
@@ -116,6 +117,14 @@ export async function exportVaultNotes(
   }
 
   return { exported: done, errors }
+}
+
+// ── Reveal an exported folder in the OS file manager ─────────────────────────
+
+export async function openExportFolder(dir: string): Promise<void> {
+  if (!isDesktop()) return
+  const { open } = await import('@tauri-apps/plugin-shell')
+  await open(dir)
 }
 
 // ── Legacy vault-level HTML export (kept for backward compat) ─────────────────

@@ -39,7 +39,8 @@ function makeTab(path: string, title: string): PaneTab {
   return { id: uuid(), path, title, type: pathToType(path) }
 }
 
-const initialTab  = makeTab('/notes', 'Notes')
+// Both desktop and mobile launch to the Home dashboard.
+const initialTab  = makeTab('/', 'Home')
 const initialPane: Pane = { id: uuid(), tabs: [initialTab], activeTabId: initialTab.id }
 
 export const usePaneStore = create<PaneStore>((set, get) => ({

@@ -8,13 +8,12 @@ import { usePaneId, useSidebarSlot } from '../contexts/PaneContext'
 import { SidebarWrapper } from '../components/organisms/Sidebar/SidebarWrapper'
 import { PenNoteEditor } from '../components/organisms/PenNote/PenNoteEditor'
 import { PenNoteSidebar } from '../components/organisms/PenNote/PenNoteSidebar'
-import { EmptyState } from '../components/molecules/EmptyState'
+import { PenNotesHome } from '../components/organisms/PenNote/PenNotesHome'
 import { VaultBanner } from '../components/common/VaultBanner'
 
 export function PenNotePage() {
   const { penNoteId } = useParams<{ penNoteId?: string }>()
   const penNotes = usePenNoteStore(s => s.penNotes)
-  const create = usePenNoteStore(s => s.create)
   const remove = usePenNoteStore(s => s.remove)
   const isLoaded = usePenNoteStore(s => s.isLoaded)
   const loadPenNotes = usePenNoteStore(s => s.loadPenNotes)
@@ -31,8 +30,6 @@ export function PenNotePage() {
   }, [isLoaded, loadPenNotes])
 
   const active = penNoteId ? penNotes.find(p => p.id === penNoteId) ?? null : null
-
-  const handleCreate = () => navigate(`/pennote/${create()}`)
 
   const handleDelete = (id: string, title: string) => {
     void useConfirmStore.getState()
@@ -56,14 +53,7 @@ export function PenNotePage() {
           {active ? (
             <PenNoteEditor key={active.id} penNote={active} onDelete={() => handleDelete(active.id, active.title)} />
           ) : (
-            <div className="flex h-full items-center justify-center">
-              <EmptyState
-                icon="pen-line"
-                title="No pen note open"
-                description="Create a handwriting note and write with your pen or finger."
-                action={{ label: 'New pen note', onClick: handleCreate }}
-              />
-            </div>
+            <PenNotesHome />
           )}
         </section>
       </div>

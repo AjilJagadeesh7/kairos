@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useAppStore } from '../../../store/useAppStore'
-import { exportVaultNotes, type ExportProgress } from '../../../utils/publishSiteGenerator'
+import { exportVaultNotes, openExportFolder, type ExportProgress } from '../../../utils/publishSiteGenerator'
+import { isDesktop } from '../../../utils/platform'
 import { SectionLabel } from '../../atoms/SectionLabel'
 import { Divider } from '../../atoms/Divider'
 import { Icon } from '../../../icons/Icon'
@@ -17,7 +18,7 @@ export function PublishSection() {
   const [search, setSearch]         = useState('')
   const [selected, setSelected]     = useState<Set<string>>(new Set())
   const [progress, setProgress]     = useState<ExportProgress | null>(null)
-  const [result, setResult]         = useState<{ exported: number; errors: string[] } | null>(null)
+  const [result, setResult]         = useState<{ exported: number; errors: string[]; outDir?: string } | null>(null)
 
   const allTags = useMemo(() => {
     const counts = new Map<string, number>()
@@ -229,8 +230,23 @@ export function PublishSection() {
         {result && !isExporting && (
           <div className={`flex items-start gap-2 rounded-md border px-3 py-2 text-xs ${result.errors.length === 0 ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'}`}>
             <Icon name={result.errors.length === 0 ? 'check-circle-2' : 'alert-triangle'} size={13} className="mt-0.5 shrink-0" />
-            <div>
+            <div className="min-w-0 flex-1">
               <p>{result.exported} note{result.exported !== 1 ? 's' : ''} exported{result.errors.length > 0 ? ` · ${result.errors.length} failed` : ' successfully.'}</p>
+              {result.outDir && (
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="truncate font-mono text-[11px] opacity-80" title={result.outDir}>{result.outDir}</span>
+                  {isDesktop() && (
+                    <button
+                      type="button"
+                      onClick={() => void openExportFolder(result.outDir!)}
+                      className="flex shrink-0 items-center gap-1 rounded border border-current/30 px-1.5 py-0.5 text-[11px] font-medium hover:bg-current/10"
+                    >
+                      <Icon name="folder-open" size={11} />
+                      Open folder
+                    </button>
+                  )}
+                </div>
+              )}
               {result.errors.length > 0 && (
                 <ul className="mt-1 space-y-0.5 opacity-80">{result.errors.map((e, i) => <li key={i}>{e}</li>)}</ul>
               )}

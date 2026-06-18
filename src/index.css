@@ -904,6 +904,43 @@ body {
     background: rgb(var(--surface-3));
     color: rgb(var(--text));
   }
+
+  /* ── Keyboard accessory bar: list indent / outdent (mobileListToolbarPlugin) */
+  /* Fixed above the on-screen keyboard; appended to <body>, positioned via JS. */
+  .mv-list-toolbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px max(12px, env(safe-area-inset-left)) 6px max(12px, env(safe-area-inset-right));
+    background: rgb(var(--surface-2));
+    border-top: 1px solid rgb(var(--border));
+    z-index: 50;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+  }
+  .mv-list-toolbar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 36px;
+    border-radius: 8px;
+    color: rgb(var(--text-2));
+    background: transparent;
+    transition: background 0.15s, color 0.15s, opacity 0.15s;
+  }
+  .mv-list-toolbar-btn:active {
+    background: rgb(var(--surface-3));
+    color: rgb(var(--text));
+  }
+  .mv-list-toolbar-btn[disabled] {
+    opacity: 0.3;
+    pointer-events: none;
+  }
 }
 
 /* Tables can overflow — contain them with scroll */

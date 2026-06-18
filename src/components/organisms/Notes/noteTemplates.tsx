@@ -21,22 +21,24 @@ export function makeTemplates(): NoteTemplate[] {
       description: 'Attendees, agenda, decisions, actions',
       icon: <Icon name="users" size={18} />,
       title: 'Meeting — ',
-      content: `## Date & Attendees
-**Date:** ${longDate}
-**Attendees:**
+      content: `> [!NOTE] ${longDate}
+> **Attendees:** ·
 
-## Agenda
+#### 🗓️ Agenda
 1.
 2.
 
-## Discussion & Decisions
+#### 💬 Discussion & Decisions
 
-## Action Items
+##### Topic 1
+
+#### ✅ Action Items
 | Task | Owner | Due |
 |------|-------|-----|
 | | | |
 
-## Follow-up
+#### 🔁 Follow-up
+-
 `,
     },
     {
@@ -45,28 +47,29 @@ export function makeTemplates(): NoteTemplate[] {
       description: 'Goal, milestones, tasks, risks',
       icon: <Icon name="bar-chart-2" size={18} />,
       title: 'Project: ',
-      content: `## Overview
-**Goal:**
-**Owner:**
-**Target date:**
+      content: `> [!ABSTRACT] At a glance
+> **Goal:**
+> **Owner:**
+> **Target:**
 
-## Milestones
+#### 🎯 Milestones
 - [ ] **Phase 1 —**
 - [ ] **Phase 2 —**
 - [ ] **Phase 3 —**
 
-## Tasks
+#### 🧩 Tasks
 - [ ]
 - [ ]
 
-## Risks & Mitigations
+#### ⚠️ Risks & Mitigations
 | Risk | Likelihood | Mitigation |
 |------|-----------|------------|
 | | | |
 
-## Resources & Links
+#### 🔗 Resources & Links
+-
 
-## Notes
+#### 🗒️ Notes
 `,
     },
     {
@@ -75,23 +78,25 @@ export function makeTemplates(): NoteTemplate[] {
       description: 'Capture ideas, evaluate, decide',
       icon: <Icon name="lightbulb" size={18} />,
       title: 'Brainstorm: ',
-      content: `## Problem / Question
+      content: `> [!QUESTION] Problem / Question
+> What are we trying to solve?
 
-## Constraints
--
-
-## Ideas
--
--
--
+#### 🚧 Constraints
 -
 
-## Evaluation
+#### 💡 Ideas
+-
+-
+-
+-
+
+#### ⚖️ Evaluation
 | Idea | Pros | Cons |
 |------|------|------|
 | | | |
 
-## Decision & Next Steps
+#### 🚀 Decision & Next Steps
+-
 `,
     },
     {
@@ -100,28 +105,27 @@ export function makeTemplates(): NoteTemplate[] {
       description: 'Summary, key ideas, quotes, takeaways',
       icon: <Icon name="book-open" size={18} />,
       title: 'Book: ',
-      content: `## Metadata
-**Title:**
-**Author:**
-**Finished:**
-**Rating:** ⭐⭐⭐⭐⭐
+      content: `> [!INFO] Metadata
+> **Author:**
+> **Finished:**
+> **Rating:** ⭐⭐⭐⭐⭐
 
-## In One Sentence
+#### ✏️ In One Sentence
 
-## Key Ideas
+#### 🔑 Key Ideas
 1.
 2.
 3.
 
-## Favourite Quotes
+#### ❝ Favourite Quotes
 >
 
 >
 
-## What I'll Apply
+#### 🎒 What I'll Apply
 -
 
-## Related Reading
+#### 📚 Related Reading
 -
 `,
     },
@@ -131,18 +135,18 @@ export function makeTemplates(): NoteTemplate[] {
       description: 'Prioritised task checklist',
       icon: <Icon name="check-square" size={18} />,
       title: 'To-Do: ',
-      content: `## High priority
+      content: `#### 🔴 High priority
 - [ ]
 - [ ]
 
-## Medium priority
+#### 🟡 Medium priority
 - [ ]
 - [ ]
 
-## Low priority / someday
+#### 🟢 Low priority / someday
 - [ ]
 
-## Done
+#### ✔️ Done
 `,
     },
     {
@@ -151,16 +155,16 @@ export function makeTemplates(): NoteTemplate[] {
       description: 'Yesterday, today, blockers',
       icon: <Icon name="zap" size={18} />,
       title: `Standup ${shortDate}`,
-      content: `## Yesterday
+      content: `#### ⏮️ Yesterday
 -
 
-## Today
+#### ▶️ Today
 -
 
-## Blockers
+#### 🚧 Blockers
 -
 
-## Notes
+#### 🗒️ Notes
 `,
     },
     {
@@ -169,21 +173,21 @@ export function makeTemplates(): NoteTemplate[] {
       description: 'Topic, sources, findings, gaps',
       icon: <Icon name="flask-conical" size={18} />,
       title: 'Research: ',
-      content: `## Topic
+      content: `> [!ABSTRACT] Topic
 
-## Background
+#### 🌐 Background
 
-## Sources
+#### 📑 Sources
 | Source | Key Finding | Credibility |
 |--------|-------------|-------------|
 | | | |
 
-## Findings
+#### 🔬 Findings
 
-## Open Questions
+#### ❓ Open Questions
 -
 
-## Conclusion
+#### 🧾 Conclusion
 `,
     },
     {
@@ -192,26 +196,26 @@ export function makeTemplates(): NoteTemplate[] {
       description: 'Concept, examples, review questions',
       icon: <Icon name="graduation-cap" size={18} />,
       title: 'Notes: ',
-      content: `## Topic
+      content: `> [!ABSTRACT] Topic
 
-## Core Concepts
-### Concept 1
+#### 🧠 Core Concepts
+##### Concept 1
 
-### Concept 2
+##### Concept 2
 
-## Examples
+#### 🧪 Examples
 \`\`\`
 
 \`\`\`
 
-## Key Terms
+#### 📖 Key Terms
 | Term | Definition |
 |------|-----------|
 | | |
 
-## Summary
+#### 📝 Summary
 
-## Review Questions
+#### 🔁 Review Questions
 1.
 2.
 3.
@@ -223,26 +227,27 @@ export function makeTemplates(): NoteTemplate[] {
       description: 'Steps to reproduce, expected vs actual',
       icon: <Icon name="bug" size={18} />,
       title: 'Bug: ',
-      content: `## Summary
+      content: `> [!WARNING] Summary
+> One-line description of the bug.
 
-## Environment
-**Version:**
-**OS / Browser:**
+#### 🖥️ Environment
+> **Version:**
+> **OS / Browser:**
 
-## Steps to Reproduce
+#### 🔢 Steps to Reproduce
 1.
 2.
 3.
 
-## Expected Behaviour
+#### ✅ Expected Behaviour
 
-## Actual Behaviour
+#### ❌ Actual Behaviour
 
-## Root Cause
+#### 🔍 Root Cause
 
-## Fix / Workaround
+#### 🛠️ Fix / Workaround
 
-## Related Issues
+#### 🔗 Related Issues
 -
 `,
     },
@@ -252,28 +257,28 @@ export function makeTemplates(): NoteTemplate[] {
       description: 'Wins, lessons, goals for next week',
       icon: <Icon name="globe" size={18} />,
       title: `Week of ${shortDateYear}`,
-      content: `## Wins this week
+      content: `#### 🏆 Wins this week
 -
 
-## What didn't go well
+#### 🌧️ What didn't go well
 -
 
-## Lessons learned
+#### 🎓 Lessons learned
 -
 
-## Metrics / Progress
+#### 📊 Metrics / Progress
 | Metric | Target | Actual |
 |--------|--------|--------|
 | | | |
 
-## Goals for next week
+#### 🎯 Goals for next week
 - [ ]
 - [ ]
 - [ ]
 
-## Energy & mood
+#### 🔋 Energy & mood
 
-## Notes
+#### 🗒️ Notes
 `,
     },
   ]

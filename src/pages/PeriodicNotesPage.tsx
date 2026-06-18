@@ -55,10 +55,10 @@ const TABS: Array<{ kind: TabKind; label: string }> = [
 ]
 
 const TEMPLATES: Record<TabKind, string> = {
-  weekly:    '# Weekly Review: {period}\n\n## Goals\n\n## Accomplishments\n\n## Notes\n',
-  monthly:   '# Monthly Review: {period}\n\n## Highlights\n\n## Goals\n\n## Reflections\n',
-  quarterly: '# Quarterly Review: {period}\n\n## Key Outcomes\n\n## Learnings\n\n## Next Quarter\n',
-  yearly:    '# Yearly Review: {period}\n\n## Year in Review\n\n## Major Milestones\n\n## Next Year Goals\n',
+  weekly:    '> [!ABSTRACT] Weekly Review · {period}\n\n#### 🎯 Goals\n-\n\n#### 🏆 Accomplishments\n-\n\n#### 🗒️ Notes\n',
+  monthly:   '> [!ABSTRACT] Monthly Review · {period}\n\n#### ✨ Highlights\n-\n\n#### 🎯 Goals\n-\n\n#### 🪞 Reflections\n',
+  quarterly: '> [!ABSTRACT] Quarterly Review · {period}\n\n#### 📈 Key Outcomes\n-\n\n#### 🎓 Learnings\n-\n\n#### ⏭️ Next Quarter\n',
+  yearly:    '> [!ABSTRACT] Yearly Review · {period}\n\n#### 📅 Year in Review\n\n#### 🏁 Major Milestones\n-\n\n#### 🎯 Next Year Goals\n- [ ]\n',
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
