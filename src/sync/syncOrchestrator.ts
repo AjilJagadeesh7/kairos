@@ -4,6 +4,7 @@ import { canPush, canPull } from './syncRules'
 import { CONTENT_ADAPTERS, type CategoryAdapter, type ContentCategory } from './categoryRegistry'
 import { db } from '../db/schema'
 import { useConflictStore } from '../store/useConflictStore'
+import { guardSyncQuota, exceedsFileLimit } from '../tiers/syncGuard'
 import type { Note, SyncStatus, SyncCategory } from '../types'
 
 // ---------------------------------------------------------------------------
@@ -43,8 +44,13 @@ export async function pushNoteToAll(note: Note): Promise<void> {
 
   const targets = pushTargets('notes')
   if (targets.length === 0) return
+  if (!guardSyncQuota()) return
 
   const content = serializeNote(note)
+  if (exceedsFileLimit(content)) {
+    console.warn(`[sync] note ${note.id} exceeds the per-file size limit — skipped`)
+    return
+  }
   const results = await Promise.allSettled(targets.map((p) => p.putBlob('notes', filename, content)))
 
   if (results.some((r) => r.status === 'fulfilled')) await markSynced('notes', note.id)
@@ -71,6 +77,11 @@ export async function pushContentToAll(category: ContentCategory, item: unknown)
 
   const targets = pushTargets(category)
   if (targets.length === 0) return
+  if (!guardSyncQuota()) return
+  if (exceedsFileLimit(synced.content)) {
+    console.warn(`[sync] ${category} ${synced.id} exceeds the per-file size limit — skipped`)
+    return
+  }
 
   const results = await Promise.allSettled(targets.map((p) => p.putBlob(category, synced.filename, synced.content)))
   if (results.some((r) => r.status === 'fulfilled')) await markSynced(category, synced.id)
@@ -252,6 +263,9 @@ export async function syncAllProviders(onStatus: (s: SyncStatus) => void): Promi
     failed = true
     console.error('[sync] settings sync failed:', err)
   }
+
+  // Refresh cached storage usage after a full sync.
+  void import('../store/useStorageStore').then(({ useStorageStore }) => useStorageStore.getState().recalculate())
 
   onStatus(failed ? 'error' : 'ok')
 }

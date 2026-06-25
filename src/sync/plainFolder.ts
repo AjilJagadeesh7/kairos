@@ -11,6 +11,8 @@
  * Mobile (Capacitor) — uses @capacitor/filesystem (Documents/Kairos).
  */
 import { isDesktop } from '../utils/platform'
+import { getHistoryPolicy } from '../tiers/checks'
+import { pruneVersions } from '../tiers/versionPrune'
 import { serializeNote, deserializeNote, noteIdToPath } from '../adapters/storage/noteSerializer'
 import type { Note, JournalEntry, ContentVersion } from '../types'
 import type { Board } from '../types/kanban.types'
@@ -435,9 +437,12 @@ export async function readAllJournalEntries(): Promise<JournalEntry[]> {
 // Version history — vault/history/notes/{id}.json  |  vault/history/journal/{date}.json
 // ---------------------------------------------------------------------------
 
-const MAX_VERSIONS = 50
-
 type HistorySub = 'notes' | 'journal'
+
+/** Apply the active tier's version-history policy. */
+function _pruneVersions(versions: ContentVersion[]): ContentVersion[] {
+  return pruneVersions(versions, getHistoryPolicy())
+}
 
 async function _historyFilePath(sub: HistorySub, id: string): Promise<string> {
   if (isDesktop()) {
@@ -482,7 +487,7 @@ async function _writeHistory(sub: HistorySub, id: string, versions: ContentVersi
 export async function appendNoteVersion(noteId: string, version: ContentVersion): Promise<void> {
   if (!isPlainFolderConnected()) return
   const existing = await _readHistory('notes', noteId)
-  const updated  = [...existing, version].slice(-MAX_VERSIONS)
+  const updated  = _pruneVersions([...existing, version])
   await _writeHistory('notes', noteId, updated)
 }
 
@@ -503,12 +508,50 @@ export async function deleteNoteHistory(noteId: string): Promise<void> {
 export async function appendJournalVersion(date: string, version: ContentVersion): Promise<void> {
   if (!isPlainFolderConnected()) return
   const existing = await _readHistory('journal', date)
-  const updated  = [...existing, version].slice(-MAX_VERSIONS)
+  const updated  = _pruneVersions([...existing, version])
   await _writeHistory('journal', date, updated)
 }
 
 export async function readJournalHistory(date: string): Promise<ContentVersion[]> {
   return _readHistory('journal', date)
+}
+
+/** Total bytes used by all version-history files (notes + journal). */
+export async function historyTotalBytes(): Promise<number> {
+  if (!isPlainFolderConnected()) return 0
+  try {
+    if (isDesktop()) {
+      if (!_tauriPath) return 0
+      const { readDir, stat } = await import('@tauri-apps/plugin-fs')
+      let total = 0
+      for (const sub of ['notes', 'journal'] as const) {
+        const dir = `${_tauriPath}/history/${sub}`
+        try {
+          const entries = await readDir(dir)
+          for (const e of entries) {
+            if (!e.name?.endsWith('.json')) continue
+            try { total += (await stat(`${dir}/${e.name}`)).size } catch { /* skip */ }
+          }
+        } catch { /* dir missing */ }
+      }
+      return total
+    }
+    const { Filesystem, Directory } = await import('@capacitor/filesystem')
+    let total = 0
+    for (const sub of ['notes', 'journal'] as const) {
+      const dir = `Kairos/history/${sub}`
+      try {
+        const res = await Filesystem.readdir({ path: dir, directory: Directory.Documents })
+        for (const f of res.files) {
+          if (!f.name.endsWith('.json')) continue
+          total += f.size ?? 0
+        }
+      } catch { /* dir missing */ }
+    }
+    return total
+  } catch {
+    return 0
+  }
 }
 
 // ---------------------------------------------------------------------------

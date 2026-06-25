@@ -10,6 +10,7 @@ import { ActivityBar } from './components/organisms/ActivityBar/ActivityBar'
 import { PaneLayout } from './components/organisms/SplitLayout/PaneLayout'
 import { LoaderBar } from './components/molecules/LoaderBar'
 import { ConfirmDialog } from './components/organisms/ConfirmDialog'
+import { UpgradeModal } from './components/organisms/Upgrade/UpgradeModal'
 import { PluginProvider } from './plugins/pluginContext'
 import { PluginThemeProvider } from './providers/PluginThemeProvider'
 import { IconProvider } from './icons/IconContext'
@@ -96,6 +97,7 @@ function AppInner() {
       </a>
       <LoaderBar />
       <ConfirmDialog />
+      <UpgradeModal />
       {!onboardingDone && <OnboardingModal />}
       {showCommandPalette && <CommandPalette onClose={closeCommandPalette} />}
       {showShortcuts && <ShortcutsModal onClose={closeShortcuts} />}

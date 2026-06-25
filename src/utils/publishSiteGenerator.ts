@@ -1,5 +1,6 @@
 import type { Note } from '../types'
 import { noteToStyledHtml } from './markdownToHtml'
+import { buildSiteHtml } from './siteHtmlBuilder'
 import { isDesktop } from './platform'
 
 function safeFilename(title: string): string {
@@ -117,6 +118,23 @@ export async function exportVaultNotes(
   }
 
   return { exported: done, errors }
+}
+
+// ── Single-file site export (sidebar + content + link graph) ─────────────────
+
+export async function exportVaultSite(
+  notes: Note[],
+  siteTitle?: string,
+): Promise<{ exported: number; errors: string[]; outDir?: string }> {
+  if (!notes.length) return { exported: 0, errors: ['No notes selected'] }
+  try {
+    const html = buildSiteHtml(notes, siteTitle)
+    const res = await saveToDisk(html, 'kairos-site.html', 'text/html', 'html')
+    if (res === 'cancelled') return { exported: 0, errors: ['Cancelled'] }
+    return { exported: notes.length, errors: [] }
+  } catch (e) {
+    return { exported: 0, errors: [String(e)] }
+  }
 }
 
 // ── Reveal an exported folder in the OS file manager ─────────────────────────

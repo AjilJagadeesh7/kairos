@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { embedText } from '../../../utils/embeddingClient'
 import { useAppStore } from '../../../store/useAppStore'
 import { useConfirmStore } from '../../../store/useConfirmStore'
+import { useHistoryRequestStore } from '../../../store/useHistoryRequestStore'
 import { TAG_COLOR_PALETTE } from '../../../utils/kanban'
 import { EditorToolbar } from './EditorToolbar'
 import { SlotRenderer } from '../../molecules/SlotRenderer'
@@ -39,6 +40,17 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
   const [restoreKey, setRestoreKey]   = useState(0)
   const [exportingPDF, setExportingPDF] = useState(false)
   const [largeDismissed, setLargeDismissed] = useState(false)
+
+  // Open the history panel when requested from the note context menu (sidebar).
+  useEffect(() => {
+    const maybeOpen = (requestedId: string | null) => {
+      if (requestedId !== note.id) return
+      setShowHistory(true)
+      useHistoryRequestStore.getState().clear()
+    }
+    maybeOpen(useHistoryRequestStore.getState().requestedNoteId)
+    return useHistoryRequestStore.subscribe(s => maybeOpen(s.requestedNoteId))
+  }, [note.id])
 
   const LARGE_NOTE_BYTES = 150_000
   const isLargeNote = !largeDismissed && new TextEncoder().encode(content).length > LARGE_NOTE_BYTES
@@ -221,9 +233,11 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
             {/* No overflow here — .ProseMirror is the scroll container (see index.css).
                 min-h-0 lets the flex chain constrain ProseMirror's height so it scrolls. */}
             <div className="flex flex-1 min-h-0 flex-col">
-              <div ref={editorRootRef} className="flex flex-1 min-h-0 flex-col pt-6 px-4 md:pl-28 md:pr-12">
-                {/* Pre-editor elements — shrink-0 so they don't compete with the editor for height */}
-                <div className="shrink-0">
+              <div ref={editorRootRef} className="flex flex-1 min-h-0 flex-col p-2">
+                {/* Pre-editor elements — shrink-0 so they don't compete with the editor for height.
+                    px-11 matches the ProseMirror content padding below so the title aligns with the
+                    body; the gutter is sized to fit Crepe's block (drag) handle on the left. */}
+                <div className="shrink-0 px-11">
                   <EditorBannerArea
                     note={note}
                     onUpdateFrontmatter={fm => void updateNoteFrontmatter(note.id, fm)}

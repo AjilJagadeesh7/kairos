@@ -11,7 +11,7 @@ export function AppLogo({ size = 32, className = '' }: AppLogoProps) {
     <div
       aria-label="Kairos"
       draggable={false}
-      className={`shrink-0 select-none flex items-center justify-center bg-[rgb(var(--accent))] text-white font-black ${className}`}
+      className={`shrink-0 select-none flex items-center justify-center bg-[rgb(var(--accent))] text-[rgb(var(--bg))] font-black ${className}`}
       style={{
         width: size,
         height: size,

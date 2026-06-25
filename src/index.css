@@ -678,6 +678,15 @@ body {
   overflow: visible;
 }
 
+/* ── Block handle ───────────────────────────────────────────────────────── */
+/* Crepe's block handle has two buttons: the "+" add (first) and the drag grip
+   (second). The two-button handle is ~66px wide and needs an ~80px left gutter
+   or floating-ui flips it to the RIGHT of the block. We keep only the "+" and
+   hide the drag grip, so the single button fits in a modest gutter on the left. */
+.milkdown .milkdown-block-handle .operation-item:nth-child(2) {
+  display: none;
+}
+
 /* ── Slash / block-edit menu ────────────────────────────────────────────── */
 .milkdown .milkdown-slash-menu {
   background: rgb(var(--surface)) !important;
@@ -773,17 +782,20 @@ body {
   background: rgb(var(--border)) !important;
 }
 
-/* ── Responsive ProseMirror padding ─────────────────────────────────────── */
-/* Milkdown's default reset sets .ProseMirror { padding: 60px 120px } which  */
-/* consumes 240px horizontally — completely unusable on phones.               */
-/* ProseMirror is the scroll container — keeping content bounded while        */
-/* allowing the slash menu (sibling, not inside ProseMirror) to escape.       */
+/* ── ProseMirror padding ────────────────────────────────────────────────── */
+/* Milkdown's default reset sets .ProseMirror { padding: 60px 120px } which   */
+/* consumes huge horizontal space. We strip it to a tight vertical-only       */
+/* gutter; the outer editor container supplies the small horizontal padding.  */
+/* ProseMirror stays the scroll container while the slash menu (a sibling,    */
+/* not inside ProseMirror) can still escape.                                  */
 .milkdown .ProseMirror {
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
   box-sizing: border-box;
-  padding: 40px 80px;
+  /* The editor itself is flush with its container; the padding lives INSIDE,
+     between the editor edge and the text (matches the title's px-5 gutter). */
+  padding: 8px 44px;
 }
 
 /* ── Caret: always visible against any background ── */
@@ -1140,10 +1152,9 @@ body {
   border: none;
   padding: 0;
 }
-/* Remove ProseMirror's large built-in horizontal padding — the outer p-4
-   container already provides breathing room, so we only need vertical space. */
+/* Match the edit view's internal gutter so reading mode aligns with editing. */
 .reading-view .milkdown .ProseMirror {
-  padding: 8px 0 !important;
+  padding: 8px 44px !important;
   cursor: default;
   user-select: text;
   caret-color: transparent;

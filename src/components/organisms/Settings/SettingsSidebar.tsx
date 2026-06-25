@@ -19,6 +19,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: 'general',      label: 'General',          iconName: 'settings-2'      },
       { id: 'storage-sync', label: 'Storage & Sync',   iconName: 'folder-sync'     },
+      { id: 'storage',      label: 'Storage & Limits', iconName: 'hard-drive'      },
       { id: 'tags',         label: 'Tags',             iconName: 'tag'             },
       { id: 'callouts',     label: 'Callouts',         iconName: 'brackets'        },
       { id: 'keyboard',     label: 'Keyboard',         iconName: 'keyboard'        },

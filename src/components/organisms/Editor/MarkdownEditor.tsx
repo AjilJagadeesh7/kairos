@@ -16,6 +16,7 @@ import { chartCodeBlockPlugin } from './chartCodeBlockPlugin'
 import { mobileAddBlockPlugin } from './mobileAddBlockPlugin'
 import { mobileListToolbarPlugin } from './mobileListToolbarPlugin'
 import { clickBelowAppendPlugin } from './clickBelowAppendPlugin'
+import { assertUploadSize } from '../../../tiers/uploadGuard'
 import { useWikilinkTooltip } from '../../../hooks/useWikilinkTooltip'
 import { useWikilinkAutocomplete } from '../../../hooks/useWikilinkAutocomplete'
 import { useEditorContextMenu } from '../../../hooks/useEditorContextMenu'
@@ -156,6 +157,10 @@ export function MarkdownEditor({ noteId, initialMarkdown, readOnly = false, onCh
     if (!rootRef.current) return
     const fileToDataURL = (file: File): Promise<string> =>
       new Promise((resolve, reject) => {
+        if (!assertUploadSize(file.size, file.name)) {
+          reject(new Error('File exceeds plan limit'))
+          return
+        }
         const reader = new FileReader()
         reader.onload  = () => resolve(reader.result as string)
         reader.onerror = reject

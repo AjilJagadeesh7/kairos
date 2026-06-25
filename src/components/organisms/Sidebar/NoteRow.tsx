@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAppStore } from '../../../store/useAppStore'
 import { usePaneStore } from '../../../store/usePaneStore'
 import { useIconRules, resolveNoteIcon } from '../../../plugins/pluginContext'
+import { useHistoryRequestStore } from '../../../store/useHistoryRequestStore'
 import { NoteContextMenu } from './NoteContextMenu'
 import { Icon } from '../../../icons/Icon'
 import type { Note } from '../../../types'
@@ -92,6 +93,7 @@ export function NoteRow({
           onOpenInNewTab={handleOpenInNewTab}
           onMove={onMove}
           onToggleSync={() => void setNoteNoSync(note.id, !note.noSync)}
+          onViewHistory={() => { onOpen(); useHistoryRequestStore.getState().request(note.id) }}
           onDelete={onDelete}
           onClose={() => setCtxMenu(null)}
         />

@@ -254,6 +254,10 @@ export function useAppStartup() {
             .catch(err => { console.warn('[sync] startup sync failed:', err); store.setSyncStatus('error') })
         }
       }
+
+      // Begin tracking storage usage (recalculates now + every 5 minutes)
+      const { useStorageStore } = await import('../store/useStorageStore')
+      useStorageStore.getState().startAutoRefresh()
     })()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

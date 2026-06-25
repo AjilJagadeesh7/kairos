@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom'
 import { NotesPage } from './pages/NotesPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { LandingPage } from './pages/LandingPage'
+import { PricingPage } from './pages/PricingPage'
 import { usePluginRegistry } from './plugins/pluginContext'
 import { ErrorBoundary } from './components/common/ErrorBoundary'
 import { Icon } from './icons/Icon'
@@ -31,6 +32,7 @@ export function AppRoutes() {
       <Route path="/notes" element={<NotesPage />} />
       <Route path="/notes/:noteId" element={<NotesPage />} />
       <Route path="/settings" element={<SettingsPage />} />
+      <Route path="/pricing" element={<PricingPage />} />
 
       <Route path="/graph" element={
         <Suspense fallback={<PageLoader />}><GraphPage /></Suspense>

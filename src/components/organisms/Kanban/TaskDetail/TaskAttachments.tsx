@@ -5,13 +5,13 @@ import { useKanbanStore } from '../../../../store/useKanbanStore'
 import type { KanbanTask } from '../../../../types/kanban.types'
 import { v4 as uuidv4 } from 'uuid'
 import { Icon } from '../../../../icons/Icon'
+import { assertUploadSize } from '../../../../tiers/uploadGuard'
 
 interface TaskAttachmentsProps {
   boardId: string
   task: KanbanTask
 }
 
-const MAX_FILE_SIZE = 2 * 1024 * 1024
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 
 export function TaskAttachments({ boardId, task }: TaskAttachmentsProps): JSX.Element {
@@ -29,10 +29,7 @@ export function TaskAttachments({ boardId, task }: TaskAttachmentsProps): JSX.El
         toast.error(`"${file.name}" is not supported`, { description: 'Only JPEG, PNG, GIF, and WebP images are allowed.' })
         continue
       }
-      if (file.size > MAX_FILE_SIZE) {
-        toast.error(`"${file.name}" is too large`, { description: 'Attachments must be under 2 MB.' })
-        continue
-      }
+      if (!assertUploadSize(file.size, file.name)) continue
       try {
         const data = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader()

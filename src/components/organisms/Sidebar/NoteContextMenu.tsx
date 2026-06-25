@@ -16,13 +16,14 @@ interface NoteContextMenuProps {
   onOpenInNewTab: () => void
   onMove: (folder: string) => void
   onToggleSync: () => void
+  onViewHistory: () => void
   onDelete: () => void
   onClose: () => void
 }
 
 export function NoteContextMenu({
   x, y, note, isPinned, isCopied, isSynced, allFolderPaths,
-  onPin, onCopyLink, onOpenInNewTab, onMove, onToggleSync, onDelete, onClose,
+  onPin, onCopyLink, onOpenInNewTab, onMove, onToggleSync, onViewHistory, onDelete, onClose,
 }: NoteContextMenuProps) {
   const ref = useRef<HTMLDivElement>(null)
   const [showMove, setShowMove] = useState(false)
@@ -105,6 +106,14 @@ export function NoteContextMenu({
       >
         <Icon name={isSynced ? 'cloud-off' : 'cloud'} size={13} aria-hidden />
         {isSynced ? "Don't sync this note" : 'Sync this note'}
+      </button>
+
+      <button type="button" role="menuitem"
+        onClick={e => { e.stopPropagation(); onViewHistory(); onClose() }}
+        className="flex w-full items-center gap-2 px-3 py-2 text-xs text-text transition hover:bg-surface2"
+      >
+        <Icon name="history" size={13} aria-hidden />
+        View history
       </button>
 
       <div className="my-0.5 border-t border-border/50" />

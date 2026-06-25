@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useAppStore } from '../../../store/useAppStore'
-import { exportVaultNotes, openExportFolder, type ExportProgress } from '../../../utils/publishSiteGenerator'
+import { exportVaultNotes, exportVaultSite, openExportFolder, type ExportProgress } from '../../../utils/publishSiteGenerator'
 import { isDesktop } from '../../../utils/platform'
 import { SectionLabel } from '../../atoms/SectionLabel'
 import { Divider } from '../../atoms/Divider'
 import { Icon } from '../../../icons/Icon'
+import type { IconToken } from '../../../icons/tokens'
 
-type Format = 'html' | 'markdown'
+type Format = 'html' | 'markdown' | 'site'
 type Scope  = 'all' | 'tags' | 'custom'
 
 export function PublishSection() {
@@ -57,7 +58,9 @@ export function PublishSection() {
     if (!notesToExport.length) return
     setResult(null)
     setProgress({ done: 0, total: notesToExport.length })
-    const res = await exportVaultNotes(notesToExport, format, p => setProgress(p))
+    const res = format === 'site'
+      ? await exportVaultSite(notesToExport)
+      : await exportVaultNotes(notesToExport, format, p => setProgress(p))
     setProgress(null)
     setResult(res)
   }
@@ -78,19 +81,29 @@ export function PublishSection() {
       {/* Format */}
       <div>
         <p className="mb-2 text-sm font-medium text-text">Format</p>
-        <div className="flex gap-2">
-          {(['html', 'markdown'] as Format[]).map(f => (
+        <div className="flex flex-wrap gap-2">
+          {([
+            { id: 'html',     label: 'HTML',     icon: 'globe' },
+            { id: 'markdown', label: 'Markdown', icon: 'file-text' },
+            { id: 'site',     label: 'Site',     icon: 'network' },
+          ] as { id: Format; label: string; icon: IconToken }[]).map(f => (
             <button
-              key={f}
+              key={f.id}
               type="button"
-              onClick={() => setFormat(f)}
-              className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition ${format === f ? 'border-accent/60 bg-accent/10 text-accent' : 'border-border bg-surface text-text2 hover:border-accent/40 hover:text-text'}`}
+              onClick={() => setFormat(f.id)}
+              className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition ${format === f.id ? 'border-accent/60 bg-accent/10 text-accent' : 'border-border bg-surface text-text2 hover:border-accent/40 hover:text-text'}`}
             >
-              <Icon name={f === 'html' ? 'globe' : 'file-text'} size={12} />
-              {f === 'html' ? 'HTML' : 'Markdown'}
+              <Icon name={f.icon} size={12} />
+              {f.label}
             </button>
           ))}
         </div>
+        {format === 'site' && (
+          <p className="mt-2 text-xs text-text3">
+            Bundles the selected notes into a single self-contained HTML file with a contents
+            sidebar, reading pane, and an interactive link graph. Deploy it anywhere (Netlify, etc.).
+          </p>
+        )}
       </div>
 
       <Divider />
