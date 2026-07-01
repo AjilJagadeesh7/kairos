@@ -81,7 +81,7 @@ export function LandingPage() {
                   <p className="text-sm font-medium text-[rgb(var(--text))]">Today</p>
                   {dailyNotes[today] ? (
                     <p className="mt-0.5 line-clamp-1 text-xs text-[rgb(var(--text-3))]">
-                      {dailyNotes[today].content.replace(/[#*`\[\]!]/g, '').trim().slice(0, 60) || 'Entry exists'}
+                      {dailyNotes[today].content.replace(/[#*`[\]!]/g, '').trim().slice(0, 60) || 'Entry exists'}
                     </p>
                   ) : (
                     <p className="mt-0.5 text-xs text-[rgb(var(--text-3))]">No entry yet — start writing</p>
@@ -103,7 +103,7 @@ export function LandingPage() {
                       <p className="truncate text-sm font-medium text-[rgb(var(--text))]">{label}</p>
                       {entry.content && (
                         <p className="mt-0.5 line-clamp-1 text-xs text-[rgb(var(--text-3))]">
-                          {entry.content.replace(/[#*`\[\]!]/g, '').trim().slice(0, 60)}
+                          {entry.content.replace(/[#*`[\]!]/g, '').trim().slice(0, 60)}
                         </p>
                       )}
                     </div>
@@ -158,7 +158,7 @@ export function LandingPage() {
                       </p>
                       {note.content && (
                         <p className="mt-0.5 line-clamp-1 text-xs text-[rgb(var(--text-3))]">
-                          {note.content.replace(/[#*`\[\]]/g, '').slice(0, 80)}
+                          {note.content.replace(/[#*`[\]]/g, '').slice(0, 80)}
                         </p>
                       )}
                     </div>

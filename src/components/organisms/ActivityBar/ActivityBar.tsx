@@ -20,6 +20,7 @@ const TOP_NAV: Array<{ to: string; iconName: IconToken; label: string }> = [
   { to: '/journal', iconName: 'calendar-days',    label: 'Journal' },
   { to: '/kanban',  iconName: 'square-kanban',    label: 'Kanban'  },
   { to: '/canvas',  iconName: 'pen-tool',          label: 'Canvas'  },
+  { to: '/attachments', iconName: 'paperclip',    label: 'Attachments' },
   { to: '/graph',   iconName: 'network',          label: 'Graph'   },
 ]
 
@@ -131,7 +132,7 @@ function CompactThemePicker({ value, onChange }: { value: ThemeMode; onChange: (
 
 // ─── Activity bar ─────────────────────────────────────────────────────────────
 
-const SIDEBAR_TYPES = new Set(['notes', 'pennote', 'journal', 'canvas', 'graph', 'settings', 'attachment'])
+const SIDEBAR_TYPES = new Set(['notes', 'pennote', 'journal', 'canvas', 'graph', 'settings', 'attachments'])
 
 function NavBtn({ to, iconName, label, NavIconComponent, activePath, onNav }: {
   to: string

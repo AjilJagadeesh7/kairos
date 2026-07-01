@@ -25,7 +25,8 @@ function inline(s: string): string {
     .replace(/~~([^~]+)~~/g, '<s>$1</s>')
     .replace(/\$([^$\n]+)\$/g, (_, math) => `<span class="math-inline">\\(${math}\\)</span>`)
 
-  // 4. Restore code spans
+  // 4. Restore code spans (sentinel uses NUL chars — intentional control chars)
+  // eslint-disable-next-line no-control-regex
   return t.replace(/\x00(\d+)\x00/g, (_, i) => codes[parseInt(i)])
 }
 

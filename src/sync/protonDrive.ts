@@ -56,7 +56,7 @@ export async function connectProton(username: string, password: string): Promise
       headers: { Authorization: authHeader(creds) },
     })
     mkcolStatus = mkcolResp.status
-  } catch (err) {
+  } catch {
     throw new Error(
       'Could not reach Proton Drive WebDAV. ' +
       'Make sure the Vite dev server is running (npm run dev) and try again.',

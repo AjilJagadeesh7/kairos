@@ -129,7 +129,7 @@ export function JournalCalendar({ activeDate, onClose }: JournalCalendarProps) {
             <div className="divide-y divide-[rgb(var(--border))]">
               {searchResults.map(([date, entry]) => {
                 const isActive = date === activeDate
-                const snippet  = entry.content.replace(/[#*`\[\]>]/g, '').trim().slice(0, 100)
+                const snippet  = entry.content.replace(/[#*`[\]>]/g, '').trim().slice(0, 100)
                 return (
                   <button
                     key={date}

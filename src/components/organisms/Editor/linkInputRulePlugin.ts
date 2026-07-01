@@ -4,10 +4,10 @@ import { keymap } from '@milkdown/prose/keymap'
 import type { EditorState, Transaction } from '@milkdown/prose/state'
 
 // Matches [text](url) when user types the closing ) themselves
-const LINK_RE = /\[([^\[\]]+)\]\(([^()]+)\)$/
+const LINK_RE = /\[([^[\]]+)\]\(([^()]+)\)$/
 
 // Scan for any [text](url) whose span contains the cursor
-const LINK_SCAN = /\[([^\[\]]+)\]\(([^()]*)\)/g
+const LINK_SCAN = /\[([^[\]]+)\]\(([^()]*)\)/g
 
 function convertLinkAtCursor(
   state: EditorState,

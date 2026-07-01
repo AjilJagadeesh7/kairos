@@ -278,7 +278,7 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
                     noteTitle={title}
                     onChange={setContent}
                     onWikilinkClick={handleWikilinkClick}
-                    owner={{ type: 'note', id: note.id }}
+                    enableAttachments
                   />
                 </div>
               </div>

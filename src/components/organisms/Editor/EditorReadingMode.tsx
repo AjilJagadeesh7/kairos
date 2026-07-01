@@ -29,7 +29,7 @@ export function EditorReadingMode({
   editorRootRef, exportingPDF, onExportPDF,
   onExitReadingMode, onContentChange, onWikilinkClick,
 }: EditorReadingModeProps) {
-  const bannerUrl = useResolvedBanner(note.id, note.userFrontmatter?.banner as string | undefined)
+  const bannerUrl = useResolvedBanner(note.userFrontmatter?.banner as string | undefined)
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2 md:px-6">
@@ -86,7 +86,7 @@ export function EditorReadingMode({
               readOnly
               onChange={onContentChange}
               onWikilinkClick={onWikilinkClick}
-              owner={{ type: 'note', id: note.id }}
+              enableAttachments
             />
           </AnnotationLayer>
         </div>

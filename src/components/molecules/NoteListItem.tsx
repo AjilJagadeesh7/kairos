@@ -70,7 +70,7 @@ export const NoteListItem = memo(function NoteListItem({ note, isActive, isCopie
           type="button"
           title={isPinned ? 'Unpin' : 'Pin'}
           aria-label={isPinned ? `Unpin "${label}"` : `Pin "${label}"`}
-          onClick={e => { e.stopPropagation(); isPinned ? unpinNote(note.id) : pinNote(note.id) }}
+          onClick={e => { e.stopPropagation(); if (isPinned) unpinNote(note.id); else pinNote(note.id) }}
           className={`flex h-6 w-6 items-center justify-center rounded transition active:scale-95 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 ${
             isPinned ? 'text-accent hover:text-accent/70' : 'text-text3 hover:bg-surface hover:text-text'
           }`}

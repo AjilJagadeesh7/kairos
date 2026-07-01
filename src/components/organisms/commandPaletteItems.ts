@@ -1,5 +1,5 @@
 import type { IconToken } from '../../icons/tokens'
-import type { Note, JournalEntry, Canvas, PenNote } from '../../types'
+import type { Note, JournalEntry, Canvas, PenNote, Attachment } from '../../types'
 import type { KanbanTask, Board } from '../../types/kanban.types'
 import { todayDate } from '../../store/useJournalStore'
 
@@ -19,6 +19,7 @@ export type ResultItem =
   | { kind: 'task';    task: KanbanTask; board: Board;  score: number }
   | { kind: 'canvas';  canvas: Canvas;                  score: number }
   | { kind: 'pennote'; penNote: PenNote;                score: number }
+  | { kind: 'attachment'; attachment: Attachment;       score: number }
   | NavItem
 
 export interface GroupedSection {
@@ -32,6 +33,7 @@ export function itemKey(item: ResultItem): string {
   if (item.kind === 'task')    return `task:${item.task.id}`
   if (item.kind === 'canvas')  return `canvas:${item.canvas.id}`
   if (item.kind === 'pennote') return `pennote:${item.penNote.id}`
+  if (item.kind === 'attachment') return `attachment:${item.attachment.id}`
   return item.id
 }
 
@@ -42,6 +44,7 @@ export function groupResults(items: ResultItem[]): GroupedSection[] {
   const tasks    = items.filter(i => i.kind === 'task')
   const canvases = items.filter(i => i.kind === 'canvas')
   const penNotes = items.filter(i => i.kind === 'pennote')
+  const attachments = items.filter(i => i.kind === 'attachment')
 
   const sections: GroupedSection[] = []
   if (nav.length)      sections.push({ label: 'Navigate',     items: nav })
@@ -50,6 +53,7 @@ export function groupResults(items: ResultItem[]): GroupedSection[] {
   if (journal.length)  sections.push({ label: 'Journal',      items: journal })
   if (tasks.length)    sections.push({ label: 'Kanban tasks', items: tasks })
   if (canvases.length) sections.push({ label: 'Canvases',     items: canvases })
+  if (attachments.length) sections.push({ label: 'Attachments', items: attachments })
   return sections
 }
 
@@ -59,6 +63,7 @@ export const NAV_ITEMS: NavItem[] = [
   { kind: 'nav', id: 'nav-journal',    label: 'Journal',            hint: "Open today's journal",           iconName: 'calendar-days', path: `/journal/${todayDate()}` },
   { kind: 'nav', id: 'nav-kanban',     label: 'Kanban',             hint: 'Open Kanban boards',             iconName: 'layout-list',  path: '/kanban' },
   { kind: 'nav', id: 'nav-canvas',     label: 'Canvas',             hint: 'Open Canvases',                  iconName: 'pen-tool',     path: '/canvas' },
+  { kind: 'nav', id: 'nav-attachments', label: 'Attachments',       hint: 'Open Attachments',               iconName: 'paperclip',    path: '/attachments' },
   { kind: 'nav', id: 'nav-graph',      label: 'Knowledge Graph',    hint: 'Open Knowledge Graph',           iconName: 'network',      path: '/graph' },
   { kind: 'nav', id: 'nav-settings',   label: 'Settings',           hint: 'Open Settings',                  iconName: 'settings',     path: '/settings' },
   { kind: 'nav', id: 'nav-pricing',    label: 'Plans & Pricing',    hint: 'View and change your plan',      iconName: 'zap',     path: '/pricing' },

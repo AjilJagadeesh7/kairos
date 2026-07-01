@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { Note, SettingRecord, SyncMeta, TagRecord, JournalEntry, AttachmentRecord, AttachmentOwner } from '../types'
+import type { Note, SettingRecord, SyncMeta, TagRecord, JournalEntry, Attachment } from '../types'
 import type { Board } from '../types/kanban.types'
 import type { Canvas } from '../types/canvas.types'
 
@@ -18,7 +18,7 @@ export class KairosDB extends Dexie {
   boards!: EntityTable<Board, 'id'>
   journal!: EntityTable<JournalEntry, 'date'>
   canvases!: EntityTable<Canvas, 'id'>
-  attachments!: EntityTable<AttachmentRecord, 'id'>
+  attachments!: EntityTable<Attachment, 'id'>
 
   constructor() {
     super('kairos')
@@ -131,6 +131,24 @@ export class KairosDB extends Dexie {
       canvases: 'id, title, updatedAt',
       attachments: 'id, [ownerType+ownerId], ownerId, filename',
     })
+    // Version 11: attachments become first-class, standalone items (own id, name,
+    // folder) instead of being owner-scoped to a note/journal. Clean break — the
+    // old owner-scoped rows are cleared (users re-add files under the new model).
+    this.version(11)
+      .stores({
+        notes: 'id, title, *tags, createdAt, updatedAt',
+        settings: 'key',
+        syncMeta: 'noteId, lastSynced, driveFileId',
+        embeddings: 'noteId',
+        tags: 'name',
+        boards: 'id, title, updatedAt',
+        journal: 'date, updatedAt',
+        canvases: 'id, title, updatedAt',
+        attachments: 'id, name, folder, createdAt',
+      })
+      .upgrade(async (tx) => {
+        await tx.table('attachments').clear()
+      })
   }
 }
 
@@ -220,18 +238,11 @@ export async function deleteCanvasFromDB(id: string): Promise<void> {
   await db.canvases.delete(id)
 }
 
-export async function getAttachmentsForOwner(owner: AttachmentOwner): Promise<AttachmentRecord[]> {
-  return db.attachments.where({ ownerType: owner.type, ownerId: owner.id }).toArray()
+export async function getAttachment(id: string): Promise<Attachment | undefined> {
+  return db.attachments.get(id)
 }
 
-export async function getAttachment(owner: AttachmentOwner, filename: string): Promise<AttachmentRecord | undefined> {
-  return db.attachments
-    .where({ ownerType: owner.type, ownerId: owner.id })
-    .filter((a) => a.filename === filename)
-    .first()
-}
-
-export async function upsertAttachment(record: AttachmentRecord): Promise<void> {
+export async function upsertAttachment(record: Attachment): Promise<void> {
   await db.attachments.put(record)
 }
 
@@ -239,10 +250,6 @@ export async function deleteAttachment(id: string): Promise<void> {
   await db.attachments.delete(id)
 }
 
-export async function deleteAttachmentsForOwner(owner: AttachmentOwner): Promise<void> {
-  await db.attachments.where({ ownerType: owner.type, ownerId: owner.id }).delete()
-}
-
-export async function getAllAttachments(): Promise<AttachmentRecord[]> {
-  return db.attachments.toArray()
+export async function getAllAttachments(): Promise<Attachment[]> {
+  return db.attachments.orderBy('createdAt').toArray()
 }

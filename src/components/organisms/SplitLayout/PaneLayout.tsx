@@ -26,7 +26,7 @@ function tabIcon(type: PaneTab['type'], size = 13) {
     case 'kanban':   return <Icon name="square-kanban" size={size} />
     case 'graph':    return <Icon name="network"      size={size} />
     case 'settings': return <Icon name="settings-2"    size={size} />
-    case 'attachment': return <Icon name="paperclip"  size={size} />
+    case 'attachments': return <Icon name="paperclip"  size={size} />
     default:         return <Icon name="home"        size={size} />
   }
 }
@@ -63,7 +63,7 @@ export function PaneLayout() {
   const sidebarWidth = useAppStore(s => s.sidebarWidth)
   const { startResize } = useSidebarResize(slotContainerRef)
 
-  const SIDEBAR_TYPES = new Set(['notes', 'journal', 'graph', 'settings', 'attachment'])
+  const SIDEBAR_TYPES = new Set(['notes', 'journal', 'graph', 'settings', 'attachments'])
   const focusedPane      = panes.find(p => p.id === focusedPaneId)
   const focusedActiveTab = focusedPane?.tabs.find(t => t.id === focusedPane.activeTabId)
   const focusedHasSidebar = focusedActiveTab ? SIDEBAR_TYPES.has(focusedActiveTab.type) : false

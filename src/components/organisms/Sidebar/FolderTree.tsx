@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react'
 import { ConnectedFolderRow } from './FolderRow'
 import { NoteRow } from './NoteRow'
-import { NoteTreeItem } from './NoteTreeItem'
 import { Icon } from '../../../icons/Icon'
 import { InlineEditInput } from '../../molecules/InlineEditInput'
 import { EmptyState } from '../../molecules/EmptyState'
@@ -150,7 +149,7 @@ export function FolderTree({
       ))}
 
       {root.notes.map(note => (
-        <NoteTreeItem
+        <NoteRow
           key={note.id}
           note={note}
           isActive={activeNoteId === note.id}

@@ -123,7 +123,6 @@ export function GraphView({
     onRightClickNode,
   })
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleNodeHover   = useCallback((_n: GNode | null) => {}, [])
   const handleNodeDragEnd = useCallback((node: GNode) => {
     node.fx = node.x; node.fy = node.y
@@ -143,7 +142,7 @@ export function GraphView({
 
   const nodeCanvasObject = useCallback(
     makeNodeRenderer({ selectedNoteId, focusedNodeId, neighborIds, focusMode, textColor, degreeMap, isLargeGraph, hoveredIdRef }),
-    [selectedNoteId, focusedNodeId, neighborIds, focusMode, textColor, degreeMap, isLargeGraph], // eslint-disable-line react-hooks/exhaustive-deps
+    [selectedNoteId, focusedNodeId, neighborIds, focusMode, textColor, degreeMap, isLargeGraph],
   )
 
   const graphData = useMemo(() => {

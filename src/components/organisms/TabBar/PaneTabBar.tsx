@@ -34,7 +34,7 @@ function tabIcon(type: PaneTab['type'], size = 13) {
     case 'kanban':   return <Icon name="square-kanban" size={size} />
     case 'graph':    return <Icon name="network"      size={size} />
     case 'settings': return <Icon name="settings-2"    size={size} />
-    case 'attachment': return <Icon name="paperclip"  size={size} />
+    case 'attachments': return <Icon name="paperclip"  size={size} />
     default:         return <Icon name="home"       size={size} />
   }
 }

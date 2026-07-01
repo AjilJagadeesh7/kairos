@@ -18,10 +18,9 @@ import { mobileAddBlockPlugin } from './mobileAddBlockPlugin'
 import { mobileListToolbarPlugin } from './mobileListToolbarPlugin'
 import { clickBelowAppendPlugin } from './clickBelowAppendPlugin'
 import { assertUploadSize } from '../../../tiers/uploadGuard'
-import { importFile, parseAttachmentRef, ATTACHMENT_INSERT_EVENT } from '../../../attachments/attachmentService'
+import { importAttachment, attachmentRef } from '../../../attachments/attachmentService'
 import { isDesktop } from '../../../utils/platform'
 import { toast } from 'sonner'
-import type { AttachmentOwner } from '../../../types'
 import { useWikilinkTooltip } from '../../../hooks/useWikilinkTooltip'
 import { useWikilinkAutocomplete } from '../../../hooks/useWikilinkAutocomplete'
 import { useEditorContextMenu } from '../../../hooks/useEditorContextMenu'
@@ -49,7 +48,7 @@ function mimeForFile(name: string): string {
   return MIME_BY_EXT[name.split('.').pop()?.toLowerCase() ?? ''] ?? 'application/octet-stream'
 }
 
-export function MarkdownEditor({ noteId, initialMarkdown, readOnly = false, onChange, onWikilinkClick, owner }: MarkdownEditorProps): JSX.Element {
+export function MarkdownEditor({ noteId, initialMarkdown, readOnly = false, onChange, onWikilinkClick, enableAttachments }: MarkdownEditorProps): JSX.Element {
   const rootRef              = useRef<HTMLDivElement | null>(null)
   const crepeRef             = useRef<Crepe | null>(null)
   const editorReadyRef       = useRef(false)
@@ -59,10 +58,10 @@ export function MarkdownEditor({ noteId, initialMarkdown, readOnly = false, onCh
   const onChangeRef          = useRef(onChange)
   const onWikilinkClickRef   = useRef(onWikilinkClick)
   const readOnlyRef          = useRef(readOnly)
-  const ownerRef             = useRef(owner)
+  const attachmentsRef       = useRef(enableAttachments)
 
-  // Keep the owner current for the upload + render plugins (read at event time).
-  useEffect(() => { ownerRef.current = owner }, [owner])
+  // Keep the flag current for the upload plugins (read at event time).
+  useEffect(() => { attachmentsRef.current = enableAttachments }, [enableAttachments])
 
   const editorZoom    = useAppStore(s => s.editorZoom)
   const setEditorZoom = useAppStore(s => s.setEditorZoom)
@@ -193,14 +192,13 @@ export function MarkdownEditor({ noteId, initialMarkdown, readOnly = false, onCh
         reader.readAsDataURL(file)
       })
 
-    // When an owner is set, imported media becomes a file referenced by
-    // attachment://; otherwise (e.g. kanban) fall back to inline base64.
+    // When attachments are enabled, imported media becomes a standalone file
+    // referenced by attachment://<id>; otherwise (e.g. kanban) inline base64.
     const handleUpload = async (file: File): Promise<string> => {
-      const ow = ownerRef.current
-      if (ow) {
-        const ref = await importFile(ow, file)
-        if (!ref) throw new Error('File rejected')
-        return ref
+      if (attachmentsRef.current) {
+        const rec = await importAttachment(file)
+        if (!rec) throw new Error('File rejected')
+        return attachmentRef(rec.id)
       }
       return fileToDataURL(file)
     }
@@ -235,7 +233,7 @@ export function MarkdownEditor({ noteId, initialMarkdown, readOnly = false, onCh
     crepe.editor.use(math)
     crepe.editor.use(pasteSanitizePlugin)
     crepe.editor.use(imageLazyPlugin)
-    crepe.editor.use(attachmentRenderPlugin(() => ownerRef.current))
+    crepe.editor.use(attachmentRenderPlugin())
     crepe.editor.use(queryBlockPlugin)
     crepe.editor.use(chartCodeBlockPlugin)
     crepe.editor.use(mobileAddBlockPlugin)
@@ -272,31 +270,29 @@ export function MarkdownEditor({ noteId, initialMarkdown, readOnly = false, onCh
     const root = rootRef.current
     if (!root) return
 
-    const insertRef = (ref: string) => {
-      const parsed = parseAttachmentRef(ref)
+    const insertRef = (ref: string, name: string) => {
       crepeRef.current?.editor.action(ctx => {
         const view = ctx.get(editorViewCtx)
         const { state } = view
         const nodeType = state.schema.nodes['image-block'] ?? state.schema.nodes['image']
         if (!nodeType) return
-        const node = nodeType.create({ src: ref, alt: parsed?.filename ?? '', title: parsed?.filename ?? '' })
+        const node = nodeType.create({ src: ref, alt: name, title: name })
         view.dispatch(state.tr.replaceSelectionWith(node).scrollIntoView())
       })
     }
 
-    // Copy dropped/pasted files into the vault (+ IndexedDB) and insert their
-    // previews. One loader toast spans the whole upload (read + import).
+    // Copy dropped/pasted files into the vault (+ IndexedDB) as standalone
+    // attachments and insert their previews. One loader toast spans the upload.
     const runImport = async (getFiles: () => Promise<File[]>) => {
-      const ow = ownerRef.current
-      if (!ow) return
+      if (!attachmentsRef.current) return
       const tId = toast.loading('Adding attachment…')
       try {
         const files = await getFiles()
         if (files.length === 0) { toast.dismiss(tId); return }
         let added = 0
         for (const file of files) {
-          const ref = await importFile(ow, file)
-          if (ref) { insertRef(ref); added++ }
+          const rec = await importAttachment(file)
+          if (rec) { insertRef(attachmentRef(rec.id), rec.name); added++ }
         }
         if (added === 0) toast.dismiss(tId)          // rejected (e.g. size) — guard already warned
         else toast.success(added > 1 ? `Added ${added} files` : 'Attachment added', { id: tId })
@@ -356,13 +352,6 @@ export function MarkdownEditor({ noteId, initialMarkdown, readOnly = false, onCh
       }
     }
 
-    const onInsert = (e: Event) => {
-      const detail = (e as CustomEvent<{ owner: AttachmentOwner; ref: string }>).detail
-      const ow = ownerRef.current
-      if (!detail || !ow || detail.owner.type !== ow.type || detail.owner.id !== ow.id) return
-      insertRef(detail.ref)
-    }
-
     // Remove any node referencing a deleted attachment from the open document.
     const onStrip = (e: Event) => {
       const ref = (e as CustomEvent<{ ref: string }>).detail?.ref
@@ -386,7 +375,6 @@ export function MarkdownEditor({ noteId, initialMarkdown, readOnly = false, onCh
     root.addEventListener('dragover', onDragOver, true)
     root.addEventListener('drop', onDrop, true)
     root.addEventListener('paste', onPaste, true)
-    window.addEventListener(ATTACHMENT_INSERT_EVENT, onInsert)
     window.addEventListener('mv:strip-attachment', onStrip)
 
     // Desktop (Tauri): use the native drag-drop event. WebKitGTK's HTML5 file
@@ -435,7 +423,6 @@ export function MarkdownEditor({ noteId, initialMarkdown, readOnly = false, onCh
       root.removeEventListener('dragover', onDragOver, true)
       root.removeEventListener('drop', onDrop, true)
       root.removeEventListener('paste', onPaste, true)
-      window.removeEventListener(ATTACHMENT_INSERT_EVENT, onInsert)
       window.removeEventListener('mv:strip-attachment', onStrip)
     }
   }, [])

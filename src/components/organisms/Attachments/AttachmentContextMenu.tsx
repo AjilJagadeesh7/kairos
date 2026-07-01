@@ -6,14 +6,14 @@ interface Props {
   x: number
   y: number
   onOpen: () => void
-  onOpenNewTab: () => void
+  onRename: () => void
   onDownload: () => void
   onDelete: () => void
   onClose: () => void
 }
 
-/** Right-click menu for an attachment row in the sidebar (mirrors NoteContextMenu). */
-export function AttachmentContextMenu({ x, y, onOpen, onOpenNewTab, onDownload, onDelete, onClose }: Props) {
+/** Right-click menu for an attachment row on the Attachments page. */
+export function AttachmentContextMenu({ x, y, onOpen, onRename, onDownload, onDelete, onClose }: Props) {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -26,7 +26,6 @@ export function AttachmentContextMenu({ x, y, onOpen, onOpenNewTab, onDownload, 
 
   const left = Math.min(x, window.innerWidth - 208)
   const top  = Math.min(y, window.innerHeight - 180)
-
   const item = 'flex w-full items-center gap-2 px-3 py-2 text-xs text-text transition hover:bg-surface2'
 
   return createPortal(
@@ -42,8 +41,8 @@ export function AttachmentContextMenu({ x, y, onOpen, onOpenNewTab, onDownload, 
         <Icon name="eye" size={13} aria-hidden /> Open
       </button>
       <button type="button" role="menuitem" className={item}
-        onClick={e => { e.stopPropagation(); onOpenNewTab(); onClose() }}>
-        <Icon name="external-link" size={13} aria-hidden /> Open in new tab
+        onClick={e => { e.stopPropagation(); onRename(); onClose() }}>
+        <Icon name="pencil" size={13} aria-hidden /> Rename
       </button>
       <button type="button" role="menuitem" className={item}
         onClick={e => { e.stopPropagation(); onDownload(); onClose() }}>

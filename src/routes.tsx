@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { NotesPage } from './pages/NotesPage'
-import { AttachmentViewerPage } from './pages/AttachmentViewerPage'
+import { AttachmentsPage } from './pages/AttachmentsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { LandingPage } from './pages/LandingPage'
 import { PricingPage } from './pages/PricingPage'
@@ -32,7 +32,8 @@ export function AppRoutes() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/notes" element={<NotesPage />} />
       <Route path="/notes/:noteId" element={<NotesPage />} />
-      <Route path="/attachment/:ownerType/:ownerId/:filename" element={<AttachmentViewerPage />} />
+      <Route path="/attachments" element={<AttachmentsPage />} />
+      <Route path="/attachments/:id" element={<AttachmentsPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/pricing" element={<PricingPage />} />
 

@@ -136,7 +136,7 @@ describe('mutateBoard', () => {
   })
 
   it('is a no-op for a non-existent boardId', () => {
-    let state = makeKanbanState({ boards: [] })
+    const state = makeKanbanState({ boards: [] })
     const originalState = state
     const set = vi.fn()
     const get = () => state

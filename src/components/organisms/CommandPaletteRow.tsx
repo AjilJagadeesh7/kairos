@@ -16,7 +16,7 @@ function formatJournalDate(date: string): string {
 }
 
 function excerpt(content: string, maxLen = 80): string {
-  const stripped = content.replace(/[#*`_~\[\]]/g, '').replace(/\s+/g, ' ').trim()
+  const stripped = content.replace(/[#*`_~[\]]/g, '').replace(/\s+/g, ' ').trim()
   return stripped.length > maxLen ? stripped.slice(0, maxLen) + '…' : stripped
 }
 
@@ -26,6 +26,7 @@ function rowContent(item: ResultItem): { iconName: IconToken; primary: string; s
   if (item.kind === 'task')    return { iconName: 'check-square',  primary: item.task.title, secondary: item.board.title }
   if (item.kind === 'canvas')  return { iconName: 'pen-tool',      primary: item.canvas.title || 'Untitled canvas', secondary: 'Canvas' }
   if (item.kind === 'pennote') return { iconName: 'pen-line',      primary: item.penNote.title || 'Untitled pen note', secondary: item.penNote.folder || 'Pen note' }
+  if (item.kind === 'attachment') return { iconName: 'paperclip',  primary: item.attachment.name, secondary: item.attachment.folder || 'Attachment' }
   return { iconName: item.iconName, primary: item.label, secondary: item.hint }
 }
 

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { isDesktop } from '../../../utils/platform'
 import { useIsMobile } from '../../../hooks/useIsMobile'
 import { useResolvedBanner } from '../../../hooks/useResolvedBanner'
-import { importFile } from '../../../attachments/attachmentService'
+import { importAttachment, attachmentRef } from '../../../attachments/attachmentService'
 import { Button } from '../../atoms/Button'
 import { IconButton } from '../../atoms/IconButton'
 import { Icon } from '../../../icons/Icon'
@@ -24,7 +24,7 @@ export function EditorBannerArea({ note, onUpdateFrontmatter }: Props) {
   const [urlValue, setUrlValue]         = useState('')
 
   const banner    = note.userFrontmatter?.banner as string | undefined
-  const bannerUrl = useResolvedBanner(note.id, banner)
+  const bannerUrl = useResolvedBanner(banner)
 
   // On mobile the cover image is hidden entirely — that vertical space is
   // reclaimed for the editor (no add-cover affordance, no banner render).
@@ -41,14 +41,14 @@ export function EditorBannerArea({ note, onUpdateFrontmatter }: Props) {
         filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif'] }],
       })
       if (!path || typeof path !== 'string') return
-      // Copy the picked image into the note's attachments (blob + vault), then
-      // reference it by attachment:// — renders via a blob URL and syncs.
+      // Copy the picked image into attachments (blob + vault), then reference it
+      // by attachment://<id> — renders via a blob URL and syncs.
       const { readFile } = await import('@tauri-apps/plugin-fs')
       const bytes = await readFile(path)
       const name  = path.split(/[/\\]/).pop() ?? 'banner'
       const file  = new File([bytes as BlobPart], name, { type: IMG_MIME[name.split('.').pop()?.toLowerCase() ?? ''] ?? 'image/png' })
-      const ref   = await importFile({ type: 'note', id: note.id }, file)
-      if (ref) onUpdateFrontmatter({ ...note.userFrontmatter, banner: ref })
+      const rec   = await importAttachment(file)
+      if (rec) onUpdateFrontmatter({ ...note.userFrontmatter, banner: attachmentRef(rec.id) })
     } catch {
       // fallback to URL input if dialog/read fails
       setShowUrlInput(true)

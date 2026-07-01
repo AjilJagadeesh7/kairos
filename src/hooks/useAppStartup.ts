@@ -137,17 +137,20 @@ export function useAppStartup() {
           { useJournalStore },
           { useCanvasStore },
           { usePenNoteStore },
+          { useAttachmentStore },
         ] = await Promise.all([
           import('../store/useKanbanStore'),
           import('../store/useJournalStore'),
           import('../store/useCanvasStore'),
           import('../store/usePenNoteStore'),
+          import('../store/useAttachmentStore'),
         ])
         await Promise.all([
           useKanbanStore.getState().isLoaded  ? Promise.resolve() : useKanbanStore.getState().loadBoards(),
           useJournalStore.getState().isLoaded ? Promise.resolve() : useJournalStore.getState().loadEntries(),
           useCanvasStore.getState().isLoaded  ? Promise.resolve() : useCanvasStore.getState().loadCanvases(),
           usePenNoteStore.getState().isLoaded ? Promise.resolve() : usePenNoteStore.getState().loadPenNotes(),
+          useAttachmentStore.getState().isLoaded ? Promise.resolve() : useAttachmentStore.getState().loadAttachments(),
         ])
 
         // Discover plugins dropped directly into the vault folder, then load.
@@ -259,6 +262,5 @@ export function useAppStartup() {
       const { useStorageStore } = await import('../store/useStorageStore')
       useStorageStore.getState().startAutoRefresh()
     })()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 }

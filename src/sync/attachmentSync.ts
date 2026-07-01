@@ -1,52 +1,32 @@
 /**
- * Cloud sync for media attachments. Each attachment is a binary object stored on
- * every connected provider that supports binary I/O, under a path mirroring the
- * vault layout:
- *   notes:   attachments/<noteId>/<file>
- *   journal: attachments/journal/<date>/<file>
+ * Cloud sync for standalone attachments. Each file is a binary object stored on
+ * every connected, binary-capable provider under a path mirroring the vault:
+ *   attachments/<folder>/<name>
+ * plus a manifest `attachments/attachments.json` ({ items: AttachmentMeta[] })
+ * so another device can map a pulled file back to its stable id/folder.
  *
- * Tier limits are reused from the note/journal sync path: the total counts
- * toward `syncStorageBytes` (guardSyncQuota) and each file is capped at
- * `fileSizeBytes`. Free tier has a 0-byte quota, so nothing uploads there.
+ * Attachments follow the `notes` push/pull rules and count toward the same
+ * `syncStorageBytes` tier quota; each file is capped at `fileSizeBytes`.
  */
 import { connectedProviders, type RemoteProvider } from './remoteProvider'
 import { canPush, canPull } from './syncRules'
 import { guardSyncQuota } from '../tiers/syncGuard'
 import { getActiveLimits } from '../tiers/tierProvider'
-import { db, getAllAttachments, getAttachment } from '../db/schema'
-import { ingestBytes } from '../attachments/attachmentService'
-import type { AttachmentOwner, SyncCategory } from '../types'
+import { getAllAttachments, getAttachment } from '../db/schema'
+import { ingestAttachment, attachmentMeta } from '../attachments/attachmentService'
+import type { Attachment, AttachmentMeta, SyncCategory } from '../types'
 
 const ROOT = 'attachments'
+const MANIFEST_PATH = 'attachments/attachments.json'
+const CATEGORY: SyncCategory = 'notes' // attachments follow the notes push/pull rules
 
-function ownerDir(owner: AttachmentOwner): string {
-  return owner.type === 'journal' ? `${ROOT}/journal/${owner.id}` : `${ROOT}/${owner.id}`
-}
-
-function relPath(owner: AttachmentOwner, filename: string): string {
-  return `${ownerDir(owner)}/${filename}`
-}
-
-/** Map a provider-relative attachment path back to its owner + filename. */
-export function parseAttachmentPath(path: string): { owner: AttachmentOwner; filename: string } | null {
-  const parts = path.split('/')
-  if (parts[0] !== ROOT) return null
-  if (parts[1] === 'journal' && parts.length >= 4) {
-    return { owner: { type: 'journal', id: parts[2] }, filename: parts.slice(3).join('/') }
-  }
-  if (parts.length >= 3) {
-    return { owner: { type: 'note', id: parts[1] }, filename: parts.slice(2).join('/') }
-  }
-  return null
-}
-
-/** The parent sync category whose push/pull rules govern this owner's media. */
-function categoryFor(owner: AttachmentOwner): SyncCategory {
-  return owner.type === 'journal' ? 'journal' : 'notes'
+function relPath(folder: string | undefined, name: string): string {
+  const f = (folder ?? '').replace(/^\/+|\/+$/g, '')
+  return f ? `${ROOT}/${f}/${name}` : `${ROOT}/${name}`
 }
 
 function binaryProviders(): RemoteProvider[] {
-  return connectedProviders().filter(p => p.putBinary && p.getBinary && p.listBinary && p.deleteBinary)
+  return connectedProviders().filter(p => p.putBinary && p.getBinary && p.deleteBinary)
 }
 
 function withinFileLimit(size: number): boolean {
@@ -54,77 +34,62 @@ function withinFileLimit(size: number): boolean {
   return !isFinite(fileSizeBytes) || size <= fileSizeBytes
 }
 
-/** Honor a parent note/journal that opted out of cloud sync (noSync). */
-async function ownerOptedOut(owner: AttachmentOwner): Promise<boolean> {
-  try {
-    if (owner.type === 'journal') return !!(await db.journal.get(owner.id))?.noSync
-    return !!(await db.notes.get(owner.id))?.noSync
-  } catch {
-    return false
-  }
+async function pushManifest(targets: RemoteProvider[]): Promise<void> {
+  const all = await getAllAttachments()
+  const items = all.filter(a => !a.noSync).map(attachmentMeta)
+  const bytes = new TextEncoder().encode(JSON.stringify({ items }))
+  await Promise.allSettled(targets.map(p => p.putBinary!(MANIFEST_PATH, bytes)))
 }
 
-// ── Push ─────────────────────────────────────────────────────────────────────
-
-/** Upload one attachment to every allowed, binary-capable provider. */
-export async function pushAttachment(owner: AttachmentOwner, filename: string, bytes: Uint8Array): Promise<void> {
+// ── Push single (called on import / rename / move) ────────────────────────────
+export async function pushAttachment(record: Attachment, bytes: Uint8Array): Promise<void> {
+  if (record.noSync) return
   if (!guardSyncQuota()) return
   if (!withinFileLimit(bytes.length)) return
-  if (await ownerOptedOut(owner)) return
-  const cat = categoryFor(owner)
-  const targets = binaryProviders().filter(p => canPush(cat, p.id))
+  const targets = binaryProviders().filter(p => canPush(CATEGORY, p.id))
   if (targets.length === 0) return
-  const path = relPath(owner, filename)
-  await Promise.allSettled(targets.map(p => p.putBinary!(path, bytes)))
+  await Promise.allSettled(targets.map(p => p.putBinary!(relPath(record.folder, record.name), bytes)))
+  await pushManifest(targets)
 }
 
 // ── Delete ────────────────────────────────────────────────────────────────────
-
-export async function deleteAttachmentRemote(owner: AttachmentOwner, filename: string): Promise<void> {
-  const path = relPath(owner, filename)
+export async function deleteAttachmentRemote(folder: string | undefined, name: string): Promise<void> {
+  const path = relPath(folder, name)
   await Promise.allSettled(binaryProviders().map(p => p.deleteBinary!(path)))
 }
 
-export async function deleteOwnerAttachmentsRemote(owner: AttachmentOwner, filenames: string[]): Promise<void> {
-  for (const f of filenames) await deleteAttachmentRemote(owner, f)
-}
-
 // ── Full two-way reconcile (called from syncAllProviders) ─────────────────────
-
 export async function syncAttachments(): Promise<void> {
   const providers = binaryProviders()
   if (providers.length === 0) return
 
-  const local = await getAllAttachments()
-  const localPaths = new Set(local.map(a => relPath({ type: a.ownerType, id: a.ownerId }, a.filename)))
-
-  // Pull: anything on an allowed source we don't have locally → ingest it.
+  // Pull: read each allowed provider's manifest, ingest any file we don't have.
   for (const p of providers) {
-    let remotePaths: string[]
-    try { remotePaths = await p.listBinary!(ROOT) } catch { continue }
-    for (const path of remotePaths) {
-      if (localPaths.has(path)) continue
-      const parsed = parseAttachmentPath(path)
-      if (!parsed) continue
-      if (!canPull(categoryFor(parsed.owner), p.id)) continue
-      const bytes = await p.getBinary!(path).catch(() => null)
+    if (!canPull(CATEGORY, p.id)) continue
+    const manifestBytes = await p.getBinary!(MANIFEST_PATH).catch(() => null)
+    if (!manifestBytes) continue
+    let items: AttachmentMeta[]
+    try {
+      items = (JSON.parse(new TextDecoder().decode(manifestBytes)) as { items?: AttachmentMeta[] }).items ?? []
+    } catch { continue }
+    for (const meta of items) {
+      if (await getAttachment(meta.id)) continue
+      const bytes = await p.getBinary!(relPath(meta.folder, meta.name)).catch(() => null)
       if (!bytes) continue
-      await ingestBytes(parsed.owner, parsed.filename, bytes)
-      localPaths.add(path)
+      await ingestAttachment(meta, bytes)
     }
   }
 
-  // Push: every local attachment to allowed targets (idempotent overwrite).
+  // Push: every local attachment to allowed targets (idempotent overwrite) + manifest.
   if (!guardSyncQuota()) return
+  const targets = providers.filter(p => canPush(CATEGORY, p.id))
+  if (targets.length === 0) return
+  const local = await getAllAttachments()
   for (const a of local) {
-    const owner: AttachmentOwner = { type: a.ownerType, id: a.ownerId }
+    if (a.noSync) continue
     if (!withinFileLimit(a.size)) continue
-    if (await ownerOptedOut(owner)) continue
-    const targets = providers.filter(p => canPush(categoryFor(owner), p.id))
-    if (targets.length === 0) continue
-    const rec = await getAttachment(owner, a.filename)
-    if (!rec) continue
-    const bytes = new Uint8Array(await rec.blob.arrayBuffer())
-    await Promise.allSettled(targets.map(p => p.putBinary!(relPath(owner, a.filename), bytes)))
+    const bytes = new Uint8Array(await a.blob.arrayBuffer())
+    await Promise.allSettled(targets.map(p => p.putBinary!(relPath(a.folder, a.name), bytes)))
   }
+  await pushManifest(targets)
 }

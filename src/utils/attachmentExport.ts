@@ -1,43 +1,30 @@
 import { zipSync, strToU8 } from 'fflate'
 import { getAttachment } from '../db/schema'
 import { parseAttachmentRef, kindFromName } from '../attachments/attachmentService'
-import type { AttachmentOwner, AttachmentOwnerType } from '../types'
 
 // Matches an attachment:// reference inside markdown or generated HTML.
 const REF_RE = /attachment:\/\/[^\s)"'>]+/g
 
-export interface ResolvedRef { ref: string; ownerId: string; filename: string; bytes: Uint8Array | null; mime: string }
+export interface ResolvedRef { ref: string; id: string; filename: string; bytes: Uint8Array | null; mime: string }
 
 /**
- * Load the bytes for every distinct attachment ref in some text. Each ref's
- * owner is derived from the ownerId embedded in the ref + the given ownerType,
- * so this works across many notes (e.g. a combined site export), not just one.
+ * Load the bytes + name for every distinct attachment ref in some text. Refs are
+ * standalone `attachment://<id>` links, so this works across many notes (e.g. a
+ * combined site export), not just one.
  */
-async function resolveRefs(ownerType: AttachmentOwnerType, text: string): Promise<Map<string, ResolvedRef>> {
+async function resolveRefs(text: string): Promise<Map<string, ResolvedRef>> {
   const map = new Map<string, ResolvedRef>()
   for (const m of text.matchAll(REF_RE)) {
     const ref = m[0]
     if (map.has(ref)) continue
-    const parsed = parseAttachmentRef(ref)
-    if (!parsed) continue
-    const owner: AttachmentOwner = { type: ownerType, id: parsed.ownerId }
-    const { bytes, mime } = await loadBytes(owner, parsed.filename)
-    map.set(ref, { ref, ownerId: parsed.ownerId, filename: parsed.filename, bytes, mime })
+    const id = parseAttachmentRef(ref)
+    if (!id) continue
+    const rec = await getAttachment(id)
+    const filename = rec?.name ?? id
+    const bytes = rec ? new Uint8Array(await rec.blob.arrayBuffer()) : null
+    map.set(ref, { ref, id, filename, bytes, mime: rec?.mime || mimeFor(filename) })
   }
   return map
-}
-
-async function loadBytes(owner: AttachmentOwner, filename: string): Promise<{ bytes: Uint8Array | null; mime: string }> {
-  const rec = await getAttachment(owner, filename)
-  if (rec) return { bytes: new Uint8Array(await rec.blob.arrayBuffer()), mime: rec.mime || mimeFor(filename) }
-  // Fall back to the on-disk vault copy (e.g. synced from another device).
-  try {
-    const { readPlainAttachment } = await import('../sync/plainFolder')
-    const bytes = await readPlainAttachment(owner, filename)
-    return { bytes, mime: mimeFor(filename) }
-  } catch {
-    return { bytes: null, mime: mimeFor(filename) }
-  }
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -60,21 +47,20 @@ export interface CollectedFiles { body: string; files: Record<string, Uint8Array
 
 /**
  * Rewrite attachment refs in markdown to relative paths and gather their bytes.
- * `pathFor(filename, ownerId)` decides the relative path (e.g. flat for a single
- * note, or per-note subfolders for a batch export).
+ * `pathFor(filename, id)` decides the relative path (e.g. flat for a single note,
+ * or per-id subfolders for a batch export).
  */
 export async function collectAttachmentFiles(
-  ownerType: AttachmentOwnerType,
   markdown: string,
-  pathFor: (filename: string, ownerId: string) => string,
+  pathFor: (filename: string, id: string) => string,
 ): Promise<CollectedFiles> {
-  const refs = await resolveRefs(ownerType, markdown)
+  const refs = await resolveRefs(markdown)
   const files: Record<string, Uint8Array> = {}
   const missing: string[] = []
   let body = markdown
 
-  for (const { ref, ownerId, filename, bytes } of refs.values()) {
-    const rel = pathFor(filename, ownerId)
+  for (const { ref, id, filename, bytes } of refs.values()) {
+    const rel = pathFor(filename, id)
     body = body.split(ref).join(rel)
     if (bytes) files[rel] = bytes
     else missing.push(filename)
@@ -82,12 +68,8 @@ export async function collectAttachmentFiles(
   return { body, files, missing }
 }
 
-export async function buildAttachmentZip(
-  ownerType: AttachmentOwnerType,
-  markdown: string,
-  mdFilename: string,
-): Promise<ZipResult> {
-  const { body, files, missing } = await collectAttachmentFiles(ownerType, markdown, f => `attachments/${f}`)
+export async function buildAttachmentZip(markdown: string, mdFilename: string): Promise<ZipResult> {
+  const { body, files, missing } = await collectAttachmentFiles(markdown, f => `attachments/${f}`)
   files[mdFilename] = strToU8(body)
   return { bytes: zipSync(files, { level: 6 }), included: Object.keys(files).length - 1, missing }
 }
@@ -99,15 +81,15 @@ export async function buildAttachmentZip(
  * inlined data URLs, upgrading video/audio/pdf to the matching media element so
  * the exported single-file HTML is self-contained.
  */
-export async function inlineHtmlAttachments(ownerType: AttachmentOwnerType, html: string): Promise<string> {
-  const refs = await resolveRefs(ownerType, html)
+export async function inlineHtmlAttachments(html: string): Promise<string> {
+  const refs = await resolveRefs(html)
   if (refs.size === 0) return html
 
   // Replace each <img …src="attachment://…"…> with the appropriate element.
   return html.replace(/<img\b[^>]*\bsrc="(attachment:\/\/[^"]+)"[^>]*>/g, (_full: string, ref: string) => {
     const r = refs.get(ref)
     if (!r || !r.bytes) {
-      return `<p style="color:#888;font-size:13px">⚠ Missing attachment: ${escapeHtml(parseAttachmentRef(ref)?.filename ?? ref)}</p>`
+      return `<p style="color:#888;font-size:13px">⚠ Missing attachment: ${escapeHtml(r?.filename ?? ref)}</p>`
     }
     const dataUrl = `data:${r.mime};base64,${bytesToBase64(r.bytes)}`
     const kind = kindFromName(r.filename)

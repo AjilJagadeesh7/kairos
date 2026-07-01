@@ -33,12 +33,12 @@ export function JournalExportMenu({ title, markdown, editorRootRef }: JournalExp
   const exportHTML = async () => {
     const body = markdownToHtml(markdown)
     const doc = `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title></head><body><h1>${title}</h1>${body}</body></html>`
-    downloadBlob(await inlineHtmlAttachments('journal', doc), `${safe}.html`, 'text/html')
+    downloadBlob(await inlineHtmlAttachments(doc), `${safe}.html`, 'text/html')
   }
 
   const exportMarkdown = async () => {
     if (hasAttachmentRefs(markdown)) {
-      const { bytes } = await buildAttachmentZip('journal', markdown, `${safe}.md`)
+      const { bytes } = await buildAttachmentZip(markdown, `${safe}.md`)
       downloadBlob(bytes, `${safe}.zip`, 'application/zip')
     } else {
       downloadBlob(markdown, `${safe}.md`, 'text/markdown')

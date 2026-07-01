@@ -31,7 +31,7 @@ export function NoteNode({ id, data, selected }: NodeProps & { data: NoteNodeDat
   useEffect(() => { updateNodeInternals(id) }, [collapsed, id, updateNodeInternals])
 
   const preview = note?.content
-    ? note.content.replace(/^#+\s.*/gm, '').replace(/[*`\[\]#>]/g, '').trim().slice(0, 300)
+    ? note.content.replace(/^#+\s.*/gm, '').replace(/[*`[\]#>]/g, '').trim().slice(0, 300)
     : null
 
   return (

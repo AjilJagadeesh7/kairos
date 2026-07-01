@@ -14,7 +14,7 @@ import { isDesktop } from '../utils/platform'
 import { getHistoryPolicy } from '../tiers/checks'
 import { pruneVersions } from '../tiers/versionPrune'
 import { serializeNote, deserializeNote, noteIdToPath } from '../adapters/storage/noteSerializer'
-import type { Note, JournalEntry, ContentVersion, AttachmentOwner } from '../types'
+import type { Note, JournalEntry, ContentVersion } from '../types'
 import type { Board } from '../types/kanban.types'
 import type { Canvas } from '../types/canvas.types'
 import type { PenNote } from '../types/penNote.types'
@@ -301,7 +301,7 @@ export async function readAllBoards(): Promise<Board[]> {
       if (!entry.name.endsWith('.json')) continue
       const raw = await mobileRead(`${kanbanPath}/${entry.name}`)
       if (raw) {
-        try { boards.push(JSON.parse(raw) as Board) } catch {}
+        try { boards.push(JSON.parse(raw) as Board) } catch { /* skip unreadable */ }
       }
     }
     return boards
@@ -424,7 +424,7 @@ export async function readAllJournalEntries(): Promise<JournalEntry[]> {
       const date = entry.name.slice(0, -3)
       const raw = await mobileRead(`${journalPath}/${entry.name}`)
       if (raw) {
-        try { journal.push(deserializeJournalEntry(raw, date)) } catch {}
+        try { journal.push(deserializeJournalEntry(raw, date)) } catch { /* skip unreadable */ }
       }
     }
     return journal
@@ -434,33 +434,39 @@ export async function readAllJournalEntries(): Promise<JournalEntry[]> {
 }
 
 // ---------------------------------------------------------------------------
-// Attachments — vault/attachments/<noteId>/<file>  |  vault/attachments/journal/<date>/<file>
-// Media files imported into a note/journal. The IndexedDB blob is the primary
-// copy; these helpers mirror it into the vault so files are visible on disk and
-// travel with a folder sync.
+// Attachments — vault/attachments/<folder>/<name>  (+ attachments/attachments.json manifest)
+// Standalone files, organized into folders like notes. The IndexedDB blob is the
+// primary copy; these helpers mirror it into the vault so files are visible on
+// disk and travel with a folder sync. The manifest maps each file's id/folder so
+// other devices can reconstruct records on pull.
 // ---------------------------------------------------------------------------
 
-/** Vault-relative directory for an owner's attachments (no leading slash). */
-function _attachmentRelDir(owner: AttachmentOwner): string {
-  return owner.type === 'journal'
-    ? `attachments/journal/${owner.id}`
-    : `attachments/${owner.id}`
+const ATTACHMENT_MANIFEST = 'attachments/attachments.json'
+
+/** Vault-relative directory for a folder (no leading slash). "" → attachments/. */
+function _attRelDir(folder?: string): string {
+  const f = (folder ?? '').replace(/^\/+|\/+$/g, '')
+  return f ? `attachments/${f}` : 'attachments'
 }
 
-export async function writePlainAttachment(owner: AttachmentOwner, filename: string, bytes: Uint8Array): Promise<void> {
+function _attRelPath(folder: string | undefined, name: string): string {
+  return `${_attRelDir(folder)}/${name}`
+}
+
+export async function writePlainAttachment(folder: string | undefined, name: string, bytes: Uint8Array): Promise<void> {
   if (!isPlainFolderConnected()) return
-  const rel = `${_attachmentRelDir(owner)}/${filename}`
+  const relDir = _attRelDir(folder)
+  const rel = `${relDir}/${name}`
 
   if (isDesktop()) {
     if (!_tauriPath) return
     const { writeFile, mkdir } = await import('@tauri-apps/plugin-fs')
-    const full = `${_tauriPath}/${rel}`
-    try { await mkdir(`${_tauriPath}/${_attachmentRelDir(owner)}`, { recursive: true }) } catch { /* exists */ }
-    await writeFile(full, bytes)
+    try { await mkdir(`${_tauriPath}/${relDir}`, { recursive: true }) } catch { /* exists */ }
+    await writeFile(`${_tauriPath}/${rel}`, bytes)
     return
   }
 
-  await mobileMkdir(`Kairos/${_attachmentRelDir(owner)}`)
+  await mobileMkdir(`Kairos/${relDir}`)
   const { Filesystem, Directory } = await import('@capacitor/filesystem')
   await Filesystem.writeFile({
     path: `Kairos/${rel}`,
@@ -470,9 +476,9 @@ export async function writePlainAttachment(owner: AttachmentOwner, filename: str
   })
 }
 
-export async function readPlainAttachment(owner: AttachmentOwner, filename: string): Promise<Uint8Array | null> {
+export async function readPlainAttachment(folder: string | undefined, name: string): Promise<Uint8Array | null> {
   if (!isPlainFolderConnected()) return null
-  const rel = `${_attachmentRelDir(owner)}/${filename}`
+  const rel = _attRelPath(folder, name)
 
   if (isDesktop()) {
     if (!_tauriPath) return null
@@ -489,30 +495,9 @@ export async function readPlainAttachment(owner: AttachmentOwner, filename: stri
   }
 }
 
-/** Filenames present in an owner's vault attachment folder (for hydration). */
-export async function listPlainAttachments(owner: AttachmentOwner): Promise<string[]> {
-  if (!isPlainFolderConnected()) return []
-  const relDir = _attachmentRelDir(owner)
-
-  if (isDesktop()) {
-    if (!_tauriPath) return []
-    const { readDir } = await import('@tauri-apps/plugin-fs')
-    try {
-      const entries = await readDir(`${_tauriPath}/${relDir}`)
-      return entries.filter(e => !e.isDirectory && e.name).map(e => e.name!)
-    } catch { return [] }
-  }
-
-  const { Filesystem, Directory } = await import('@capacitor/filesystem')
-  try {
-    const res = await Filesystem.readdir({ path: `Kairos/${relDir}`, directory: Directory.Documents })
-    return res.files.filter(f => f.type !== 'directory').map(f => f.name)
-  } catch { return [] }
-}
-
-export async function deletePlainAttachment(owner: AttachmentOwner, filename: string): Promise<void> {
+export async function deletePlainAttachment(folder: string | undefined, name: string): Promise<void> {
   if (!isPlainFolderConnected()) return
-  const rel = `${_attachmentRelDir(owner)}/${filename}`
+  const rel = _attRelPath(folder, name)
   if (isDesktop()) {
     if (!_tauriPath) return
     const { remove } = await import('@tauri-apps/plugin-fs')
@@ -522,28 +507,10 @@ export async function deletePlainAttachment(owner: AttachmentOwner, filename: st
   await mobileDelete(`Kairos/${rel}`)
 }
 
-export async function deletePlainAttachmentsForOwner(owner: AttachmentOwner): Promise<void> {
-  if (!isPlainFolderConnected()) return
-  const relDir = _attachmentRelDir(owner)
-  if (isDesktop()) {
-    if (!_tauriPath) return
-    const { remove } = await import('@tauri-apps/plugin-fs')
-    try { await remove(`${_tauriPath}/${relDir}`, { recursive: true }) } catch { /* already gone */ }
-    return
-  }
-  await mobileRmdir(`Kairos/${relDir}`)
-}
-
-/** Absolute filesystem path for a vault attachment on desktop (else null). */
-export function plainAttachmentFsPath(owner: AttachmentOwner, filename: string): string | null {
-  if (isDesktop()) return _tauriPath ? `${_tauriPath}/${_attachmentRelDir(owner)}/${filename}` : null
-  return null
-}
-
-/** A webview-loadable URL for a vault attachment, or null when unavailable. */
-export async function plainAttachmentUrl(owner: AttachmentOwner, filename: string): Promise<string | null> {
+/** A webview-loadable URL for a vault attachment file, or null when unavailable. */
+export async function plainAttachmentUrl(folder: string | undefined, name: string): Promise<string | null> {
   if (!isPlainFolderConnected()) return null
-  const rel = `${_attachmentRelDir(owner)}/${filename}`
+  const rel = _attRelPath(folder, name)
 
   if (isDesktop()) {
     if (!_tauriPath) return null
@@ -559,6 +526,29 @@ export async function plainAttachmentUrl(owner: AttachmentOwner, filename: strin
   } catch {
     return null
   }
+}
+
+export async function writeAttachmentManifest(content: string): Promise<void> {
+  if (!isPlainFolderConnected()) return
+  if (isDesktop()) {
+    if (!_tauriPath) return
+    const { writeTextFile, mkdir } = await import('@tauri-apps/plugin-fs')
+    try { await mkdir(`${_tauriPath}/attachments`, { recursive: true }) } catch { /* exists */ }
+    await writeTextFile(`${_tauriPath}/${ATTACHMENT_MANIFEST}`, content)
+    return
+  }
+  await mobileMkdir('Kairos/attachments')
+  await mobileWrite(`Kairos/${ATTACHMENT_MANIFEST}`, content)
+}
+
+export async function readAttachmentManifest(): Promise<string | null> {
+  if (!isPlainFolderConnected()) return null
+  if (isDesktop()) {
+    if (!_tauriPath) return null
+    const { readTextFile } = await import('@tauri-apps/plugin-fs')
+    try { return await readTextFile(`${_tauriPath}/${ATTACHMENT_MANIFEST}`) } catch { return null }
+  }
+  return mobileRead(`Kairos/${ATTACHMENT_MANIFEST}`)
 }
 
 function _uint8ToBase64(bytes: Uint8Array): string {
@@ -714,6 +704,21 @@ export async function writeFolderList(folders: string[]): Promise<void> {
   await writePlainConfig('folders.json', JSON.stringify({ folders }))
 }
 
+/** Attachment folder registry — persists explicitly created (incl. empty) folders. */
+export async function readAttachmentFolderList(): Promise<string[]> {
+  try {
+    const raw = await readPlainConfig('attachment-folders.json')
+    if (!raw) return []
+    return (JSON.parse(raw) as { folders: string[] }).folders ?? []
+  } catch {
+    return []
+  }
+}
+
+export async function writeAttachmentFolderList(folders: string[]): Promise<void> {
+  await writePlainConfig('attachment-folders.json', JSON.stringify({ folders }))
+}
+
 // ─── Plugin file helpers ───────────────────────────────────────────────────────
 
 export async function listPluginIds(): Promise<string[]> {
@@ -831,7 +836,7 @@ export async function readAllCanvases(): Promise<Canvas[]> {
       if (!entry.name.endsWith('.json')) continue
       const raw = await mobileRead(`${canvasPath}/${entry.name}`)
       if (raw) {
-        try { canvases.push(JSON.parse(raw) as Canvas) } catch {}
+        try { canvases.push(JSON.parse(raw) as Canvas) } catch { /* skip unreadable */ }
       }
     }
     return canvases
@@ -896,7 +901,7 @@ export async function readAllPenNotes(): Promise<PenNote[]> {
       if (!entry.name.endsWith('.json')) continue
       const raw = await mobileRead(`${penPath}/${entry.name}`)
       if (raw) {
-        try { penNotes.push(JSON.parse(raw) as PenNote) } catch {}
+        try { penNotes.push(JSON.parse(raw) as PenNote) } catch { /* skip unreadable */ }
       }
     }
     return penNotes

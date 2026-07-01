@@ -21,18 +21,34 @@ const CARD_STYLE = [
   'overflow:hidden',
 ].join(';')
 
-function caption(filename: string): HTMLElement {
+function caption(filename: string, onOpen?: () => void): HTMLElement {
   const el = document.createElement('div')
-  el.textContent = filename
   el.style.cssText = [
     'padding:6px 10px',
     'font-size:11px',
     'color:rgb(var(--text-3))',
     'border-top:1px solid rgb(var(--border))',
-    'white-space:nowrap',
-    'overflow:hidden',
-    'text-overflow:ellipsis',
+    'display:flex',
+    'align-items:center',
+    'gap:8px',
   ].join(';')
+
+  const label = document.createElement('span')
+  label.textContent = filename
+  label.style.cssText = 'flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'
+  el.appendChild(label)
+
+  if (onOpen) {
+    const open = document.createElement('button')
+    open.type = 'button'
+    open.title = 'Open in Attachments'
+    open.setAttribute('aria-label', 'Open in Attachments')
+    open.innerHTML =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>'
+    open.style.cssText = 'flex:none;display:flex;align-items:center;gap:4px;background:none;border:0;cursor:pointer;color:rgb(var(--accent));padding:0'
+    open.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); onOpen() })
+    el.appendChild(open)
+  }
   return el
 }
 
@@ -43,7 +59,7 @@ function placeholder(label: string): HTMLElement {
   return el
 }
 
-export function makeMediaWidget(kind: AttachmentKind, filename: string): MediaWidget {
+export function makeMediaWidget(kind: AttachmentKind, filename: string, onOpen?: () => void): MediaWidget {
   const dom = document.createElement('div')
   dom.contentEditable = 'false'
   dom.className = 'mv-attachment'
@@ -55,7 +71,7 @@ export function makeMediaWidget(kind: AttachmentKind, filename: string): MediaWi
 
   const hole = placeholder('Loading…')
   card.appendChild(hole)
-  card.appendChild(caption(filename))
+  card.appendChild(caption(filename, onOpen))
 
   let mediaEl: HTMLMediaElement | HTMLIFrameElement | HTMLAnchorElement | null = null
 

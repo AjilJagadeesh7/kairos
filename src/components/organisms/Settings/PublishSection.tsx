@@ -35,7 +35,7 @@ export function PublishSection() {
   const allFilteredSelected = filteredCustom.length > 0 && filteredCustom.every(n => selected.has(n.id))
 
   const toggleCustom = (id: string) =>
-    setSelected(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next })
+    setSelected(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next })
 
   const toggleAllCustom = () => {
     if (allFilteredSelected) {
@@ -46,7 +46,7 @@ export function PublishSection() {
   }
 
   const toggleTag = (tag: string) =>
-    setSelectedTags(prev => { const next = new Set(prev); next.has(tag) ? next.delete(tag) : next.add(tag); return next })
+    setSelectedTags(prev => { const next = new Set(prev); if (next.has(tag)) next.delete(tag); else next.add(tag); return next })
 
   const notesToExport = useMemo(() => {
     if (scope === 'all')    return notes
@@ -116,14 +116,14 @@ export function PublishSection() {
             { id: 'all',    label: 'All notes',   icon: 'files',      desc: `${notes.length} notes` },
             { id: 'tags',   label: 'By tag',      icon: 'tag',        desc: `${allTags.length} tags` },
             { id: 'custom', label: 'Custom',      icon: 'list-checks', desc: 'Pick individually' },
-          ] as { id: Scope; label: string; icon: string; desc: string }[]).map(opt => (
+          ] as { id: Scope; label: string; icon: IconToken; desc: string }[]).map(opt => (
             <button
               key={opt.id}
               type="button"
               onClick={() => setScope(opt.id)}
               className={`flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition ${scope === opt.id ? 'border-accent/60 bg-accent/10' : 'border-border bg-surface hover:border-accent/30'}`}
             >
-              <Icon name={opt.icon as any} size={15} className={scope === opt.id ? 'text-accent' : 'text-text3'} />
+              <Icon name={opt.icon} size={15} className={scope === opt.id ? 'text-accent' : 'text-text3'} />
               <span className={`text-xs font-medium ${scope === opt.id ? 'text-accent' : 'text-text'}`}>{opt.label}</span>
               <span className="text-[11px] text-text3">{opt.desc}</span>
             </button>

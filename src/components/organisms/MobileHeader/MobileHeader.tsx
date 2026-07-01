@@ -11,10 +11,11 @@ const PAGE_LABELS: Record<string, string> = {
   canvas:   'Canvas',
   graph:    'Graph',
   settings: 'Settings',
+  attachments: 'Attachments',
   home:     'Kairos',
 }
 
-const SIDEBAR_PAGES = new Set(['notes', 'pennote', 'journal', 'canvas', 'graph', 'settings'])
+const SIDEBAR_PAGES = new Set(['notes', 'pennote', 'journal', 'canvas', 'graph', 'settings', 'attachments'])
 
 export function MobileHeader() {
   const sidebarOpen    = useAppStore(s => s.sidebarOpen)

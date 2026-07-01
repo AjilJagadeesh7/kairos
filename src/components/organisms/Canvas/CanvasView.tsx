@@ -204,7 +204,6 @@ function CanvasInner({ canvas }: { canvas: Canvas }) {
         onDataChange: handleDataChange,
       },
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [nodes, canvas.id, handleDelete, handleOpenNote, handleDataChange])
 
   return (

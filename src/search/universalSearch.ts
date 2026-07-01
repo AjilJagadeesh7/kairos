@@ -11,7 +11,7 @@
  *  - Recency boost applied post-search so stale results don't outrank fresh ones
  */
 import MiniSearch from 'minisearch'
-import type { Note, JournalEntry, Canvas, PenNote } from '../types'
+import type { Note, JournalEntry, Canvas, PenNote, Attachment } from '../types'
 import type { Board, KanbanTask } from '../types/kanban.types'
 
 // ─── Document shape ──────────────────────────────────────────────────────────
@@ -27,7 +27,7 @@ interface UnifiedDoc {
 
 // ─── Result types ─────────────────────────────────────────────────────────────
 
-export type ResultKind = 'note' | 'journal' | 'task' | 'canvas' | 'pennote'
+export type ResultKind = 'note' | 'journal' | 'task' | 'canvas' | 'pennote' | 'attachment'
 
 export interface UniversalHit {
   id: string
@@ -131,6 +131,17 @@ function penNoteDoc(penNote: PenNote): UnifiedDoc {
   }
 }
 
+function attachmentDoc(att: Attachment): UnifiedDoc {
+  return {
+    id: `attachment:${att.id}`,
+    kind: 'attachment',
+    title: att.name,
+    meta: [att.folder, 'file attachment'].filter(Boolean).join(' '),
+    body: '',
+    updatedAt: att.updatedAt,
+  }
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
@@ -143,6 +154,7 @@ export function buildUniversalIndex(
   boards: Board[],
   canvases: Canvas[],
   penNotes: PenNote[] = [],
+  attachments: Attachment[] = [],
 ): void {
   const idx = getIndex()
   if (_built) idx.removeAll()
@@ -156,6 +168,7 @@ export function buildUniversalIndex(
   }
   for (const canvas of canvases) docs.push(canvasDoc(canvas))
   for (const penNote of penNotes) docs.push(penNoteDoc(penNote))
+  for (const att of attachments) docs.push(attachmentDoc(att))
 
   idx.addAll(docs)
   _built = true

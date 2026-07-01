@@ -73,7 +73,7 @@ async function saveBytesToDisk(bytes: Uint8Array, defaultName: string, mime: str
 // ── Individual note exports (from editor toolbar) ────────────────────────────
 
 export async function exportNoteAsHTML(note: Note): Promise<'saved' | 'cancelled'> {
-  const html = await inlineHtmlAttachments('note', noteToStyledHtml(note))
+  const html = await inlineHtmlAttachments(noteToStyledHtml(note))
   return saveToDisk(html, `${safeFilename(note.title)}.html`, 'text/html', 'html')
 }
 
@@ -82,7 +82,7 @@ export async function exportNoteAsMarkdown(note: Note): Promise<'saved' | 'cance
   const md   = buildMarkdownContent(note)
   // When the note references files, bundle them into a .zip alongside the .md.
   if (hasAttachmentRefs(note.content)) {
-    const { bytes } = await buildAttachmentZip('note', md, `${name}.md`)
+    const { bytes } = await buildAttachmentZip(md, `${name}.md`)
     return saveBytesToDisk(bytes, `${name}.zip`, 'application/zip', 'zip')
   }
   return saveToDisk(md, `${name}.md`, 'text/markdown', 'md')
@@ -117,10 +117,10 @@ export async function exportVaultNotes(
       try {
         const name = safeFilename(note.title)
         if (format === 'html') {
-          await writeTextFile(`${dir}/${name}.html`, await inlineHtmlAttachments('note', noteToStyledHtml(note)))
+          await writeTextFile(`${dir}/${name}.html`, await inlineHtmlAttachments(noteToStyledHtml(note)))
         } else {
           // Rewrite refs to per-note subfolders and write the files alongside.
-          const { body, files } = await collectAttachmentFiles('note', buildMarkdownContent(note), (f, id) => `attachments/${id}/${f}`)
+          const { body, files } = await collectAttachmentFiles(buildMarkdownContent(note), (f, id) => `attachments/${id}/${f}`)
           await writeTextFile(`${dir}/${name}.md`, body)
           for (const [rel, bytes] of Object.entries(files)) {
             const full = `${dir}/${rel}`
@@ -141,7 +141,7 @@ export async function exportVaultNotes(
       try {
         const name = safeFilename(note.title)
         if (format === 'html') {
-          triggerDownload(await inlineHtmlAttachments('note', noteToStyledHtml(note)), `${name}.html`, 'text/html')
+          triggerDownload(await inlineHtmlAttachments(noteToStyledHtml(note)), `${name}.html`, 'text/html')
         } else {
           triggerDownload(buildMarkdownContent(note), `${name}.md`, 'text/markdown')
         }
@@ -165,7 +165,7 @@ export async function exportVaultSite(
 ): Promise<{ exported: number; errors: string[]; outDir?: string }> {
   if (!notes.length) return { exported: 0, errors: ['No notes selected'] }
   try {
-    const html = await inlineHtmlAttachments('note', buildSiteHtml(notes, siteTitle))
+    const html = await inlineHtmlAttachments(buildSiteHtml(notes, siteTitle))
     const res = await saveToDisk(html, 'kairos-site.html', 'text/html', 'html')
     if (res === 'cancelled') return { exported: 0, errors: ['Cancelled'] }
     return { exported: notes.length, errors: [] }
