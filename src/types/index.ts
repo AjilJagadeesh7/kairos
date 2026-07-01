@@ -22,6 +22,7 @@ export { PEN_COLORS, HIGHLIGHTER_COLORS, PEN_SIZES, HIGHLIGHTER_SIZE, AUTO_INK }
 export type { EdgeKind, GraphEdge, GNode, GLink, GraphPopover, GraphMode, RightClickTarget } from './graph.types'
 export type { Section, CustomCallout } from './settings.types'
 export type { SettingRecord, EmbeddingRecord } from './db.types'
+export type { AttachmentRecord, AttachmentOwner, AttachmentOwnerType, AttachmentKind } from './attachment.types'
 export type { JournalEntry } from './journal.types'
 export type { Canvas, CanvasNode, CanvasEdge, CanvasNodeType, CanvasNodeData, CanvasTextData, CanvasNoteData, CanvasWebData } from './canvas.types'
 export type { ContentVersion, VersionHistory } from './history.types'

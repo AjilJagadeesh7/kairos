@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { useIconRules, resolveFolderIcon } from '../../../plugins/pluginContext'
 import { FolderMenu } from './FolderMenu'
-import { NoteRow } from './NoteRow'
+import { NoteTreeItem } from './NoteTreeItem'
 import { Icon } from '../../../icons/Icon'
 import { InlineEditInput } from '../../molecules/InlineEditInput'
 import type { FolderNode } from '../../../utils/folderTree'
@@ -219,7 +219,7 @@ function FolderRow({
           ))}
 
           {node.notes.map(note => (
-            <NoteRow
+            <NoteTreeItem
               key={note.id}
               note={note}
               isActive={activeNoteId === note.id}

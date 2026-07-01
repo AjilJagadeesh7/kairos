@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { Note, SettingRecord, SyncMeta, TagRecord, JournalEntry } from '../types'
+import type { Note, SettingRecord, SyncMeta, TagRecord, JournalEntry, AttachmentRecord, AttachmentOwner } from '../types'
 import type { Board } from '../types/kanban.types'
 import type { Canvas } from '../types/canvas.types'
 
@@ -18,6 +18,7 @@ export class KairosDB extends Dexie {
   boards!: EntityTable<Board, 'id'>
   journal!: EntityTable<JournalEntry, 'date'>
   canvases!: EntityTable<Canvas, 'id'>
+  attachments!: EntityTable<AttachmentRecord, 'id'>
 
   constructor() {
     super('kairos')
@@ -118,6 +119,18 @@ export class KairosDB extends Dexie {
       journal: 'date, updatedAt',
       canvases: 'id, title, updatedAt',
     })
+    // Version 10: add attachments table (file-based media for notes/journal)
+    this.version(10).stores({
+      notes: 'id, title, *tags, createdAt, updatedAt',
+      settings: 'key',
+      syncMeta: 'noteId, lastSynced, driveFileId',
+      embeddings: 'noteId',
+      tags: 'name',
+      boards: 'id, title, updatedAt',
+      journal: 'date, updatedAt',
+      canvases: 'id, title, updatedAt',
+      attachments: 'id, [ownerType+ownerId], ownerId, filename',
+    })
   }
 }
 
@@ -205,4 +218,31 @@ export async function upsertCanvas(canvas: Canvas): Promise<void> {
 
 export async function deleteCanvasFromDB(id: string): Promise<void> {
   await db.canvases.delete(id)
+}
+
+export async function getAttachmentsForOwner(owner: AttachmentOwner): Promise<AttachmentRecord[]> {
+  return db.attachments.where({ ownerType: owner.type, ownerId: owner.id }).toArray()
+}
+
+export async function getAttachment(owner: AttachmentOwner, filename: string): Promise<AttachmentRecord | undefined> {
+  return db.attachments
+    .where({ ownerType: owner.type, ownerId: owner.id })
+    .filter((a) => a.filename === filename)
+    .first()
+}
+
+export async function upsertAttachment(record: AttachmentRecord): Promise<void> {
+  await db.attachments.put(record)
+}
+
+export async function deleteAttachment(id: string): Promise<void> {
+  await db.attachments.delete(id)
+}
+
+export async function deleteAttachmentsForOwner(owner: AttachmentOwner): Promise<void> {
+  await db.attachments.where({ ownerType: owner.type, ownerId: owner.id }).delete()
+}
+
+export async function getAllAttachments(): Promise<AttachmentRecord[]> {
+  return db.attachments.toArray()
 }

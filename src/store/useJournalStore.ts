@@ -81,6 +81,8 @@ export const useJournalStore = create<JournalState>()((set, _get) => ({
     if (isPlainFolderConnected()) {
       deleteJournalEntryFile(date).catch(() => { /* best-effort */ })
     }
+    const { removeAllAttachments } = await import('../attachments/attachmentService')
+    await removeAllAttachments({ type: 'journal', id: date }).catch(() => { /* best-effort */ })
     const { pushDelete } = await import('../sync/debouncedCloudPush')
     pushDelete('journal', date, `${date}.md`)
   },

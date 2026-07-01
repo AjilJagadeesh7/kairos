@@ -86,6 +86,7 @@ type AppState = {
   appendWikilink: (noteId: string, targetTitle: string) => Promise<void>
   deleteNoteById: (id: string) => Promise<void>
   moveNoteToFolder: (noteId: string, folder: string) => Promise<void>
+  removeAttachmentRef: (ref: string) => Promise<void>
   createFolder: (path: string) => Promise<void>
   renameFolder: (oldPath: string, newPath: string) => Promise<void>
   deleteFolder: (path: string) => Promise<void>
@@ -432,6 +433,10 @@ export const useAppStore = create<AppState>()(
             deleteNoteHistory(id).catch(() => { /* best-effort */ })
           }
 
+          // Delete the note's media attachments (IndexedDB blobs + vault folder)
+          const { removeAllAttachments } = await import('../attachments/attachmentService')
+          await removeAllAttachments({ type: 'note', id }).catch(() => { /* best-effort */ })
+
           // Remove from sync providers
           const { deleteNoteFromAll, anySyncProviderConnected } = await import('../sync/syncOrchestrator')
           if (anySyncProviderConnected()) await deleteNoteFromAll(id)
@@ -448,6 +453,37 @@ export const useAppStore = create<AppState>()(
         const { writePlainNote, isPlainFolderConnected } = await import('../sync/plainFolder')
         if (isPlainFolderConnected()) {
           writePlainNote(updated).catch(err => console.warn('[storage] write failed:', err))
+        }
+      },
+
+      removeAttachmentRef: async (ref) => {
+        // Tell the open editor to drop the node (handles the active note + avoids
+        // it re-saving the now-dangling ref).
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('mv:strip-attachment', { detail: { ref } }))
+        }
+        const escaped = ref.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const imgRe = new RegExp(`!\\[[^\\]]*\\]\\(${escaped}\\)\\n?`, 'g')
+        const activeId = get().activeNoteId
+        const rewritten: Note[] = []
+        for (const note of get().notes) {
+          if (note.id === activeId || !note.content.includes(ref)) continue
+          const newContent = note.content.replace(imgRe, '').split(ref).join('')
+          if (newContent === note.content) continue
+          const rewrote: Note = { ...note, content: newContent, updatedAt: new Date().toISOString() }
+          indexNote(rewrote)
+          rewritten.push(rewrote)
+        }
+        if (rewritten.length === 0) return
+        const ids = new Set(rewritten.map(n => n.id))
+        set(s => ({ notes: s.notes.map(n => ids.has(n.id) ? rewritten.find(r => r.id === n.id)! : n) }))
+        const { writePlainNote, isPlainFolderConnected } = await import('../sync/plainFolder')
+        const { pushNoteToAll, anySyncProviderConnected } = await import('../sync/syncOrchestrator')
+        const connected = isPlainFolderConnected()
+        const syncing   = anySyncProviderConnected()
+        for (const n of rewritten) {
+          if (connected) void writePlainNote(n).catch(() => {})
+          if (syncing) void pushNoteToAll(n)
         }
       },
 

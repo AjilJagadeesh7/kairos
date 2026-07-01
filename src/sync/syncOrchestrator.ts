@@ -255,6 +255,15 @@ export async function syncAllProviders(onStatus: (s: SyncStatus) => void): Promi
     }
   }
 
+  // Media attachments (binary objects; tier-guarded internally).
+  try {
+    const { syncAttachments } = await import('./attachmentSync')
+    await syncAttachments()
+  } catch (err) {
+    failed = true
+    console.error('[sync] attachment sync failed:', err)
+  }
+
   // Settings + secrets (each gated per provider inside).
   try {
     const { syncConfigWithCloud } = await import('./settingsSync')

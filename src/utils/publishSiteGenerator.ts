@@ -2,6 +2,7 @@ import type { Note } from '../types'
 import { noteToStyledHtml } from './markdownToHtml'
 import { buildSiteHtml } from './siteHtmlBuilder'
 import { isDesktop } from './platform'
+import { buildAttachmentZip, inlineHtmlAttachments, hasAttachmentRefs, collectAttachmentFiles } from './attachmentExport'
 
 function safeFilename(title: string): string {
   return title.replace(/[^a-z0-9\-_ ]/gi, '').trim().replace(/\s+/g, '-') || 'untitled'
@@ -48,14 +49,43 @@ async function saveToDisk(content: string, defaultName: string, mime: string, ex
   return 'saved'
 }
 
+async function saveBytesToDisk(bytes: Uint8Array, defaultName: string, mime: string, ext: string): Promise<'saved' | 'cancelled'> {
+  if (isDesktop()) {
+    try {
+      const { save } = await import('@tauri-apps/plugin-dialog')
+      const path = await save({ defaultPath: defaultName, filters: [{ name: ext.toUpperCase(), extensions: [ext] }] })
+      if (!path) return 'cancelled'
+      const { writeFile } = await import('@tauri-apps/plugin-fs')
+      await writeFile(path as string, bytes)
+      return 'saved'
+    } catch {
+      // Fall through to a browser download.
+    }
+  }
+  const blob = new Blob([bytes as BlobPart], { type: mime })
+  const url  = URL.createObjectURL(blob)
+  const a    = Object.assign(document.createElement('a'), { href: url, download: defaultName })
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 5000)
+  return 'saved'
+}
+
 // ── Individual note exports (from editor toolbar) ────────────────────────────
 
 export async function exportNoteAsHTML(note: Note): Promise<'saved' | 'cancelled'> {
-  return saveToDisk(noteToStyledHtml(note), `${safeFilename(note.title)}.html`, 'text/html', 'html')
+  const html = await inlineHtmlAttachments('note', noteToStyledHtml(note))
+  return saveToDisk(html, `${safeFilename(note.title)}.html`, 'text/html', 'html')
 }
 
 export async function exportNoteAsMarkdown(note: Note): Promise<'saved' | 'cancelled'> {
-  return saveToDisk(buildMarkdownContent(note), `${safeFilename(note.title)}.md`, 'text/markdown', 'md')
+  const name = safeFilename(note.title)
+  const md   = buildMarkdownContent(note)
+  // When the note references files, bundle them into a .zip alongside the .md.
+  if (hasAttachmentRefs(note.content)) {
+    const { bytes } = await buildAttachmentZip('note', md, `${name}.md`)
+    return saveBytesToDisk(bytes, `${name}.zip`, 'application/zip', 'zip')
+  }
+  return saveToDisk(md, `${name}.md`, 'text/markdown', 'md')
 }
 
 // ── Batch vault export (from settings page) ──────────────────────────────────
@@ -82,14 +112,21 @@ export async function exportVaultNotes(
       return { exported: 0, errors: [String(e)] }
     }
 
-    const { writeTextFile } = await import('@tauri-apps/plugin-fs')
+    const { writeTextFile, writeFile, mkdir } = await import('@tauri-apps/plugin-fs')
     for (const note of notes) {
       try {
         const name = safeFilename(note.title)
         if (format === 'html') {
-          await writeTextFile(`${dir}/${name}.html`, noteToStyledHtml(note))
+          await writeTextFile(`${dir}/${name}.html`, await inlineHtmlAttachments('note', noteToStyledHtml(note)))
         } else {
-          await writeTextFile(`${dir}/${name}.md`, buildMarkdownContent(note))
+          // Rewrite refs to per-note subfolders and write the files alongside.
+          const { body, files } = await collectAttachmentFiles('note', buildMarkdownContent(note), (f, id) => `attachments/${id}/${f}`)
+          await writeTextFile(`${dir}/${name}.md`, body)
+          for (const [rel, bytes] of Object.entries(files)) {
+            const full = `${dir}/${rel}`
+            await mkdir(full.substring(0, full.lastIndexOf('/')), { recursive: true }).catch(() => {})
+            await writeFile(full, bytes)
+          }
         }
         done++
         onProgress?.({ done, total: notes.length })
@@ -104,7 +141,7 @@ export async function exportVaultNotes(
       try {
         const name = safeFilename(note.title)
         if (format === 'html') {
-          triggerDownload(noteToStyledHtml(note), `${name}.html`, 'text/html')
+          triggerDownload(await inlineHtmlAttachments('note', noteToStyledHtml(note)), `${name}.html`, 'text/html')
         } else {
           triggerDownload(buildMarkdownContent(note), `${name}.md`, 'text/markdown')
         }
@@ -128,7 +165,7 @@ export async function exportVaultSite(
 ): Promise<{ exported: number; errors: string[]; outDir?: string }> {
   if (!notes.length) return { exported: 0, errors: ['No notes selected'] }
   try {
-    const html = buildSiteHtml(notes, siteTitle)
+    const html = await inlineHtmlAttachments('note', buildSiteHtml(notes, siteTitle))
     const res = await saveToDisk(html, 'kairos-site.html', 'text/html', 'html')
     if (res === 'cancelled') return { exported: 0, errors: ['Cancelled'] }
     return { exported: notes.length, errors: [] }

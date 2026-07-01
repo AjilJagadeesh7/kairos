@@ -14,7 +14,7 @@ import { isDesktop } from '../utils/platform'
 import { getHistoryPolicy } from '../tiers/checks'
 import { pruneVersions } from '../tiers/versionPrune'
 import { serializeNote, deserializeNote, noteIdToPath } from '../adapters/storage/noteSerializer'
-import type { Note, JournalEntry, ContentVersion } from '../types'
+import type { Note, JournalEntry, ContentVersion, AttachmentOwner } from '../types'
 import type { Board } from '../types/kanban.types'
 import type { Canvas } from '../types/canvas.types'
 import type { PenNote } from '../types/penNote.types'
@@ -431,6 +431,148 @@ export async function readAllJournalEntries(): Promise<JournalEntry[]> {
   } catch {
     return []
   }
+}
+
+// ---------------------------------------------------------------------------
+// Attachments — vault/attachments/<noteId>/<file>  |  vault/attachments/journal/<date>/<file>
+// Media files imported into a note/journal. The IndexedDB blob is the primary
+// copy; these helpers mirror it into the vault so files are visible on disk and
+// travel with a folder sync.
+// ---------------------------------------------------------------------------
+
+/** Vault-relative directory for an owner's attachments (no leading slash). */
+function _attachmentRelDir(owner: AttachmentOwner): string {
+  return owner.type === 'journal'
+    ? `attachments/journal/${owner.id}`
+    : `attachments/${owner.id}`
+}
+
+export async function writePlainAttachment(owner: AttachmentOwner, filename: string, bytes: Uint8Array): Promise<void> {
+  if (!isPlainFolderConnected()) return
+  const rel = `${_attachmentRelDir(owner)}/${filename}`
+
+  if (isDesktop()) {
+    if (!_tauriPath) return
+    const { writeFile, mkdir } = await import('@tauri-apps/plugin-fs')
+    const full = `${_tauriPath}/${rel}`
+    try { await mkdir(`${_tauriPath}/${_attachmentRelDir(owner)}`, { recursive: true }) } catch { /* exists */ }
+    await writeFile(full, bytes)
+    return
+  }
+
+  await mobileMkdir(`Kairos/${_attachmentRelDir(owner)}`)
+  const { Filesystem, Directory } = await import('@capacitor/filesystem')
+  await Filesystem.writeFile({
+    path: `Kairos/${rel}`,
+    directory: Directory.Documents,
+    data: _uint8ToBase64(bytes),
+    recursive: true,
+  })
+}
+
+export async function readPlainAttachment(owner: AttachmentOwner, filename: string): Promise<Uint8Array | null> {
+  if (!isPlainFolderConnected()) return null
+  const rel = `${_attachmentRelDir(owner)}/${filename}`
+
+  if (isDesktop()) {
+    if (!_tauriPath) return null
+    const { readFile } = await import('@tauri-apps/plugin-fs')
+    try { return await readFile(`${_tauriPath}/${rel}`) } catch { return null }
+  }
+
+  const { Filesystem, Directory } = await import('@capacitor/filesystem')
+  try {
+    const res = await Filesystem.readFile({ path: `Kairos/${rel}`, directory: Directory.Documents })
+    return _base64ToUint8(res.data as string)
+  } catch {
+    return null
+  }
+}
+
+/** Filenames present in an owner's vault attachment folder (for hydration). */
+export async function listPlainAttachments(owner: AttachmentOwner): Promise<string[]> {
+  if (!isPlainFolderConnected()) return []
+  const relDir = _attachmentRelDir(owner)
+
+  if (isDesktop()) {
+    if (!_tauriPath) return []
+    const { readDir } = await import('@tauri-apps/plugin-fs')
+    try {
+      const entries = await readDir(`${_tauriPath}/${relDir}`)
+      return entries.filter(e => !e.isDirectory && e.name).map(e => e.name!)
+    } catch { return [] }
+  }
+
+  const { Filesystem, Directory } = await import('@capacitor/filesystem')
+  try {
+    const res = await Filesystem.readdir({ path: `Kairos/${relDir}`, directory: Directory.Documents })
+    return res.files.filter(f => f.type !== 'directory').map(f => f.name)
+  } catch { return [] }
+}
+
+export async function deletePlainAttachment(owner: AttachmentOwner, filename: string): Promise<void> {
+  if (!isPlainFolderConnected()) return
+  const rel = `${_attachmentRelDir(owner)}/${filename}`
+  if (isDesktop()) {
+    if (!_tauriPath) return
+    const { remove } = await import('@tauri-apps/plugin-fs')
+    try { await remove(`${_tauriPath}/${rel}`) } catch { /* already gone */ }
+    return
+  }
+  await mobileDelete(`Kairos/${rel}`)
+}
+
+export async function deletePlainAttachmentsForOwner(owner: AttachmentOwner): Promise<void> {
+  if (!isPlainFolderConnected()) return
+  const relDir = _attachmentRelDir(owner)
+  if (isDesktop()) {
+    if (!_tauriPath) return
+    const { remove } = await import('@tauri-apps/plugin-fs')
+    try { await remove(`${_tauriPath}/${relDir}`, { recursive: true }) } catch { /* already gone */ }
+    return
+  }
+  await mobileRmdir(`Kairos/${relDir}`)
+}
+
+/** Absolute filesystem path for a vault attachment on desktop (else null). */
+export function plainAttachmentFsPath(owner: AttachmentOwner, filename: string): string | null {
+  if (isDesktop()) return _tauriPath ? `${_tauriPath}/${_attachmentRelDir(owner)}/${filename}` : null
+  return null
+}
+
+/** A webview-loadable URL for a vault attachment, or null when unavailable. */
+export async function plainAttachmentUrl(owner: AttachmentOwner, filename: string): Promise<string | null> {
+  if (!isPlainFolderConnected()) return null
+  const rel = `${_attachmentRelDir(owner)}/${filename}`
+
+  if (isDesktop()) {
+    if (!_tauriPath) return null
+    const { convertFileSrc } = await import('@tauri-apps/api/core')
+    return convertFileSrc(`${_tauriPath}/${rel}`)
+  }
+
+  const { Filesystem, Directory } = await import('@capacitor/filesystem')
+  const { Capacitor } = await import('@capacitor/core')
+  try {
+    const { uri } = await Filesystem.getUri({ path: `Kairos/${rel}`, directory: Directory.Documents })
+    return Capacitor.convertFileSrc(uri)
+  } catch {
+    return null
+  }
+}
+
+function _uint8ToBase64(bytes: Uint8Array): string {
+  let binary = ''
+  const chunk = 0x8000
+  for (let i = 0; i < bytes.length; i += chunk) binary += String.fromCharCode(...bytes.subarray(i, i + chunk))
+  return btoa(binary)
+}
+
+function _base64ToUint8(b64: string): Uint8Array {
+  const binary = atob(b64)
+  const out = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i)
+  return out
 }
 
 // ---------------------------------------------------------------------------

@@ -5,6 +5,7 @@ import { MarkdownEditor } from './MarkdownEditor'
 import { AnnotationLayer } from './Annotations/AnnotationLayer'
 import { TagBadge } from '../../atoms/TagBadge'
 import { Icon } from '../../../icons/Icon'
+import { useResolvedBanner } from '../../../hooks/useResolvedBanner'
 import type { EditorDraftProps } from '../../../types'
 import type { TagRecord } from '../../../types'
 
@@ -28,6 +29,7 @@ export function EditorReadingMode({
   editorRootRef, exportingPDF, onExportPDF,
   onExitReadingMode, onContentChange, onWikilinkClick,
 }: EditorReadingModeProps) {
+  const bannerUrl = useResolvedBanner(note.id, note.userFrontmatter?.banner as string | undefined)
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2 md:px-6">
@@ -60,14 +62,14 @@ export function EditorReadingMode({
       </div>
 
       <div ref={editorRootRef} className="min-h-0 flex-1 overflow-y-auto">
-        {!!note.userFrontmatter?.banner && (
+        {!!bannerUrl && (
           <div className="h-48 overflow-hidden">
             <img
-              src={note.userFrontmatter.banner as string}
+              src={bannerUrl}
               alt=""
               className="w-full h-full object-cover"
               style={{
-                objectPosition: `${((note.userFrontmatter.banner_x as number) ?? 0.5) * 100}% ${((note.userFrontmatter.banner_y as number) ?? 0.5) * 100}%`,
+                objectPosition: `${((note.userFrontmatter?.banner_x as number) ?? 0.5) * 100}% ${((note.userFrontmatter?.banner_y as number) ?? 0.5) * 100}%`,
               }}
             />
           </div>
@@ -84,6 +86,7 @@ export function EditorReadingMode({
               readOnly
               onChange={onContentChange}
               onWikilinkClick={onWikilinkClick}
+              owner={{ type: 'note', id: note.id }}
             />
           </AnnotationLayer>
         </div>

@@ -59,14 +59,19 @@ async function deriveSigKey(secretKey: string, dateStamp: string, region: string
   return hmac(k3, 'aws4_request')
 }
 
+async function sha256HexBytes(bytes: Uint8Array): Promise<string> {
+  return toHex(await crypto.subtle.digest('SHA-256', bytes as BufferSource))
+}
+
 async function buildAuthHeaders(
   method: string, url: URL, bodyStr: string, cfg: S3Config,
   extraSignedHeaders: Record<string, string> = {},
+  bodyHashOverride?: string,
 ): Promise<Record<string, string>> {
   const now       = new Date()
   const amzDate   = now.toISOString().replace(/[:-]|\.\d{3}/g, '').slice(0, 15) + 'Z'
   const dateStamp = amzDate.slice(0, 8)
-  const bodyHash  = await sha256Hex(bodyStr)
+  const bodyHash  = bodyHashOverride ?? await sha256Hex(bodyStr)
 
   const headers: Record<string, string> = {
     host: url.host, 'x-amz-content-sha256': bodyHash, 'x-amz-date': amzDate, ...extraSignedHeaders,
@@ -280,12 +285,82 @@ export async function deleteS3Blob(category: SyncCategory, filename: string): Pr
   }
 }
 
+// ---------------------------------------------------------------------------
+// Binary objects — media attachments at kairos/<relPath>
+// ---------------------------------------------------------------------------
+
+async function s3SendBinary(method: string, url: URL, body: Uint8Array | null, headers: Record<string, string>): Promise<{ ok: boolean; status: number; bytes: Uint8Array | null }> {
+  if (isMobile()) {
+    if (method === 'GET') {
+      const { CapacitorHttp } = await import('@capacitor/core')
+      const res = await CapacitorHttp.request({ url: url.toString(), method, headers, responseType: 'arraybuffer' })
+      const ok = res.status >= 200 && res.status < 300
+      return { ok, status: res.status, bytes: ok && typeof res.data === 'string' ? s3Base64ToBytes(res.data) : null }
+    }
+    throw new Error('S3 binary upload not supported on mobile')
+  }
+  const target = isDesktop() ? url.toString().replace(/^https?:\/\//, 'mvproxy://') : url.toString()
+  const res = await fetch(target, { method, headers, body: body as BodyInit | undefined })
+  return { ok: res.ok, status: res.status, bytes: res.ok && method === 'GET' ? new Uint8Array(await res.arrayBuffer()) : null }
+}
+
+export async function putS3Binary(relPath: string, bytes: Uint8Array): Promise<void> {
+  const cfg = _config
+  if (!cfg) throw new Error('S3 not configured')
+  const url     = objectUrl(cfg, `${ROOT_PREFIX}${relPath}`)
+  const hash    = await sha256HexBytes(bytes)
+  const headers = await buildAuthHeaders('PUT', url, '', cfg, { 'content-type': 'application/octet-stream' }, hash)
+  const res     = await s3SendBinary('PUT', url, bytes, headers)
+  if (!res.ok) throw new Error(`S3 PUT binary ${url.pathname} → ${res.status}`)
+}
+
+export async function getS3Binary(relPath: string): Promise<Uint8Array | null> {
+  const cfg = _config
+  if (!cfg) return null
+  const url     = objectUrl(cfg, `${ROOT_PREFIX}${relPath}`)
+  const headers = await buildAuthHeaders('GET', url, '', cfg)
+  const res     = await s3SendBinary('GET', url, null, headers).catch(() => null)
+  return res?.ok ? res.bytes : null
+}
+
+export async function listS3Binary(prefix: string): Promise<string[]> {
+  const cfg = _config
+  if (!cfg) return []
+  const fullPrefix = `${ROOT_PREFIX}${prefix.replace(/\/$/, '')}/`
+  const url = new URL(`${endpointBase(cfg)}/${bucketName(cfg)}`)
+  url.searchParams.set('list-type', '2')
+  url.searchParams.set('prefix', fullPrefix)
+  const res  = await s3Fetch('GET', url, null, cfg).catch(() => null)
+  if (!res) return []
+  return parseAllKeys(await res.text(), fullPrefix).map((k) => k.slice(ROOT_PREFIX.length))
+}
+
+export async function deleteS3Binary(relPath: string): Promise<void> {
+  const cfg = _config
+  if (!cfg) return
+  const url     = objectUrl(cfg, `${ROOT_PREFIX}${relPath}`)
+  const headers = await buildAuthHeaders('DELETE', url, '', cfg)
+  const res     = await s3Send('DELETE', url, null, headers)
+  if (!res.ok && res.status !== 404) throw new Error(`S3 DELETE binary ${url.pathname} → ${res.status}`)
+}
+
+function s3Base64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64)
+  const out = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i)
+  return out
+}
+
 export const s3Provider: RemoteProvider = {
   id: 's3',
   isConnected: isS3Connected,
   putBlob: putS3Blob,
   listBlob: listS3Blob,
   deleteBlob: deleteS3Blob,
+  putBinary: putS3Binary,
+  getBinary: getS3Binary,
+  listBinary: listS3Binary,
+  deleteBinary: deleteS3Binary,
 }
 
 /** Verify credentials and bucket access. Throws a descriptive error on failure. */

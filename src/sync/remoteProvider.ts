@@ -23,6 +23,14 @@ export interface RemoteProvider {
   putBlob(category: SyncCategory, filename: string, content: string): Promise<void>
   listBlob(category: SyncCategory): Promise<RemoteBlob[]>
   deleteBlob(category: SyncCategory, filename: string): Promise<void>
+
+  // Binary objects (media attachments). `path` is provider-root-relative, e.g.
+  // "attachments/<ownerId>/photo.png". Optional so a provider can opt out.
+  putBinary?(path: string, bytes: Uint8Array): Promise<void>
+  getBinary?(path: string): Promise<Uint8Array | null>
+  /** Paths (relative to provider root) of every binary object under `prefix`. */
+  listBinary?(prefix: string): Promise<string[]>
+  deleteBinary?(path: string): Promise<void>
 }
 
 const ALL_PROVIDERS: RemoteProvider[] = [localFolderProvider, s3Provider, webdavProvider]

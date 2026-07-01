@@ -1,4 +1,4 @@
-import { db, getAllBoards, getAllJournalEntries, getAllCanvases } from '../db/schema'
+import { db, getAllBoards, getAllJournalEntries, getAllCanvases, getAllAttachments } from '../db/schema'
 import { serializeNote } from '../adapters/storage/noteSerializer'
 import { historyTotalBytes } from '../sync/plainFolder'
 import { byteLength } from './checks'
@@ -40,6 +40,9 @@ export async function computeStorageUsage(): Promise<StorageUsage> {
       textBytes += byteLength(json) - att
     }
   }
+
+  // File-based attachments (images/video/audio/pdf stored as blobs).
+  for (const att of await getAllAttachments()) attachmentBytes += att.size
 
   const versions = await historyTotalBytes()
   const total = textBytes + attachmentBytes + versions

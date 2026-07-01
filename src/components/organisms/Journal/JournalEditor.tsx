@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useJournalStore, todayDate } from '../../../store/useJournalStore'
 import { useConfirmStore } from '../../../store/useConfirmStore'
 import { MarkdownEditor } from '../Editor/MarkdownEditor'
+import { NoteAttachmentsPanel } from '../Editor/NoteAttachmentsPanel'
 import { HistoryPanel } from '../Editor/HistoryPanel'
 import { JournalRightSidebar } from './JournalRightSidebar'
 import { JournalReadingMode } from './JournalReadingMode'
@@ -176,13 +177,21 @@ export function JournalEditor({ date }: JournalEditorProps) {
           {readingMode ? (
             <JournalReadingMode date={date} label={label} content={content} />
           ) : (
-            <MarkdownEditor
-              key={`${date}-${restoreKey}`}
-              noteId={date}
-              initialMarkdown={content}
-              noteTitle={label}
-              onChange={setContent}
-            />
+            <>
+              <div className="min-h-0 flex-1">
+                <MarkdownEditor
+                  key={`${date}-${restoreKey}`}
+                  noteId={date}
+                  initialMarkdown={content}
+                  noteTitle={label}
+                  onChange={setContent}
+                  owner={{ type: 'journal', id: date }}
+                />
+              </div>
+              <div className="shrink-0 px-4 pb-3">
+                <NoteAttachmentsPanel owner={{ type: 'journal', id: date }} />
+              </div>
+            </>
           )}
         </div>
 

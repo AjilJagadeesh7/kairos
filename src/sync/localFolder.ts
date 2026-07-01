@@ -97,12 +97,58 @@ export async function deleteLocalBlob(category: SyncCategory, filename: string):
   try { await remove(`${_tauriPath}/${category}/${filename}`) } catch { /* already gone */ }
 }
 
+// ---------------------------------------------------------------------------
+// Binary blob API — media attachments at {path}/<relPath>
+// ---------------------------------------------------------------------------
+
+export async function putLocalBinary(relPath: string, bytes: Uint8Array): Promise<void> {
+  if (!_tauriPath) throw new Error('Local folder not connected')
+  const { writeFile, mkdir } = await import('@tauri-apps/plugin-fs')
+  const full = `${_tauriPath}/${relPath}`
+  await mkdir(full.substring(0, full.lastIndexOf('/')), { recursive: true }).catch(() => {})
+  await writeFile(full, bytes)
+}
+
+export async function getLocalBinary(relPath: string): Promise<Uint8Array | null> {
+  if (!_tauriPath) return null
+  const { readFile } = await import('@tauri-apps/plugin-fs')
+  try { return await readFile(`${_tauriPath}/${relPath}`) } catch { return null }
+}
+
+export async function listLocalBinary(prefix: string): Promise<string[]> {
+  if (!_tauriPath) return []
+  const { readDir } = await import('@tauri-apps/plugin-fs')
+  const out: string[] = []
+  const walk = async (rel: string): Promise<void> => {
+    let entries
+    try { entries = await readDir(`${_tauriPath}/${rel}`) } catch { return }
+    for (const e of entries) {
+      if (!e.name) continue
+      const child = `${rel}/${e.name}`
+      if (e.isDirectory) await walk(child)
+      else out.push(child)
+    }
+  }
+  await walk(prefix.replace(/\/$/, ''))
+  return out
+}
+
+export async function deleteLocalBinary(relPath: string): Promise<void> {
+  if (!_tauriPath) return
+  const { remove } = await import('@tauri-apps/plugin-fs')
+  try { await remove(`${_tauriPath}/${relPath}`) } catch { /* already gone */ }
+}
+
 export const localFolderProvider: RemoteProvider = {
   id: 'local',
   isConnected: isLocalFolderConnected,
   putBlob: putLocalBlob,
   listBlob: listLocalBlob,
   deleteBlob: deleteLocalBlob,
+  putBinary: putLocalBinary,
+  getBinary: getLocalBinary,
+  listBinary: listLocalBinary,
+  deleteBinary: deleteLocalBinary,
 }
 
 // ---------------------------------------------------------------------------

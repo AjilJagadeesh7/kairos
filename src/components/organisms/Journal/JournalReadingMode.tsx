@@ -22,6 +22,7 @@ export function JournalReadingMode({ date, label, content }: JournalReadingModeP
             noteTitle={label}
             readOnly
             onChange={() => {}}
+            owner={{ type: 'journal', id: date }}
           />
         </AnnotationLayer>
       </div>

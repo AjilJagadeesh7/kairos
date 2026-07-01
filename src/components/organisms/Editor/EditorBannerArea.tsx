@@ -1,10 +1,17 @@
 import { useState } from 'react'
 import { isDesktop } from '../../../utils/platform'
 import { useIsMobile } from '../../../hooks/useIsMobile'
+import { useResolvedBanner } from '../../../hooks/useResolvedBanner'
+import { importFile } from '../../../attachments/attachmentService'
 import { Button } from '../../atoms/Button'
 import { IconButton } from '../../atoms/IconButton'
 import { Icon } from '../../../icons/Icon'
 import type { Note } from '../../../types'
+
+const IMG_MIME: Record<string, string> = {
+  png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif',
+  webp: 'image/webp', svg: 'image/svg+xml', avif: 'image/avif',
+}
 
 interface Props {
   note: Note
@@ -16,13 +23,15 @@ export function EditorBannerArea({ note, onUpdateFrontmatter }: Props) {
   const [showUrlInput, setShowUrlInput] = useState(false)
   const [urlValue, setUrlValue]         = useState('')
 
+  const banner    = note.userFrontmatter?.banner as string | undefined
+  const bannerUrl = useResolvedBanner(note.id, banner)
+
   // On mobile the cover image is hidden entirely — that vertical space is
   // reclaimed for the editor (no add-cover affordance, no banner render).
   if (isMobile) return null
 
-  const banner = note.userFrontmatter?.banner as string | undefined
-  const bx     = ((note.userFrontmatter?.banner_x as number) ?? 0.5) * 100
-  const by     = ((note.userFrontmatter?.banner_y as number) ?? 0.5) * 100
+  const bx = ((note.userFrontmatter?.banner_x as number) ?? 0.5) * 100
+  const by = ((note.userFrontmatter?.banner_y as number) ?? 0.5) * 100
 
   const pickFile = async () => {
     try {
@@ -32,10 +41,16 @@ export function EditorBannerArea({ note, onUpdateFrontmatter }: Props) {
         filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif'] }],
       })
       if (!path || typeof path !== 'string') return
-      const { convertFileSrc } = await import('@tauri-apps/api/core')
-      onUpdateFrontmatter({ ...note.userFrontmatter, banner: convertFileSrc(path) })
+      // Copy the picked image into the note's attachments (blob + vault), then
+      // reference it by attachment:// — renders via a blob URL and syncs.
+      const { readFile } = await import('@tauri-apps/plugin-fs')
+      const bytes = await readFile(path)
+      const name  = path.split(/[/\\]/).pop() ?? 'banner'
+      const file  = new File([bytes as BlobPart], name, { type: IMG_MIME[name.split('.').pop()?.toLowerCase() ?? ''] ?? 'image/png' })
+      const ref   = await importFile({ type: 'note', id: note.id }, file)
+      if (ref) onUpdateFrontmatter({ ...note.userFrontmatter, banner: ref })
     } catch {
-      // fallback to URL input if dialog fails
+      // fallback to URL input if dialog/read fails
       setShowUrlInput(true)
     }
   }
@@ -63,7 +78,7 @@ export function EditorBannerArea({ note, onUpdateFrontmatter }: Props) {
     return (
       <div className="mb-3 -mx-4 -mt-4 h-44 overflow-hidden relative group">
         <img
-          src={banner}
+          src={bannerUrl}
           alt=""
           className="w-full h-full object-cover"
           style={{ objectPosition: `${bx}% ${by}%` }}

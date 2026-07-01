@@ -1,6 +1,7 @@
 import type React from 'react'
 import { Dropdown } from '../../molecules/Dropdown'
 import { markdownToHtml } from '../../../utils/markdownToHtml'
+import { buildAttachmentZip, inlineHtmlAttachments, hasAttachmentRefs } from '../../../utils/attachmentExport'
 import { Icon } from '../../../icons/Icon'
 
 interface JournalExportMenuProps {
@@ -12,8 +13,9 @@ interface JournalExportMenuProps {
   editorRootRef: React.RefObject<HTMLDivElement>
 }
 
-function downloadBlob(content: string, filename: string, mime: string) {
-  const blob = new Blob([content], { type: mime })
+function downloadBlob(content: string | Uint8Array, filename: string, mime: string) {
+  const part: BlobPart = typeof content === 'string' ? content : (content as BlobPart)
+  const blob = new Blob([part], { type: mime })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -28,10 +30,19 @@ export function JournalExportMenu({ title, markdown, editorRootRef }: JournalExp
 
   const itemCls = 'flex w-full items-center gap-2.5 px-3 py-2.5 text-sm text-text2 hover:bg-surface2 hover:text-text transition-colors'
 
-  const exportHTML = () => {
+  const exportHTML = async () => {
     const body = markdownToHtml(markdown)
     const doc = `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title></head><body><h1>${title}</h1>${body}</body></html>`
-    downloadBlob(doc, `${safe}.html`, 'text/html')
+    downloadBlob(await inlineHtmlAttachments('journal', doc), `${safe}.html`, 'text/html')
+  }
+
+  const exportMarkdown = async () => {
+    if (hasAttachmentRefs(markdown)) {
+      const { bytes } = await buildAttachmentZip('journal', markdown, `${safe}.md`)
+      downloadBlob(bytes, `${safe}.zip`, 'application/zip')
+    } else {
+      downloadBlob(markdown, `${safe}.md`, 'text/markdown')
+    }
   }
 
   const exportPDFFile = async () => {
@@ -48,11 +59,11 @@ export function JournalExportMenu({ title, markdown, editorRootRef }: JournalExp
       </div>
     }>
       <div className="w-44 overflow-hidden rounded-lg border border-border bg-surface shadow-lg">
-        <button type="button" className={itemCls} onClick={() => downloadBlob(markdown, `${safe}.md`, 'text/markdown')}>
+        <button type="button" className={itemCls} onClick={() => void exportMarkdown()}>
           <Icon name="file-text" size={14} className="shrink-0 text-text3" />
           Markdown (.md)
         </button>
-        <button type="button" className={itemCls} onClick={exportHTML}>
+        <button type="button" className={itemCls} onClick={() => void exportHTML()}>
           <Icon name="globe" size={14} className="shrink-0 text-text3" />
           HTML (.html)
         </button>

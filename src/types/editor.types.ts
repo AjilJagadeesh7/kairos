@@ -1,4 +1,5 @@
 import type { Note } from './note.types'
+import type { AttachmentOwner } from './attachment.types'
 
 export type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved'
 
@@ -34,6 +35,8 @@ export type MarkdownEditorProps = {
   readOnly?: boolean
   onChange: (markdown: string) => void
   onWikilinkClick?: (title: string) => void
+  /** When set, imported media is stored as files for this owner; otherwise base64. */
+  owner?: AttachmentOwner
 }
 
 export type TableCommandRunner = {
