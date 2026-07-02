@@ -30,8 +30,9 @@ export function PenCanvas({ strokes, onChange, pageWidth, height, onGrow, onSele
       }
     : undefined
 
-  // Stylus always draws; finger scrolls unless "finger draws" is on.
-  const touchAction = engine.allowFinger ? 'none' : 'pan-y'
+  // touch-action is managed imperatively by the engine (it flips to `none`
+  // while a pen is hovering so vertical strokes aren't stolen by scroll
+  // disambiguation, and back to `pan-y` for finger scroll). See usePenCanvasEngine.
   const cursor = engine.tool === 'eraser' || engine.tool === 'lasso' ? 'crosshair' : 'default'
 
   return (
@@ -46,7 +47,7 @@ export function PenCanvas({ strokes, onChange, pageWidth, height, onGrow, onSele
           style={{ width: pageWidth, maxWidth: '100%' }}
         >
           {/* canvas inherits `color` from the theme so AUTO_INK strokes stay visible */}
-          <canvas ref={canvasRef} className="block text-[rgb(var(--text))]" style={{ touchAction, cursor }} />
+          <canvas ref={canvasRef} className="block text-[rgb(var(--text))]" style={{ cursor }} />
         </div>
       </div>
     </div>

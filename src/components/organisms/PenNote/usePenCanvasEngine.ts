@@ -63,12 +63,19 @@ export function usePenCanvasEngine({ canvasRef, strokes, onChange, pageWidth, he
   const selectedRef = useRef(selectedIds)
   const toolRef = useRef(tool)
   const allowFingerRef = useRef(allowFinger)
+  const penHovering = useRef(false)
 
   // Mirror latest state onto refs for the imperative pointer/render handlers.
   useEffect(() => { strokesRef.current = strokes }, [strokes])
   useEffect(() => { selectedRef.current = selectedIds }, [selectedIds])
   useEffect(() => { toolRef.current = tool }, [tool])
-  useEffect(() => { allowFingerRef.current = allowFinger }, [allowFinger])
+  useEffect(() => {
+    allowFingerRef.current = allowFinger
+    const c = canvasRef.current
+    // When "finger draws" is on, no gesture should scroll → touch-action none.
+    // Otherwise default to pan-y (finger scroll); pen hover flips it to none.
+    if (c) c.style.touchAction = allowFinger ? 'none' : (penHovering.current ? 'none' : 'pan-y')
+  }, [allowFinger, canvasRef])
 
   const color = tool === 'highlighter' ? hlColor : penColor
   const size = tool === 'highlighter' ? HIGHLIGHTER_SIZE : penSize
@@ -182,7 +189,25 @@ export function usePenCanvasEngine({ canvasRef, strokes, onChange, pageWidth, he
     const isDrawer = (e: PointerEvent) =>
       e.pointerType === 'pen' || e.pointerType === 'mouse' || (e.pointerType === 'touch' && allowFingerRef.current)
 
+    // Keep the compositor from stealing vertical pen strokes for scroll: while a
+    // pen is in range, force touch-action:none so every stroke starts instantly.
+    // Restore pan-y when the pen leaves so finger scroll (with momentum) works.
+    const applyTouchAction = () => {
+      canvas.style.touchAction = (allowFingerRef.current || penHovering.current) ? 'none' : 'pan-y'
+    }
+    const onPenEnter = (e: PointerEvent) => {
+      if (e.pointerType !== 'pen') return
+      penHovering.current = true
+      applyTouchAction()
+    }
+    const onPenLeave = (e: PointerEvent) => {
+      if (e.pointerType !== 'pen') return
+      penHovering.current = false
+      applyTouchAction()
+    }
+
     const onDown = (e: PointerEvent) => {
+      if (e.pointerType === 'pen') { penHovering.current = true; applyTouchAction() }
       if (!isDrawer(e)) return       // let touch scroll the page
       e.preventDefault()
       canvas.setPointerCapture(e.pointerId)
@@ -206,6 +231,9 @@ export function usePenCanvasEngine({ canvasRef, strokes, onChange, pageWidth, he
 
     const onMove = (e: PointerEvent) => {
       const t = toolRef.current
+      // Re-latch pen hover between strokes (Chromium may drop the enter event on
+      // the contact→hover transition), keeping touch-action:none for the pen.
+      if (e.pointerType === 'pen' && !penHovering.current) { penHovering.current = true; applyTouchAction() }
       if (live.current) {
         for (const ev of (e.getCoalescedEvents?.() ?? [e])) live.current.points.push(point(ev))
         paint()
@@ -256,11 +284,16 @@ export function usePenCanvasEngine({ canvasRef, strokes, onChange, pageWidth, he
     canvas.addEventListener('pointermove', onMove)
     canvas.addEventListener('pointerup', onUp)
     canvas.addEventListener('pointercancel', onUp)
+    canvas.addEventListener('pointerenter', onPenEnter)
+    canvas.addEventListener('pointerleave', onPenLeave)
+    applyTouchAction()
     return () => {
       canvas.removeEventListener('pointerdown', onDown)
       canvas.removeEventListener('pointermove', onMove)
       canvas.removeEventListener('pointerup', onUp)
       canvas.removeEventListener('pointercancel', onUp)
+      canvas.removeEventListener('pointerenter', onPenEnter)
+      canvas.removeEventListener('pointerleave', onPenLeave)
     }
   }, [canvasRef, commit, paint, renderCommitted, maybeGrow, hlColor, penColor, penSize])
 

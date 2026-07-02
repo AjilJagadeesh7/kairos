@@ -4,6 +4,18 @@ All notable changes to Kairos are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.6] — 2026-07-02
+
+### Fixed
+
+- **S Pen writing latency on Samsung tablets.** Vertical and mixed strokes (e.g.
+  writing a `T`) would drop the first points — appearing blank, then a dash,
+  then catching up — because the canvas used `touch-action: pan-y`, letting the
+  WebView compositor withhold pen events while disambiguating scroll-vs-draw.
+  The pen canvas now flips `touch-action` to `none` while a pen is hovering (so
+  every stroke registers instantly) and restores `pan-y` when the pen leaves, so
+  one-finger scroll with native momentum still works.
+
 ## [0.0.5] — 2026-07-02
 
 The attachments release: files become a first-class content type that syncs as
