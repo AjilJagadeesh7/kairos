@@ -2,6 +2,7 @@ import { Plugin, PluginKey, type EditorState } from '@milkdown/prose/state'
 import { type EditorView } from '@milkdown/prose/view'
 import { sinkListItem, liftListItem } from '@milkdown/prose/schema-list'
 import { $prose } from '@milkdown/utils'
+import { isTouch } from '../../../utils/platform'
 
 // Mobile keyboards have no Tab key, so list items can't be indented/outdented
 // the way they are on desktop. This plugin renders a thin formatting bar pinned
@@ -17,10 +18,6 @@ import { $prose } from '@milkdown/utils'
 // focused with the keyboard open.
 
 const mobileListToolbarKey = new PluginKey('mvMobileListToolbar')
-
-function isTouch(): boolean {
-  return typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches
-}
 
 // lucide indent-decrease / indent-increase
 const OUTDENT_SVG =

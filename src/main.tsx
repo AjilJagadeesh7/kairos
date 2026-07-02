@@ -13,8 +13,16 @@ import { logger } from './logger/logger'
 // menu through keeps the right-click "Inspect Element" option available so the
 // console and network tabs are reachable. Release builds keep the menu off and
 // have no devtools compiled in, so the option never shows up for users.
+//
+// Touch devices are exempt: on a coarse pointer the long-press that fires
+// `contextmenu` is also the gesture that starts text selection, so preventing
+// it here would break the native selection handles + Cut/Copy/Paste/Select All
+// action bar that mobile users expect.
+const isCoarsePointer = () => window.matchMedia?.('(pointer: coarse)').matches ?? false
 if (import.meta.env.PROD) {
-  document.addEventListener('contextmenu', e => e.preventDefault())
+  document.addEventListener('contextmenu', e => {
+    if (!isCoarsePointer()) e.preventDefault()
+  })
 }
 
 window.onerror = (_msg, _source, _line, _col, error) => {

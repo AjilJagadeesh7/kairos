@@ -1,6 +1,7 @@
 import { Plugin, PluginKey, TextSelection } from '@milkdown/prose/state'
 import { type EditorView } from '@milkdown/prose/view'
 import { $prose } from '@milkdown/utils'
+import { isTouch } from '../../../utils/platform'
 
 // On touch devices there is no hover, so Crepe's block-edit "+" handle (driven
 // by pointermove and hidden on every keydown) never reliably appears. This
@@ -16,10 +17,6 @@ import { $prose } from '@milkdown/utils'
 // Renders only on coarse-pointer (touch) devices, only while editable.
 
 const mobileAddBlockKey = new PluginKey('mvMobileAddBlock')
-
-function isTouch(): boolean {
-  return typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches
-}
 
 const PLUS_SVG =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +

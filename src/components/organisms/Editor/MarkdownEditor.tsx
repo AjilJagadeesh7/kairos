@@ -19,7 +19,7 @@ import { mobileListToolbarPlugin } from './mobileListToolbarPlugin'
 import { clickBelowAppendPlugin } from './clickBelowAppendPlugin'
 import { assertUploadSize } from '../../../tiers/uploadGuard'
 import { importAttachment, attachmentRef } from '../../../attachments/attachmentService'
-import { isDesktop } from '../../../utils/platform'
+import { isDesktop, isTouch } from '../../../utils/platform'
 import { toast } from 'sonner'
 import { useWikilinkTooltip } from '../../../hooks/useWikilinkTooltip'
 import { useWikilinkAutocomplete } from '../../../hooks/useWikilinkAutocomplete'
@@ -458,7 +458,7 @@ export function MarkdownEditor({ noteId, initialMarkdown, readOnly = false, onCh
     <div
       className="relative h-full min-h-[320px]"
       data-readonly={readOnly || undefined}
-      onContextMenu={readOnly ? undefined : handleContextMenu}
+      onContextMenu={readOnly || isTouch() ? undefined : handleContextMenu}
       onClick={handleLinkClick}
       style={{ '--editor-zoom': editorZoom } as React.CSSProperties}
     >

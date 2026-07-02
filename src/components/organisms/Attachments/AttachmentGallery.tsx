@@ -23,7 +23,7 @@ export function AttachmentGallery(): JSX.Element {
         <EmptyState
           icon="paperclip"
           title="No attachments yet"
-          description="Upload files from the sidebar, or drop images and PDFs into a note — they'll live here."
+          description="Upload files from the sidebar, paste an image copied from anywhere, or drop images and PDFs into a note — they'll live here."
         />
       </div>
     )

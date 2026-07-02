@@ -19,6 +19,7 @@ const NAV: NavEntry[] = [
   { to: '/journal', iconName: 'calendar-days', label: 'Journal' },
   { to: '/kanban',  iconName: 'square-kanban', label: 'Kanban'  },
   { to: '/canvas',  iconName: 'pen-tool',      label: 'Canvas'  },
+  { to: '/attachments', iconName: 'paperclip', label: 'Attachments' },
   { to: '/graph',   iconName: 'network',       label: 'Graph'   },
 ]
 

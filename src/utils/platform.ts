@@ -13,6 +13,12 @@ export const isDesktop = () =>
   window.__TAURI__ !== undefined || window.__TAURI_INTERNALS__ !== undefined
 export const isMobile = () => Capacitor.isNativePlatform()
 
+/** True on touch-first devices (mobile WebView, tablets). Based on the pointer
+ *  type rather than viewport width, so it reflects the actual input device —
+ *  used to defer to native text-selection UI and touch affordances. */
+export const isTouch = () =>
+  typeof window !== 'undefined' && (window.matchMedia?.('(pointer: coarse)').matches ?? false)
+
 export type Platform = 'desktop' | 'mobile'
 export const getPlatform = (): Platform => {
   if (isMobile()) return 'mobile'
