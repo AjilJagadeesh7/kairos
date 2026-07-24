@@ -1,3 +1,5 @@
+import rawChangelog from '../../CHANGELOG.md?raw'
+
 export interface ChangelogEntry {
   version: string
   date: string
@@ -7,42 +9,89 @@ export interface ChangelogEntry {
   fixed?: string[]
 }
 
-export const CHANGELOG: ChangelogEntry[] = [
-  {
-    version: '0.0.3',
-    date: '2026-06-05',
-    highlights: [
-      'Auto-update reliability fixes.',
-    ],
-    fixed: [
-      'Auto-updater now correctly detects, downloads, and verifies new releases',
-      '"Restart & Update" button now relaunches the app after an update instead of hanging',
-    ],
-  },
-  {
-    version: '0.0.1',
-    date: '2026-05-28',
-    highlights: [
-      'Initial release of Kairos — a local-first, privacy-first knowledge workspace.',
-    ],
-    added: [
-      'Notes — Markdown editor with wikilinks, transclusions, tags, backlinks, and folder organisation',
-      'Daily journal — calendar navigation, auto-save, version history, and date-keyed entries',
-      'Kanban — drag-and-drop boards with columns, priorities, due dates, subtasks, comments, and attachments',
-      'Canvas — infinite canvas with note cards, freeform text, images, and embedded web pages',
-      'Graph — force-directed knowledge graph with cosine-similarity edges and position memory',
-      'Full-text search — instant fuzzy search powered by MiniSearch with per-field boosting',
-      'Semantic search — local AI embeddings for meaning-aware note discovery',
-      'Command palette — Cmd+K launcher for navigation, search, and actions across all content types',
-      'Split-pane layout — open multiple notes, boards, or views side by side with tab drag-and-drop',
-      'Publish & Export — export notes to PDF, HTML, or Markdown with one click',
-      'Custom callouts — define callout types with custom labels, emoji, and accent colours',
-      'Plugin system — installable plugins with a slot API, command registration, and a Marketplace tab',
-      'Keyboard shortcuts — fully customisable bindings with a visual shortcut browser',
-      'Theme support — light, dark, and system-matched themes',
-      'Version history — per-note and per-journal-entry restore points',
-      'Auto-updates — in-app update checker and installer on desktop',
-      'Local-first storage — all data lives in your vault folder, no cloud account required',
-    ],
-  },
-]
+type Bucket = 'added' | 'improved' | 'fixed'
+
+/** Maps a `### <name>` heading to one of the in-app buckets (or null to skip). */
+function bucketFor(name: string): Bucket | null {
+  const n = name.trim().toLowerCase()
+  if (n === 'added') return 'added'
+  if (n === 'fixed' || n === 'security') return 'fixed'
+  if (n === 'changed' || n === 'improved' || n === 'deprecated' || n === 'removed') return 'improved'
+  return null
+}
+
+/** Strips the markdown that the in-app changelog renders as plain text. */
+function stripMd(s: string): string {
+  return s
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // links → text
+    .replace(/`([^`]+)`/g, '$1')             // inline code
+    .replace(/\*\*/g, '')                    // bold
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/**
+ * Parses our Keep-a-Changelog CHANGELOG.md into entries. Single source of truth:
+ * update the markdown and the in-app "What's new" panel follows automatically.
+ *
+ *   ## [x.y.z] — date        → new entry
+ *   <intro paragraph>        → highlights (before any ### heading)
+ *   ### Added|Changed|Fixed  → bucket
+ *   - bullet (may wrap)      → item
+ */
+function parseChangelog(md: string): ChangelogEntry[] {
+  const entries: ChangelogEntry[] = []
+  let cur: ChangelogEntry | null = null
+  let bucket: Bucket | null = null
+  let intro: string[] = []
+  let bullet: string[] | null = null
+
+  const pushItem = (b: Bucket, text: string) => {
+    if (!cur || !text) return
+    ;(cur[b] ??= []).push(text)
+  }
+  const flushBullet = () => {
+    if (bullet && cur && bucket) pushItem(bucket, stripMd(bullet.join(' ')))
+    bullet = null
+  }
+  const flushIntro = () => {
+    if (cur && intro.length) {
+      const text = stripMd(intro.join(' '))
+      if (text) cur.highlights.push(text)
+    }
+    intro = []
+  }
+
+  for (const line of md.split(/\r?\n/)) {
+    const h2 = line.match(/^##\s+\[([^\]]+)\]\s*(?:[—–-])\s*(.+?)\s*$/)
+    if (h2) {
+      flushBullet(); flushIntro()
+      if (cur) entries.push(cur)
+      cur = { version: h2[1], date: h2[2], highlights: [] }
+      bucket = null
+      continue
+    }
+    if (!cur) continue // skip the file's title/intro before the first version
+
+    const h3 = line.match(/^###\s+(.+?)\s*$/)
+    if (h3) { flushBullet(); flushIntro(); bucket = bucketFor(h3[1]); continue }
+
+    const bulletStart = line.match(/^[-*]\s+(.*)$/)
+    if (bulletStart) { flushBullet(); bullet = [bulletStart[1]]; continue }
+
+    if (line.trim() === '') {
+      flushBullet()
+      if (!bucket) flushIntro()
+      continue
+    }
+
+    if (bullet) bullet.push(line.trim())          // wrapped bullet continuation
+    else if (!bucket) intro.push(line.trim())     // intro paragraph → highlight
+  }
+
+  flushBullet(); flushIntro()
+  if (cur) entries.push(cur)
+  return entries
+}
+
+export const CHANGELOG: ChangelogEntry[] = parseChangelog(rawChangelog)
