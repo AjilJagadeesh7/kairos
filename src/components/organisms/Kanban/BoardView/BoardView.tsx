@@ -1,9 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { useKanbanStore } from '../../../../store/useKanbanStore'
+import { KanbanTabs } from './KanbanTabs'
 import { BoardHeader } from './BoardHeader'
 import { BoardColumns } from './BoardColumns'
+import { BoardSwimlanes } from './BoardSwimlanes'
+import { KanbanListView } from './views/KanbanListView'
+import { KanbanTimelineView } from './views/KanbanTimelineView'
+import { KanbanBacklogView } from './views/KanbanBacklogView'
+import { KanbanSummaryView } from './views/KanbanSummaryView'
 import { TaskDetailPanel } from '../TaskDetail/TaskDetailPanel'
 import { BoardSettings } from '../BoardSettings/BoardSettings'
+import { useKanbanView } from '../../../../hooks/useKanbanView'
 import { useAppStore } from '../../../../store/useAppStore'
 import { eventMatchesAction } from '../../../../hooks/useShortcutKey'
 import { registerBackHandler } from '../../../../utils/backHandler'
@@ -14,6 +21,8 @@ interface BoardViewProps {
 }
 
 export function BoardView({ board }: BoardViewProps): JSX.Element {
+  const [view, setView] = useKanbanView()
+  const groupBy         = useKanbanStore(s => s.groupBy)
   const activeTaskId    = useKanbanStore(s => s.activeTaskId)
   const setActiveTaskId = useKanbanStore(s => s.setActiveTaskId)
   const undo            = useKanbanStore(s => s.undo)
@@ -82,34 +91,33 @@ export function BoardView({ board }: BoardViewProps): JSX.Element {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Single combined header bar — title + filters + actions */}
-      <BoardHeader board={board} onOpenSettings={() => setShowSettings(true)} />
+      <KanbanTabs board={board} view={view} onSelect={setView} />
+      <BoardHeader board={board} view={view} onOpenSettings={() => setShowSettings(true)} />
 
-      {/* Board columns fill all remaining space */}
+      {/* Active view fills all remaining space */}
       <div className="min-h-0 flex-1 overflow-hidden">
-        <BoardColumns board={board} />
+        {view === 'board'    && (groupBy === 'parent' ? <BoardSwimlanes board={board} /> : <BoardColumns board={board} />)}
+        {view === 'list'     && <KanbanListView board={board} />}
+        {view === 'timeline' && <KanbanTimelineView board={board} />}
+        {view === 'backlog'  && <KanbanBacklogView board={board} />}
+        {view === 'summary'  && <KanbanSummaryView board={board} />}
       </div>
 
       {/* ── Task detail drawer — slides in from the right, overlays the board ── */}
       {activeTask && (
         <>
-          {/* Backdrop — above the mobile nav FAB (z-50) so it can't float over the drawer */}
           <div
             className="fixed inset-0 z-[55] bg-black/30 backdrop-blur-[1px]"
             onClick={() => setActiveTaskId(null)}
           />
-          {/* Drawer */}
           <aside
             className="fixed inset-y-0 right-0 z-[60] flex flex-col border-l border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-2xl"
             style={{
               width: `min(${drawerWidth}px, 100vw)`,
-              // Full-screen on phones — keep the header below the status bar
-              // and the content above the gesture bar (viewport-fit=cover).
               paddingTop: 'env(safe-area-inset-top)',
               paddingBottom: 'env(safe-area-inset-bottom)',
             }}
           >
-            {/* Resize handle */}
             <div
               onPointerDown={startResize}
               className="pane-resize-handle absolute inset-y-0 left-0 z-10 w-1 cursor-col-resize touch-none opacity-0 transition-opacity hover:opacity-100 hover:bg-[rgb(var(--accent))]/40 active:opacity-100 active:bg-[rgb(var(--accent))]/60"
@@ -123,7 +131,6 @@ export function BoardView({ board }: BoardViewProps): JSX.Element {
         </>
       )}
 
-      {/* Board settings modal */}
       {showSettings && (
         <BoardSettings board={board} onClose={() => setShowSettings(false)} />
       )}

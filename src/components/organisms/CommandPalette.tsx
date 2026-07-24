@@ -118,7 +118,7 @@ export function CommandPalette({ onClose }: Props) {
 
     if (item.kind === 'note')         go(`/notes/${item.note.id}`)
     else if (item.kind === 'journal') go(`/journal/${item.entry.date}`)
-    else if (item.kind === 'task')    go(`/kanban/${item.board.id}`)
+    else if (item.kind === 'task')    go(`/kanban/${item.board.id}/${item.task.id}`)
     else if (item.kind === 'canvas')  go(`/canvas/${item.canvas.id}`)
     else if (item.kind === 'pennote') go(`/pennote/${item.penNote.id}`)
     else if (item.kind === 'attachment') go(`/attachments/${item.attachment.id}`)

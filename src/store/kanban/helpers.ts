@@ -1,4 +1,5 @@
-import type { Board, KanbanColumn, KanbanTask, KanbanFilters } from '../../types/kanban.types'
+import type { Board, KanbanColumn, KanbanTask, KanbanFilters, IssueType, Sprint, BoardGroupBy } from '../../types/kanban.types'
+import { migrateBoard } from './migrate'
 
 export interface BoardHistory {
   past: Board[]
@@ -11,9 +12,11 @@ export interface KanbanState {
   activeTaskId: string | null
   isLoaded: boolean
   filters: KanbanFilters
+  groupBy: BoardGroupBy
   history: Record<string, BoardHistory>
 
   loadBoards: () => Promise<void>
+  setGroupBy: (groupBy: BoardGroupBy) => void
   setActiveBoardId: (id: string | null) => void
   setActiveTaskId: (id: string | null) => void
 
@@ -28,10 +31,16 @@ export interface KanbanState {
   deleteColumn: (boardId: string, columnId: string, moveTasksTo?: string) => void
   reorderColumns: (boardId: string, newOrderIds: string[]) => void
 
-  createTask: (boardId: string, columnId: string, title: string) => string
+  createTask: (boardId: string, columnId: string, title: string, extra?: Partial<Pick<KanbanTask, 'type' | 'parentId' | 'sprintId'>>) => string
+  createChildIssue: (boardId: string, parentId: string, title: string, type: IssueType) => string
   updateTask: (boardId: string, taskId: string, updates: Partial<KanbanTask>) => void
   deleteTask: (boardId: string, taskId: string) => void
   commitDragState: (boardId: string, tasks: KanbanTask[], columns?: KanbanColumn[]) => void
+
+  createSprint: (boardId: string, name: string) => string
+  updateSprint: (boardId: string, sprintId: string, updates: Partial<Sprint>) => void
+  deleteSprint: (boardId: string, sprintId: string) => void
+  moveTaskToSprint: (boardId: string, taskId: string, sprintId: string | null) => void
 
   addBoardTag: (boardId: string, name: string) => void
   updateBoardTag: (boardId: string, oldName: string, updates: Partial<import('../../types/kanban.types').KanbanTag>) => void
@@ -66,20 +75,17 @@ export type GetFn = () => KanbanState
 export const DEFAULT_FILTERS: KanbanFilters = {
   tags: [],
   priorities: [],
+  types: [],
   due: 'all',
   linkedNote: null,
+  query: '',
+  sprint: null,
   sort: 'manual',
 }
 
+/** Migrates a persisted board to the current schema (keys, issue types, child issues). */
 export function normalizeBoard(board: Board): Board {
-  return {
-    ...board,
-    tasks: board.tasks.map(t => ({
-      ...t,
-      comments:    t.comments    ?? [],
-      attachments: t.attachments ?? [],
-    })),
-  }
+  return migrateBoard(board)
 }
 
 export function mutateBoard(

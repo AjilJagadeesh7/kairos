@@ -52,6 +52,9 @@ export function AppRoutes() {
       <Route path="/kanban/:boardId" element={
         <Suspense fallback={<PageLoader />}><KanbanPage /></Suspense>
       } />
+      <Route path="/kanban/:boardId/:taskId" element={
+        <Suspense fallback={<PageLoader />}><KanbanPage /></Suspense>
+      } />
       <Route path="/canvas" element={
         <Suspense fallback={<PageLoader />}><CanvasPage /></Suspense>
       } />

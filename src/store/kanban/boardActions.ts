@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
-import { duplicateBoardWithNewIds, DEFAULT_COLUMN_COLORS } from '../../utils/kanban'
+import { duplicateBoardWithNewIds, DEFAULT_COLUMN_COLORS, deriveKeyPrefix } from '../../utils/kanban'
 import { mutateBoard, normalizeBoard, fsUpsertBoard, fsDeleteBoard, type SetFn, type GetFn } from './helpers'
 import type { Board, KanbanColumn } from '../../types/kanban.types'
 
@@ -12,9 +12,13 @@ export function makeBoardActions(set: SetFn, get: GetFn) {
         { id: uuidv4(), title: 'Todo',        color: DEFAULT_COLUMN_COLORS[0], order: 1 },
         { id: uuidv4(), title: 'In Progress', color: DEFAULT_COLUMN_COLORS[1], order: 2 },
         { id: uuidv4(), title: 'Review',      color: DEFAULT_COLUMN_COLORS[2], order: 3 },
-        { id: uuidv4(), title: 'Done',        color: DEFAULT_COLUMN_COLORS[3], order: 4 },
+        { id: uuidv4(), title: 'Done',        color: DEFAULT_COLUMN_COLORS[3], order: 4, isDone: true },
       ]
-      const board: Board = { id, title, description, createdAt: now, updatedAt: now, columns, tasks: [], boardTags: [] }
+      const board: Board = {
+        id, title, description, createdAt: now, updatedAt: now,
+        columns, tasks: [], boardTags: [],
+        keyPrefix: deriveKeyPrefix(title), seq: 0, sprints: [],
+      }
       set(s => ({ boards: [board, ...s.boards] }))
       void fsUpsertBoard(board)
       return id

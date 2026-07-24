@@ -25,7 +25,7 @@ afterEach(() => { vi.useRealTimers() })
 
 function makeTask(overrides: Partial<KanbanTask> = {}): KanbanTask {
   return {
-    id: 'task-1', columnId: 'col-1', title: 'Task',
+    id: 'task-1', key: 'TSK-1', type: 'task', parentId: null, columnId: 'col-1', title: 'Task',
     order: 0, priority: null, tags: [], subtasks: [], linkedNotes: [], linkedTasks: [],
     comments: [], attachments: [], createdAt: NOW.toISOString(), updatedAt: NOW.toISOString(),
     ...overrides,
@@ -49,7 +49,7 @@ function makeColumn(overrides: Partial<KanbanColumn> = {}): KanbanColumn {
 }
 
 const DEFAULT_FILTERS: KanbanFilters = {
-  tags: [], priorities: [], due: 'all', linkedNote: null, sort: 'manual',
+  tags: [], priorities: [], types: [], due: 'all', linkedNote: null, query: '', sprint: null, sort: 'manual',
 }
 
 // --- Due date helpers ---

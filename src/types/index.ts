@@ -39,4 +39,9 @@ export type {
   Priority,
   DueFilter,
   SortMode,
+  IssueType,
+  KanbanView,
+  BoardGroupBy,
+  Sprint,
+  SprintStatus,
 } from './kanban.types'

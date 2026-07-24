@@ -6,6 +6,7 @@ import { makeBoardActions } from './kanban/boardActions'
 import { makeTaskActions } from './kanban/taskActions'
 import { makeMetaActions } from './kanban/metaActions'
 import { makeFilterActions } from './kanban/filterActions'
+import { makeSprintActions } from './kanban/sprintActions'
 
 export { DEFAULT_FILTERS } from './kanban/helpers'
 export type { KanbanState } from './kanban/helpers'
@@ -18,6 +19,7 @@ export const useKanbanStore = create<KanbanState>()(
       activeTaskId: null,
       isLoaded: false,
       filters: DEFAULT_FILTERS,
+      groupBy: 'none',
       history: {},
 
       loadBoards: async () => {
@@ -37,18 +39,33 @@ export const useKanbanStore = create<KanbanState>()(
 
       setActiveBoardId: (activeBoardId) => set({ activeBoardId }),
       setActiveTaskId:  (activeTaskId)  => set({ activeTaskId }),
+      setGroupBy:       (groupBy)       => set({ groupBy }),
 
       ...makeBoardActions(set, get),
       ...makeTaskActions(set, get),
       ...makeMetaActions(set, get),
       ...makeFilterActions(set, get),
+      ...makeSprintActions(set, get),
     }),
     {
       name: 'kairos-kanban-ui',
       partialize: (state) => ({
         activeBoardId: state.activeBoardId,
-        filters:       state.filters,
+        groupBy:       state.groupBy,
+        // Don't persist transient scoping (search + sprint) across launches —
+        // a stale sprint scope silently hides issues.
+        filters:       { ...state.filters, query: '', sprint: null },
       }),
+      // Backfill defaults so filters persisted before newer fields (types/query)
+      // existed don't rehydrate with undefined values.
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<KanbanState>
+        return {
+          ...current,
+          ...p,
+          filters: { ...DEFAULT_FILTERS, ...(p.filters ?? {}) },
+        }
+      },
     },
   ),
 )

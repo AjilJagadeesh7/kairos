@@ -4,6 +4,8 @@ import { Icon } from '../../../../icons/Icon'
 interface Props {
   value: string | undefined
   onChange: (iso: string | undefined) => void
+  /** Placeholder shown when no date is set. */
+  label?: string
 }
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -14,7 +16,7 @@ function parseLocalDate(iso: string) {
   return new Date(y, m - 1, d)
 }
 
-export function DueDatePicker({ value, onChange }: Props) {
+export function DueDatePicker({ value, onChange, label: placeholder = 'Due date' }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -63,7 +65,7 @@ export function DueDatePicker({ value, onChange }: Props) {
 
   const label = selected
     ? selected.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    : 'Due date'
+    : placeholder
 
   const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay()
   const daysInMonth    = new Date(viewYear, viewMonth + 1, 0).getDate()
