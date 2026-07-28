@@ -6,17 +6,21 @@ export interface ChangelogEntry {
   highlights: string[]
   added?: string[]
   improved?: string[]
+  removed?: string[]
   fixed?: string[]
 }
 
-type Bucket = 'added' | 'improved' | 'fixed'
+type Bucket = 'added' | 'improved' | 'removed' | 'fixed'
 
 /** Maps a `### <name>` heading to one of the in-app buckets (or null to skip). */
 function bucketFor(name: string): Bucket | null {
   const n = name.trim().toLowerCase()
   if (n === 'added') return 'added'
   if (n === 'fixed' || n === 'security') return 'fixed'
-  if (n === 'changed' || n === 'improved' || n === 'deprecated' || n === 'removed') return 'improved'
+  // Removals get their own bucket — filing them under "Improved" reads as though
+  // losing a feature were an enhancement.
+  if (n === 'removed' || n === 'deprecated') return 'removed'
+  if (n === 'changed' || n === 'improved') return 'improved'
   return null
 }
 

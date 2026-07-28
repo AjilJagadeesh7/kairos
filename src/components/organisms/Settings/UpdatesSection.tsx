@@ -1,9 +1,10 @@
 import { useEffect } from 'react'
 import { useAppUpdater } from '../../../hooks/useAppUpdater'
 import { useMobileUpdater } from '../../../hooks/useMobileUpdater'
-import { CHANGELOG } from '../../../data/changelog'
 import { isDesktop, isMobile } from '../../../utils/platform'
 import { SectionCard } from '../../molecules/SectionCard'
+import { ChangelogAccordion } from './ChangelogAccordion'
+import { SectionLabel } from '../../atoms/SectionLabel'
 import { Button } from '../../atoms/Button'
 import { Icon } from '../../../icons/Icon'
 
@@ -121,53 +122,10 @@ export function UpdatesSection() {
         )}
       </SectionCard>
 
-      <SectionCard title="Changelog">
-        <div className="space-y-6">
-          {CHANGELOG.map(entry => (
-            <div key={entry.version}>
-              <div className="mb-3 flex items-center gap-2">
-                <span className="font-mono text-sm font-semibold text-text">v{entry.version}</span>
-                <span className="text-xs text-text3">{entry.date}</span>
-                {entry.version === VERSION && (
-                  <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-medium text-accent">
-                    current
-                  </span>
-                )}
-              </div>
-
-              {entry.highlights.map(h => (
-                <p key={h} className="mb-2 text-sm text-text2">{h}</p>
-              ))}
-
-              {entry.added && entry.added.length > 0 && (
-                <ChangeGroup label="Added" color="text-green-500" items={entry.added} />
-              )}
-              {entry.improved && entry.improved.length > 0 && (
-                <ChangeGroup label="Improved" color="text-blue-400" items={entry.improved} />
-              )}
-              {entry.fixed && entry.fixed.length > 0 && (
-                <ChangeGroup label="Fixed" color="text-amber-400" items={entry.fixed} />
-              )}
-            </div>
-          ))}
-        </div>
-      </SectionCard>
-    </div>
-  )
-}
-
-function ChangeGroup({ label, color, items }: { label: string; color: string; items: string[] }) {
-  return (
-    <div className="mb-3">
-      <p className={`mb-1 text-[11px] font-semibold uppercase tracking-wider ${color}`}>{label}</p>
-      <ul className="space-y-0.5">
-        {items.map(item => (
-          <li key={item} className="flex items-start gap-1.5 text-xs text-text2">
-            <span className={`mt-1 shrink-0 ${color}`}>•</span>
-            {item}
-          </li>
-        ))}
-      </ul>
+      <section>
+        <SectionLabel className="mb-2 px-1">Changelog</SectionLabel>
+        <ChangelogAccordion />
+      </section>
     </div>
   )
 }
