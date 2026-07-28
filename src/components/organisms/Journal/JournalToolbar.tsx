@@ -11,7 +11,6 @@ interface JournalToolbarProps {
   shortLabel: string
   isToday: boolean
   content: string
-  editorRootRef: React.RefObject<HTMLDivElement>
   saveStatus: SaveStatus
   readingMode: boolean
   showHistory: boolean
@@ -31,7 +30,7 @@ interface JournalToolbarProps {
 const overflowItemCls = 'flex w-full items-center gap-2 px-3 py-1.5 text-xs text-text transition hover:bg-surface3'
 
 export function JournalToolbar({
-  date, label, shortLabel, isToday, content, editorRootRef,
+  date, label, shortLabel, isToday, content,
   saveStatus, readingMode, showHistory, sidebarOpen,
   entryExists, entryNoSync,
   onPrev, onNext, onSave, onToggleReading, onToggleHistory, onToggleSync, onDelete, onToggleSidebar,
@@ -89,7 +88,7 @@ export function JournalToolbar({
       </button>
 
       {/* Export */}
-      <JournalExportMenu title={label} markdown={content} editorRootRef={editorRootRef} />
+      <JournalExportMenu title={label} markdown={content} />
 
       <div className="mx-0.5 h-4 w-px bg-border" />
 

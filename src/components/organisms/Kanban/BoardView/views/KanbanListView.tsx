@@ -4,7 +4,7 @@ import { IssueTypeIcon } from '../../../../atoms/IssueTypeIcon'
 import { PriorityDot } from '../../../../atoms/PriorityDot'
 import { DueDateChip } from '../../../../molecules/DueDateChip'
 import { EmptyState } from '../../../../molecules/EmptyState'
-import { filterAndSortTasks, PRIORITY_ORDER, keySeq } from '../../../../../utils/kanban'
+import { filterAndSortTasks, PRIORITY_ORDER, keySeq, isTaskOverdue } from '../../../../../utils/kanban'
 import type { Board, KanbanTask } from '../../../../../types/kanban.types'
 import { Icon } from '../../../../../icons/Icon'
 
@@ -99,11 +99,14 @@ export function KanbanListView({ board }: Props): JSX.Element {
         <tbody>
           {rows.map(({ task, depth }) => {
             const col = board.columns.find(c => c.id === task.columnId)
+            const overdue = isTaskOverdue(task, board)
             return (
               <tr
                 key={task.id}
                 onClick={() => setActiveTaskId(task.id)}
-                className="cursor-pointer border-b border-[rgb(var(--border))]/60 hover:bg-[rgb(var(--surface-2))]"
+                className={`cursor-pointer border-b border-[rgb(var(--border))]/60 ${
+                  overdue ? 'bg-red-500/[0.05] hover:bg-red-500/[0.09]' : 'hover:bg-[rgb(var(--surface-2))]'
+                }`}
               >
                 <td className="px-3 py-2" style={{ paddingLeft: depth ? 28 : 12 }}>
                   <IssueTypeIcon type={task.type} size={16} />

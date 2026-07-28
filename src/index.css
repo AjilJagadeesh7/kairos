@@ -442,6 +442,12 @@ html, body, #root {
   min-height: 100%;
 }
 
+/* Root font size drives every rem-based size in the app (Tailwind text and     */
+/* spacing utilities), so the size picker scales the whole UI coherently.       */
+html {
+  font-size: var(--app-font-size, 16px);
+}
+
 * { box-sizing: border-box; }
 
 body {
@@ -678,6 +684,12 @@ body {
   overflow: visible;
 }
 
+/* Positioned context for absolute children (the "+" add-block handle). Crepe's
+   BlockEdit used to set this; it's disabled now, so we set it explicitly. */
+.milkdown {
+  position: relative;
+}
+
 /* ── Block handle ───────────────────────────────────────────────────────── */
 /* Crepe's block handle has two buttons: the "+" add (first) and the drag grip
    (second). The two-button handle is ~66px wide and needs an ~80px left gutter
@@ -881,40 +893,43 @@ body {
   }
 }
 
-/* ── Touch: focused-line "+" affordance (mobileAddBlockPlugin) ───────────── */
-/* No hover on touch, so the block-insert "+" is anchored to the focused line  */
-/* in a reserved left gutter. The button is an overlay OUTSIDE the editable     */
-/* DOM (positioned via JS) so it never interferes with tap-to-place-caret.      */
+/* ── Block-insert "+" affordance (addBlockPlugin) ─────────────────────────── */
+/* Anchored to the current line in a left gutter; opens the SlashMenu. The       */
+/* button is an overlay OUTSIDE the editable DOM (position: fixed, placed via JS  */
+/* in viewport coords) so it never interferes with click-to-place-caret. Applies  */
+/* on every platform (mouse, touch, pen).                                         */
+.milkdown .mv-add-block {
+  position: fixed;
+  display: none;
+  width: 30px;
+  /* Override the global 44px touch-target rule so the button stays in the gutter. */
+  min-width: 30px;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: rgb(var(--text-3));
+  background: transparent;
+  transition: background 0.15s, color 0.15s;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+  z-index: 5;
+}
+.milkdown .mv-add-block:hover,
+.milkdown .mv-add-block:active {
+  background: rgb(var(--surface-3));
+  color: rgb(var(--text));
+}
+
 @media (pointer: coarse) {
+  /* Touch needs a reserved gutter (no wide pane margin) and bottom clearance. */
   .milkdown .ProseMirror[contenteditable="true"] {
     padding-left: 44px;
   }
   /* Let the final lines scroll clear of the floating nav button + home bar. */
   .milkdown .ProseMirror {
     padding-bottom: calc(env(safe-area-inset-bottom) + 7rem);
-  }
-  .milkdown .mv-add-block {
-    position: absolute;
-    left: 6px;
-    width: 30px;
-    /* Override the global 44px touch-target rule so the button stays inside    */
-    /* the gutter and never overlaps the text column.                          */
-    min-width: 30px;
-    min-height: 0;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    color: rgb(var(--text-3));
-    background: transparent;
-    transition: background 0.15s, color 0.15s;
-    -webkit-user-select: none;
-    user-select: none;
-    touch-action: manipulation;
-    z-index: 1;
-  }
-  .milkdown .mv-add-block:active {
-    background: rgb(var(--surface-3));
-    color: rgb(var(--text));
   }
 
   /* ── Keyboard accessory bar: list indent / outdent (mobileListToolbarPlugin) */
@@ -1029,6 +1044,14 @@ body {
   font-style: normal;
   font-size: 1rem;
   flex-shrink: 0;
+}
+
+/* The [!TYPE] marker token — dimmed to read as a syntax hint, but kept in the
+   flow (not display:none) so the caret behaves and typing isn't scrambled. */
+.milkdown .ProseMirror blockquote.callout .callout-marker {
+  opacity: 0.35;
+  font-weight: 500;
+  font-size: 0.8em;
 }
 
 /* Body — all paragraphs after the title */

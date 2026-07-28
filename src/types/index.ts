@@ -4,7 +4,7 @@ export type {
   SyncCategory, SyncDirection, SyncRules, SyncProviderId, SyncProviderMeta,
 } from './sync.types'
 export { SYNC_CATEGORIES, SYNC_PROVIDERS, SYNC_PROVIDER_META, DEFAULT_SYNC_RULES } from './sync.types'
-export type { ThemeMode, SearchMode, FontOption, FontWeight, VaultStatus } from './ui.types'
+export type { ThemeMode, SearchMode, FontOption, FontWeight, FontSize, VaultStatus } from './ui.types'
 export type {
   SaveStatus,
   MenuKind,

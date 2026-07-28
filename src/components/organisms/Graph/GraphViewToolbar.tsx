@@ -18,7 +18,7 @@ export function GraphViewToolbar({
       style={{ borderBottom: '1px solid rgb(var(--border))', background: 'rgb(var(--surface-2))' }}
     >
       <button
-        title={focusMode ? 'Exit focus mode' : 'Focus on selected node'}
+        title={focusMode ? 'Show full graph' : 'Isolate connections (dim everything else)'}
         onClick={onToggleFocus}
         disabled={!selectedNoteId}
         className={`rounded-md p-1.5 transition ${

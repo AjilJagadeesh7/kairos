@@ -94,6 +94,7 @@ type ContextMenuProps = {
   onInsertChart: () => void
   // links
   onAddLink: () => void
+  onAddTransclusion: () => void
   onAddExternalLink: () => void
   // clipboard
   onCut: () => void
@@ -111,7 +112,7 @@ export function ContextMenu({
   onBulletList, onOrderedList, onTaskList, onBlockquote,
   onHeading, onTurnIntoText,
   onInsertTable, onInsertCallout, onInsertHr, onInsertCodeBlock, onInsertChart,
-  onAddLink, onAddExternalLink,
+  onAddLink, onAddTransclusion, onAddExternalLink,
   onCut, onCopy, onPaste, onSelectAll,
 }: ContextMenuProps): JSX.Element {
   const ax = Math.min(x, window.innerWidth  - 224)
@@ -137,11 +138,14 @@ export function ContextMenu({
         </>
       )}
 
-      {/* ── Links ───────────────────────────────────────────────── */}
+      {/* ── Insert links / embeds ───────────────────────────────── */}
       {kind !== 'image' && (
         <>
-          <Item label="Add link"          onClick={onAddLink} />
-          <Item label="Add external link" onClick={onAddExternalLink} />
+          <Sub label="Link / embed">
+            <Item label="Wikilink"              onClick={onAddLink} />
+            <Item label="Embed (transclusion)"  onClick={onAddTransclusion} />
+            <Item label="External link"         onClick={onAddExternalLink} />
+          </Sub>
           <Sep />
         </>
       )}

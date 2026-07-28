@@ -6,7 +6,7 @@ import { PriorityDot } from '../../../atoms/PriorityDot'
 import { ProgressBar } from '../../../atoms/ProgressBar'
 import { IssueTypeIcon } from '../../../atoms/IssueTypeIcon'
 import { DueDateChip } from '../../../molecules/DueDateChip'
-import { calcChildProgress, tagTextColor } from '../../../../utils/kanban'
+import { calcChildProgress, tagTextColor, isTaskOverdue } from '../../../../utils/kanban'
 import type { Board, KanbanTask } from '../../../../types/kanban.types'
 import { Icon } from '../../../../icons/Icon'
 
@@ -40,6 +40,7 @@ export function TaskCard({ task, board, isOverlay = false }: TaskCardProps): JSX
   }
 
   const colColor = board.columns.find(c => c.id === task.columnId)?.color
+  const overdue  = isTaskOverdue(task, board)
 
   return (
     <div
@@ -55,7 +56,9 @@ export function TaskCard({ task, board, isOverlay = false }: TaskCardProps): JSX
         hover:shadow-md
         ${isActive
           ? 'border-[rgb(var(--accent))]'
-          : 'border-[rgb(var(--border))] hover:border-[rgb(var(--text-3))]'
+          : overdue
+            ? 'border-red-500/60 ring-1 ring-inset ring-red-500/25 hover:border-red-500'
+            : 'border-[rgb(var(--border))] hover:border-[rgb(var(--text-3))]'
         }
         ${isDragging && !isOverlay ? 'border-dashed border-[rgb(var(--accent))]/60 bg-[rgb(var(--accent))]/5 opacity-60 [&>*]:invisible' : ''}
         ${isOverlay ? 'cursor-grabbing shadow-2xl ring-1 ring-black/5' : ''}

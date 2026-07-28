@@ -10,8 +10,6 @@ interface EditorToolbarProps {
   noteTitle: string
   saveStatus: SaveStatus
   onSave: () => void
-  exportingPDF: boolean
-  onExportPDF: () => void
   showHistory: boolean
   onToggleHistory: () => void
   onReadingMode: () => void
@@ -22,7 +20,6 @@ interface EditorToolbarProps {
 
 export function EditorToolbar({
   note, noteTitle, saveStatus, onSave,
-  exportingPDF, onExportPDF,
   showHistory, onToggleHistory, onReadingMode, onDelete,
   sidebarOpen, onToggleSidebar,
 }: EditorToolbarProps) {
@@ -95,7 +92,7 @@ export function EditorToolbar({
             <Icon name="chevron-down" size={10} />
           </div>
         }>
-          <ExportMenu note={note} exportingPDF={exportingPDF} onExportPDF={onExportPDF} size="md" />
+          <ExportMenu note={note} size="md" />
         </Dropdown>
 
         <div className="mx-0.5 h-4 w-px bg-border" />
@@ -161,7 +158,7 @@ export function EditorToolbar({
             </div>
             <div className="my-1 h-px bg-border" />
             <div className="px-3 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-wide text-text3">Export</div>
-            <ExportMenu note={note} exportingPDF={exportingPDF} onExportPDF={onExportPDF} size="md" />
+            <ExportMenu note={note} size="md" />
             <div className="my-1 h-px bg-border" />
             <button type="button" onClick={onToggleHistory} className={overflowItemCls}>
               <Icon name="history" size={14} /> Version history

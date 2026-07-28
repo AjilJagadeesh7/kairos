@@ -47,6 +47,11 @@ export function isTaskDone(task: KanbanTask, board: Board): boolean {
   return task.columnId === doneColumnId(board)
 }
 
+/** A task/issue is overdue when it has a past due date and isn't in a done column. */
+export function isTaskOverdue(task: KanbanTask, board: Board): boolean {
+  return !!task.due && !isTaskDone(task, board) && isDueOverdue(task.due)
+}
+
 /** Child-issue rollup: how many first-class children sit in the done column. */
 export function calcChildProgress(task: KanbanTask, board: Board): { done: number; total: number } {
   const children = board.tasks.filter(t => t.parentId === task.id)

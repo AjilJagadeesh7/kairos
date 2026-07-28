@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useKanbanStore } from '../../../../store/useKanbanStore'
 import { IssueTypeIcon } from '../../../atoms/IssueTypeIcon'
 import { ProgressBar } from '../../../atoms/ProgressBar'
-import { calcChildProgress, doneColumnId, isTaskDone, CHILD_ISSUE_TYPES, ISSUE_TYPE_META } from '../../../../utils/kanban'
+import { calcChildProgress, doneColumnId, isTaskDone, isTaskOverdue, CHILD_ISSUE_TYPES, ISSUE_TYPE_META } from '../../../../utils/kanban'
+import { DueDateChip } from '../../../molecules/DueDateChip'
 import type { Board, IssueType, KanbanTask } from '../../../../types/kanban.types'
 import { Icon } from '../../../../icons/Icon'
 
@@ -46,8 +47,11 @@ export function ChildIssues({ board, task, onOpen }: Props): JSX.Element {
 
       {children.map(child => {
         const done = isTaskDone(child, board)
+        const overdue = isTaskOverdue(child, board)
         return (
-          <div key={child.id} className="group flex items-center gap-2 rounded-lg border border-transparent px-1 py-1 hover:border-[rgb(var(--border))] hover:bg-[rgb(var(--surface-2))]">
+          <div key={child.id} className={`group flex items-center gap-2 rounded-lg border px-1 py-1 hover:bg-[rgb(var(--surface-2))] ${
+            overdue ? 'border-red-500/50 bg-red-500/[0.04]' : 'border-transparent hover:border-[rgb(var(--border))]'
+          }`}>
             <button
               onClick={() => toggleDone(child)}
               className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition ${
@@ -62,6 +66,7 @@ export function ChildIssues({ board, task, onOpen }: Props): JSX.Element {
             <button onClick={() => onOpen(child.id)} className={`flex-1 truncate text-left text-sm hover:underline ${done ? 'text-[rgb(var(--text-3))] line-through' : 'text-[rgb(var(--text))]'}`}>
               {child.title}
             </button>
+            {child.due && !done && <DueDateChip due={child.due} className="shrink-0" />}
             <button onClick={() => onOpen(child.id)} className="rounded p-1 text-[rgb(var(--text-3))] opacity-0 transition hover:text-[rgb(var(--accent))] group-hover:opacity-100" title="Open issue">
               <Icon name="arrow-up-right" size={12} />
             </button>

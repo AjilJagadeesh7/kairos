@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware'
 import { v4 as uuidv4 } from 'uuid'
 import { upsertEmbedding } from '../db/schema'
 import { useLoaderStore } from './useLoaderStore'
-import type { Note, SearchMode, SyncStatus, ThemeMode, StorageTarget, FontOption, FontWeight, VaultStatus, CustomCallout, SyncRules, SyncCategory, SyncProviderId, SyncDirection } from '../types'
+import type { Note, SearchMode, SyncStatus, ThemeMode, StorageTarget, FontOption, FontWeight, FontSize, VaultStatus, CustomCallout, SyncRules, SyncCategory, SyncProviderId, SyncDirection } from '../types'
 import { DEFAULT_SYNC_RULES } from '../types'
 import type { S3Config } from '../sync/s3'
 import type { WebDAVConfig } from '../sync/webdav'
@@ -21,6 +21,7 @@ type AppState = {
   theme: ThemeMode
   font: FontOption
   fontWeight: FontWeight
+  fontSize: FontSize
   aiUrl: string
   s3Config: S3Config | null
   webdavConfig: WebDAVConfig | null
@@ -49,6 +50,7 @@ type AppState = {
   setTheme: (t: ThemeMode) => void
   setFont: (f: FontOption) => void
   setFontWeight: (w: FontWeight) => void
+  setFontSize: (s: FontSize) => void
   setAiUrl: (url: string) => void
   setSearchMode: (mode: SearchMode) => void
   setQuery: (query: string) => void
@@ -56,7 +58,7 @@ type AppState = {
   setS3Config: (cfg: S3Config | null) => void
   setWebDAVConfig: (cfg: WebDAVConfig | null) => void
   setSyncRule: (category: SyncCategory, provider: SyncProviderId, direction: keyof SyncDirection, value: boolean) => void
-  applySharedSettings: (patch: Partial<Pick<AppState, 'theme' | 'font' | 'fontWeight' | 'aiUrl' | 'noteTagColors' | 'calloutColors' | 'customCallouts' | 'keyBindings' | 'userName' | 'newTabPage'>>) => void
+  applySharedSettings: (patch: Partial<Pick<AppState, 'theme' | 'font' | 'fontWeight' | 'fontSize' | 'aiUrl' | 'noteTagColors' | 'calloutColors' | 'customCallouts' | 'keyBindings' | 'userName' | 'newTabPage'>>) => void
   setActiveNoteId: (id?: string) => void
   setMobileSidebarOpen: (open: boolean) => void
   setStorageChoices: (choices: StorageTarget[]) => void
@@ -122,6 +124,7 @@ export const useAppStore = create<AppState>()(
       theme: (localStorage.getItem('kairos.theme') as ThemeMode | null) ?? 'light',
       font: (localStorage.getItem('kairos.font') as FontOption | null) ?? 'manrope',
       fontWeight: (localStorage.getItem('kairos.fontWeight') as FontWeight | null) ?? 'regular',
+      fontSize: (localStorage.getItem('kairos.fontSize') as FontSize | null) ?? 'default',
       aiUrl: 'http://localhost:11434',
       userName: '',
       newTabPage: '/',
@@ -147,6 +150,10 @@ export const useAppStore = create<AppState>()(
       },
       setFontWeight: (fontWeight) => {
         set({ fontWeight })
+        void import('../sync/settingsSync').then(({ saveCurrentSettings }) => saveCurrentSettings())
+      },
+      setFontSize: (fontSize) => {
+        set({ fontSize })
         void import('../sync/settingsSync').then(({ saveCurrentSettings }) => saveCurrentSettings())
       },
       setAiUrl: (aiUrl) => set({ aiUrl }),
@@ -175,6 +182,7 @@ export const useAppStore = create<AppState>()(
         theme:          patch.theme          ?? s.theme,
         font:           patch.font           ?? s.font,
         fontWeight:     patch.fontWeight     ?? s.fontWeight,
+        fontSize:       patch.fontSize       ?? s.fontSize,
         aiUrl:          patch.aiUrl          ?? s.aiUrl,
         noteTagColors:  patch.noteTagColors  ?? s.noteTagColors,
         calloutColors:  patch.calloutColors  ?? s.calloutColors,
@@ -538,6 +546,7 @@ export const useAppStore = create<AppState>()(
         theme:           state.theme,
         font:            state.font,
         fontWeight:      state.fontWeight,
+        fontSize:        state.fontSize,
         aiUrl:           state.aiUrl,
         userName:        state.userName,
         newTabPage:      state.newTabPage,

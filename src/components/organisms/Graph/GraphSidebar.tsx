@@ -30,8 +30,11 @@ interface GraphSidebarProps {
   selectedNote: Note | null
   selectedTaskInfo: SelectedTaskInfo | null
   selectedCanvasInfo: { canvasId: string; title: string } | null
+  noteNodeCount: number
+  showNotes: boolean
   showTasks: boolean
   showCanvas: boolean
+  onToggleNotes: () => void
   onToggleTasks: () => void
   onToggleCanvas: () => void
   onOpenNote: (noteId: string) => void
@@ -42,15 +45,15 @@ interface GraphSidebarProps {
 
 export function GraphSidebar({
   graphMode, onModeChange,
-  nodes, links,
+  links,
   wikilinkCount, semanticCount, taskNodeCount, canvasNodeCount,
   tagLegendItems, tagColorMap,
   selectedNote, selectedTaskInfo, selectedCanvasInfo,
-  showTasks, showCanvas,
-  onToggleTasks, onToggleCanvas,
+  noteNodeCount, showNotes, showTasks, showCanvas,
+  onToggleNotes, onToggleTasks, onToggleCanvas,
   onOpenNote, onOpenTask, onOpenCanvas, onClose,
 }: GraphSidebarProps): JSX.Element {
-  const noteCount = nodes.filter(n => n.nodeType === 'note').length
+  const noteCount = noteNodeCount
 
   return (
     <aside className="flex h-full w-full flex-col border-r border-border bg-surface2">
@@ -88,7 +91,7 @@ export function GraphSidebar({
         <section>
           <SectionLabel className="mb-2">Node Types</SectionLabel>
           <div className="flex flex-col gap-0.5">
-            <FilterRow icon="file-text"    label="Notes"   count={noteCount}        on={true}       onToggle={undefined} dot="#818cf8" />
+            <FilterRow icon="file-text"    label="Notes"   count={noteCount}        on={showNotes}  onToggle={onToggleNotes} dot="#818cf8" />
             <FilterRow icon="square-kanban" label="Tasks"  count={taskNodeCount}    on={showTasks}  onToggle={onToggleTasks} dot="#fb923c" />
             <FilterRow icon="pen-tool"      label="Canvas" count={canvasNodeCount}  on={showCanvas} onToggle={onToggleCanvas} dot="#f59e0b" />
           </div>
@@ -98,7 +101,7 @@ export function GraphSidebar({
         <section>
           <SectionLabel className="mb-1.5">Stats</SectionLabel>
           <div className="flex flex-col gap-0.5 text-xs text-text2">
-            <span>{noteCount} note{noteCount !== 1 ? 's' : ''}</span>
+            {showNotes  && <span>{noteCount} note{noteCount !== 1 ? 's' : ''}</span>}
             {showTasks  && <span>{taskNodeCount}   task{taskNodeCount   !== 1 ? 's' : ''}</span>}
             {showCanvas && <span>{canvasNodeCount} canvas{canvasNodeCount !== 1 ? 'es' : ''}</span>}
             <span>{links.length} connection{links.length !== 1 ? 's' : ''}</span>

@@ -28,11 +28,12 @@ export interface EditorCommandHandlers {
   onHeading: (level: number) => void
   onTurnIntoText: () => void
   onInsertTable: () => void
-  onInsertCallout: () => void
+  onInsertCallout: (type?: string) => void
   onInsertHr: () => void
   onInsertCodeBlock: () => void
   onInsertChart: () => void
   onAddLink: () => void
+  onAddTransclusion: () => void
   onAddExternalLink: () => void
   onAddColBefore: (colIndex: number) => void
   onAddColAfter: (colIndex: number) => void
@@ -147,16 +148,32 @@ export function useEditorCommands(
       closeMenu()
     },
 
-    onInsertCallout: () => {
+    onInsertCallout: (type = 'NOTE') => {
       crepeRef.current?.editor.action(ctx => {
         const view = ctx.get(editorViewCtx)
         const { state } = view
         const nodes = state.schema.nodes
-        const titleText = state.schema.text('[!NOTE]')
-        const titlePara = nodes['paragraph'].create(null, titleText)
+        // "[!TYPE] Title" — the [!TYPE] marker is dimmed by the callout plugin and
+        // the trailing text becomes the visible callout title.
+        const T = type.toUpperCase()
+        const title = T.charAt(0) + T.slice(1).toLowerCase()
+        const titlePara = nodes['paragraph'].create(null, state.schema.text(`[!${T}] ${title}`))
         const bodyPara  = nodes['paragraph'].create(null, state.schema.text('Callout content'))
         const bq = nodes['blockquote'].create(null, [titlePara, bodyPara])
-        view.dispatch(state.tr.replaceSelectionWith(bq).scrollIntoView())
+
+        // Insert as a standalone block: if the caret is in an empty paragraph,
+        // replace it; otherwise insert after the current block so we don't split text.
+        const tr = state.tr
+        const $from = state.selection.$from
+        if ($from.parent.type.name === 'paragraph' && $from.parent.content.size === 0) {
+          const before = $from.before()
+          tr.replaceWith(before, before + $from.parent.nodeSize, bq)
+        } else {
+          const after = $from.after($from.depth)
+          tr.insert(after, bq)
+        }
+        // Put the caret in the callout body.
+        view.dispatch(tr.scrollIntoView())
         view.focus()
       })
       closeMenu()
@@ -166,6 +183,15 @@ export function useEditorCommands(
       crepeRef.current?.editor.action(ctx => {
         const view = ctx.get(editorViewCtx)
         view.dispatch(view.state.tr.insertText('[['))
+        view.focus()
+      })
+      closeMenu()
+    },
+
+    onAddTransclusion: () => {
+      crepeRef.current?.editor.action(ctx => {
+        const view = ctx.get(editorViewCtx)
+        view.dispatch(view.state.tr.insertText('![['))
         view.focus()
       })
       closeMenu()

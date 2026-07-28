@@ -36,6 +36,7 @@ export function GraphPage() {
   const [graphMode,      setGraphMode]      = useState<GraphMode>('links')
   const [rerenderKey,    setRerenderKey]    = useState(0)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+  const [showNotes,      setShowNotes]      = useState(true)
   const [showTasks,      setShowTasks]      = useState(true)
   const [showCanvas,     setShowCanvas]     = useState(true)
   const [focusMode,      setFocusMode]      = useState(false)
@@ -51,12 +52,15 @@ export function GraphPage() {
 
   const baseNodes = graphMode === 'links' ? linksNodes : tagsNodes
   const baseLinks = graphMode === 'links' ? linksLinks : tagsLinks
+  const noteNodeCount = useMemo(() => baseNodes.filter(n => n.nodeType === 'note').length, [baseNodes])
   const nodes = useMemo(() => {
-    let result = [...baseNodes]
+    // Notes can be toggled off like tasks/canvas — hiding them (and, via the
+    // link safety filter in GraphView, their edges) leaves just tasks/canvases.
+    let result = showNotes ? [...baseNodes] : baseNodes.filter(n => n.nodeType !== 'note')
     if (showTasks)  result = [...result, ...taskNodes]
     if (showCanvas) result = [...result, ...canvasNodes]
     return result
-  }, [showTasks, showCanvas, baseNodes, taskNodes, canvasNodes])
+  }, [showNotes, showTasks, showCanvas, baseNodes, taskNodes, canvasNodes])
   const links = useMemo(() => {
     // Shallow-clone every link object so react-force-graph-2d's in-place mutation
     // (replacing source/target string IDs with node object refs) never bleeds into
@@ -182,8 +186,11 @@ export function GraphPage() {
       selectedNote={selectedNote}
       selectedTaskInfo={selectedTaskInfo}
       selectedCanvasInfo={selectedCanvasInfo}
+      noteNodeCount={noteNodeCount}
+      showNotes={showNotes}
       showTasks={showTasks}
       showCanvas={showCanvas}
+      onToggleNotes={() => setShowNotes(v => !v)}
       onToggleTasks={() => setShowTasks(v => !v)}
       onToggleCanvas={() => setShowCanvas(v => !v)}
       onOpenNote={id => navigate(`/notes/${id}`)}

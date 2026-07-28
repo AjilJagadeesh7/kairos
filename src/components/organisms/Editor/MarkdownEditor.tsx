@@ -8,13 +8,13 @@ import { replaceAll } from '@milkdown/utils'
 import { math } from '@milkdown/plugin-math'
 import { wikilinkHighlightPlugin } from './wikilinkPlugin'
 import { calloutPlugin } from './calloutPlugin'
-import { linkInputRulePlugin, linkKeymapPlugin } from './linkInputRulePlugin'
+import { linkInputRulePlugin, linkKeymapPlugin, linkExitPlugin } from './linkInputRulePlugin'
 import { pasteSanitizePlugin } from './pasteSanitizePlugin'
 import { imageLazyPlugin } from './imageLazyPlugin'
 import { attachmentRenderPlugin } from './attachmentRenderPlugin'
 import { queryBlockPlugin } from './queryBlockPlugin'
 import { chartCodeBlockPlugin } from './chartCodeBlockPlugin'
-import { mobileAddBlockPlugin } from './mobileAddBlockPlugin'
+import { addBlockPlugin } from './mobileAddBlockPlugin'
 import { mobileListToolbarPlugin } from './mobileListToolbarPlugin'
 import { clickBelowAppendPlugin } from './clickBelowAppendPlugin'
 import { assertUploadSize } from '../../../tiers/uploadGuard'
@@ -23,9 +23,11 @@ import { isDesktop, isTouch } from '../../../utils/platform'
 import { toast } from 'sonner'
 import { useWikilinkTooltip } from '../../../hooks/useWikilinkTooltip'
 import { useWikilinkAutocomplete } from '../../../hooks/useWikilinkAutocomplete'
+import { useSlashMenu } from '../../../hooks/useSlashMenu'
 import { useEditorContextMenu } from '../../../hooks/useEditorContextMenu'
 import { useEditorCommands } from './useEditorCommands'
 import { ContextMenu } from '../../molecules/ContextMenu'
+import { SlashMenu } from './SlashMenu'
 import { NotePreviewPopover } from '../../common/NotePreviewPopover'
 import { WikilinkDropdown } from './WikilinkDropdown'
 import { ChartTypeModal } from './ChartTypeModal'
@@ -114,6 +116,7 @@ export function MarkdownEditor({ noteId, initialMarkdown, readOnly = false, onCh
   const { tooltip, attach: attachTooltip, dismiss: dismissTooltip } = useWikilinkTooltip(rootRef)
   const { menu, handleContextMenu, resizeImage, closeMenu } = useEditorContextMenu(crepeRef, rootRef)
   const { ac, suggestions, complete, dismiss: dismissAc } = useWikilinkAutocomplete(crepeRef, rootRef)
+  const { slash, dismiss: dismissSlash, runCommand: runSlash } = useSlashMenu(crepeRef, rootRef)
   const cmds = useEditorCommands(crepeRef, closeMenu, () => setChartModalOpen(true))
 
   useEffect(() => {
@@ -206,23 +209,11 @@ export function MarkdownEditor({ noteId, initialMarkdown, readOnly = false, onCh
     const crepe = new Crepe({
       root: rootRef.current,
       defaultValue: initialMarkdownRef.current,
-      features: { [Crepe.Feature.Toolbar]: false },
+      // BlockEdit (Crepe's tabbed slash menu + block handle) is disabled in favour
+      // of the custom keyboard-navigable <SlashMenu> below.
+      features: { [Crepe.Feature.Toolbar]: false, [Crepe.Feature.BlockEdit]: false },
       featureConfigs: {
         [Crepe.Feature.ImageBlock]: { onUpload: handleUpload },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        [Crepe.Feature.BlockEdit]: { buildMenu: (builder: any) => {
-          try {
-            const group = builder.getGroup('advanced')
-            group.addItem('chart', {
-              label: 'Chart',
-              icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>',
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              onRun: (_ctx: any) => { window.dispatchEvent(new Event('mv:open-chart-modal')) },
-            })
-          } catch {
-            // 'advanced' group unavailable — chart still accessible via right-click
-          }
-        } },
       },
     })
     crepeRef.current = crepe
@@ -230,13 +221,14 @@ export function MarkdownEditor({ noteId, initialMarkdown, readOnly = false, onCh
     crepe.editor.use(calloutPlugin)
     crepe.editor.use(linkInputRulePlugin)
     crepe.editor.use(linkKeymapPlugin)
+    crepe.editor.use(linkExitPlugin)
     crepe.editor.use(math)
     crepe.editor.use(pasteSanitizePlugin)
     crepe.editor.use(imageLazyPlugin)
     crepe.editor.use(attachmentRenderPlugin())
     crepe.editor.use(queryBlockPlugin)
     crepe.editor.use(chartCodeBlockPlugin)
-    crepe.editor.use(mobileAddBlockPlugin)
+    crepe.editor.use(addBlockPlugin)
     crepe.editor.use(mobileListToolbarPlugin)
     crepe.editor.use(clickBelowAppendPlugin)
     crepe.on(listener => { listener.markdownUpdated((_ctx, md) => onChangeRef.current(md)) })
@@ -474,6 +466,15 @@ export function MarkdownEditor({ noteId, initialMarkdown, readOnly = false, onCh
         />
       )}
 
+      {slash.visible && !ac.visible && (
+        <SlashMenu
+          x={slash.x} y={slash.y} query={slash.query}
+          cmds={cmds}
+          onRun={runSlash}
+          onDismiss={dismissSlash}
+        />
+      )}
+
       {tooltip.visible && (
         <NotePreviewPopover
           title={tooltip.title} x={tooltip.x} y={tooltip.y}
@@ -517,6 +518,7 @@ export function MarkdownEditor({ noteId, initialMarkdown, readOnly = false, onCh
           onHeading={cmds.onHeading}
           onTurnIntoText={cmds.onTurnIntoText}
           onAddLink={cmds.onAddLink}
+          onAddTransclusion={cmds.onAddTransclusion}
           onAddExternalLink={cmds.onAddExternalLink}
           onCut={cmds.onCut}
           onCopy={cmds.onCopy}

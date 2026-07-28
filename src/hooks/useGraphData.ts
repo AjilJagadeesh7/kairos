@@ -203,6 +203,10 @@ export function useGraphData(
         for (const linkedTaskId of (task.linkedTasks ?? [])) {
           taskLinks.push({ source: task.id, target: linkedTaskId, kind: 'task-task' })
         }
+        // Child issues / subtasks connect to their parent task.
+        if (task.parentId) {
+          taskLinks.push({ source: task.id, target: task.parentId, kind: 'task-task' })
+        }
       }
     }
     return { taskNodes, taskLinks }

@@ -1,4 +1,3 @@
-import type React from 'react'
 import { Dropdown } from '../../molecules/Dropdown'
 import { markdownToHtml } from '../../../utils/markdownToHtml'
 import { buildAttachmentZip, inlineHtmlAttachments, hasAttachmentRefs } from '../../../utils/attachmentExport'
@@ -9,8 +8,6 @@ interface JournalExportMenuProps {
   title: string
   /** Markdown body to export. */
   markdown: string
-  /** Editor container, used to render the PDF from the live DOM. */
-  editorRootRef: React.RefObject<HTMLDivElement>
 }
 
 function downloadBlob(content: string | Uint8Array, filename: string, mime: string) {
@@ -24,8 +21,8 @@ function downloadBlob(content: string | Uint8Array, filename: string, mime: stri
   setTimeout(() => URL.revokeObjectURL(url), 5000)
 }
 
-/** Export dropdown (Markdown / HTML / PDF) mirroring the Notes editor export menu. */
-export function JournalExportMenu({ title, markdown, editorRootRef }: JournalExportMenuProps) {
+/** Export dropdown (Markdown / HTML) mirroring the Notes editor export menu. */
+export function JournalExportMenu({ title, markdown }: JournalExportMenuProps) {
   const safe = title.replace(/[^\w\s-]/g, '').trim() || 'journal'
 
   const itemCls = 'flex w-full items-center gap-2.5 px-3 py-2.5 text-sm text-text2 hover:bg-surface2 hover:text-text transition-colors'
@@ -45,11 +42,6 @@ export function JournalExportMenu({ title, markdown, editorRootRef }: JournalExp
     }
   }
 
-  const exportPDFFile = async () => {
-    const { exportPDF } = await import('../Editor/exportPDF')
-    await exportPDF(editorRootRef.current, title)
-  }
-
   return (
     <Dropdown trigger={
       <div className="flex h-7 items-center gap-1 rounded px-2 text-xs font-medium text-text3 transition hover:bg-surface3 hover:text-text md:px-2.5">
@@ -66,11 +58,6 @@ export function JournalExportMenu({ title, markdown, editorRootRef }: JournalExp
         <button type="button" className={itemCls} onClick={() => void exportHTML()}>
           <Icon name="globe" size={14} className="shrink-0 text-text3" />
           HTML (.html)
-        </button>
-        <div className="border-t border-border" />
-        <button type="button" className={itemCls} onClick={() => void exportPDFFile()}>
-          <Icon name="file-down" size={14} className="shrink-0 text-text3" />
-          PDF (.pdf)
         </button>
       </div>
     </Dropdown>

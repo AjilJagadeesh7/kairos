@@ -20,13 +20,14 @@ import { setS3Config } from './s3'
 import { setWebDAVConfig } from './webdav'
 import type { S3Config } from './s3'
 import type { WebDAVConfig } from './webdav'
-import type { ThemeMode, StorageTarget, FontOption, FontWeight, CustomCallout } from '../types'
+import type { ThemeMode, StorageTarget, FontOption, FontWeight, FontSize, CustomCallout } from '../types'
 
 export type PersistedSettings = {
   version: 1
   theme?: ThemeMode
   font?: FontOption
   fontWeight?: FontWeight
+  fontSize?: FontSize
   aiUrl?: string
   storageChoices?: StorageTarget[]
   s3Config?: S3Config | null
@@ -61,8 +62,8 @@ export async function loadSettings(): Promise<PersistedSettings | null> {
 }
 
 export async function saveCurrentSettings(): Promise<void> {
-  const { theme, font, fontWeight, aiUrl, storageChoices, s3Config, webdavConfig } = useAppStore.getState()
-  await saveSettings({ version: 1, theme, font, fontWeight, aiUrl, storageChoices, s3Config, webdavConfig })
+  const { theme, font, fontWeight, fontSize, aiUrl, storageChoices, s3Config, webdavConfig } = useAppStore.getState()
+  await saveSettings({ version: 1, theme, font, fontWeight, fontSize, aiUrl, storageChoices, s3Config, webdavConfig })
   // Opportunistically mirror to the cloud (respects scope inside).
   void pushConfigToCloud()
 }
@@ -77,6 +78,7 @@ type SharedSettings = {
   theme?: ThemeMode
   font?: FontOption
   fontWeight?: FontWeight
+  fontSize?: FontSize
   aiUrl?: string
   noteTagColors?: Record<string, string>
   calloutColors?: Record<string, string>
@@ -131,7 +133,7 @@ function remoteIsNewer(remoteAt: string, mtimeKey: string): boolean {
 function sharedBody() {
   const s = useAppStore.getState()
   return {
-    theme: s.theme, font: s.font, fontWeight: s.fontWeight, aiUrl: s.aiUrl,
+    theme: s.theme, font: s.font, fontWeight: s.fontWeight, fontSize: s.fontSize, aiUrl: s.aiUrl,
     noteTagColors: s.noteTagColors, calloutColors: s.calloutColors, customCallouts: s.customCallouts,
     keyBindings: s.keyBindings, userName: s.userName, newTabPage: s.newTabPage,
   }
@@ -209,7 +211,7 @@ async function pullConfigFromCloud(): Promise<void> {
     const shared = newest(shareds)
     if (shared && remoteIsNewer(shared.updatedAt, SHARED_MTIME)) {
       store.applySharedSettings({
-        theme: shared.theme, font: shared.font, fontWeight: shared.fontWeight, aiUrl: shared.aiUrl,
+        theme: shared.theme, font: shared.font, fontWeight: shared.fontWeight, fontSize: shared.fontSize, aiUrl: shared.aiUrl,
         noteTagColors: shared.noteTagColors, calloutColors: shared.calloutColors, customCallouts: shared.customCallouts,
         keyBindings: shared.keyBindings, userName: shared.userName, newTabPage: shared.newTabPage,
       })

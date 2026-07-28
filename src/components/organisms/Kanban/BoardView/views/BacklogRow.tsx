@@ -4,6 +4,7 @@ import { useKanbanStore } from '../../../../../store/useKanbanStore'
 import { IssueTypeIcon } from '../../../../atoms/IssueTypeIcon'
 import { PriorityDot } from '../../../../atoms/PriorityDot'
 import { DueDateChip } from '../../../../molecules/DueDateChip'
+import { isTaskOverdue } from '../../../../../utils/kanban'
 import type { Board, KanbanTask } from '../../../../../types/kanban.types'
 import { Icon } from '../../../../../icons/Icon'
 
@@ -22,13 +23,16 @@ export function BacklogRow({ task, board, overlay = false }: Props): JSX.Element
   })
   const col = board.columns.find(c => c.id === task.columnId)
   const childCount = board.tasks.filter(t => t.parentId === task.id).length
+  const overdue = isTaskOverdue(task, board)
 
   return (
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform) }}
       className={`flex items-center gap-2 rounded-md border bg-[rgb(var(--surface))] px-2 py-1.5 transition-[box-shadow,opacity] ${
-        overlay ? 'cursor-grabbing border-[rgb(var(--border))] shadow-2xl ring-1 ring-black/5' : 'border-[rgb(var(--border))]'
+        overlay
+          ? 'cursor-grabbing border-[rgb(var(--border))] shadow-2xl ring-1 ring-black/5'
+          : overdue ? 'border-red-500/60 ring-1 ring-inset ring-red-500/20' : 'border-[rgb(var(--border))]'
       } ${isDragging && !overlay ? 'opacity-40' : ''}`}
     >
       <button {...attributes} {...listeners} className="cursor-grab text-[rgb(var(--text-3))] hover:text-[rgb(var(--text))]" title="Drag to a sprint">

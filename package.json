@@ -4,12 +4,15 @@
   "version": "0.0.7",
   "license": "AGPL-3.0-or-later",
   "type": "module",
+  "otaMinNative": "0.0.8",
+  "otaComment": "otaMinNative = the earliest APK/AAB version whose native shell can run OTA web bundles. It MUST equal the first release whose APK bundles @capgo/capacitor-updater, and MUST be bumped to the new version whenever a release changes anything native (android/, ios/, or adds a Capacitor plugin). Web-only releases leave it untouched, so existing installs keep receiving OTA updates.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "tauri": "tauri",
     "build:mobile": "vite build && npx cap sync",
+    "build:ota": "vite build && node scripts/build-mobile-bundle.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -21,6 +24,7 @@
     "@capacitor/ios": "^7.6.6",
     "@capacitor/preferences": "^7.0.0",
     "@capacitor/share": "^7.0.0",
+    "@capgo/capacitor-updater": "^7.50.2",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",

@@ -39,7 +39,12 @@ function DroppableCell({ id, empty, children }: { id: string; empty: boolean; ch
 export function BoardSwimlanes({ board }: Props): JSX.Element {
   const filters = useKanbanStore(s => s.filters)
   const updateTask = useKanbanStore(s => s.updateTask)
+  const setActiveTaskId = useKanbanStore(s => s.setActiveTaskId)
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+
+  function toggleCollapse(id: string) {
+    setCollapsed(s => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n })
+  }
   const [dragTask, setDragTask] = useState<KanbanTask | null>(null)
   const [dragWidth, setDragWidth] = useState<number>(288)
   const sensors = useDndSensors()
@@ -98,23 +103,46 @@ export function BoardSwimlanes({ board }: Props): JSX.Element {
             const parentCol = group.parent ? board.columns.find(c => c.id === group.parent!.columnId) : null
             return (
               <section key={group.id} className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))]/40">
-                <button
-                  onClick={() => setCollapsed(s => { const n = new Set(s); if (n.has(group.id)) n.delete(group.id); else n.add(group.id); return n })}
-                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left"
-                >
-                  <Icon name={isCollapsed ? 'chevron-right' : 'chevron-down'} size={14} className="text-[rgb(var(--text-3))]" />
-                  {group.parent
-                    ? <IssueTypeIcon type={group.parent.type} size={15} />
-                    : <Icon name="layers" size={14} className="text-[rgb(var(--text-3))]" />}
-                  {group.parent && <span className="font-mono text-[11px] text-[rgb(var(--text-3))]">{group.parent.key}</span>}
-                  <span className="truncate text-sm font-semibold text-[rgb(var(--text))]">{group.label}</span>
-                  {parentCol && (
-                    <span className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[rgb(var(--text-3))]" style={{ backgroundColor: `${parentCol.color}22` }}>
-                      {parentCol.title}
-                    </span>
+                <div className="flex w-full items-center gap-1.5 px-2 py-2.5 pr-3">
+                  <button
+                    onClick={() => toggleCollapse(group.id)}
+                    aria-label={isCollapsed ? 'Expand swimlane' : 'Collapse swimlane'}
+                    title={isCollapsed ? 'Expand' : 'Collapse'}
+                    className="flex shrink-0 items-center rounded p-1 text-[rgb(var(--text-3))] transition hover:bg-[rgb(var(--surface-2))] hover:text-[rgb(var(--text))]"
+                  >
+                    <Icon name={isCollapsed ? 'chevron-right' : 'chevron-down'} size={14} />
+                  </button>
+
+                  {group.parent ? (
+                    // Parent story only exists as this header (never a card), so
+                    // clicking it opens its detail — same as clicking a card.
+                    <button
+                      onClick={() => setActiveTaskId(group.parent!.id)}
+                      title={`Open ${group.parent.key}`}
+                      className="group/hdr flex min-w-0 flex-1 items-center gap-2 rounded px-1.5 py-1 text-left transition hover:bg-[rgb(var(--surface-2))]"
+                    >
+                      <IssueTypeIcon type={group.parent.type} size={15} />
+                      <span className="font-mono text-[11px] text-[rgb(var(--text-3))]">{group.parent.key}</span>
+                      <span className="truncate text-sm font-semibold text-[rgb(var(--text))]">{group.label}</span>
+                      {parentCol && (
+                        <span className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[rgb(var(--text-3))]" style={{ backgroundColor: `${parentCol.color}22` }}>
+                          {parentCol.title}
+                        </span>
+                      )}
+                      <Icon name="chevron-right" size={13} className="shrink-0 text-[rgb(var(--text-3))] opacity-0 transition group-hover/hdr:opacity-100" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => toggleCollapse(group.id)}
+                      className="flex min-w-0 flex-1 items-center gap-2 rounded px-1.5 py-1 text-left"
+                    >
+                      <Icon name="layers" size={14} className="text-[rgb(var(--text-3))]" />
+                      <span className="truncate text-sm font-semibold text-[rgb(var(--text))]">{group.label}</span>
+                    </button>
                   )}
-                  <span className="ml-1 text-xs text-[rgb(var(--text-3))]">{total}</span>
-                </button>
+
+                  <span className="ml-1 shrink-0 text-xs text-[rgb(var(--text-3))]">{total}</span>
+                </div>
 
                 {!isCollapsed && (
                   <div className="grid gap-3 px-3 pb-3" style={grid}>

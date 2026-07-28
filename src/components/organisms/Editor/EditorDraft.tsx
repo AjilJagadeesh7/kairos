@@ -38,7 +38,6 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768)
   const [sidebarWidth, setSidebarWidth] = useState(268)
   const [restoreKey, setRestoreKey]   = useState(0)
-  const [exportingPDF, setExportingPDF] = useState(false)
   const [largeDismissed, setLargeDismissed] = useState(false)
 
   // Open the history panel when requested from the note context menu (sidebar).
@@ -90,12 +89,6 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
   const contentRef = useRef(content)
   useEffect(() => { titleRef.current = title }, [title])
   useEffect(() => { contentRef.current = content }, [content])
-
-  const handleExportPDF = async () => {
-    setExportingPDF(true)
-    const { exportPDF } = await import('./exportPDF')
-    await exportPDF(editorRootRef.current, titleRef.current || 'Untitled note').finally(() => setExportingPDF(false))
-  }
 
   const handleDeleteNote = () => {
     void useConfirmStore.getState()
@@ -205,8 +198,6 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
         <EditorReadingMode
           note={note} title={title} content={content} restoreKey={restoreKey}
           tags={tags} tagMap={tagMap} editorRootRef={editorRootRef}
-          exportingPDF={exportingPDF}
-          onExportPDF={() => void handleExportPDF()}
           onExitReadingMode={() => setReadingMode(false)}
           onContentChange={setContent}
           onWikilinkClick={handleWikilinkClick}
@@ -218,8 +209,6 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
             noteTitle={title}
             saveStatus={saveStatus}
             onSave={() => void saveNote()}
-            exportingPDF={exportingPDF}
-            onExportPDF={() => void handleExportPDF()}
             showHistory={showHistory}
             onToggleHistory={() => setShowHistory(h => !h)}
             onReadingMode={() => setReadingMode(true)}

@@ -5,4 +5,5 @@ export type FontOption =
   | 'lora' | 'libre-baskerville' | 'playfair-display'
   | 'cormorant' | 'cinzel'
 export type FontWeight = 'light' | 'regular' | 'medium'
+export type FontSize = 'small' | 'default' | 'large' | 'xlarge'
 export type VaultStatus = 'loading' | 'ok' | 'none' | 'missing'

@@ -1,5 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Icon } from '../../../../icons/Icon'
+
+const POPUP_W = 224 // w-56
+const POPUP_H = 340 // approx height of the calendar card
 
 interface Props {
   value: string | undefined
@@ -18,7 +22,9 @@ function parseLocalDate(iso: string) {
 
 export function DueDatePicker({ value, onChange, label: placeholder = 'Due date' }: Props) {
   const [open, setOpen] = useState(false)
+  const [coords, setCoords] = useState<{ top: number; left: number }>({ top: 0, left: 0 })
   const ref = useRef<HTMLDivElement>(null)
+  const popupRef = useRef<HTMLDivElement>(null)
 
   const today    = new Date()
   const selected = value ? parseLocalDate(value) : null
@@ -32,13 +38,32 @@ export function DueDatePicker({ value, onChange, label: placeholder = 'Due date'
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value])
 
+  // Position the portal popup relative to the trigger, flipping above when there
+  // isn't room below (the picker lives near the bottom of a scrollable panel).
+  useLayoutEffect(() => {
+    if (!open || !ref.current) return
+    const r = ref.current.getBoundingClientRect()
+    const spaceBelow = window.innerHeight - r.bottom
+    const openUp = spaceBelow < POPUP_H + 12 && r.top > spaceBelow
+    const top  = openUp ? Math.max(8, r.top - POPUP_H - 6) : r.bottom + 6
+    const left = Math.min(Math.max(8, r.left), window.innerWidth - POPUP_W - 8)
+    setCoords({ top, left })
+  }, [open])
+
   useEffect(() => {
     if (!open) return
-    function handler(e: MouseEvent) {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false)
+    function onPointer(e: MouseEvent) {
+      const t = e.target as Node
+      if (!ref.current?.contains(t) && !popupRef.current?.contains(t)) setOpen(false)
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    // Any scroll would detach the fixed popup from the trigger — just close it.
+    function onScroll() { setOpen(false) }
+    document.addEventListener('mousedown', onPointer)
+    window.addEventListener('scroll', onScroll, true)
+    return () => {
+      document.removeEventListener('mousedown', onPointer)
+      window.removeEventListener('scroll', onScroll, true)
+    }
   }, [open])
 
   function prevMonth() {
@@ -92,8 +117,12 @@ export function DueDatePicker({ value, onChange, label: placeholder = 'Due date'
         )}
       </button>
 
-      {open && (
-        <div className="absolute left-0 top-full z-30 mt-1.5 w-56 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-3 shadow-xl">
+      {open && createPortal(
+        <div
+          ref={popupRef}
+          className="fixed z-[70] w-56 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface))] p-3 shadow-xl"
+          style={{ top: coords.top, left: coords.left }}
+        >
           {/* Month nav */}
           <div className="mb-2.5 flex items-center justify-between">
             <button
@@ -171,7 +200,8 @@ export function DueDatePicker({ value, onChange, label: placeholder = 'Due date'
               </button>
             )}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )

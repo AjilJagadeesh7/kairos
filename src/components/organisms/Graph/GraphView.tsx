@@ -50,6 +50,7 @@ export function GraphView({
   const [dims,      setDims]      = useState<{ w: number; h: number } | null>(null)
   const [bgColor,   setBgColor]   = useState('rgb(10,10,10)')
   const [textColor, setTextColor] = useState('rgba(255,255,255,0.75)')
+  const [accentColor, setAccentColor] = useState('rgb(129,140,248)')
   const [force3D,   setForce3D]   = useState(false)
   const use3D = force3D || nodes.length > 300
 
@@ -68,8 +69,10 @@ export function GraphView({
       const style = getComputedStyle(document.documentElement)
       const bg  = style.getPropertyValue('--bg').trim().split(/\s+/).map(Number)
       const txt = style.getPropertyValue('--text').trim().split(/\s+/).map(Number)
+      const acc = style.getPropertyValue('--accent').trim().split(/\s+/).map(Number)
       if (bg.length  === 3) setBgColor(`rgb(${bg.join(',')})`)
       if (txt.length === 3) setTextColor(`rgba(${txt[0]},${txt[1]},${txt[2]},0.8)`)
+      if (acc.length === 3) setAccentColor(`rgb(${acc.join(',')})`)
     }
     readTheme()
     const obs = new MutationObserver(readTheme)
@@ -140,9 +143,18 @@ export function GraphView({
     return m
   }, [links])
 
+  // A selection alone highlights the connected subgraph — no focus toggle needed.
+  const selectionActive = selectedNoteId !== null
+  const isIncidentLink = useCallback((lnk: GLink): boolean => {
+    if (!selectedNoteId) return false
+    const src = typeof lnk.source === 'object' ? lnk.source.id : lnk.source
+    const tgt = typeof lnk.target === 'object' ? lnk.target.id : lnk.target
+    return src === selectedNoteId || tgt === selectedNoteId
+  }, [selectedNoteId])
+
   const nodeCanvasObject = useCallback(
-    makeNodeRenderer({ selectedNoteId, focusedNodeId, neighborIds, focusMode, textColor, degreeMap, isLargeGraph, hoveredIdRef }),
-    [selectedNoteId, focusedNodeId, neighborIds, focusMode, textColor, degreeMap, isLargeGraph],
+    makeNodeRenderer({ selectedNoteId, focusedNodeId, neighborIds, focusMode, textColor, accentColor, degreeMap, isLargeGraph, hoveredIdRef }),
+    [selectedNoteId, focusedNodeId, neighborIds, focusMode, textColor, accentColor, degreeMap, isLargeGraph],
   )
 
   const graphData = useMemo(() => {
@@ -167,13 +179,10 @@ export function GraphView({
   }, [graphMode])
 
   const linkColor = useCallback((lnk: GLink) => {
-    const isFocused = focusMode && focusedNodeId !== null
-    const isDimmedLink = isFocused && (() => {
-      const src = typeof lnk.source === 'object' ? lnk.source.id : lnk.source
-      const tgt = typeof lnk.target === 'object' ? lnk.target.id : lnk.target
-      return !neighborIds.has(src) || !neighborIds.has(tgt)
-    })()
-    const a = isDimmedLink ? 0.06 : undefined
+    // With a node selected, its edges ("the path") stay bright while the rest
+    // dim back — focus mode dims them further still.
+    let a: number | undefined
+    if (selectionActive) a = isIncidentLink(lnk) ? 0.95 : (focusMode ? 0.05 : 0.1)
     if (lnk.kind === 'wikilink')    return `rgba(45,212,191,${a ?? 0.4})`
     if (lnk.kind === 'semantic')    return `rgba(129,140,248,${a ?? 0.25})`
     if (lnk.kind === 'task-note')   return `rgba(251,146,60,${a ?? 0.5})`
@@ -182,7 +191,7 @@ export function GraphView({
     if (lnk.kind === 'canvas-note') return `rgba(245,158,11,${a ?? 0.4})`
     const hex = lnk.sharedTags?.[0] ? tagColorMap.get(lnk.sharedTags[0]) : undefined
     return hex ? hexToRgba(hex, a ?? 0.45) : `rgba(251,191,36,${a ?? 0.4})`
-  }, [focusMode, focusedNodeId, neighborIds, tagColorMap])
+  }, [selectionActive, isIncidentLink, focusMode, tagColorMap])
 
   return (
     <div className="flex h-full flex-col" style={{ background: bgColor }}>
@@ -206,7 +215,11 @@ export function GraphView({
               key={`3d-${rerenderKey}-${nodes.length}`}
               graphData={graphData} backgroundColor={bgColor} width={dims.w} height={dims.h}
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              nodeColor={(node: any) => (node as GNode).id === selectedNoteId ? '#ffffff' : (node as GNode).color}
+              nodeColor={(node: any) => {
+                const n = node as GNode
+                if (selectionActive && !neighborIds.has(n.id)) return n.color + '22'
+                return n.id === selectedNoteId ? '#ffffff' : n.color
+              }}
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               nodeVal={(node: any) => (node as GNode).val}
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -214,12 +227,14 @@ export function GraphView({
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               linkColor={(lnk: any) => {
                 const l = lnk as GLink
+                if (selectionActive) return isIncidentLink(l) ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.04)'
                 if (l.kind === 'wikilink')  return 'rgba(45,212,191,0.5)'
                 if (l.kind === 'semantic')  return 'rgba(129,140,248,0.3)'
                 if (l.kind === 'task-note') return 'rgba(251,146,60,0.6)'
                 return 'rgba(251,191,36,0.4)'
               }}
-              linkWidth={1}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              linkWidth={(lnk: any) => selectionActive && isIncidentLink(lnk as GLink) ? 2.5 : 1}
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               onNodeClick={(node: any) => handleNodeClick(node as GNode)}
               d3AlphaDecay={0.04} d3VelocityDecay={0.4} cooldownTicks={100}
@@ -233,9 +248,8 @@ export function GraphView({
             graphData={graphData} backgroundColor={bgColor} width={dims.w} height={dims.h}
             nodeColor={(node: GNode) => {
               if (node.nodeType === 'task' || node.nodeType === 'canvas') return 'transparent'
-              const isFocused = focusMode && focusedNodeId !== null
-              const isDimmed = isFocused && !neighborIds.has(node.id) && node.id !== focusedNodeId
-              if (isDimmed) return node.id === selectedNoteId ? '#ffffff22' : node.color + '1f'
+              const isDimmed = selectionActive && !neighborIds.has(node.id)
+              if (isDimmed) return node.color + (focusMode ? '14' : '33')
               return node.id === selectedNoteId ? '#ffffff' : node.color
             }}
             nodeVal={(node: GNode) => node.val}
@@ -244,7 +258,10 @@ export function GraphView({
             nodeCanvasObjectMode={() => 'after'}
             nodeCanvasObject={nodeCanvasObject}
             linkColor={linkColor}
-            linkWidth={(lnk: GLink) => lnk.kind === 'wikilink' ? 1.2 : lnk.kind === 'semantic' ? 0.6 : 1}
+            linkWidth={(lnk: GLink) => {
+              const base = lnk.kind === 'wikilink' ? 1.2 : lnk.kind === 'semantic' ? 0.6 : 1
+              return selectionActive && isIncidentLink(lnk) ? base + 1.6 : base
+            }}
             linkDirectionalArrowLength={(l: GLink) => l.kind === 'wikilink' || l.kind === 'task-note' ? 5 : 0}
             linkDirectionalArrowRelPos={1}
             d3AlphaDecay={isLargeGraph ? 0.06 : 0.035}
