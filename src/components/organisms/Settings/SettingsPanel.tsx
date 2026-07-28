@@ -10,7 +10,6 @@ import { PluginsSection } from './PluginsSection'
 import { MarketplaceSection } from './MarketplaceSection'
 import { UpdatesSection } from './UpdatesSection'
 import { PublishSection } from './PublishSection'
-import { StorageSection } from './StorageSection'
 import type { IconToken } from '../../../icons/tokens'
 import type { Section } from '../../../types'
 
@@ -21,7 +20,6 @@ interface SettingsPanelProps {
 const SECTION_META: Partial<Record<Section, { label: string; description: string; icon: IconToken }>> = {
   'general':      { label: 'General',          description: 'Profile, new-tab page, appearance',        icon: 'settings-2'      },
   'storage-sync': { label: 'Storage & Sync',   description: 'Vault location, cloud sync',               icon: 'folder-sync'     },
-  'storage':      { label: 'Storage & Limits', description: 'Plan, storage usage, and limits',          icon: 'hard-drive'      },
   'tags':         { label: 'Tags',             description: 'Manage and colour your note tags',          icon: 'tag'             },
   'callouts':     { label: 'Callouts',         description: 'Custom callout types and styles',           icon: 'brackets'        },
   'keyboard':     { label: 'Keyboard',         description: 'Shortcuts and key bindings',                icon: 'keyboard'        },
@@ -60,7 +58,6 @@ export function SettingsPanel({ section }: SettingsPanelProps) {
         <div className="mx-auto max-w-5xl space-y-4">
           {section === 'general'      && <GeneralSection />}
           {section === 'storage-sync' && <SyncSection />}
-          {section === 'storage'      && <StorageSection />}
           {section === 'tags'         && <TagsSection />}
           {section === 'callouts'     && <CalloutsSection />}
           {section === 'keyboard'     && <KeyboardSection />}

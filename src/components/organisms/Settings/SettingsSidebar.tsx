@@ -2,6 +2,7 @@ import { Icon } from '../../../icons/Icon'
 import { IconButton } from '../../atoms/IconButton'
 import { SectionLabel } from '../../atoms/SectionLabel'
 import { useIsMobile } from '../../../hooks/useIsMobile'
+import { isMarketplaceEnabled } from '../../../utils/marketplace'
 import type { IconToken } from '../../../icons/tokens'
 import type { Section } from '../../../types'
 
@@ -19,7 +20,6 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: 'general',      label: 'General',          iconName: 'settings-2'      },
       { id: 'storage-sync', label: 'Storage & Sync',   iconName: 'folder-sync'     },
-      { id: 'storage',      label: 'Storage & Limits', iconName: 'hard-drive'      },
       { id: 'tags',         label: 'Tags',             iconName: 'tag'             },
       { id: 'callouts',     label: 'Callouts',         iconName: 'brackets'        },
       { id: 'keyboard',     label: 'Keyboard',         iconName: 'keyboard'        },
@@ -48,9 +48,17 @@ const MOBILE_HIDDEN_SECTIONS = new Set<Section>(['keyboard'])
 
 export function SettingsSidebar({ section, onSectionChange, onClose }: SettingsSidebarProps) {
   const isMobile = useIsMobile()
-  const navGroups = isMobile
-    ? NAV_GROUPS.map(g => ({ ...g, items: g.items.filter(i => !MOBILE_HIDDEN_SECTIONS.has(i.id)) }))
+
+  // Marketplace is a build-time integration — without VITE_MARKETPLACE_URL there
+  // is nothing to browse, so drop the entry instead of linking to a dead tab.
+  const hidden = new Set<Section>(isMobile ? MOBILE_HIDDEN_SECTIONS : [])
+  if (!isMarketplaceEnabled()) hidden.add('marketplace')
+
+  const navGroups = hidden.size === 0
+    ? NAV_GROUPS
     : NAV_GROUPS
+        .map(g => ({ ...g, items: g.items.filter(i => !hidden.has(i.id)) }))
+        .filter(g => g.items.length > 0)
 
   return (
     <aside className="flex h-full w-full flex-col border-r border-border bg-surface2">

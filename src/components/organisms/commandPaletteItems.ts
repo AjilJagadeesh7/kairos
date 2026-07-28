@@ -72,7 +72,6 @@ export const NAV_ITEMS: NavItem[] = [
   { kind: 'nav', id: 'nav-s-general',  label: 'Settings → General', hint: 'Appearance, font, theme',        iconName: 'settings',     path: '/settings?section=general' },
   { kind: 'nav', id: 'nav-s-vault',    label: 'Settings → Vault',   hint: 'Connect or change vault folder', iconName: 'book-open',    path: '/settings?section=vault' },
   { kind: 'nav', id: 'nav-s-sync',     label: 'Settings → Sync',    hint: 'S3, WebDAV, Drive sync',         iconName: 'settings',     path: '/settings?section=storage-sync' },
-  { kind: 'nav', id: 'nav-s-storage',  label: 'Settings → Storage & Limits', hint: 'Storage usage and plan limits', iconName: 'hard-drive', path: '/settings?section=storage' },
   { kind: 'nav', id: 'nav-s-ai',       label: 'Settings → AI',      hint: 'Semantic search, Ollama',        iconName: 'settings',     path: '/settings?section=ai' },
   { kind: 'nav', id: 'nav-s-plugins',  label: 'Settings → Plugins', hint: 'Manage installed plugins',       iconName: 'settings',     path: '/settings?section=plugins' },
   { kind: 'nav', id: 'nav-s-keyboard', label: 'Settings → Keyboard',hint: 'Customize key bindings',         iconName: 'settings',     path: '/settings?section=keyboard' },

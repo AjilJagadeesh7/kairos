@@ -2,10 +2,9 @@ import { useEffect, useRef } from 'react'
 
 import { useAppStore } from '../../../store/useAppStore'
 import { installPlugin } from '../../../plugins/installPlugin'
+import { MARKETPLACE_URL } from '../../../utils/marketplace'
 import type { PluginInstallRequest } from '../../../plugins/types'
 import { Icon } from '../../../icons/Icon'
-
-const MARKETPLACE_URL = import.meta.env.VITE_MARKETPLACE_URL as string | undefined
 
 interface InstallMessage {
   type: 'MINDVAULT_INSTALL_PLUGIN'
