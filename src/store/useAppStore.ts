@@ -38,6 +38,8 @@ type AppState = {
   userName: string
   newTabPage: string
   onboardingDone: boolean
+  /** True once the sample notes have been created — stops replays duplicating them. */
+  onboardingSeeded: boolean
   vaultStatus: VaultStatus
   lastSyncTime: string | null
   keyBindings: Record<string, string>
@@ -47,6 +49,7 @@ type AppState = {
   setUserName: (name: string) => void
   setNewTabPage: (path: string) => void
   completeOnboarding: () => void
+  markOnboardingSeeded: () => void
   setVaultStatus: (status: VaultStatus) => void
 
   setTheme: (t: ThemeMode) => void
@@ -133,6 +136,7 @@ export const useAppStore = create<AppState>()(
       userName: '',
       newTabPage: '/',
       onboardingDone: false,
+      onboardingSeeded: false,
       vaultStatus: 'loading',
       lastSyncTime: null,
       keyBindings: {},
@@ -142,6 +146,7 @@ export const useAppStore = create<AppState>()(
       setUserName: (userName) => set({ userName }),
       setNewTabPage: (newTabPage) => set({ newTabPage }),
       completeOnboarding: () => set({ onboardingDone: true }),
+      markOnboardingSeeded: () => set({ onboardingSeeded: true }),
       setVaultStatus: (vaultStatus) => set({ vaultStatus }),
 
       setTheme: (theme) => {
@@ -568,6 +573,7 @@ export const useAppStore = create<AppState>()(
         userName:        state.userName,
         newTabPage:      state.newTabPage,
         onboardingDone:  state.onboardingDone,
+        onboardingSeeded: state.onboardingSeeded,
         keyBindings:     state.keyBindings,
         pinnedNoteIds:   state.pinnedNoteIds,
       }),
