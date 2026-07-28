@@ -114,6 +114,12 @@ export const usePenNoteStore = create<PenNoteState>()(
       },
 
       remove: (id) => {
+        const doomed = get().penNotes.find(p => p.id === id)
+        if (doomed) {
+          void import('../trash/trashService')
+            .then(({ trashPenNote }) => trashPenNote(doomed))
+            .catch(err => console.warn('[trash] capture failed:', err))
+        }
         set(s => ({ penNotes: s.penNotes.filter(p => p.id !== id) }))
         void fsDel(id)
       },

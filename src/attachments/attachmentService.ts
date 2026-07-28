@@ -259,6 +259,22 @@ export async function ingestAttachment(meta: AttachmentMeta, bytes: Uint8Array):
   notifyChanged()
 }
 
+/**
+ * Put a trashed attachment back under its original id and name. Unlike
+ * `ingestAttachment` this overwrites any existing row, refreshes the manifest
+ * and re-pushes to connected providers (the delete removed the remote copy).
+ */
+export async function reinstateAttachment(meta: AttachmentMeta, bytes: Uint8Array): Promise<void> {
+  const ab = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer
+  const blob = new Blob([ab], { type: meta.mime || mimeFromName(meta.name) })
+  const record: Attachment = { ...meta, blob }
+  await upsertAttachment(record)
+  await writePlainAttachment(meta.folder, meta.name, bytes).catch(() => {})
+  await rewriteManifest()
+  notifyChanged()
+  pushRemote(record, bytes)
+}
+
 /** Rebuild missing IndexedDB blobs from the vault manifest + files (e.g. after a
  *  folder pull that brought files but no IndexedDB). */
 export async function hydrateFromVault(manifestJson: string): Promise<void> {

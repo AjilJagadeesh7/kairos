@@ -65,6 +65,7 @@ export const NAV_ITEMS: NavItem[] = [
   { kind: 'nav', id: 'nav-canvas',     label: 'Canvas',             hint: 'Open Canvases',                  iconName: 'pen-tool',     path: '/canvas' },
   { kind: 'nav', id: 'nav-attachments', label: 'Attachments',       hint: 'Open Attachments',               iconName: 'paperclip',    path: '/attachments' },
   { kind: 'nav', id: 'nav-graph',      label: 'Knowledge Graph',    hint: 'Open Knowledge Graph',           iconName: 'network',      path: '/graph' },
+  { kind: 'nav', id: 'nav-trash',      label: 'Trash',              hint: 'Restore or purge deleted items', iconName: 'trash-2',      path: '/trash' },
   { kind: 'nav', id: 'nav-settings',   label: 'Settings',           hint: 'Open Settings',                  iconName: 'settings',     path: '/settings' },
   { kind: 'nav', id: 'nav-pricing',    label: 'Plans & Pricing',    hint: 'View and change your plan',      iconName: 'zap',     path: '/pricing' },
   { kind: 'nav', id: 'nav-new-note',   label: 'New note',           hint: 'Create a blank note',            iconName: 'plus',         path: undefined },

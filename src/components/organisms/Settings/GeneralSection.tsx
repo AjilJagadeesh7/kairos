@@ -4,6 +4,7 @@ import { useAppStore } from '../../../store/useAppStore'
 import { ThemeSelect } from '../../molecules/ThemeSelect'
 import { FontSelect } from '../../molecules/FontSelect'
 import { SectionCard } from '../../molecules/SectionCard'
+import { TrashRetentionCard } from './TrashRetentionCard'
 import type { FontOption, FontWeight, FontSize } from '../../../types'
 import { Button } from '../../atoms/Button'
 import { Icon } from '../../../icons/Icon'
@@ -138,6 +139,8 @@ export function GeneralSection() {
           onSizeChange={(s) => void handleSizeChange(s)}
         />
       </SectionCard>
+
+      <TrashRetentionCard />
     </div>
   )
 }

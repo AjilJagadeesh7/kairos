@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '../store/useAppStore'
 import { usePaneStore } from '../store/usePaneStore'
+import { useTrashSweeper } from './useTrashSweeper'
 import { initPlainFolder, isPlainFolderConnected } from '../sync/plainFolder'
 import { initLogger } from '../logger/logger'
 import type { FontOption, FontWeight, FontSize } from '../types/ui.types'
@@ -54,6 +55,9 @@ export function useAppStartup() {
   const font       = useAppStore(s => s.font)
   const fontWeight = useAppStore(s => s.fontWeight)
   const fontSize   = useAppStore(s => s.fontSize)
+
+  // Retention timer: purge expired trash on startup, then hourly.
+  useTrashSweeper()
 
   // Drain offline queue when connectivity returns
   useEffect(() => {
@@ -121,6 +125,7 @@ export function useAppStartup() {
           if (saved.font)        store.setFont(saved.font)
           if (saved.fontWeight)  store.setFontWeight(saved.fontWeight)
           if (saved.fontSize)    store.setFontSize(saved.fontSize)
+          if (saved.trashRetentionDays !== undefined) store.setTrashRetentionDays(saved.trashRetentionDays)
           if (saved.aiUrl)       store.setAiUrl(saved.aiUrl)
           if (saved.storageChoices) store.setStorageChoices(saved.storageChoices)
           if (saved.s3Config !== undefined && saved.s3Config !== store.s3Config) {

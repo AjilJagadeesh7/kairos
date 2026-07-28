@@ -44,6 +44,12 @@ export function makeBoardActions(set: SetFn, get: GetFn) {
     },
 
     deleteBoard: (boardId: string) => {
+      const doomed = get().boards.find(b => b.id === boardId)
+      if (doomed) {
+        void import('../../trash/trashService')
+          .then(({ trashBoard }) => trashBoard(doomed))
+          .catch(err => console.warn('[trash] capture failed:', err))
+      }
       set(s => ({
         boards: s.boards.filter(b => b.id !== boardId),
         activeBoardId: s.activeBoardId === boardId ? null : s.activeBoardId,

@@ -86,6 +86,8 @@ export const useAttachmentStore = create<AttachmentState>()((set, get) => ({
   deleteAttachment: async (id) => {
     const rec = get().attachments.find(a => a.id === id)
     if (!rec) return
+    const { trashAttachment } = await import('../trash/trashService')
+    await trashAttachment(rec).catch(err => console.warn('[trash] capture failed:', err))
     // Ask the open editor to drop any node referencing this attachment.
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('mv:strip-attachment', { detail: { ref: attachmentRef(id) } }))

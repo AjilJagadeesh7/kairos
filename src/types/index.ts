@@ -5,6 +5,8 @@ export type {
 } from './sync.types'
 export { SYNC_CATEGORIES, SYNC_PROVIDERS, SYNC_PROVIDER_META, DEFAULT_SYNC_RULES } from './sync.types'
 export type { ThemeMode, SearchMode, FontOption, FontWeight, FontSize, VaultStatus } from './ui.types'
+export type { TrashKind, TrashItem, NewTrashItem } from './trash.types'
+export { TRASH_RETENTION_PRESETS } from './trash.types'
 export type {
   SaveStatus,
   MenuKind,

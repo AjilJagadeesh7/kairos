@@ -22,6 +22,8 @@ type AppState = {
   font: FontOption
   fontWeight: FontWeight
   fontSize: FontSize
+  /** Days a deleted item stays in the trash before auto-purge; 0 = keep forever. */
+  trashRetentionDays: number
   aiUrl: string
   s3Config: S3Config | null
   webdavConfig: WebDAVConfig | null
@@ -51,6 +53,7 @@ type AppState = {
   setFont: (f: FontOption) => void
   setFontWeight: (w: FontWeight) => void
   setFontSize: (s: FontSize) => void
+  setTrashRetentionDays: (days: number) => void
   setAiUrl: (url: string) => void
   setSearchMode: (mode: SearchMode) => void
   setQuery: (query: string) => void
@@ -58,7 +61,7 @@ type AppState = {
   setS3Config: (cfg: S3Config | null) => void
   setWebDAVConfig: (cfg: WebDAVConfig | null) => void
   setSyncRule: (category: SyncCategory, provider: SyncProviderId, direction: keyof SyncDirection, value: boolean) => void
-  applySharedSettings: (patch: Partial<Pick<AppState, 'theme' | 'font' | 'fontWeight' | 'fontSize' | 'aiUrl' | 'noteTagColors' | 'calloutColors' | 'customCallouts' | 'keyBindings' | 'userName' | 'newTabPage'>>) => void
+  applySharedSettings: (patch: Partial<Pick<AppState, 'theme' | 'font' | 'fontWeight' | 'fontSize' | 'trashRetentionDays' | 'aiUrl' | 'noteTagColors' | 'calloutColors' | 'customCallouts' | 'keyBindings' | 'userName' | 'newTabPage'>>) => void
   setActiveNoteId: (id?: string) => void
   setMobileSidebarOpen: (open: boolean) => void
   setStorageChoices: (choices: StorageTarget[]) => void
@@ -125,6 +128,7 @@ export const useAppStore = create<AppState>()(
       font: (localStorage.getItem('kairos.font') as FontOption | null) ?? 'manrope',
       fontWeight: (localStorage.getItem('kairos.fontWeight') as FontWeight | null) ?? 'regular',
       fontSize: (localStorage.getItem('kairos.fontSize') as FontSize | null) ?? 'default',
+      trashRetentionDays: 30,
       aiUrl: 'http://localhost:11434',
       userName: '',
       newTabPage: '/',
@@ -156,6 +160,10 @@ export const useAppStore = create<AppState>()(
         set({ fontSize })
         void import('../sync/settingsSync').then(({ saveCurrentSettings }) => saveCurrentSettings())
       },
+      setTrashRetentionDays: (trashRetentionDays) => {
+        set({ trashRetentionDays: Math.max(0, Math.round(trashRetentionDays)) })
+        void import('../sync/settingsSync').then(({ saveCurrentSettings }) => saveCurrentSettings())
+      },
       setAiUrl: (aiUrl) => set({ aiUrl }),
       setMobileSidebarOpen: (mobileSidebarOpen) => set({ mobileSidebarOpen }),
       setSearchMode: (searchMode) => set({ searchMode }),
@@ -183,6 +191,7 @@ export const useAppStore = create<AppState>()(
         font:           patch.font           ?? s.font,
         fontWeight:     patch.fontWeight     ?? s.fontWeight,
         fontSize:       patch.fontSize       ?? s.fontSize,
+        trashRetentionDays: patch.trashRetentionDays ?? s.trashRetentionDays,
         aiUrl:          patch.aiUrl          ?? s.aiUrl,
         noteTagColors:  patch.noteTagColors  ?? s.noteTagColors,
         calloutColors:  patch.calloutColors  ?? s.calloutColors,
@@ -426,6 +435,13 @@ export const useAppStore = create<AppState>()(
       deleteNoteById: async (id) => {
         const { run } = useLoaderStore.getState()
         await run('delete-note', async () => {
+          // Capture a restorable copy before anything is removed.
+          const doomed = get().notes.find(n => n.id === id)
+          if (doomed) {
+            const { trashNote } = await import('../trash/trashService')
+            await trashNote(doomed).catch(err => console.warn('[trash] capture failed:', err))
+          }
+
           deindexNote(id)
           // Remove from in-memory store
           set(s => ({
@@ -547,6 +563,7 @@ export const useAppStore = create<AppState>()(
         font:            state.font,
         fontWeight:      state.fontWeight,
         fontSize:        state.fontSize,
+        trashRetentionDays: state.trashRetentionDays,
         aiUrl:           state.aiUrl,
         userName:        state.userName,
         newTabPage:      state.newTabPage,

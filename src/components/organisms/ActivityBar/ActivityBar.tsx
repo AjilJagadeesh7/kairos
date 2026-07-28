@@ -233,6 +233,7 @@ export function ActivityBar() {
       {/* Bottom: plugins → sync → theme → settings → sidebar toggle */}
       <div className="flex flex-col items-center pb-1">
         <SlotRenderer slot="activity-bar:bottom" props={{}} />
+        <NavBtn to="/trash" iconName="trash-2" label="Trash" activePath={activePath} onNav={go} />
         <SyncStatusBadge />
         <CompactThemePicker value={theme} onChange={setTheme} />
         <NavBtn to="/settings" iconName="settings-2" label="Settings" activePath={activePath} onNav={go} />

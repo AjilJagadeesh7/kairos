@@ -18,6 +18,31 @@
 | Kanban boards/tasks | `useKanbanStore` | `/kanban/:boardId`  | `vault/kanban/*.json`    |
 | Canvases            | `useCanvasStore` | `/canvas/:canvasId` | `vault/canvas/*.json`    |
 | Graph               | —                | `/graph`            | derived from notes       |
+| Trash               | `useTrashStore`  | `/trash`            | IndexedDB `trash` table  |
+
+## Trash — every delete is a soft delete
+
+`src/trash/trashService.ts` is the single entry point. **Any new delete path must
+capture the item before removing it**, or that content becomes unrecoverable:
+
+```ts
+const doomed = get().items.find(i => i.id === id)
+if (doomed) {
+  const { trashCanvas } = await import('../trash/trashService')
+  await trashCanvas(doomed).catch(err => console.warn('[trash] capture failed:', err))
+}
+// …then the existing store / vault / cloud delete, unchanged
+```
+
+- One `trashX()` capture helper per kind; add a matching branch to
+  `restoreTrashItem` in `trash/trashRestore.ts` when adding a kind.
+- Restorers **rebuild the item, they never call the store's `create` action** —
+  the original id, timestamps and folder must survive the round trip.
+- The trash is **device-local by design**: never mirror it to the vault or a sync
+  provider, or a pull from another device can resurrect a local deletion.
+- Retention (`useAppStore.trashRetentionDays`, 0 = forever) is enforced by
+  `useTrashSweeper` — startup + hourly. There is no server cron; a missed window
+  is caught by the next startup sweep.
 
 ## Adding a new feature — command palette checklist
 
