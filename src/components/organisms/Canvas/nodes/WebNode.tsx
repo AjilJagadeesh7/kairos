@@ -1,8 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react'
-import { invoke } from '@tauri-apps/api/core'
 import { Button } from '../../../atoms/Button'
 import { Icon } from '../../../../icons/Icon'
+import { openExternal } from '../../../../utils/openExternal'
+import { useWebPageContent } from '../../../../hooks/useWebPageContent'
+import { WebReaderView } from './WebReaderView'
+import { WebLinkCard } from './WebLinkCard'
 import type { CanvasWebData } from '../../../../types'
 
 const HANDLE_STYLE: React.CSSProperties = {
@@ -39,6 +42,23 @@ function toEmbedUrl(url: string): string {
   }
 }
 
+/**
+ * Sub-resources load straight from the real origin (the proxy injects a
+ * `<base>` tag), so only the top-level document is proxied.
+ *
+ * `allow-top-navigation` is deliberately omitted: it is what lets a page run
+ * `top.location = self.location` and yank the whole app off to the site. Without
+ * it, frame-busting scripts fail silently and the page stays embedded.
+ */
+const IFRAME_SANDBOX = [
+  'allow-scripts',
+  'allow-same-origin',
+  'allow-forms',
+  'allow-popups',
+  'allow-popups-to-escape-sandbox',
+  'allow-downloads',
+].join(' ')
+
 // In Tauri, route iframe through the mvproxy:// scheme so Rust can strip
 // X-Frame-Options / CSP frame-ancestors before the browser sees them.
 function toIframeSrc(url: string): string {
@@ -62,9 +82,23 @@ export function WebNode({ id, data, selected }: NodeProps & { data: WebNodeData 
   const [editing,  setEditing]  = useState(!data.url)
   const [loading,  setLoading]  = useState(!!data.url)
   const [blocked,  setBlocked]  = useState(false)
+  /**
+   * Tiered display. 'page' is the live iframe; 'reader' fetches the HTML and
+   * renders the extracted article, degrading to a link card when a page has no
+   * prose. A site that refuses framing flips us to 'reader' automatically.
+   */
+  const [mode, setMode] = useState<'page' | 'reader'>('page')
   const iframeRef  = useRef<HTMLIFrameElement>(null)
   const checkTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const blockTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const content = useWebPageContent(liveUrl, mode === 'reader' && !editing)
+
+  // Framing refused → fall through to reader mode rather than a dead end.
+  useEffect(() => {
+    if (blocked && mode === 'page') setMode('reader')
+  }, [blocked, mode])
+
 
   function clearTimers() {
     if (checkTimer.current) { clearTimeout(checkTimer.current); checkTimer.current = null }
@@ -99,6 +133,7 @@ export function WebNode({ id, data, selected }: NodeProps & { data: WebNodeData 
       setEditing(false)
       setLoading(true)
       setBlocked(false)
+      setMode('page')   // every new URL gets a shot at the live page first
       data.onDataChange(id, { url })
       clearTimers()
       // Fallback: if onLoad never fires (some browsers silently drop blocked frames)
@@ -179,12 +214,24 @@ export function WebNode({ id, data, selected }: NodeProps & { data: WebNodeData 
         )}
 
         {liveUrl && !editing && (
-          <a href={liveUrl} target="_blank" rel="noreferrer"
+          <button type="button"
+            title={mode === 'page' ? 'Reader view' : 'Live page'}
             onPointerDown={e => e.stopPropagation()}
-            className="nodrag nopan flex h-5 w-5 shrink-0 items-center justify-center rounded text-[rgb(var(--text-3))] transition hover:text-[rgb(var(--text))]"
-            title="Open in browser">
+            onClick={() => setMode(m => (m === 'page' ? 'reader' : 'page'))}
+            className={`nodrag nopan flex h-5 w-5 shrink-0 items-center justify-center rounded transition ${
+              mode === 'reader' ? 'text-[rgb(var(--accent))]' : 'text-[rgb(var(--text-3))] hover:text-[rgb(var(--text))]'
+            }`}>
+            <Icon name={mode === 'page' ? 'book-open' : 'globe'} size={11} />
+          </button>
+        )}
+
+        {liveUrl && !editing && (
+          <button type="button" title="Open in browser"
+            onPointerDown={e => e.stopPropagation()}
+            onClick={() => void openExternal(liveUrl)}
+            className="nodrag nopan flex h-5 w-5 shrink-0 items-center justify-center rounded text-[rgb(var(--text-3))] transition hover:text-[rgb(var(--text))]">
             <Icon name="external-link" size={11} />
-          </a>
+          </button>
         )}
 
         <button type="button" title="Remove"
@@ -202,13 +249,35 @@ export function WebNode({ id, data, selected }: NodeProps & { data: WebNodeData 
         {selected && liveUrl && !editing && (
           <div className="pointer-events-auto absolute inset-0 z-10" />
         )}
-        {liveUrl && !editing ? (
+        {liveUrl && !editing && mode === 'reader' ? (
+          /* Tier 2/3: fetched and parsed. Reader view when the page has prose,
+             link card when it doesn't (search pages, dashboards, login walls)
+             or when the fetch failed outright. */
+          content.status === 'loading' ? (
+            <div className="flex h-full flex-col items-center justify-center gap-2 bg-[rgb(var(--surface-2))]">
+              <Icon name="loader-2" size={22} className="animate-spin text-[rgb(var(--text-3))]" />
+              <p className="text-[11px] text-[rgb(var(--text-3))]">Reading page…</p>
+            </div>
+          ) : content.status === 'ready' && content.page && content.page.blocks.length > 0 ? (
+            <WebReaderView meta={content.page.meta} blocks={content.page.blocks} url={liveUrl} />
+          ) : (
+            <WebLinkCard
+              meta={content.page?.meta ?? null}
+              url={liveUrl}
+              reason={content.error
+                ? `Couldn't read this page: ${content.error}`
+                : "This page has no readable article — it's likely an app, search or login page."}
+            />
+          )
+        ) : liveUrl && !editing ? (
           <>
             <iframe
               ref={iframeRef}
               key={iframeSrc}
               src={iframeSrc}
               title={liveUrl}
+              sandbox={IFRAME_SANDBOX}
+              referrerPolicy="no-referrer"
               className="h-full w-full border-0 bg-white"
               onLoad={handleLoad}
               onError={handleError}
@@ -217,30 +286,6 @@ export function WebNode({ id, data, selected }: NodeProps & { data: WebNodeData 
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[rgb(var(--surface-2))]">
                 <Icon name="loader-2" size={22} className="animate-spin text-[rgb(var(--text-3))]" />
                 <p className="text-[11px] text-[rgb(var(--text-3))]">Loading…</p>
-              </div>
-            )}
-            {blocked && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[rgb(var(--surface-2))] px-4 text-center">
-                <Icon name="shield-check" size={28} className="text-[rgb(var(--text-3))]" />
-                <p className="text-[13px] font-medium text-[rgb(var(--text))]">This site blocks embedding</p>
-                <p className="text-[11px] leading-relaxed text-[rgb(var(--text-3))]">
-                  This site uses security headers or JavaScript to refuse iframe embedding.
-                </p>
-                {IS_TAURI && (
-                  <Button variant="submit" size="sm" className="nodrag nopan" onPointerDown={e => e.stopPropagation()}
-                    onClick={() => invoke('open_app_browser', { url: liveUrl }).catch(() => {})}>
-                    <Icon name="globe" size={12} /> Open in app browser
-                  </Button>
-                )}
-                <a href={liveUrl} target="_blank" rel="noreferrer"
-                  onPointerDown={e => e.stopPropagation()}
-                  className="nodrag nopan inline-flex items-center gap-1.5 rounded-lg border border-[rgb(var(--border))] px-3 py-1.5 text-[12px] text-[rgb(var(--text-2))] transition hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--accent))]">
-                  <Icon name="external-link" size={12} /> Open in system browser
-                </a>
-                <button type="button" onPointerDown={e => e.stopPropagation()} onClick={startEdit}
-                  className="nodrag nopan text-[11px] text-[rgb(var(--text-3))] underline hover:text-[rgb(var(--text))]">
-                  Change URL
-                </button>
               </div>
             )}
           </>

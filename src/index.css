@@ -452,6 +452,219 @@
   --neon-pink:   255  32 121;
 }
 
+/* ─── AMETHYST HAZE ──────────────────────────────────────────────────────── */
+:root[data-theme='amethyst-light'] {
+  --bg:          247 244 251;   /* #F7F4FB hazy lavender white               */
+  --surface:     255 255 255;   /* #FFFFFF                                   */
+  --surface-2:   241 236 247;   /* #F1ECF7                                   */
+  --surface-3:   231 224 240;   /* #E7E0F0                                   */
+  --border:      220 210 232;   /* #DCD2E8                                   */
+  --text:         46  36  56;   /* #2E2438 deep plum                         */
+  --text-2:      107  91 126;   /* #6B5B7E                                   */
+  --text-3:      163 150 179;   /* #A396B3                                   */
+  --accent:      124  92 168;   /* #7C5CA8 amethyst                          */
+  --accent-fg:   255 255 255;   /* #FFFFFF                                   */
+  --accent-hover:107  77 150;   /* #6B4D96                                   */
+}
+:root[data-theme='amethyst-dark'] {
+  --bg:           22  18  28;   /* #16121C                                   */
+  --surface:      30  25  38;   /* #1E1926                                   */
+  --surface-2:    36  30  46;   /* #241E2E                                   */
+  --surface-3:    48  40  64;   /* #302840                                   */
+  --border:       61  51  80;   /* #3D3350                                   */
+  --text:        237 230 245;   /* #EDE6F5                                   */
+  --text-2:      192 176 212;   /* #C0B0D4                                   */
+  --text-3:      133 120 160;   /* #8578A0                                   */
+  --accent:      179 146 224;   /* #B392E0 soft amethyst                     */
+  --accent-fg:    26  20  32;   /* #1A1420                                   */
+  --accent-hover:199 171 236;   /* #C7ABEC                                   */
+}
+
+/* ─── BUBBLEGUM (tweakcn palette) ────────────────────────────────────────── */
+/* Cream cards on candy pink, hot-pink outlines, teal + butter-yellow trim. The
+   chunky-border treatment that makes the style read lives further down under
+   "BUBBLEGUM BOLD BORDERS". */
+:root[data-theme='bubblegum-light'] {
+  --bg:          246 230 238;   /* #F6E6EE candy pink                        */
+  --surface:     253 237 201;   /* #FDEDC9 butter card                       */
+  --surface-2:   248 218 231;   /* #F8DAE7                                   */
+  --surface-3:   251 226 167;   /* #FBE2A7 butter hover                      */
+  --border:      208  79 153;   /* #D04F99 hot pink outline                  */
+  --text:         52  40  48;   /* #342830                                   */
+  --text-2:       91  91  91;   /* #5B5B5B                                   */
+  --text-3:      147 119 133;   /* #937785                                   */
+  --accent:      208  79 153;   /* #D04F99                                   */
+  --accent-fg:   255 255 255;   /* #FFFFFF                                   */
+  --accent-hover:186  62 133;   /* #BA3E85                                   */
+
+  --gum-teal:    138 207 209;   /* #8ACFD1 secondary trim                    */
+  --gum-butter:  251 226 167;   /* #FBE2A7 accent trim                       */
+}
+:root[data-theme='bubblegum-dark'] {
+  --bg:           18  36  46;   /* #12242E deep teal night                   */
+  --surface:      28  50  81;   /* #1C3251 navy card                         */
+  --surface-2:    23  43  60;   /* #172B3C                                   */
+  --surface-3:    50  72  89;   /* #324859                                   */
+  --border:      198 123 150;   /* #C67B96 dusty rose outline                */
+  --text:        240 236 230;   /* #F0ECE6                                   */
+  --text-2:      228 162 177;   /* #E4A2B1                                   */
+  --text-3:      142 160 172;   /* #8EA0AC                                   */
+  --accent:      251 226 167;   /* #FBE2A7 butter yellow                     */
+  --accent-fg:    28  50  81;   /* #1C3251                                   */
+  --accent-hover:253 238 197;   /* #FDEEC5                                   */
+
+  --gum-teal:    138 207 209;   /* #8ACFD1                                   */
+  --gum-butter:  251 226 167;   /* #FBE2A7                                   */
+}
+
+/* ─── RETRO ARCADE ───────────────────────────────────────────────────────── */
+:root[data-theme='arcade-light'] {
+  --bg:          255 246 229;   /* #FFF6E5 cabinet cream                     */
+  --surface:     255 255 255;   /* #FFFFFF                                   */
+  --surface-2:   255 236 201;   /* #FFECC9                                   */
+  --surface-3:   255 223 168;   /* #FFDFA8                                   */
+  --border:       42  36  86;   /* #2A2456 inked navy outline                */
+  --text:         30  26  69;   /* #1E1A45                                   */
+  --text-2:       90  79 160;   /* #5A4FA0                                   */
+  --text-3:      154 144 196;   /* #9A90C4                                   */
+  --accent:      228  50  43;   /* #E4322B arcade red                        */
+  --accent-fg:   255 246 229;   /* #FFF6E5                                   */
+  --accent-hover:200  41  34;   /* #C82922                                   */
+}
+:root[data-theme='arcade-dark'] {
+  --bg:           11  10  31;   /* #0B0A1F arcade night                      */
+  --surface:      20  18  58;   /* #14123A                                   */
+  --surface-2:    27  24  72;   /* #1B1848                                   */
+  --surface-3:    38  33  89;   /* #262159                                   */
+  --border:       59  52 128;   /* #3B3480                                   */
+  --text:        242 239 255;   /* #F2EFFF                                   */
+  --text-2:      143 227 255;   /* #8FE3FF CRT cyan                          */
+  --text-3:      107  99 168;   /* #6B63A8                                   */
+  --accent:      255 197  49;   /* #FFC531 cabinet amber                     */
+  --accent-fg:    20  18  58;   /* #14123A                                   */
+  --accent-hover:255 214  92;   /* #FFD65C                                   */
+}
+
+/* ─── CAFFEINE ───────────────────────────────────────────────────────────── */
+:root[data-theme='caffeine-light'] {
+  --bg:          246 241 233;   /* #F6F1E9 oat milk                          */
+  --surface:     255 253 249;   /* #FFFDF9                                   */
+  --surface-2:   239 231 218;   /* #EFE7DA                                   */
+  --surface-3:   228 216 198;   /* #E4D8C6                                   */
+  --border:      214 198 175;   /* #D6C6AF                                   */
+  --text:         47  36  26;   /* #2F241A roasted bean                      */
+  --text-2:      110  90  69;   /* #6E5A45                                   */
+  --text-3:      168 150 128;   /* #A89680                                   */
+  --accent:      139  94  52;   /* #8B5E34 espresso                          */
+  --accent-fg:   255 248 239;   /* #FFF8EF                                   */
+  --accent-hover:116  76  40;   /* #744C28                                   */
+}
+:root[data-theme='caffeine-dark'] {
+  --bg:           22  17  13;   /* #16110D                                   */
+  --surface:      31  24  19;   /* #1F1813                                   */
+  --surface-2:    38  30  23;   /* #261E17                                   */
+  --surface-3:    51  41  31;   /* #33291F                                   */
+  --border:       67  54  42;   /* #43362A                                   */
+  --text:        242 231 216;   /* #F2E7D8                                   */
+  --text-2:      201 180 154;   /* #C9B49A                                   */
+  --text-3:      142 123 101;   /* #8E7B65                                   */
+  --accent:      201 143  91;   /* #C98F5B latte                             */
+  --accent-fg:    26  19  14;   /* #1A130E                                   */
+  --accent-hover:219 163 114;   /* #DBA372                                   */
+}
+
+/* ─── DOOM 64 ────────────────────────────────────────────────────────────── */
+:root[data-theme='doom64-light'] {
+  --bg:          242 233 223;   /* #F2E9DF scorched parchment                */
+  --surface:     255 251 246;   /* #FFFBF6                                   */
+  --surface-2:   233 220 204;   /* #E9DCCC                                   */
+  --surface-3:   220 203 182;   /* #DCCBB6                                   */
+  --border:      196 171 144;   /* #C4AB90                                   */
+  --text:         42  26  18;   /* #2A1A12                                   */
+  --text-2:      110  74  50;   /* #6E4A32                                   */
+  --text-3:      160 128 100;   /* #A08064                                   */
+  --accent:      169  50  38;   /* #A93226 dried blood                       */
+  --accent-fg:   255 246 238;   /* #FFF6EE                                   */
+  --accent-hover:142  42  32;   /* #8E2A20                                   */
+}
+:root[data-theme='doom64-dark'] {
+  --bg:           12   8   6;   /* #0C0806 pitch                             */
+  --surface:      20  16  13;   /* #14100D                                   */
+  --surface-2:    27  20  17;   /* #1B1411                                   */
+  --surface-3:    42  29  23;   /* #2A1D17                                   */
+  --border:       74  42  30;   /* #4A2A1E rust                              */
+  --text:        232 220 208;   /* #E8DCD0 bone                              */
+  --text-2:      192 138  94;   /* #C08A5E ember                             */
+  --text-3:      122  83  64;   /* #7A5340                                   */
+  --accent:      192  57  43;   /* #C0392B blood                             */
+  --accent-fg:   247 239 232;   /* #F7EFE8                                   */
+  --accent-hover:217  69  47;   /* #D9452F                                   */
+}
+
+/* ─── NEO BRUTALISM ──────────────────────────────────────────────────────── */
+/* Borders are deliberately full-contrast (near-black on light, near-white on
+   dark) — the hard outline is the whole point of the style. */
+:root[data-theme='brutalism-light'] {
+  --bg:          253 251 240;   /* #FDFBF0 paper                             */
+  --surface:     255 255 255;   /* #FFFFFF                                   */
+  --surface-2:   245 240 220;   /* #F5F0DC                                   */
+  --surface-3:   237 230 204;   /* #EDE6CC                                   */
+  --border:       17  17  17;   /* #111111 hard black                        */
+  --text:         10  10  10;   /* #0A0A0A                                   */
+  --text-2:       61  61  61;   /* #3D3D3D                                   */
+  --text-3:      110 110 110;   /* #6E6E6E                                   */
+  --accent:      255 212   0;   /* #FFD400 signal yellow                     */
+  --accent-fg:    10  10  10;   /* #0A0A0A black on yellow                   */
+  --accent-hover:255 196   0;   /* #FFC400                                   */
+}
+:root[data-theme='brutalism-dark'] {
+  --bg:           17  17  17;   /* #111111                                   */
+  --surface:      26  26  26;   /* #1A1A1A                                   */
+  --surface-2:    32  32  32;   /* #202020                                   */
+  --surface-3:    44  44  44;   /* #2C2C2C                                   */
+  --border:      245 245 245;   /* #F5F5F5 hard white                        */
+  --text:        250 250 250;   /* #FAFAFA                                   */
+  --text-2:      196 196 196;   /* #C4C4C4                                   */
+  --text-3:      138 138 138;   /* #8A8A8A                                   */
+  --accent:      255 229   0;   /* #FFE500                                   */
+  --accent-fg:    17  17  17;   /* #111111                                   */
+  --accent-hover:255 240  77;   /* #FFF04D                                   */
+}
+
+/* ─── BUBBLEGUM BOLD BORDERS ─────────────────────────────────────────────── */
+/* The chunky outline and hard sticker shadow are what make this style read —
+   the palette alone looks like any other pink theme. Prefix match covers both
+   variants. Only all-sides `.border` is thickened; directional dividers
+   (border-t/-b) stay hairline so panel seams don't get noisy. */
+:root[data-theme^='bubblegum'] .border {
+  border-width: 2px;
+}
+:root[data-theme^='bubblegum'] .btn,
+:root[data-theme^='bubblegum'] input,
+:root[data-theme^='bubblegum'] textarea,
+:root[data-theme^='bubblegum'] select {
+  border: 2px solid rgb(var(--border));
+}
+/* Filled buttons get the offset shadow; it collapses on press for a "pushed" feel. */
+:root[data-theme^='bubblegum'] .btn-primary,
+:root[data-theme^='bubblegum'] .btn-danger {
+  box-shadow: 3px 3px 0 rgb(var(--border));
+}
+:root[data-theme^='bubblegum'] .btn-primary:hover,
+:root[data-theme^='bubblegum'] .btn-danger:hover {
+  box-shadow: 4px 4px 0 rgb(var(--border));
+  opacity: 1;
+}
+:root[data-theme^='bubblegum'] .btn-primary:active,
+:root[data-theme^='bubblegum'] .btn-danger:active {
+  box-shadow: 1px 1px 0 rgb(var(--border));
+}
+/* Selected pills/tabs echo the outline instead of relying on fill alone. */
+:root[data-theme^='bubblegum'] .btn-pill.active,
+:root[data-theme^='bubblegum'] .btn-pill[aria-selected='true'] {
+  box-shadow: 2px 2px 0 rgb(var(--border));
+}
+
 html, body, #root {
   margin: 0;
   min-height: 100%;
@@ -683,6 +896,55 @@ body {
   --crepe-color-selected:           #2D1C5A;
   --crepe-color-inline-area:        #0E0A20;
 }
+
+/* ── Palette-derived editors ─────────────────────────────────────────────── */
+/* The base `.milkdown` block already derives from the CSS variables, but the
+   `:root.dark .milkdown` block above would otherwise win for any dark theme and
+   force a generic grey editor. Re-deriving here (same specificity, later in the
+   file) keeps each themed editor on its own palette. Light variants would work
+   without this, but are included so the two stay identical. */
+:root[data-theme='amethyst-light']  .milkdown,
+:root[data-theme='amethyst-dark']   .milkdown,
+:root[data-theme='bubblegum-light'] .milkdown,
+:root[data-theme='bubblegum-dark']  .milkdown,
+:root[data-theme='caffeine-light']  .milkdown,
+:root[data-theme='caffeine-dark']   .milkdown,
+:root[data-theme='doom64-light']    .milkdown,
+:root[data-theme='doom64-dark']     .milkdown,
+:root[data-theme='brutalism-light'] .milkdown,
+:root[data-theme='brutalism-dark']  .milkdown,
+:root[data-theme='arcade-light']    .milkdown,
+:root[data-theme='arcade-dark']     .milkdown {
+  --crepe-color-background:         rgb(var(--surface));
+  --crepe-color-on-background:      rgb(var(--text));
+  --crepe-color-surface:            rgb(var(--surface-2));
+  --crepe-color-surface-low:        rgb(var(--surface-3));
+  --crepe-color-on-surface:         rgb(var(--text));
+  --crepe-color-on-surface-variant: rgb(var(--text-2));
+  --crepe-color-outline:            rgb(var(--border));
+  --crepe-color-primary:            rgb(var(--accent));
+  --crepe-color-secondary:          rgb(var(--surface-3));
+  --crepe-color-on-secondary:       rgb(var(--text));
+  --crepe-color-inverse:            rgb(var(--surface-2));
+  --crepe-color-on-inverse:         rgb(var(--text));
+  --crepe-color-hover:              rgb(var(--surface-3));
+  --crepe-color-selected:           rgb(var(--border));
+  --crepe-color-inline-area:        rgb(var(--surface-2));
+}
+
+/* Inline `code` reads better with a hand-picked hue than the derived accent. */
+:root[data-theme='amethyst-light']  .milkdown { --crepe-color-inline-code: #7A4FA8; }
+:root[data-theme='amethyst-dark']   .milkdown { --crepe-color-inline-code: #C9A6F0; }
+:root[data-theme='bubblegum-light'] .milkdown { --crepe-color-inline-code: #1F7A7C; }
+:root[data-theme='bubblegum-dark']  .milkdown { --crepe-color-inline-code: #8ACFD1; }
+:root[data-theme='caffeine-light']  .milkdown { --crepe-color-inline-code: #8B5E34; }
+:root[data-theme='caffeine-dark']   .milkdown { --crepe-color-inline-code: #D9A876; }
+:root[data-theme='doom64-light']    .milkdown { --crepe-color-inline-code: #A93226; }
+:root[data-theme='doom64-dark']     .milkdown { --crepe-color-inline-code: #E06C4F; }
+:root[data-theme='brutalism-light'] .milkdown { --crepe-color-inline-code: #8A6A00; }
+:root[data-theme='brutalism-dark']  .milkdown { --crepe-color-inline-code: #FFE500; }
+:root[data-theme='arcade-light']    .milkdown { --crepe-color-inline-code: #E4322B; }
+:root[data-theme='arcade-dark']     .milkdown { --crepe-color-inline-code: #8FE3FF; }
 
 .crepe { min-height: 320px; }
 

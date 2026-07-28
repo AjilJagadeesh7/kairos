@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use tauri::{AppHandle, State, WebviewUrl, WebviewWindowBuilder};
+use tauri::State;
 use tauri::http::{Request, Response};
 use tokio::sync::Mutex;
 use serde::{Deserialize, Serialize};
@@ -19,7 +19,53 @@ const STRIP_RESPONSE_HEADERS: &[&str] = &[
     "x-frame-options",
     "content-security-policy",
     "content-security-policy-report-only",
+    // We may rewrite the body (see inject_base_tag) and we always request
+    // identity encoding, so upstream's length/encoding no longer describe what
+    // we hand back. A stale content-length truncates the page; a stale
+    // content-encoding makes the webview try to gunzip plain text (blank page).
+    "content-length",
+    "content-encoding",
 ];
+
+/// Find the byte offset just past `<tag …>` in an ASCII-lowercased copy of the
+/// HTML. Offsets stay valid in the original: `to_ascii_lowercase` is
+/// length-preserving, and the result always lands right after an ASCII `>`.
+fn find_tag_end(lower: &str, tag: &str) -> Option<usize> {
+    let start = lower.find(tag)?;
+    let end = lower[start..].find('>')? + start + 1;
+    Some(end)
+}
+
+/// Inject `<base href="…">` into a proxied document.
+///
+/// Without this, every relative asset resolves against `mvproxy://host/…` and
+/// gets dragged back through this proxy — slow, and the reason a heavy page
+/// (Wikipedia) could saturate the runtime. X-Frame-Options only governs the
+/// framed *document*, so sub-resources never needed proxying: pointing `<base>`
+/// at the real origin lets images, CSS and scripts load straight over https at
+/// full speed, while the top-level document still gets its headers stripped.
+fn inject_base_tag(body: Vec<u8>, final_url: &reqwest::Url) -> Vec<u8> {
+    let html = match String::from_utf8(body) {
+        Ok(s) => s,
+        Err(e) => return e.into_bytes(), // not UTF-8 — hand back untouched
+    };
+
+    let lower = html.to_ascii_lowercase();
+    if lower.contains("<base ") {
+        return html.into_bytes(); // the page sets its own base; don't fight it
+    }
+
+    let insert_at = find_tag_end(&lower, "<head")
+        .or_else(|| find_tag_end(&lower, "<html"))
+        .unwrap_or(0);
+
+    let tag = format!("<base href=\"{}\">", final_url.as_str());
+    let mut out = String::with_capacity(html.len() + tag.len());
+    out.push_str(&html[..insert_at]);
+    out.push_str(&tag);
+    out.push_str(&html[insert_at..]);
+    out.into_bytes()
+}
 
 async fn proxy_fetch(request: Request<Vec<u8>>) -> Response<Vec<u8>> {
     // The webview issues a CORS preflight (OPTIONS) before WebDAV verbs such as
@@ -70,7 +116,8 @@ async fn proxy_fetch(request: Request<Vec<u8>>) -> Response<Vec<u8>> {
     let mut fwd_headers: Vec<(String, String)> = Vec::new();
     for (name, value) in request.headers() {
         let n = name.as_str().to_lowercase();
-        if !matches!(n.as_str(), "host" | "origin" | "referer") {
+        // accept-encoding is dropped deliberately — see the identity header below.
+        if !matches!(n.as_str(), "host" | "origin" | "referer" | "accept-encoding") {
             if let Ok(v) = value.to_str() { fwd_headers.push((name.as_str().to_string(), v.to_string())); }
         }
     }
@@ -78,12 +125,26 @@ async fn proxy_fetch(request: Request<Vec<u8>>) -> Response<Vec<u8>> {
 
     let mut req = client.request(method, &target);
     for (name, v) in fwd_headers { req = req.header(name.as_str(), v); }
+    // reqwest is built without the gzip/brotli features, so it hands back
+    // compressed bytes verbatim — which we could not then rewrite. Asking for
+    // identity keeps every body plain text so inject_base_tag is safe.
+    req = req.header("accept-encoding", "identity");
     // PROPFIND carries an XML query body; PUT carries the file contents.
     if !body.is_empty() { req = req.body(body); }
 
     match req.send().await {
         Ok(resp) => {
             let status = resp.status().as_u16();
+            // After redirects this is where we actually landed — the correct
+            // base for resolving the document's relative URLs.
+            let final_url = resp.url().clone();
+            let is_html = resp
+                .headers()
+                .get(reqwest::header::CONTENT_TYPE)
+                .and_then(|v| v.to_str().ok())
+                .map(|v| v.to_ascii_lowercase().contains("text/html"))
+                .unwrap_or(false);
+
             let mut builder = Response::builder().status(status);
             for (name, value) in resp.headers() {
                 let n = name.as_str().to_lowercase();
@@ -91,7 +152,11 @@ async fn proxy_fetch(request: Request<Vec<u8>>) -> Response<Vec<u8>> {
                 if let Ok(v) = value.to_str() { builder = builder.header(name.as_str(), v); }
             }
             builder = builder.header("Access-Control-Allow-Origin", "*");
-            let body = resp.bytes().await.unwrap_or_default().to_vec();
+
+            let raw = resp.bytes().await.unwrap_or_default().to_vec();
+            // Only documents get rewritten — WebDAV XML, JSON and binaries that
+            // share this proxy must pass through byte-for-byte.
+            let body = if is_html { inject_base_tag(raw, &final_url) } else { raw };
             builder.body(body).unwrap_or_else(|_| Response::builder().status(500).body(vec![]).unwrap())
         }
         Err(e) => Response::builder().status(502)
@@ -100,21 +165,6 @@ async fn proxy_fetch(request: Request<Vec<u8>>) -> Response<Vec<u8>> {
             .body(format!("proxy error: {e}").into_bytes())
             .unwrap(),
     }
-}
-
-// ---------------------------------------------------------------------------
-// In-app browser command (unchanged)
-// ---------------------------------------------------------------------------
-
-#[tauri::command]
-fn open_app_browser(app: AppHandle, url: String) -> Result<(), String> {
-    let parsed = url.parse::<reqwest::Url>().map_err(|e| e.to_string())?;
-    let label = format!("appbrowser-{}", std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis());
-    WebviewWindowBuilder::new(&app, label, WebviewUrl::External(parsed))
-        .title("Kairos — Browser").inner_size(1100.0, 760.0).resizable(true)
-        .build().map_err(|e| e.to_string())?;
-    Ok(())
 }
 
 // ---------------------------------------------------------------------------
@@ -326,7 +376,6 @@ pub fn run() {
     tauri::Builder::default()
         .manage(search_state)
         .invoke_handler(tauri::generate_handler![
-            open_app_browser,
             build_search_index,
             update_note_index,
             remove_note_index,

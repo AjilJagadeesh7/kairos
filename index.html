@@ -9,7 +9,16 @@
       (function () {
         var t = localStorage.getItem('kairos.theme') || 'light';
         document.documentElement.setAttribute('data-theme', t);
-        if (t !== 'light') document.documentElement.classList.add('dark');
+
+        // Keep in sync with THEME_REGISTRY isDark in src/themes/registry.ts —
+        // themed palettes ship light and dark variants, so this can't just be
+        // "anything that isn't 'light'".
+        var darkThemes = [
+          'dark', 'dracula', 'nord', 'catppuccin', 'cyberpunk',
+          'amethyst-dark', 'bubblegum-dark', 'caffeine-dark',
+          'doom64-dark', 'brutalism-dark', 'arcade-dark',
+        ];
+        if (darkThemes.indexOf(t) !== -1) document.documentElement.classList.add('dark');
 
         // Apply background immediately so the native window never shows a white
         // flash before the CSS stylesheet is parsed and applied.
@@ -20,6 +29,18 @@
           dracula:     '#1E1F2D',
           nord:        '#262C38',
           catppuccin:  '#11111B',
+          'amethyst-light':  '#F7F4FB',
+          'amethyst-dark':   '#16121C',
+          'bubblegum-light': '#F6E6EE',
+          'bubblegum-dark':  '#12242E',
+          'caffeine-light':  '#F6F1E9',
+          'caffeine-dark':   '#16110D',
+          'doom64-light':    '#F2E9DF',
+          'doom64-dark':     '#0C0806',
+          'brutalism-light': '#FDFBF0',
+          'brutalism-dark':  '#111111',
+          'arcade-light':    '#FFF6E5',
+          'arcade-dark':     '#0B0A1F',
         };
         var col = bg[t] || bg.light;
         document.documentElement.style.background = col;

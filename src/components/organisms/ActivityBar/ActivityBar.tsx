@@ -5,6 +5,7 @@ import { usePluginRegistry } from '../../../plugins/pluginContext'
 import { SyncStatusBadge } from '../../molecules/SyncStatusBadge'
 import { SlotRenderer } from '../../molecules/SlotRenderer'
 import { THEME_REGISTRY } from '../../../themes/registry'
+import { ThemeOptionList } from '../../molecules/ThemeOptionList'
 import { todayDate } from '../../../store/useJournalStore'
 import { Icon } from '../../../icons/Icon'
 import { AppLogo } from '../../atoms/AppLogo'
@@ -82,7 +83,7 @@ function CompactThemePicker({ value, onChange }: { value: ThemeMode; onChange: (
   }, [open])
 
   return (
-    <Tooltip label={`Theme: ${current.label}`}>
+    <Tooltip label={`Theme: ${current.label} · ${current.isDark ? 'Dark' : 'Light'}`}>
       <div ref={ref} className="relative">
         <button
           type="button"
@@ -97,32 +98,9 @@ function CompactThemePicker({ value, onChange }: { value: ThemeMode; onChange: (
         </button>
 
         {open && (
-          <div className="absolute bottom-0 left-full z-50 ml-2 w-48 overflow-hidden rounded-lg border border-border bg-surface py-1 shadow-xl">
-            <SectionLabel className="px-3 pb-1 pt-1.5">Theme</SectionLabel>
-            {THEME_REGISTRY.map(theme => (
-              <button
-                key={theme.id}
-                type="button"
-                onClick={() => { onChange(theme.id); setOpen(false) }}
-                className={`flex w-full items-center gap-2.5 px-3 py-1.5 text-xs transition ${
-                  theme.id === value ? 'bg-accent/10 text-accent font-semibold' : 'text-text hover:bg-surface3'
-                }`}
-              >
-                <span
-                  className="relative inline-block h-3.5 w-3.5 shrink-0 rounded-full border border-white/20"
-                  style={{ background: theme.swatchBg }}
-                >
-                  <span
-                    className="absolute bottom-0 right-0 h-2 w-2 rounded-full border border-white/20"
-                    style={{ background: theme.swatchAccent }}
-                  />
-                </span>
-                {theme.label}
-                {theme.id === value && (
-                  <span className="ml-auto text-[10px] text-accent">✓</span>
-                )}
-              </button>
-            ))}
+          <div className="absolute bottom-0 left-full z-50 ml-2 w-[21rem] rounded-lg border border-border bg-surface p-1.5 shadow-xl">
+            <SectionLabel className="px-2 pb-0.5 pt-1">Theme</SectionLabel>
+            <ThemeOptionList value={value} onSelect={t => { onChange(t); setOpen(false) }} />
           </div>
         )}
       </div>

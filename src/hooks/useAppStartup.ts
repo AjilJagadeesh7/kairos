@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { useAppStore } from '../store/useAppStore'
 import { usePaneStore } from '../store/usePaneStore'
 import { useTrashSweeper } from './useTrashSweeper'
+import { isDarkTheme } from '../themes/registry'
 import { initPlainFolder, isPlainFolderConnected } from '../sync/plainFolder'
 import { initLogger } from '../logger/logger'
 import type { FontOption, FontWeight, FontSize } from '../types/ui.types'
@@ -70,8 +71,10 @@ export function useAppStartup() {
   useEffect(() => {
     const root = document.documentElement
     root.dataset.theme = theme
-    if (theme === 'light') root.classList.remove('dark')
-    else root.classList.add('dark')
+    // Themed palettes now ship light AND dark variants, so the `.dark` class
+    // (which drives Tailwind's dark: utilities) comes from the registry rather
+    // than "anything that isn't 'light'".
+    root.classList.toggle('dark', isDarkTheme(theme))
     localStorage.setItem('kairos.theme', theme)
   }, [theme])
 

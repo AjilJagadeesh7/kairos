@@ -208,7 +208,14 @@ function CanvasInner({ canvas }: { canvas: Canvas }) {
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden">
-      <div className="absolute inset-x-2 top-3 z-10 flex overflow-x-auto md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:overflow-visible">
+      {/* Hugs the toolbar at every width. The old `inset-x-2` below `md` made this
+          a full-width transparent strip at z-10, which swallowed every click that
+          landed beside the toolbar — panning, node selection and the tab bar row
+          all went dead in a narrow window while working fine when maximised. */}
+      {/* z-[100]: React Flow elevates selected/dragged nodes to z-index 1000+ and
+          its panels sit at 5, so the old z-10 let a node overlapping the toolbar
+          render above it and swallow the clicks. */}
+      <div className="absolute left-1/2 top-3 z-[100] flex w-max max-w-[calc(100%-1rem)] -translate-x-1/2 overflow-x-auto">
         <CanvasToolbar
           canvas={canvas}
           onAddText={() => addNode('text', { text: '' })}
