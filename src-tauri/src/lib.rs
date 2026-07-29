@@ -19,53 +19,13 @@ const STRIP_RESPONSE_HEADERS: &[&str] = &[
     "x-frame-options",
     "content-security-policy",
     "content-security-policy-report-only",
-    // We may rewrite the body (see inject_base_tag) and we always request
-    // identity encoding, so upstream's length/encoding no longer describe what
-    // we hand back. A stale content-length truncates the page; a stale
-    // content-encoding makes the webview try to gunzip plain text (blank page).
+    // We always request identity encoding, so upstream's length/encoding no
+    // longer describe what we hand back. A stale content-length truncates the
+    // response; a stale content-encoding makes the webview try to gunzip plain
+    // text (blank page).
     "content-length",
     "content-encoding",
 ];
-
-/// Find the byte offset just past `<tag …>` in an ASCII-lowercased copy of the
-/// HTML. Offsets stay valid in the original: `to_ascii_lowercase` is
-/// length-preserving, and the result always lands right after an ASCII `>`.
-fn find_tag_end(lower: &str, tag: &str) -> Option<usize> {
-    let start = lower.find(tag)?;
-    let end = lower[start..].find('>')? + start + 1;
-    Some(end)
-}
-
-/// Inject `<base href="…">` into a proxied document.
-///
-/// Without this, every relative asset resolves against `mvproxy://host/…` and
-/// gets dragged back through this proxy — slow, and the reason a heavy page
-/// (Wikipedia) could saturate the runtime. X-Frame-Options only governs the
-/// framed *document*, so sub-resources never needed proxying: pointing `<base>`
-/// at the real origin lets images, CSS and scripts load straight over https at
-/// full speed, while the top-level document still gets its headers stripped.
-fn inject_base_tag(body: Vec<u8>, final_url: &reqwest::Url) -> Vec<u8> {
-    let html = match String::from_utf8(body) {
-        Ok(s) => s,
-        Err(e) => return e.into_bytes(), // not UTF-8 — hand back untouched
-    };
-
-    let lower = html.to_ascii_lowercase();
-    if lower.contains("<base ") {
-        return html.into_bytes(); // the page sets its own base; don't fight it
-    }
-
-    let insert_at = find_tag_end(&lower, "<head")
-        .or_else(|| find_tag_end(&lower, "<html"))
-        .unwrap_or(0);
-
-    let tag = format!("<base href=\"{}\">", final_url.as_str());
-    let mut out = String::with_capacity(html.len() + tag.len());
-    out.push_str(&html[..insert_at]);
-    out.push_str(&tag);
-    out.push_str(&html[insert_at..]);
-    out.into_bytes()
-}
 
 async fn proxy_fetch(request: Request<Vec<u8>>) -> Response<Vec<u8>> {
     // The webview issues a CORS preflight (OPTIONS) before WebDAV verbs such as
@@ -135,15 +95,6 @@ async fn proxy_fetch(request: Request<Vec<u8>>) -> Response<Vec<u8>> {
     match req.send().await {
         Ok(resp) => {
             let status = resp.status().as_u16();
-            // After redirects this is where we actually landed — the correct
-            // base for resolving the document's relative URLs.
-            let final_url = resp.url().clone();
-            let is_html = resp
-                .headers()
-                .get(reqwest::header::CONTENT_TYPE)
-                .and_then(|v| v.to_str().ok())
-                .map(|v| v.to_ascii_lowercase().contains("text/html"))
-                .unwrap_or(false);
 
             let mut builder = Response::builder().status(status);
             for (name, value) in resp.headers() {
@@ -153,10 +104,9 @@ async fn proxy_fetch(request: Request<Vec<u8>>) -> Response<Vec<u8>> {
             }
             builder = builder.header("Access-Control-Allow-Origin", "*");
 
-            let raw = resp.bytes().await.unwrap_or_default().to_vec();
-            // Only documents get rewritten — WebDAV XML, JSON and binaries that
-            // share this proxy must pass through byte-for-byte.
-            let body = if is_html { inject_base_tag(raw, &final_url) } else { raw };
+            // Every body passes through byte-for-byte — WebDAV XML, JSON and
+            // binaries are all this proxy carries now.
+            let body = resp.bytes().await.unwrap_or_default().to_vec();
             builder.body(body).unwrap_or_else(|_| Response::builder().status(500).body(vec![]).unwrap())
         }
         Err(e) => Response::builder().status(502)

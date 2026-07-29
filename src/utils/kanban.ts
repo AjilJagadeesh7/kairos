@@ -87,6 +87,16 @@ export function tagTextColor(hexBg: string): string {
   return (0.299 * r + 0.587 * g + 0.114 * b) > 140 ? '#111111' : '#ffffff'
 }
 
+/**
+ * Stable fallback colour for a tag that has no explicit colour, derived from its
+ * name (DJB2) so the same tag always looks the same everywhere it appears.
+ */
+export function tagColorFromName(name: string): string {
+  let h = 5381
+  for (let i = 0; i < name.length; i++) h = ((h << 5) + h) ^ name.charCodeAt(i)
+  return TAG_COLOR_PALETTE[Math.abs(h) % TAG_COLOR_PALETTE.length]
+}
+
 export function nextTagColor(existingTags: KanbanTag[]): string {
   const used = new Set(existingTags.map(t => t.color))
   return TAG_COLOR_PALETTE.find(c => !used.has(c)) ?? TAG_COLOR_PALETTE[existingTags.length % TAG_COLOR_PALETTE.length]

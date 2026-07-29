@@ -1,17 +1,11 @@
 import { useMemo } from 'react'
 import { usePenNoteStore } from '../../../store/usePenNoteStore'
 import { useAppStore } from '../../../store/useAppStore'
-import { TAG_COLOR_PALETTE } from '../../../utils/kanban'
+import { tagColorFromName as tagColor } from '../../../utils/kanban'
 import { TagSelector } from '../../molecules/TagSelector'
 import { SectionLabel } from '../../atoms/SectionLabel'
 import { ToggleSwitch } from '../../atoms/ToggleSwitch'
 import type { PenNote, TagRecord } from '../../../types'
-
-function tagColor(name: string): string {
-  let h = 5381
-  for (let i = 0; i < name.length; i++) h = ((h << 5) + h) ^ name.charCodeAt(i)
-  return TAG_COLOR_PALETTE[Math.abs(h) % TAG_COLOR_PALETTE.length]
-}
 
 function fmt(iso: string): string {
   const d = new Date(iso)

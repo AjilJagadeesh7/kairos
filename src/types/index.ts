@@ -1,7 +1,9 @@
 export type { Note, TagRecord, NoteTemplate } from './note.types'
+export type { AppState, AppSet, AppGet } from './appStore.types'
 export type {
   SyncStatus, SyncProviderType, StorageTarget, SyncMeta,
   SyncCategory, SyncDirection, SyncRules, SyncProviderId, SyncProviderMeta,
+  S3Config, WebDAVConfig,
 } from './sync.types'
 export { SYNC_CATEGORIES, SYNC_PROVIDERS, SYNC_PROVIDER_META, DEFAULT_SYNC_RULES } from './sync.types'
 export type { ThemeMode, SearchMode, FontOption, FontWeight, FontSize, VaultStatus } from './ui.types'

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 
 import { useAppStore } from '../../../store/useAppStore'
 import { timeAgo } from '../../../utils/timeAgo'
-import { TAG_COLOR_PALETTE } from '../../../utils/kanban'
+import { tagColorFromName as tagColor } from '../../../utils/kanban'
 import { TagBadge } from '../../atoms/TagBadge'
 import { Button } from '../../atoms/Button'
 import { NoteTemplateModal } from './NoteTemplateModal'
@@ -15,12 +15,6 @@ import { Icon } from '../../../icons/Icon'
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function tagColor(name: string): string {
-  let h = 5381
-  for (let i = 0; i < name.length; i++) h = ((h << 5) + h) ^ name.charCodeAt(i)
-  return TAG_COLOR_PALETTE[Math.abs(h) % TAG_COLOR_PALETTE.length]
-}
 
 /** Direct child folder names at a given path prefix */
 function getChildFolders(notes: Note[], atPath: string): string[] {

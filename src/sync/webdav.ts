@@ -1,157 +1,70 @@
 /**
  * WebDAV sync provider — plain .md files, no encryption.
  * Works with Nextcloud, ownCloud, Koofr, pCloud, Box, any NAS.
+ *
+ * Transport lives in `webdavTransport.ts`, credentials in `webdavConfig.ts`
+ * and attachment transfers in `webdavBinary.ts`.
  */
 import { serializeNote, deserializeNote, noteIdToPath } from '../adapters/storage/noteSerializer'
-import { isDesktop, isMobile } from '../utils/platform'
-import type { Note, SyncCategory } from '../types'
+import {
+  getWebDAVConfig, setWebDAVConfig, isWebDAVConnected, requireWebDAVConfig, rootUrl,
+} from './webdavConfig'
+import {
+  basicAuth, davFetch, ensureDir, originOf, propfindHrefs, PROPFIND_NAMES, PROPFIND_TYPES,
+} from './webdavTransport'
+import {
+  putWebDAVBinary, getWebDAVBinary, listWebDAVBinary, deleteWebDAVBinary,
+} from './webdavBinary'
+import type { Note, SyncCategory, WebDAVConfig } from '../types'
 import type { RemoteBlob, RemoteProvider } from './remoteProvider'
 
-// ---------------------------------------------------------------------------
-// Config
-// ---------------------------------------------------------------------------
-
-export type WebDAVConfig = {
-  /** Full URL to the sync directory, no trailing slash. */
-  url: string
-  username: string
-  password: string
-}
-
-let _config: WebDAVConfig | null = null
-
-export function setWebDAVConfig(cfg: WebDAVConfig | null): void { _config = cfg }
-export function getWebDAVConfig(): WebDAVConfig | null           { return _config }
-
-export function isWebDAVConnected(): boolean {
-  return _config !== null && Boolean(_config.url && _config.username && _config.password)
-}
+export type { WebDAVConfig }
+export { getWebDAVConfig, setWebDAVConfig, isWebDAVConnected }
+export { putWebDAVBinary, getWebDAVBinary, listWebDAVBinary, deleteWebDAVBinary }
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Notes — stored under a notes/ subpath inside the configured URL
 // ---------------------------------------------------------------------------
 
-function basicAuth(username: string, password: string): string {
-  return 'Basic ' + btoa(`${username}:${password}`)
-}
-
-interface DavResult {
-  status: number
-  ok: boolean
-  text: () => Promise<string>
-}
-
-interface DavInit {
-  method: string
-  headers: Record<string, string>
-  body?: string
-}
-
-/**
- * Single WebDAV transport that bypasses WebView CORS on native platforms.
- *
- * WebDAV verbs (PROPFIND, MKCOL, …) and the Authorization/Depth headers are
- * "non-simple", so the browser fires a CORS preflight (OPTIONS) that servers
- * like Koofr answer with 401 → the request never runs. We avoid the browser
- * network stack entirely:
- *
- *  - Desktop (Tauri): rewrite https:// → mvproxy:// so the Rust scheme handler
- *    performs the request server-side (it answers preflight locally and
- *    forwards every verb + body).
- *  - Mobile (Capacitor): use the native HTTP bridge, not subject to CORS.
- *  - Web: plain fetch (works only if the server sends CORS headers).
- */
-async function davFetch(url: string, init: DavInit): Promise<DavResult> {
-  if (isMobile()) {
-    const { CapacitorHttp } = await import('@capacitor/core')
-    const res = await CapacitorHttp.request({
-      url,
-      method: init.method,
-      headers: init.headers,
-      data: init.body,
-      responseType: 'text',
-    })
-    const text = typeof res.data === 'string' ? res.data : (res.data == null ? '' : String(res.data))
-    return {
-      status: res.status,
-      ok: res.status >= 200 && res.status < 300,
-      text: () => Promise.resolve(text),
-    }
-  }
-
-  // Desktop: rewrite to the mvproxy:// scheme handled by Rust; web: unchanged.
-  const target = isDesktop() ? url.replace(/^https?:\/\//, 'mvproxy://') : url
-  const res = await fetch(target, { method: init.method, headers: init.headers, body: init.body })
-  return { status: res.status, ok: res.ok, text: () => res.text() }
-}
-
-function originOf(url: string): string {
-  const u = new URL(url)
-  return `${u.protocol}//${u.host}`
-}
-
-async function ensureDir(baseUrl: string, authHeader: string): Promise<void> {
-  const url = baseUrl.replace(/\/?$/, '/')
-  const res = await davFetch(url, { method: 'MKCOL', headers: { Authorization: authHeader } })
-  if (!res.ok && res.status !== 405) throw new Error(`WebDAV: could not create directory (${res.status})`)
-}
-
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
-
-// Notes are stored under a notes/ subpath inside the configured URL
 function notesUrl(cfg: WebDAVConfig): string {
-  return `${cfg.url.replace(/\/$/, '')}/notes`
+  return `${rootUrl(cfg)}/notes`
 }
 
-export async function listWebDAVNotes(): Promise<Note[]> {
-  const cfg = _config
-  if (!cfg) throw new Error('WebDAV not configured')
-
-  const baseUrl    = notesUrl(cfg)
-  const authHeader = basicAuth(cfg.username, cfg.password)
-
-  await ensureDir(baseUrl, authHeader)
-
-  const res = await davFetch(baseUrl + '/', {
-    method: 'PROPFIND',
-    headers: { Authorization: authHeader, Depth: '1', 'Content-Type': 'application/xml' },
-    body: `<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:displayname/></d:prop></d:propfind>`,
-  })
-
-  if (!res.ok) {
-    if (res.status === 401) throw new Error('WebDAV: invalid credentials')
-    throw new Error(`WebDAV PROPFIND failed: ${res.status}`)
-  }
-
-  const xml    = await res.text()
-  const doc    = new DOMParser().parseFromString(xml, 'text/xml')
-  const origin = originOf(baseUrl)
-
-  const hrefs = Array.from(doc.getElementsByTagNameNS('DAV:', 'response'))
-    .map((r) => r.getElementsByTagNameNS('DAV:', 'href')[0]?.textContent ?? '')
-    .filter((href) => href.endsWith('.md'))
-
-  const notes: Note[] = []
+/** Fetch every href the caller kept, deserializing with `parse`. */
+async function fetchEach<T>(hrefs: string[], origin: string, authHeader: string,
+  parse: (body: string, href: string) => T): Promise<T[]> {
+  const out: T[] = []
   for (const href of hrefs) {
     try {
       const fileUrl = href.startsWith('http') ? href : `${origin}${href}`
       const fileRes = await davFetch(fileUrl, { method: 'GET', headers: { Authorization: authHeader } })
       if (!fileRes.ok) continue
-      const note = deserializeNote(await fileRes.text())
-      notes.push({ ...note, embedding: note.embedding ?? [] })
+      out.push(parse(await fileRes.text(), href))
     } catch (err) {
       console.warn('WebDAV: skipping', href, err)
     }
   }
-  return notes
+  return out
+}
+
+export async function listWebDAVNotes(): Promise<Note[]> {
+  const cfg        = requireWebDAVConfig()
+  const baseUrl    = notesUrl(cfg)
+  const authHeader = basicAuth(cfg.username, cfg.password)
+
+  await ensureDir(baseUrl, authHeader)
+
+  const hrefs = (await propfindHrefs(baseUrl, authHeader, '1', PROPFIND_NAMES))
+    .filter((href) => href.endsWith('.md'))
+
+  return fetchEach(hrefs, originOf(baseUrl), authHeader, (body) => {
+    const note = deserializeNote(body)
+    return { ...note, embedding: note.embedding ?? [] }
+  })
 }
 
 export async function upsertWebDAVNote(note: Note): Promise<string> {
-  const cfg = _config
-  if (!cfg) throw new Error('WebDAV not configured')
-
+  const cfg        = requireWebDAVConfig()
   const authHeader = basicAuth(cfg.username, cfg.password)
   const fileUrl    = `${notesUrl(cfg)}/${noteIdToPath(note.id)}`
 
@@ -168,8 +81,7 @@ export async function upsertWebDAVNote(note: Note): Promise<string> {
 }
 
 export async function deleteWebDAVNote(noteId: string): Promise<void> {
-  const cfg = _config
-  if (!cfg) throw new Error('WebDAV not configured')
+  const cfg     = requireWebDAVConfig()
   const fileUrl = `${notesUrl(cfg)}/${noteIdToPath(noteId)}`
   const res     = await davFetch(fileUrl, {
     method: 'DELETE',
@@ -189,12 +101,11 @@ function contentTypeFor(filename: string): string {
 }
 
 function categoryUrl(cfg: WebDAVConfig, category: SyncCategory): string {
-  return `${cfg.url.replace(/\/$/, '')}/${category}`
+  return `${rootUrl(cfg)}/${category}`
 }
 
 export async function putWebDAVBlob(category: SyncCategory, filename: string, content: string): Promise<void> {
-  const cfg = _config
-  if (!cfg) throw new Error('WebDAV not configured')
+  const cfg        = requireWebDAVConfig()
   const authHeader = basicAuth(cfg.username, cfg.password)
   const baseUrl    = categoryUrl(cfg, category)
   await ensureDir(baseUrl, authHeader)
@@ -210,152 +121,29 @@ export async function putWebDAVBlob(category: SyncCategory, filename: string, co
 }
 
 export async function listWebDAVBlob(category: SyncCategory): Promise<RemoteBlob[]> {
-  const cfg = _config
-  if (!cfg) throw new Error('WebDAV not configured')
+  const cfg        = requireWebDAVConfig()
   const baseUrl    = categoryUrl(cfg, category)
   const authHeader = basicAuth(cfg.username, cfg.password)
 
   await ensureDir(baseUrl, authHeader)
 
-  const res = await davFetch(baseUrl + '/', {
-    method: 'PROPFIND',
-    headers: { Authorization: authHeader, Depth: '1', 'Content-Type': 'application/xml' },
-    body: `<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:displayname/></d:prop></d:propfind>`,
-  })
-  if (!res.ok) {
-    if (res.status === 401) throw new Error('WebDAV: invalid credentials')
-    throw new Error(`WebDAV PROPFIND failed: ${res.status}`)
-  }
-
-  const xml    = await res.text()
-  const doc    = new DOMParser().parseFromString(xml, 'text/xml')
-  const origin = originOf(baseUrl)
-
   // Files only (skip the collection itself — it has no filename extension)
-  const hrefs = Array.from(doc.getElementsByTagNameNS('DAV:', 'response'))
-    .map((r) => r.getElementsByTagNameNS('DAV:', 'href')[0]?.textContent ?? '')
+  const hrefs = (await propfindHrefs(baseUrl, authHeader, '1', PROPFIND_NAMES))
     .filter((href) => !href.endsWith('/') && /\.[a-z0-9]+$/i.test(href))
 
-  const blobs: RemoteBlob[] = []
-  for (const href of hrefs) {
-    try {
-      const fileUrl = href.startsWith('http') ? href : `${origin}${href}`
-      const fileRes = await davFetch(fileUrl, { method: 'GET', headers: { Authorization: authHeader } })
-      if (!fileRes.ok) continue
-      const name = decodeURIComponent(href.split('/').pop() ?? '')
-      blobs.push({ name, content: await fileRes.text() })
-    } catch (err) {
-      console.warn('WebDAV: skipping', href, err)
-    }
-  }
-  return blobs
+  return fetchEach(hrefs, originOf(baseUrl), authHeader, (content, href) => ({
+    name: decodeURIComponent(href.split('/').pop() ?? ''),
+    content,
+  }))
 }
 
 export async function deleteWebDAVBlob(category: SyncCategory, filename: string): Promise<void> {
-  const cfg = _config
-  if (!cfg) throw new Error('WebDAV not configured')
+  const cfg = requireWebDAVConfig()
   const res = await davFetch(`${categoryUrl(cfg, category)}/${filename}`, {
     method: 'DELETE',
     headers: { Authorization: basicAuth(cfg.username, cfg.password) },
   })
   if (!res.ok && res.status !== 404) throw new Error(`WebDAV DELETE failed: ${res.status}`)
-}
-
-// ---------------------------------------------------------------------------
-// Binary blob API — media attachments at {url}/<relPath>
-// ---------------------------------------------------------------------------
-
-/** Low-level binary request. Desktop rewrites to mvproxy; web uses fetch. */
-async function davBinary(method: string, url: string, authHeader: string, body?: Uint8Array): Promise<{ ok: boolean; status: number; bytes: Uint8Array | null }> {
-  if (isMobile()) {
-    // Mobile binary upload/download isn't supported through the native bridge;
-    // the local vault keeps the file. Treated as a soft failure upstream.
-    if (method === 'GET') {
-      const { CapacitorHttp } = await import('@capacitor/core')
-      const res = await CapacitorHttp.request({ url, method, headers: { Authorization: authHeader }, responseType: 'arraybuffer' })
-      const ok = res.status >= 200 && res.status < 300
-      const bytes = ok && typeof res.data === 'string' ? base64ToBytes(res.data) : null
-      return { ok, status: res.status, bytes }
-    }
-    throw new Error('WebDAV binary upload not supported on mobile')
-  }
-  const target = isDesktop() ? url.replace(/^https?:\/\//, 'mvproxy://') : url
-  const res = await fetch(target, { method, headers: { Authorization: authHeader }, body: body as BodyInit | undefined })
-  const bytes = res.ok && method === 'GET' ? new Uint8Array(await res.arrayBuffer()) : null
-  return { ok: res.ok, status: res.status, bytes }
-}
-
-async function ensureNestedDirs(cfg: WebDAVConfig, relPath: string, authHeader: string): Promise<void> {
-  const segs = relPath.split('/').slice(0, -1) // drop the filename
-  let acc = cfg.url.replace(/\/$/, '')
-  for (const seg of segs) {
-    acc += `/${seg}`
-    await ensureDir(acc, authHeader).catch(() => { /* may already exist */ })
-  }
-}
-
-export async function putWebDAVBinary(relPath: string, bytes: Uint8Array): Promise<void> {
-  const cfg = _config
-  if (!cfg) throw new Error('WebDAV not configured')
-  const authHeader = basicAuth(cfg.username, cfg.password)
-  await ensureNestedDirs(cfg, relPath, authHeader)
-  const url = `${cfg.url.replace(/\/$/, '')}/${relPath}`
-  const res = await davBinary('PUT', url, authHeader, bytes)
-  if (!res.ok && res.status !== 201 && res.status !== 204) throw new Error(`WebDAV PUT binary failed: ${res.status}`)
-}
-
-export async function getWebDAVBinary(relPath: string): Promise<Uint8Array | null> {
-  const cfg = _config
-  if (!cfg) return null
-  const url = `${cfg.url.replace(/\/$/, '')}/${relPath}`
-  const res = await davBinary('GET', url, basicAuth(cfg.username, cfg.password)).catch(() => null)
-  return res?.ok ? res.bytes : null
-}
-
-export async function listWebDAVBinary(prefix: string): Promise<string[]> {
-  const cfg = _config
-  if (!cfg) return []
-  const authHeader = basicAuth(cfg.username, cfg.password)
-  const baseUrl    = `${cfg.url.replace(/\/$/, '')}/${prefix.replace(/\/$/, '')}`
-  await ensureDir(baseUrl, authHeader).catch(() => {})
-
-  const res = await davFetch(baseUrl + '/', {
-    method: 'PROPFIND',
-    headers: { Authorization: authHeader, Depth: 'infinity', 'Content-Type': 'application/xml' },
-    body: `<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/></d:prop></d:propfind>`,
-  }).catch(() => null)
-  if (!res || !res.ok) return []
-
-  const doc    = new DOMParser().parseFromString(await res.text(), 'text/xml')
-  const origin = originOf(baseUrl)
-  const rootPath = new URL(baseUrl).pathname.replace(/\/$/, '')
-  const base = prefix.replace(/\/$/, '')
-
-  return Array.from(doc.getElementsByTagNameNS('DAV:', 'response'))
-    .map((r) => r.getElementsByTagNameNS('DAV:', 'href')[0]?.textContent ?? '')
-    .filter((href) => !href.endsWith('/') && /\.[a-z0-9]+$/i.test(href))
-    .map((href) => {
-      const path = href.startsWith('http') ? new URL(href).pathname : (href.startsWith(origin) ? href.slice(origin.length) : href)
-      const rel = decodeURIComponent(path.replace(rootPath, '').replace(/^\//, ''))
-      return `${base}/${rel}`
-    })
-}
-
-export async function deleteWebDAVBinary(relPath: string): Promise<void> {
-  const cfg = _config
-  if (!cfg) return
-  const res = await davFetch(`${cfg.url.replace(/\/$/, '')}/${relPath}`, {
-    method: 'DELETE',
-    headers: { Authorization: basicAuth(cfg.username, cfg.password) },
-  }).catch(() => null)
-  if (res && !res.ok && res.status !== 404) throw new Error(`WebDAV DELETE binary failed: ${res.status}`)
-}
-
-function base64ToBytes(b64: string): Uint8Array {
-  const bin = atob(b64)
-  const out = new Uint8Array(bin.length)
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i)
-  return out
 }
 
 export const webdavProvider: RemoteProvider = {
@@ -370,6 +158,10 @@ export const webdavProvider: RemoteProvider = {
   deleteBinary: deleteWebDAVBinary,
 }
 
+// ---------------------------------------------------------------------------
+// Connection checks
+// ---------------------------------------------------------------------------
+
 /** Verify the server URL and credentials. */
 export async function testWebDAVConnection(cfg: WebDAVConfig): Promise<void> {
   const url = cfg.url.replace(/\/?$/, '/')
@@ -379,7 +171,7 @@ export async function testWebDAVConnection(cfg: WebDAVConfig): Promise<void> {
       Authorization: basicAuth(cfg.username, cfg.password),
       Depth: '0', 'Content-Type': 'application/xml',
     },
-    body: `<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/></d:prop></d:propfind>`,
+    body: PROPFIND_TYPES,
   })
   if (res.status === 401) throw new Error('Invalid username or password')
   if (res.status === 403) throw new Error('Access denied — check permissions')
@@ -389,9 +181,10 @@ export async function testWebDAVConnection(cfg: WebDAVConfig): Promise<void> {
 
 /** Quick reachability check using stored config. Returns error message or null. */
 export async function pingWebDAV(): Promise<string | null> {
-  if (!_config) return null
+  const cfg = getWebDAVConfig()
+  if (!cfg) return null
   try {
-    await testWebDAVConnection(_config)
+    await testWebDAVConnection(cfg)
     return null
   } catch (err) {
     return err instanceof Error ? err.message : 'WebDAV unreachable'

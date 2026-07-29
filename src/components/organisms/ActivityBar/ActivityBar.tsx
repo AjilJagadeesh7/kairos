@@ -39,8 +39,10 @@ function Tooltip({ label, children }: { label: string; children: React.ReactNode
     setVisible(false)
   }
 
+  // Focus/blur as well as hover, so the label is reachable from the keyboard.
+  // The control itself still needs its own aria-label — this popover is visual.
   return (
-    <div className="relative" onMouseEnter={show} onMouseLeave={hide}>
+    <div className="relative" onMouseEnter={show} onMouseLeave={hide} onFocus={show} onBlur={hide}>
       {children}
       {visible && (
         <div
@@ -87,6 +89,8 @@ function CompactThemePicker({ value, onChange }: { value: ThemeMode; onChange: (
       <div ref={ref} className="relative">
         <button
           type="button"
+          aria-label="Theme"
+          aria-expanded={open}
           onClick={() => setOpen(v => !v)}
           className={`relative flex h-11 w-12 items-center justify-center transition-colors ${
             open ? 'text-text' : 'text-text3 hover:text-text'
@@ -126,6 +130,7 @@ function NavBtn({ to, iconName, label, NavIconComponent, activePath, onNav }: {
     <Tooltip label={label}>
       <button
         type="button"
+        aria-label={label}
         onClick={(e) => onNav(dest, label, e)}
         className={`relative flex h-11 w-12 items-center justify-center transition-colors ${
           isActive ? 'text-accent' : 'text-text3 hover:text-text'
@@ -179,6 +184,7 @@ export function ActivityBar() {
       <Tooltip label="Kairos — Home">
         <button
           type="button"
+          aria-label="Kairos — Home"
           onClick={() => {
             const { focusedPaneId, navigatePane } = usePaneStore.getState()
             navigatePane(focusedPaneId, '/')
@@ -219,6 +225,7 @@ export function ActivityBar() {
         <Tooltip label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}>
           <button
             type="button"
+            aria-label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
             onClick={() => focusedHasSidebar && setSidebarOpen(!sidebarOpen)}
             className={`relative flex h-9 w-12 items-center justify-center transition-colors ${
               !focusedHasSidebar ? 'pointer-events-none text-text3/30'

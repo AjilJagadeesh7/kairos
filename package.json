@@ -4,7 +4,7 @@
   "version": "0.0.7",
   "license": "AGPL-3.0-or-later",
   "type": "module",
-  "otaMinNative": "0.0.8",
+  "otaMinNative": "0.0.7",
   "otaComment": "otaMinNative = the earliest APK/AAB version whose native shell can run OTA web bundles. It MUST equal the first release whose APK bundles @capgo/capacitor-updater, and MUST be bumped to the new version whenever a release changes anything native (android/, ios/, or adds a Capacitor plugin). Web-only releases leave it untouched, so existing installs keep receiving OTA updates.",
   "scripts": {
     "dev": "vite",
@@ -31,7 +31,6 @@
     "@emoji-mart/data": "^1.2.1",
     "@emoji-mart/react": "^1.1.1",
     "@excalidraw/excalidraw": "^0.18.1",
-    "@googleapis/drive": "^20.1.0",
     "@milkdown/core": "^7.20.0",
     "@milkdown/crepe": "^7.20.0",
     "@milkdown/ctx": "^7.20.0",
@@ -68,7 +67,6 @@
     "dexie": "^4.4.2",
     "dexie-react-hooks": "^4.4.0",
     "fflate": "^0.8.3",
-    "gapi-script": "^1.2.0",
     "html2pdf.js": "^0.14.0",
     "js-yaml": "^4.1.1",
     "katex": "^0.17.0",
@@ -89,6 +87,9 @@
   "overrides": {
     "protobufjs": "^7.5.9",
     "lodash-es": "^4.18.1",
+    "@xenova/transformers": {
+      "sharp": "^0.35.0"
+    },
     "@excalidraw/excalidraw": {
       "nanoid": "^3.3.8"
     },

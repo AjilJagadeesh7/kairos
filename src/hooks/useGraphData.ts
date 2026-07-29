@@ -2,16 +2,10 @@ import { useMemo } from 'react'
 import { parseWikilinks } from '../utils/wikilinks'
 import { cosineSimilarity } from '../utils/similarity'
 import { colorForIndex } from '../utils/colorForIndex'
-import { TAG_COLOR_PALETTE } from '../utils/kanban'
+import { tagColorFromName as hashTagColor } from '../utils/kanban'
 import { useKanbanStore } from '../store/useKanbanStore'
 import { useCanvasStore } from '../store/useCanvasStore'
 import type { Note, GNode, GLink } from '../types'
-
-function hashTagColor(tag: string): string {
-  let h = 5381
-  for (let i = 0; i < tag.length; i++) h = ((h << 5) + h) ^ tag.charCodeAt(i)
-  return TAG_COLOR_PALETTE[Math.abs(h) % TAG_COLOR_PALETTE.length]
-}
 
 // Module-level wikilink parse cache keyed by note content.
 const wikilinkCache = new Map<string, { cacheKey: string; links: string[] }>()

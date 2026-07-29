@@ -89,6 +89,15 @@ commands**; and the home screen and welcome tour are rebuilt.
   that would crash. `notifyAppReady()` fires on launch so a bad bundle rolls back
   automatically.
 
+#### Canvas
+
+- **Attachment cards.** Place any file from your attachments library on a board —
+  documents, images, video and audio — picked from a searchable list or uploaded
+  (or dropped) straight into the picker. Images and PDFs render in the card,
+  video and audio play in place, and anything else offers a download. The card
+  tracks the file by id, so renaming or moving it in Attachments keeps the board
+  in step, and removing a card leaves the file itself untouched.
+
 #### Editor
 
 - **Slash commands.** Type `/` at the start of an empty paragraph for a filtered,
@@ -108,6 +117,12 @@ commands**; and the home screen and welcome tour are rebuilt.
 
 #### Appearance & onboarding
 
+- **Twelve new themes.** Six palettes — **Amethyst Haze**, **Bubblegum**,
+  **Caffeine**, **Doom 64**, **Neo Brutalism** and **Retro Arcade** — each in a
+  light and a dark variant, joining Light/Dark and the dark-only Dracula, Nord,
+  Catppuccin and Cyberpunk for eighteen in total. The picker now groups them by
+  light and dark instead of listing one long column, and every theme sets its
+  background before first paint so launching never flashes.
 - **Text size setting.** Font settings gain **size** alongside typeface and
   weight — Small / Default / Large / Larger (14–20px). It drives the root font
   size, so rem-based type and spacing scale together, and it is applied before
@@ -134,6 +149,9 @@ commands**; and the home screen and welcome tour are rebuilt.
 - **Interactive swimlane headers.** The whole header was one collapse button;
   the chevron now toggles collapse on its own and clicking the parent story opens
   its detail — the only way to reach a parent that never appears as a card.
+- **Marketplace hides itself when it isn't configured.** Builds without a
+  `VITE_MARKETPLACE_URL` no longer show a Marketplace tab that leads nowhere;
+  a link to it lands on Settings → Plugins instead.
 - **Updates panel serves both platforms.** Settings → Updates drives the Tauri
   updater on desktop and the OTA updater on mobile through one shared interface,
   instead of telling mobile users that auto-updates are desktop-only.
@@ -149,6 +167,13 @@ commands**; and the home screen and welcome tour are rebuilt.
 
 - **PDF export.** The PDF option is gone from both the notes and journal export
   menus; Markdown and HTML export are unaffected.
+- **Web page cards on the canvas.** The embedded-browser card — live iframe,
+  reader view and link-card fallback — is gone, replaced by the attachment card
+  above. Boards saved with a web card still open: each one becomes a text card
+  holding the page title and URL, so nothing is lost.
+- **Settings → Storage & Limits.** The tab is no longer listed in the settings
+  sidebar or the command palette; existing `?section=storage` links land on
+  Storage & Sync.
 
 ### Fixed
 

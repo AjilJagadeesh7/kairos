@@ -10,11 +10,12 @@ import { isMarketplaceEnabled } from '../utils/marketplace'
 import type { Section } from '../types'
 
 /**
- * Sections the sidebar no longer lists, and where a deep link to one should land
- * instead. The components still exist — only the entry points are hidden.
+ * Retired sections, and where a deep link to one should land instead. The panel
+ * renders nothing for a section it doesn't know, so an old bookmark would open a
+ * blank page without this.
  */
 const HIDDEN_SECTIONS: Record<string, Section> = {
-  storage: 'storage-sync',   // "Storage & Limits" — see StorageSection.tsx
+  storage: 'storage-sync',   // "Storage & Limits", removed in 0.0.7
 }
 
 /**

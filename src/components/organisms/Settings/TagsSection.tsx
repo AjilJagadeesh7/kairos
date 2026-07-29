@@ -1,18 +1,12 @@
 import { useMemo, useState } from 'react'
 
 import { useAppStore } from '../../../store/useAppStore'
-import { TAG_COLOR_PALETTE } from '../../../utils/kanban'
+import { TAG_COLOR_PALETTE, tagColorFromName as hashColor } from '../../../utils/kanban'
 import { ColorPicker } from '../../molecules/ColorPicker'
 import { SectionCard } from '../../molecules/SectionCard'
 import { Button } from '../../atoms/Button'
 import { Icon } from '../../../icons/Icon'
 import { SectionLabel } from '../../atoms/SectionLabel'
-
-function hashColor(name: string): string {
-  let h = 5381
-  for (let i = 0; i < name.length; i++) h = ((h << 5) + h) ^ name.charCodeAt(i)
-  return TAG_COLOR_PALETTE[Math.abs(h) % TAG_COLOR_PALETTE.length]
-}
 
 export function TagsSection() {
   const notes           = useAppStore(s => s.notes)
