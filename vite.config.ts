@@ -65,4 +65,9 @@ export default defineConfig({
   worker: {
     format: 'es',
   },
+  server: {
+    watch: {
+      ignored: ['**/src-tauri/**'],
+    },
+  },
 })

@@ -18,6 +18,31 @@
 | Kanban boards/tasks | `useKanbanStore` | `/kanban/:boardId`  | `vault/kanban/*.json`    |
 | Canvases            | `useCanvasStore` | `/canvas/:canvasId` | `vault/canvas/*.json`    |
 | Graph               | —                | `/graph`            | derived from notes       |
+| Trash               | `useTrashStore`  | `/trash`            | IndexedDB `trash` table  |
+
+## Trash — every delete is a soft delete
+
+`src/trash/trashService.ts` is the single entry point. **Any new delete path must
+capture the item before removing it**, or that content becomes unrecoverable:
+
+```ts
+const doomed = get().items.find(i => i.id === id)
+if (doomed) {
+  const { trashCanvas } = await import('../trash/trashService')
+  await trashCanvas(doomed).catch(err => console.warn('[trash] capture failed:', err))
+}
+// …then the existing store / vault / cloud delete, unchanged
+```
+
+- One `trashX()` capture helper per kind; add a matching branch to
+  `restoreTrashItem` in `trash/trashRestore.ts` when adding a kind.
+- Restorers **rebuild the item, they never call the store's `create` action** —
+  the original id, timestamps and folder must survive the round trip.
+- The trash is **device-local by design**: never mirror it to the vault or a sync
+  provider, or a pull from another device can resurrect a local deletion.
+- Retention (`useAppStore.trashRetentionDays`, 0 = forever) is enforced by
+  `useTrashSweeper` — startup + hourly. There is no server cron; a missed window
+  is caught by the next startup sweep.
 
 ## Adding a new feature — command palette checklist
 
@@ -134,9 +159,32 @@ When you find yourself writing any of these patterns inline, extract to the atom
 
 When you find yourself writing a modal backdrop + card, an inline editing input, or an empty-list placeholder, use these molecules instead.
 
+## App updates — two separate channels
+
+- **Desktop (Tauri)**: built-in updater plugin, minisigned artifacts, `latest.json`
+  on GitHub Releases. Config in `src-tauri/tauri.conf.json`; UI in `useAppUpdater.ts`.
+- **Mobile (Capacitor)**: self-hosted **Capgo OTA** (`@capgo/capacitor-updater`,
+  manual mode, `autoUpdate:false` — no Capgo Cloud, $0). CI zips `dist/` →
+  `kairos-mobile-<ver>.zip` + `mobile-latest.json`, attached to the same GitHub
+  Release (`scripts/build-mobile-bundle.mjs`, `release.yml` android job). The app
+  polls the manifest and applies bundles via `useMobileUpdater.ts`;
+  `notifyAppReady()` fires on startup (`useAppStartup.ts`) for auto-rollback.
+
+### Native-vs-web version discipline (IMPORTANT)
+
+OTA can only ship the **web bundle** (`dist/`). It **cannot** ship native changes.
+
+- **Web-only release** (touches only `src/`, styles, JS deps) → new OTA bundle;
+  **leave `otaMinNative` in `package.json` alone** so existing installs still update.
+- **Native release** (touches `android/`, `ios/`, or adds/updates a Capacitor
+  plugin) → this needs a fresh APK/AAB. **Bump `otaMinNative` to that release's
+  version.** The app's compat gate refuses OTA bundles whose `minNative` exceeds
+  the installed APK, so users are told to update the app instead of loading a
+  bundle their native shell can't run.
+
 ## Key architectural rules
 
-- Platform detection: `src/utils/platform.ts` — `isDesktop()` for Tauri-only features
+- Platform detection: `src/utils/platform.ts` — `isDesktop()` for Tauri-only features, `isMobile()` for Capacitor-only
 - Self-write guard: `src/sync/selfWriteGuard.ts` — suppress vault watcher during app writes
 - Vault watcher: `src/hooks/useVaultWatcher.ts` — debounced, desktop-only
 - Paste sanitization plugin: strips hostile HTML on paste in the editor

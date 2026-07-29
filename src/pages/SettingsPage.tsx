@@ -6,18 +6,38 @@ import { usePaneId, useSidebarSlot } from '../contexts/PaneContext'
 import { SidebarWrapper } from '../components/organisms/Sidebar/SidebarWrapper'
 import { SettingsPanel } from '../components/organisms/Settings/SettingsPanel'
 import { SettingsSidebar } from '../components/organisms/Settings/SettingsSidebar'
+import { isMarketplaceEnabled } from '../utils/marketplace'
 import type { Section } from '../types'
+
+/**
+ * Retired sections, and where a deep link to one should land instead. The panel
+ * renders nothing for a section it doesn't know, so an old bookmark would open a
+ * blank page without this.
+ */
+const HIDDEN_SECTIONS: Record<string, Section> = {
+  storage: 'storage-sync',   // "Storage & Limits", removed in 0.0.7
+}
+
+/**
+ * A `?section=` deep link can name a section this build doesn't surface (an old
+ * bookmark, a link from another install). Land on its closest sibling rather than
+ * a tab the sidebar no longer lists, so the panel and the sidebar stay in sync.
+ */
+function resolveSection(raw: string | null): Section {
+  if (!raw) return 'storage-sync'
+  if (raw === 'marketplace' && !isMarketplaceEnabled()) return 'plugins'
+  return HIDDEN_SECTIONS[raw] ?? (raw as Section)
+}
 
 export function SettingsPage() {
   const { search }               = useLocation()
-  const [section, setSection]    = useState<Section>(() => {
-    const s = new URLSearchParams(search).get('section') as Section | null
-    return s ?? 'storage-sync'
-  })
+  const [section, setSection]    = useState<Section>(
+    () => resolveSection(new URLSearchParams(search).get('section')),
+  )
 
   useEffect(() => {
-    const s = new URLSearchParams(search).get('section') as Section | null
-    if (s) setSection(s)
+    const s = new URLSearchParams(search).get('section')
+    if (s) setSection(resolveSection(s))
   }, [search])
   const paneId                   = usePaneId()
   const focusedPaneId            = usePaneStore(s => s.focusedPaneId)

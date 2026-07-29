@@ -1,8 +1,17 @@
-export type ThemeMode = 'light' | 'dark' | 'dracula' | 'nord' | 'catppuccin' | 'cyberpunk'
+export type ThemeMode =
+  | 'light' | 'dark'
+  | 'dracula' | 'nord' | 'catppuccin' | 'cyberpunk'
+  | 'amethyst-light'  | 'amethyst-dark'
+  | 'bubblegum-light' | 'bubblegum-dark'
+  | 'caffeine-light'  | 'caffeine-dark'
+  | 'doom64-light'    | 'doom64-dark'
+  | 'brutalism-light' | 'brutalism-dark'
+  | 'arcade-light'    | 'arcade-dark'
 export type SearchMode = 'fulltext' | 'semantic'
 export type FontOption =
   | 'manrope' | 'inter' | 'roboto' | 'ubuntu' | 'poppins'
   | 'lora' | 'libre-baskerville' | 'playfair-display'
   | 'cormorant' | 'cinzel'
 export type FontWeight = 'light' | 'regular' | 'medium'
+export type FontSize = 'small' | 'default' | 'large' | 'xlarge'
 export type VaultStatus = 'loading' | 'ok' | 'none' | 'missing'

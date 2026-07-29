@@ -1,6 +1,7 @@
 import { $prose } from '@milkdown/utils'
 import { inputRules, InputRule } from '@milkdown/prose/inputrules'
 import { keymap } from '@milkdown/prose/keymap'
+import { Plugin } from '@milkdown/prose/state'
 import type { EditorState, Transaction } from '@milkdown/prose/state'
 
 // Matches [text](url) when user types the closing ) themselves
@@ -68,5 +69,26 @@ export const linkKeymapPlugin = $prose(() =>
   keymap({
     ' ':     (state, dispatch) => convertLinkAtCursor(state, dispatch, ' '),
     'Enter': (state, dispatch) => convertLinkAtCursor(state, dispatch),
+  }),
+)
+
+// Plugin 3 — link is effectively non-inclusive: when the caret sits at the
+// right edge of a link (nothing linked ahead), drop the stored link mark so the
+// next characters typed are plain text instead of extending the link's label.
+export const linkExitPlugin = $prose(() =>
+  new Plugin({
+    appendTransaction(_trs, _oldState, state) {
+      const { selection, storedMarks, schema } = state
+      const linkType = schema.marks['link']
+      if (!linkType || !selection.empty) return null
+      const $from  = selection.$from
+      const active = storedMarks ?? $from.marks()
+      if (!linkType.isInSet(active)) return null
+      // Still inside the link (the character ahead is part of it) → keep typing linked.
+      const after = $from.nodeAfter
+      if (after && linkType.isInSet(after.marks)) return null
+      // At the trailing boundary → clear the stored link mark.
+      return state.tr.removeStoredMark(linkType)
+    },
   }),
 )

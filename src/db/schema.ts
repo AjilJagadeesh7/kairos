@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { Note, SettingRecord, SyncMeta, TagRecord, JournalEntry, Attachment } from '../types'
+import type { Note, SettingRecord, SyncMeta, TagRecord, JournalEntry, Attachment, TrashItem } from '../types'
 import type { Board } from '../types/kanban.types'
 import type { Canvas } from '../types/canvas.types'
 
@@ -19,6 +19,7 @@ export class KairosDB extends Dexie {
   journal!: EntityTable<JournalEntry, 'date'>
   canvases!: EntityTable<Canvas, 'id'>
   attachments!: EntityTable<Attachment, 'id'>
+  trash!: EntityTable<TrashItem, 'id'>
 
   constructor() {
     super('kairos')
@@ -149,6 +150,21 @@ export class KairosDB extends Dexie {
       .upgrade(async (tx) => {
         await tx.table('attachments').clear()
       })
+    // Version 12: add trash table — soft-deleted items awaiting restore or purge.
+    // Deliberately device-local (never mirrored to the vault or a sync provider)
+    // so a pull from another device can't resurrect something you deleted here.
+    this.version(12).stores({
+      notes: 'id, title, *tags, createdAt, updatedAt',
+      settings: 'key',
+      syncMeta: 'noteId, lastSynced, driveFileId',
+      embeddings: 'noteId',
+      tags: 'name',
+      boards: 'id, title, updatedAt',
+      journal: 'date, updatedAt',
+      canvases: 'id, title, updatedAt',
+      attachments: 'id, name, folder, createdAt',
+      trash: 'id, kind, deletedAt',
+    })
   }
 }
 
@@ -252,4 +268,29 @@ export async function deleteAttachment(id: string): Promise<void> {
 
 export async function getAllAttachments(): Promise<Attachment[]> {
   return db.attachments.orderBy('createdAt').toArray()
+}
+
+export async function putTrashItem(item: TrashItem): Promise<void> {
+  await db.trash.put(item)
+}
+
+/** Newest deletions first. */
+export async function getAllTrashItems(): Promise<TrashItem[]> {
+  return db.trash.orderBy('deletedAt').reverse().toArray()
+}
+
+export async function getTrashItem(id: string): Promise<TrashItem | undefined> {
+  return db.trash.get(id)
+}
+
+export async function deleteTrashItem(id: string): Promise<void> {
+  await db.trash.delete(id)
+}
+
+export async function deleteTrashItems(ids: string[]): Promise<void> {
+  await db.trash.bulkDelete(ids)
+}
+
+export async function clearTrash(): Promise<void> {
+  await db.trash.clear()
 }

@@ -14,7 +14,7 @@ function makeBoard(overrides: Partial<Board> = {}): Board {
 
 function makeTask(overrides: Partial<KanbanTask> = {}): KanbanTask {
   return {
-    id: 't1', columnId: 'c1', title: 'Task',
+    id: 't1', key: 'B-1', type: 'task', parentId: null, columnId: 'c1', title: 'Task',
     order: 0, priority: null, tags: [], subtasks: [], linkedNotes: [], linkedTasks: [],
     comments: [], attachments: [], createdAt: '', updatedAt: '', ...overrides,
   }
@@ -27,10 +27,12 @@ function makeKanbanState(overrides: Partial<KanbanState> = {}): KanbanState {
     activeTaskId: null,
     isLoaded: false,
     filters: { ...DEFAULT_FILTERS },
+    groupBy: 'none',
     history: {},
     loadBoards:         vi.fn().mockResolvedValue(undefined),
     setActiveBoardId:   vi.fn(),
     setActiveTaskId:    vi.fn(),
+    setGroupBy:         vi.fn(),
     createBoard:        vi.fn(),
     updateBoard:        vi.fn(),
     setBoardNoSync:     vi.fn(),
@@ -41,9 +43,14 @@ function makeKanbanState(overrides: Partial<KanbanState> = {}): KanbanState {
     deleteColumn:       vi.fn(),
     reorderColumns:     vi.fn(),
     createTask:         vi.fn(),
+    createChildIssue:   vi.fn(),
     updateTask:         vi.fn(),
     deleteTask:         vi.fn(),
     commitDragState:    vi.fn(),
+    createSprint:       vi.fn(),
+    updateSprint:       vi.fn(),
+    deleteSprint:       vi.fn(),
+    moveTaskToSprint:   vi.fn(),
     addBoardTag:        vi.fn(),
     updateBoardTag:     vi.fn(),
     deleteBoardTag:     vi.fn(),

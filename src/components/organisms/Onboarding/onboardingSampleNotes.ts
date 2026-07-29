@@ -35,11 +35,19 @@ Use Obsidian-style callouts anywhere in your notes. All 8 types are supported:
 > Summaries — aliases: \`SUMMARY\`, \`TLDR\`
 
 ### Kanban & Journal
-Built-in **Kanban boards** for task management and a **Journal** view for daily notes — no plugins needed.
+Built-in **Kanban boards** — with sprints, swimlanes, list and backlog views — plus a **Journal** for daily notes. No plugins needed.
+
+### Pen notes & attachments
+Handwrite with a stylus in **Pen notes**, and keep images, PDFs and files in **Attachments** with their own folder tree. Drag a file into a note to embed it.
+
+### Nothing is lost by accident
+
+> [!TIP] The Trash has your back
+> Deleting anything — a note, board, canvas, pen note or file — moves it to the **Trash** instead of destroying it. Restore it any time, or let the retention timer clear it out. Set the window in **Settings → General → Trash**.
 `
 
 export const SAMPLE_NOTE_1_TITLE = 'Welcome to Kairos'
-export const makeSampleNote1 = () => `## Getting started
+export const makeSampleNote1 = (name?: string) => `## ${name ? `Getting started, ${name}` : 'Getting started'}
 
 > [!NOTE]
 > These are sample notes to help you explore Kairos. Delete them whenever you're ready to start fresh.
@@ -78,7 +86,14 @@ Use Obsidian-style callouts with \`> [!TYPE]\` syntax:
 > [!TIP] Customise your shortcuts
 > Go to **Settings → Keyboard** to remap any shortcut to your preference.
 
+### Deleted something by mistake?
+
+Everything you delete goes to the **Trash** first, so it is always recoverable. Open it from the activity bar, restore what you need, and choose how long items are kept in **Settings → General → Trash**.
+
 ---
 
 The **sidebar** is a full file explorer — create folders, drag notes, and search across everything.
+
+> [!NOTE] Replay this tour
+> **Settings → General → Replay welcome tour** walks you through the basics again. It will not re-create these sample notes.
 `

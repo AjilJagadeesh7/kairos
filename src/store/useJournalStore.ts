@@ -72,6 +72,12 @@ export const useJournalStore = create<JournalState>()((set, _get) => ({
   },
 
   deleteEntry: async (date) => {
+    const doomed = useJournalStore.getState().entries[date]
+    if (doomed) {
+      const { trashJournalEntry } = await import('../trash/trashService')
+      await trashJournalEntry(doomed).catch(err => console.warn('[trash] capture failed:', err))
+    }
+
     set(s => {
       const { [date]: _, ...rest } = s.entries
       return { entries: rest, activeDate: s.activeDate === date ? null : s.activeDate }

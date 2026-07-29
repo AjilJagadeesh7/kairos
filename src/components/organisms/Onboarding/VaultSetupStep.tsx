@@ -31,14 +31,14 @@ function SyncOption({
   )
 }
 
-function WebStorageStep({ onBack, onFinish }: { onBack: () => void; onFinish: () => Promise<void> }) {
+function WebStorageStep({ headingId, onBack, onFinish }: { headingId: string; onBack: () => void; onFinish: () => Promise<void> }) {
   return (
     <div className="px-5 pb-8 pt-8 sm:px-8">
       <div className="mb-5 text-center">
         <div className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[rgb(var(--accent)/0.1)]">
           <Icon name="cloud" size={26} className="text-[rgb(var(--accent))]" />
         </div>
-        <h2 className="text-xl font-black tracking-tight text-[rgb(var(--text))]">Where to save your notes</h2>
+        <h2 id={headingId} className="text-xl font-black tracking-tight text-[rgb(var(--text))]">Where to save your notes</h2>
         <p className="mt-1.5 text-sm text-[rgb(var(--text-2))]">
           Your notes are stored in your browser. Set up sync later to back them up.
         </p>
@@ -96,11 +96,12 @@ function WebStorageStep({ onBack, onFinish }: { onBack: () => void; onFinish: ()
 }
 
 interface VaultSetupStepProps {
+  headingId: string
   onBack: () => void
   onFinish: () => Promise<void>
 }
 
-export function VaultSetupStep({ onBack, onFinish }: VaultSetupStepProps) {
+export function VaultSetupStep({ headingId, onBack, onFinish }: VaultSetupStepProps) {
   const vaultStatus = useAppStore(s => s.vaultStatus)
   const [connectState, setConnectState] = useState<ConnectState>('idle')
   const [folderName,   setFolderName]   = useState<string | null>(null)
@@ -166,7 +167,7 @@ export function VaultSetupStep({ onBack, onFinish }: VaultSetupStepProps) {
           <div className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[rgb(var(--accent)/0.1)]">
             <Icon name="hard-drive" size={26} className="text-[rgb(var(--accent))]" />
           </div>
-          <h2 className="text-xl font-black tracking-tight text-[rgb(var(--text))]">
+          <h2 id={headingId} className="text-xl font-black tracking-tight text-[rgb(var(--text))]">
             Where should your notes live?
           </h2>
           <p className="mt-1.5 text-sm text-[rgb(var(--text-2))]">
@@ -238,7 +239,7 @@ export function VaultSetupStep({ onBack, onFinish }: VaultSetupStepProps) {
           <div className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[rgb(var(--accent)/0.1)]">
             <Icon name="smartphone" size={26} className="text-[rgb(var(--accent))]" />
           </div>
-          <h2 className="text-xl font-black tracking-tight text-[rgb(var(--text))]">Set up your vault</h2>
+          <h2 id={headingId} className="text-xl font-black tracking-tight text-[rgb(var(--text))]">Set up your vault</h2>
           <p className="mt-1.5 text-sm text-[rgb(var(--text-2))]">
             Notes will be saved to your device's Documents folder as plain text files.
           </p>
@@ -292,5 +293,5 @@ export function VaultSetupStep({ onBack, onFinish }: VaultSetupStepProps) {
   }
 
   // Web
-  return <WebStorageStep onBack={onBack} onFinish={onFinish} />
+  return <WebStorageStep headingId={headingId} onBack={onBack} onFinish={onFinish} />
 }

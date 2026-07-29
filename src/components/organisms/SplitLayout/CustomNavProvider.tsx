@@ -26,12 +26,13 @@ export function CustomNavProvider({ paneId, children }: Props) {
     createHref: (to: To) =>
       typeof to === 'string' ? to : (to.pathname ?? '/') + (to.search ?? '') + (to.hash ?? ''),
     go: (_delta: number) => {},
+    // Preserve search + hash so query-param navigation (e.g. ?view=list) works.
     push: (to: To) => {
-      const p = typeof to === 'string' ? to : (to.pathname ?? '/')
+      const p = typeof to === 'string' ? to : (to.pathname ?? '/') + (to.search ?? '') + (to.hash ?? '')
       usePaneStore.getState().navigatePane(paneId, p)
     },
     replace: (to: To) => {
-      const p = typeof to === 'string' ? to : (to.pathname ?? '/')
+      const p = typeof to === 'string' ? to : (to.pathname ?? '/') + (to.search ?? '') + (to.hash ?? '')
       usePaneStore.getState().navigatePane(paneId, p)
     },
   }), [paneId])

@@ -38,18 +38,21 @@ export function useBoardDragDrop(board: Board) {
   const sensors = useDndSensors()
 
   const dropAnimation: DropAnimation = {
-    duration: 320,
-    easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+    // Smooth ease-out settle (no overshoot/bounce) so cards glide into place.
+    duration: 200,
+    easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
     sideEffects: defaultDropAnimationSideEffects({
-      styles: { active: { opacity: '0.3' } },
+      styles: { active: { opacity: '0.4' } },
     }),
   }
 
   const sortedColumns = [...localColumns].sort((a, b) => a.order - b.order)
-  const isFiltered    = filters.tags.length > 0 || filters.priorities.length > 0 || filters.due !== 'all' || !!filters.linkedNote
+  const isFiltered    = filters.tags.length > 0 || filters.priorities.length > 0 || (filters.types?.length ?? 0) > 0 || filters.due !== 'all' || !!filters.linkedNote || !!filters.query || !!filters.sprint
 
   function getColumnTasks(columnId: string): KanbanTask[] {
-    const colTasks = localTasks.filter(t => t.columnId === columnId)
+    // The flat board shows only top-level issues; children live inside a parent
+    // (or under grouped swimlanes). Filtering here keeps drag state intact.
+    const colTasks = localTasks.filter(t => t.columnId === columnId && !t.parentId)
     return isFiltered ? filterAndSortTasks(colTasks, filters) : colTasks.sort((a, b) => a.order - b.order)
   }
 

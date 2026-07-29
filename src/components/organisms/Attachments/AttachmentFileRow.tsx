@@ -1,17 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Icon } from '../../../icons/Icon'
-import type { IconToken } from '../../../icons/tokens'
+import { KIND_ICON } from '../../../utils/attachmentIcons'
 import { kindFromName, downloadAttachment } from '../../../attachments/attachmentService'
 import { useAttachmentStore } from '../../../store/useAttachmentStore'
 import { useConfirmStore } from '../../../store/useConfirmStore'
 import { InlineEditInput } from '../../molecules/InlineEditInput'
 import { AttachmentContextMenu } from './AttachmentContextMenu'
-import type { Attachment, AttachmentKind } from '../../../types'
-
-const KIND_ICON: Record<AttachmentKind, IconToken> = {
-  image: 'image', video: 'film', audio: 'music', pdf: 'file-text', file: 'file-down',
-}
+import type { Attachment } from '../../../types'
 
 interface Props {
   att: Attachment

@@ -50,11 +50,17 @@ export function KanbanColumn({ column, board, tasks, isFiltered }: KanbanColumnP
     opacity: isDragging ? 0.2 : 1,
   }
 
+  // Column width across the whole range:
+  //  • < lg: fixed width (min(85vw, 300px)) that scrolls + snaps — near
+  //    full-width on real phones, but capped so a narrow *desktop* window shows
+  //    a normal multi-column scrolling board instead of one ballooned 85vw
+  //    column overflowing the view.
+  //  • ≥ lg: flex to fill the width once there's genuinely room for it.
   return (
     <div
       ref={setSortableRef}
       style={style}
-      className="group flex h-full w-[85vw] shrink-0 snap-start flex-col sm:w-auto sm:min-w-[220px] sm:flex-1"
+      className="group flex h-full w-[85vw] max-w-[300px] shrink-0 snap-start flex-col lg:w-auto lg:max-w-none lg:min-w-[240px] lg:flex-1"
     >
       <ColumnHeader
         column={column}

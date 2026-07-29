@@ -1,10 +1,14 @@
 export type { Note, TagRecord, NoteTemplate } from './note.types'
+export type { AppState, AppSet, AppGet } from './appStore.types'
 export type {
   SyncStatus, SyncProviderType, StorageTarget, SyncMeta,
   SyncCategory, SyncDirection, SyncRules, SyncProviderId, SyncProviderMeta,
+  S3Config, WebDAVConfig,
 } from './sync.types'
 export { SYNC_CATEGORIES, SYNC_PROVIDERS, SYNC_PROVIDER_META, DEFAULT_SYNC_RULES } from './sync.types'
-export type { ThemeMode, SearchMode, FontOption, FontWeight, VaultStatus } from './ui.types'
+export type { ThemeMode, SearchMode, FontOption, FontWeight, FontSize, VaultStatus } from './ui.types'
+export type { TrashKind, TrashItem, NewTrashItem } from './trash.types'
+export { TRASH_RETENTION_PRESETS } from './trash.types'
 export type {
   SaveStatus,
   MenuKind,
@@ -24,7 +28,7 @@ export type { Section, CustomCallout } from './settings.types'
 export type { SettingRecord, EmbeddingRecord } from './db.types'
 export type { Attachment, AttachmentMeta, AttachmentKind } from './attachment.types'
 export type { JournalEntry } from './journal.types'
-export type { Canvas, CanvasNode, CanvasEdge, CanvasNodeType, CanvasNodeData, CanvasTextData, CanvasNoteData, CanvasWebData } from './canvas.types'
+export type { Canvas, CanvasNode, CanvasEdge, CanvasNodeType, CanvasNodeData, CanvasTextData, CanvasNoteData, CanvasAttachmentData } from './canvas.types'
 export type { ContentVersion, VersionHistory } from './history.types'
 export type { KairosTier, TierLimits, StorageBreakdown, StorageUsage, UpgradeReason } from './tier.types'
 export type { FrontmatterFieldType, FrontmatterField, FrontmatterPanelMode } from './frontmatter.types'
@@ -39,4 +43,9 @@ export type {
   Priority,
   DueFilter,
   SortMode,
+  IssueType,
+  KanbanView,
+  BoardGroupBy,
+  Sprint,
+  SprintStatus,
 } from './kanban.types'

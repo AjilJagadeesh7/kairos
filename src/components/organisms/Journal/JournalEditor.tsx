@@ -154,7 +154,6 @@ export function JournalEditor({ date }: JournalEditorProps) {
         shortLabel={shortLabel}
         isToday={isToday}
         content={content}
-        editorRootRef={editorRootRef}
         saveStatus={saveStatus}
         readingMode={readingMode}
         showHistory={showHistory}

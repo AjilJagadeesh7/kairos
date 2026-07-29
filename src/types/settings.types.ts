@@ -1,4 +1,4 @@
-export type CoreSection = 'general' | 'storage-sync' | 'storage' | 'tags' | 'callouts' | 'ai' | 'keyboard' | 'logs' | 'about' | 'publish'
+export type CoreSection = 'general' | 'storage-sync' | 'tags' | 'callouts' | 'ai' | 'keyboard' | 'logs' | 'about' | 'publish'
 // 'plugins' and 'marketplace' are built-in extension sections.
 // (string & {}) keeps autocomplete for named literals while allowing
 // plugin-registered string ids at runtime without a type error.

@@ -5,6 +5,7 @@ import { usePluginRegistry } from '../../../plugins/pluginContext'
 import { SyncStatusBadge } from '../../molecules/SyncStatusBadge'
 import { SlotRenderer } from '../../molecules/SlotRenderer'
 import { THEME_REGISTRY } from '../../../themes/registry'
+import { ThemeOptionList } from '../../molecules/ThemeOptionList'
 import { todayDate } from '../../../store/useJournalStore'
 import { Icon } from '../../../icons/Icon'
 import { AppLogo } from '../../atoms/AppLogo'
@@ -38,8 +39,10 @@ function Tooltip({ label, children }: { label: string; children: React.ReactNode
     setVisible(false)
   }
 
+  // Focus/blur as well as hover, so the label is reachable from the keyboard.
+  // The control itself still needs its own aria-label — this popover is visual.
   return (
-    <div className="relative" onMouseEnter={show} onMouseLeave={hide}>
+    <div className="relative" onMouseEnter={show} onMouseLeave={hide} onFocus={show} onBlur={hide}>
       {children}
       {visible && (
         <div
@@ -82,10 +85,12 @@ function CompactThemePicker({ value, onChange }: { value: ThemeMode; onChange: (
   }, [open])
 
   return (
-    <Tooltip label={`Theme: ${current.label}`}>
+    <Tooltip label={`Theme: ${current.label} · ${current.isDark ? 'Dark' : 'Light'}`}>
       <div ref={ref} className="relative">
         <button
           type="button"
+          aria-label="Theme"
+          aria-expanded={open}
           onClick={() => setOpen(v => !v)}
           className={`relative flex h-11 w-12 items-center justify-center transition-colors ${
             open ? 'text-text' : 'text-text3 hover:text-text'
@@ -97,32 +102,9 @@ function CompactThemePicker({ value, onChange }: { value: ThemeMode; onChange: (
         </button>
 
         {open && (
-          <div className="absolute bottom-0 left-full z-50 ml-2 w-48 overflow-hidden rounded-lg border border-border bg-surface py-1 shadow-xl">
-            <SectionLabel className="px-3 pb-1 pt-1.5">Theme</SectionLabel>
-            {THEME_REGISTRY.map(theme => (
-              <button
-                key={theme.id}
-                type="button"
-                onClick={() => { onChange(theme.id); setOpen(false) }}
-                className={`flex w-full items-center gap-2.5 px-3 py-1.5 text-xs transition ${
-                  theme.id === value ? 'bg-accent/10 text-accent font-semibold' : 'text-text hover:bg-surface3'
-                }`}
-              >
-                <span
-                  className="relative inline-block h-3.5 w-3.5 shrink-0 rounded-full border border-white/20"
-                  style={{ background: theme.swatchBg }}
-                >
-                  <span
-                    className="absolute bottom-0 right-0 h-2 w-2 rounded-full border border-white/20"
-                    style={{ background: theme.swatchAccent }}
-                  />
-                </span>
-                {theme.label}
-                {theme.id === value && (
-                  <span className="ml-auto text-[10px] text-accent">✓</span>
-                )}
-              </button>
-            ))}
+          <div className="absolute bottom-0 left-full z-50 ml-2 w-[21rem] rounded-lg border border-border bg-surface p-1.5 shadow-xl">
+            <SectionLabel className="px-2 pb-0.5 pt-1">Theme</SectionLabel>
+            <ThemeOptionList value={value} onSelect={t => { onChange(t); setOpen(false) }} />
           </div>
         )}
       </div>
@@ -148,6 +130,7 @@ function NavBtn({ to, iconName, label, NavIconComponent, activePath, onNav }: {
     <Tooltip label={label}>
       <button
         type="button"
+        aria-label={label}
         onClick={(e) => onNav(dest, label, e)}
         className={`relative flex h-11 w-12 items-center justify-center transition-colors ${
           isActive ? 'text-accent' : 'text-text3 hover:text-text'
@@ -201,6 +184,7 @@ export function ActivityBar() {
       <Tooltip label="Kairos — Home">
         <button
           type="button"
+          aria-label="Kairos — Home"
           onClick={() => {
             const { focusedPaneId, navigatePane } = usePaneStore.getState()
             navigatePane(focusedPaneId, '/')
@@ -233,6 +217,7 @@ export function ActivityBar() {
       {/* Bottom: plugins → sync → theme → settings → sidebar toggle */}
       <div className="flex flex-col items-center pb-1">
         <SlotRenderer slot="activity-bar:bottom" props={{}} />
+        <NavBtn to="/trash" iconName="trash-2" label="Trash" activePath={activePath} onNav={go} />
         <SyncStatusBadge />
         <CompactThemePicker value={theme} onChange={setTheme} />
         <NavBtn to="/settings" iconName="settings-2" label="Settings" activePath={activePath} onNav={go} />
@@ -240,6 +225,7 @@ export function ActivityBar() {
         <Tooltip label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}>
           <button
             type="button"
+            aria-label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
             onClick={() => focusedHasSidebar && setSidebarOpen(!sidebarOpen)}
             className={`relative flex h-9 w-12 items-center justify-center transition-colors ${
               !focusedHasSidebar ? 'pointer-events-none text-text3/30'

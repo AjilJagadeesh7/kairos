@@ -2,6 +2,7 @@ import { usePluginStore } from '../../../../plugins/usePluginStore'
 import { uninstallPlugin } from '../../../../plugins/installPlugin'
 import { Button } from '../../../atoms/Button'
 import { ToggleSwitch } from '../../../atoms/ToggleSwitch'
+import { isMarketplaceEnabled } from '../../../../utils/marketplace'
 import { Icon } from '../../../../icons/Icon'
 
 export function InstalledPlugins() {
@@ -26,7 +27,11 @@ export function InstalledPlugins() {
           </div>
           <div>
             <p className="text-sm font-medium text-text2">No plugins installed yet</p>
-            <p className="mt-0.5 text-xs text-text3">Go to the Marketplace tab to discover plugins.</p>
+            <p className="mt-0.5 text-xs text-text3">
+              {isMarketplaceEnabled()
+                ? 'Go to the Marketplace tab to discover plugins.'
+                : 'Build your own — the developer guide below covers the API and install methods.'}
+            </p>
           </div>
         </div>
       ) : (

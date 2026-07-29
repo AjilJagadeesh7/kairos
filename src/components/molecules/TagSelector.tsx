@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Button } from '../atoms/Button'
 import { ColorPicker } from './ColorPicker'
 import { SectionLabel } from '../atoms/SectionLabel'
-import { TAG_COLOR_PALETTE, tagTextColor } from '../../utils/kanban'
+import { TAG_COLOR_PALETTE, tagTextColor, tagColorFromName as autoColor } from '../../utils/kanban'
 import type { TagRecord } from '../../types'
 import { Icon } from '../../icons/Icon'
 
@@ -12,12 +12,6 @@ interface TagSelectorProps {
   onTagsChange: (tags: string[]) => void
   onTagCreate?: (name: string, color: string) => void
   availableTags?: TagRecord[]
-}
-
-function autoColor(name: string): string {
-  let h = 5381
-  for (let i = 0; i < name.length; i++) h = ((h << 5) + h) ^ name.charCodeAt(i)
-  return TAG_COLOR_PALETTE[Math.abs(h) % TAG_COLOR_PALETTE.length]
 }
 
 export function TagSelector({ selectedTags, onTagsChange, onTagCreate, availableTags = [] }: TagSelectorProps): JSX.Element {

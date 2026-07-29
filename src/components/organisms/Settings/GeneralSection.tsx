@@ -4,7 +4,8 @@ import { useAppStore } from '../../../store/useAppStore'
 import { ThemeSelect } from '../../molecules/ThemeSelect'
 import { FontSelect } from '../../molecules/FontSelect'
 import { SectionCard } from '../../molecules/SectionCard'
-import type { FontOption, FontWeight } from '../../../types'
+import { TrashRetentionCard } from './TrashRetentionCard'
+import type { FontOption, FontWeight, FontSize } from '../../../types'
 import { Button } from '../../atoms/Button'
 import { Icon } from '../../../icons/Icon'
 
@@ -24,6 +25,8 @@ export function GeneralSection() {
   const setFont        = useAppStore((s) => s.setFont)
   const fontWeight     = useAppStore((s) => s.fontWeight)
   const setFontWeight  = useAppStore((s) => s.setFontWeight)
+  const fontSize       = useAppStore((s) => s.fontSize)
+  const setFontSize    = useAppStore((s) => s.setFontSize)
   const userName       = useAppStore((s) => s.userName)
   const setUserName    = useAppStore((s) => s.setUserName)
   const newTabPage     = useAppStore((s) => s.newTabPage)
@@ -54,6 +57,10 @@ export function GeneralSection() {
 
   function handleWeightChange(w: FontWeight) {
     setFontWeight(w)
+  }
+
+  function handleSizeChange(s: FontSize) {
+    setFontSize(s)
   }
 
   return (
@@ -121,15 +128,19 @@ export function GeneralSection() {
 
       <SectionCard title="Font">
         <p className="mb-4 text-xs text-[rgb(var(--text-2))]">
-          Choose the typeface and weight used throughout the app.
+          Choose the typeface, weight and size used throughout the app.
         </p>
         <FontSelect
           value={font}
           weight={fontWeight}
+          size={fontSize}
           onFontChange={(f, fallback) => void handleFontChange(f, fallback)}
           onWeightChange={(w) => void handleWeightChange(w)}
+          onSizeChange={(s) => void handleSizeChange(s)}
         />
       </SectionCard>
+
+      <TrashRetentionCard />
     </div>
   )
 }

@@ -5,14 +5,12 @@ import type { EditorDraftProps } from '../../../types'
 
 export interface ExportMenuProps {
   note: EditorDraftProps['note']
-  exportingPDF: boolean
-  onExportPDF: () => void
   size: 'sm' | 'md'
 }
 
 type FeedbackState = 'idle' | 'saving' | 'saved' | 'error'
 
-export function ExportMenu({ note, exportingPDF, onExportPDF, size }: ExportMenuProps) {
+export function ExportMenu({ note, size }: ExportMenuProps) {
   const [mdState,   setMdState]   = useState<FeedbackState>('idle')
   const [htmlState, setHtmlState] = useState<FeedbackState>('idle')
 
@@ -71,17 +69,6 @@ export function ExportMenu({ note, exportingPDF, onExportPDF, size }: ExportMenu
           className={`shrink-0 text-text3 ${htmlState === 'saving' ? 'animate-spin' : ''}`}
         />
         {label(htmlState, 'HTML (.html)')}
-      </button>
-
-      <div className="border-t border-border" />
-
-      <button type="button" className={cls} disabled={exportingPDF} onClick={onExportPDF}>
-        <Icon
-          name={exportingPDF ? 'loader-2' : 'file-down'}
-          size={iconSize}
-          className={`shrink-0 text-text3 ${exportingPDF ? 'animate-spin' : ''}`}
-        />
-        {exportingPDF ? 'Exporting…' : 'PDF (.pdf)'}
       </button>
     </div>
   )

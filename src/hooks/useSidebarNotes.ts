@@ -4,16 +4,10 @@ import { useAppStore } from '../store/useAppStore'
 import { useConfirmStore } from '../store/useConfirmStore'
 import { useSemanticSearch } from './useSemanticSearch'
 import { searchNotes, isIndexReady } from '../search/noteIndex'
-import { TAG_COLOR_PALETTE } from '../utils/kanban'
+import { tagColorFromName as tagColor } from '../utils/kanban'
 import type { Note, TagRecord } from '../types'
 
 export type DateFilter = 'any' | 'today' | 'week' | 'month'
-
-function tagColor(name: string): string {
-  let h = 5381
-  for (let i = 0; i < name.length; i++) h = ((h << 5) + h) ^ name.charCodeAt(i)
-  return TAG_COLOR_PALETTE[Math.abs(h) % TAG_COLOR_PALETTE.length]
-}
 
 function withinDateRange(iso: string, filter: DateFilter): boolean {
   if (filter === 'any') return true

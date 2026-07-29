@@ -70,7 +70,7 @@ interface CanvasToolbarProps {
   canvas: Canvas
   onAddText: () => void
   onAddNote: () => void
-  onAddWeb: () => void
+  onAddAttachment: () => void
   showMinimap: boolean
   onToggleMinimap: () => void
   selectMode: boolean
@@ -82,7 +82,7 @@ interface CanvasToolbarProps {
 }
 
 export function CanvasToolbar({
-  canvas, onAddText, onAddNote, onAddWeb,
+  canvas, onAddText, onAddNote, onAddAttachment,
   showMinimap, onToggleMinimap,
   selectMode, onToggleSelectMode,
   canUndo, canRedo, onUndo, onRedo,
@@ -99,9 +99,9 @@ export function CanvasToolbar({
       {SEP}
       <IconBtn label={selectMode ? 'Pan mode' : 'Select mode — drag to rubber-band'} icon="mouse-pointer-2" onClick={onToggleSelectMode} active={selectMode} />
       {SEP}
-      <ToolBtn label="Text"     icon="sticky-note" onClick={onAddText} />
-      <ToolBtn label="Note"     icon="file-text"   onClick={onAddNote} />
-      <ToolBtn label="Web page" icon="globe"        onClick={onAddWeb} />
+      <ToolBtn label="Text"       icon="sticky-note" onClick={onAddText} />
+      <ToolBtn label="Note"       icon="file-text"   onClick={onAddNote} />
+      <ToolBtn label="Attachment" icon="paperclip"   onClick={onAddAttachment} />
       {SEP}
       <IconBtn label="Fit view"   icon="crosshair" onClick={() => fitView({ padding: 0.12, duration: 300 })} />
       <IconBtn label={showMinimap ? 'Hide minimap' : 'Minimap'} icon="layers" onClick={onToggleMinimap} active={showMinimap} />

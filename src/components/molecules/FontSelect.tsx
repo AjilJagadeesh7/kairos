@@ -1,4 +1,4 @@
-import type { FontOption, FontWeight } from '../../types'
+import type { FontOption, FontWeight, FontSize } from '../../types'
 import { SectionLabel } from '../atoms/SectionLabel'
 
 interface FontDef {
@@ -43,6 +43,14 @@ export const FONT_WEIGHTS: { value: FontWeight; label: string; numeric: number }
   { value: 'medium',  label: 'Medium',  numeric: 500 },
 ]
 
+/** `px` mirrors FONT_SIZE_MAP in useAppStartup — the root font-size each option applies. */
+export const FONT_SIZES: { value: FontSize; label: string; px: number }[] = [
+  { value: 'small',   label: 'Small',   px: 14 },
+  { value: 'default', label: 'Default', px: 16 },
+  { value: 'large',   label: 'Large',   px: 18 },
+  { value: 'xlarge',  label: 'Larger',  px: 20 },
+]
+
 function getAllFonts(): FontDef[] {
   return FONT_GROUPS.flatMap(g => g.fonts)
 }
@@ -52,11 +60,13 @@ const PREVIEW = 'The quick brown fox'
 interface FontSelectProps {
   value: FontOption
   weight: FontWeight
+  size: FontSize
   onFontChange: (f: FontOption, fallbackWeight?: FontWeight) => void
   onWeightChange: (w: FontWeight) => void
+  onSizeChange: (s: FontSize) => void
 }
 
-export function FontSelect({ value, weight, onFontChange, onWeightChange }: FontSelectProps): JSX.Element {
+export function FontSelect({ value, weight, size, onFontChange, onWeightChange, onSizeChange }: FontSelectProps): JSX.Element {
   const selectedFont = getAllFonts().find(f => f.value === value)
   const availableWeights = selectedFont?.weights ?? ['regular']
 
@@ -155,6 +165,44 @@ export function FontSelect({ value, weight, onFontChange, onWeightChange }: Font
           </div>
         </div>
       )}
+
+      {/* Size picker — sets the root font size, scaling text and spacing app-wide */}
+      <div>
+        <SectionLabel className="mb-2.5">Size</SectionLabel>
+        <div className="flex flex-wrap gap-2.5">
+          {FONT_SIZES.map(s => {
+            const selected = size === s.value
+            return (
+              <button
+                key={s.value}
+                type="button"
+                onClick={() => onSizeChange(s.value)}
+                className={`flex flex-col items-center justify-end gap-1.5 rounded-xl border-2 px-5 py-3 transition-all ${
+                  selected
+                    ? 'border-[rgb(var(--accent))] bg-[rgb(var(--accent))]/5'
+                    : 'border-[rgb(var(--border))] hover:border-[rgb(var(--text-3))] hover:bg-[rgb(var(--surface-3))]'
+                }`}
+              >
+                <span
+                  className="flex h-7 items-end leading-none text-[rgb(var(--text))]"
+                  style={{
+                    fontFamily: selectedFont ? `'${selectedFont.family}', ui-sans-serif, ui-serif` : 'inherit',
+                    fontSize: `${s.px + 6}px`,
+                  }}
+                >
+                  Aa
+                </span>
+                <span className={`text-[10px] uppercase tracking-wider ${
+                  selected ? 'font-semibold text-[rgb(var(--accent))]' : 'text-[rgb(var(--text-3))]'
+                }`}>
+                  {s.label}
+                </span>
+                <span className="text-[9px] text-[rgb(var(--text-3))]">{s.px}px</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }

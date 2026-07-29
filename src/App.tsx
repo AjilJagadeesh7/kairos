@@ -3,6 +3,8 @@ import { Toaster } from 'sonner'
 import { useAppStore } from './store/useAppStore'
 import { usePaneStore } from './store/usePaneStore'
 import { useAppStartup } from './hooks/useAppStartup'
+import { useClickProbe } from './hooks/useClickProbe'
+import { isDarkTheme } from './themes/registry'
 import { useAutoSync } from './hooks/useAutoSync'
 import { useVaultWatcher } from './hooks/useVaultWatcher'
 import { useAndroidBack } from './hooks/useAndroidBack'
@@ -23,7 +25,7 @@ import { useCalloutStyles } from './hooks/useCalloutStyles'
 import { MobileNav } from './components/organisms/MobileNav/MobileNav'
 import { MobileHeader } from './components/organisms/MobileHeader/MobileHeader'
 
-const DARK_THEMES = new Set(['dark', 'cyberpunk', 'dracula', 'nord', 'catppuccin'])
+// Derived from the registry so adding a theme can't leave this behind.
 
 function AppInner() {
   const theme          = useAppStore(s => s.theme)
@@ -33,6 +35,7 @@ function AppInner() {
   const [showShortcuts, setShowShortcuts]           = useState(false)
   const [showCommandPalette, setShowCommandPalette] = useState(false)
   useAppStartup()
+  useClickProbe()   // dev-only; logs what element actually receives each click
   useAutoSync()
   useCalloutStyles()
   useAndroidBack()
@@ -111,7 +114,7 @@ function AppInner() {
       </div>
       <Toaster
         position="bottom-right"
-        theme={DARK_THEMES.has(theme) ? 'dark' : 'light'}
+        theme={isDarkTheme(theme) ? 'dark' : 'light'}
         richColors
         closeButton
       />

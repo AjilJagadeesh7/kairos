@@ -2,9 +2,11 @@ import { useEffect } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '../store/useAppStore'
 import { usePaneStore } from '../store/usePaneStore'
+import { useTrashSweeper } from './useTrashSweeper'
+import { isDarkTheme } from '../themes/registry'
 import { initPlainFolder, isPlainFolderConnected } from '../sync/plainFolder'
 import { initLogger } from '../logger/logger'
-import type { FontOption, FontWeight } from '../types/ui.types'
+import type { FontOption, FontWeight, FontSize } from '../types/ui.types'
 
 async function drainOfflineQueue() {
   const { getPending, dequeue } = await import('../sync/offlineQueue')
@@ -42,6 +44,7 @@ const FONT_FAMILIES: Record<FontOption, string> = {
 }
 
 const FONT_WEIGHT_MAP: Record<FontWeight, string> = { light: '300', regular: '400', medium: '500' }
+const FONT_SIZE_MAP: Record<FontSize, string> = { small: '14px', default: '16px', large: '18px', xlarge: '20px' }
 
 function goToSettings(section = 'vault') {
   const { focusedPaneId, navigatePane } = usePaneStore.getState()
@@ -52,6 +55,10 @@ export function useAppStartup() {
   const theme      = useAppStore(s => s.theme)
   const font       = useAppStore(s => s.font)
   const fontWeight = useAppStore(s => s.fontWeight)
+  const fontSize   = useAppStore(s => s.fontSize)
+
+  // Retention timer: purge expired trash on startup, then hourly.
+  useTrashSweeper()
 
   // Drain offline queue when connectivity returns
   useEffect(() => {
@@ -64,8 +71,10 @@ export function useAppStartup() {
   useEffect(() => {
     const root = document.documentElement
     root.dataset.theme = theme
-    if (theme === 'light') root.classList.remove('dark')
-    else root.classList.add('dark')
+    // Themed palettes now ship light AND dark variants, so the `.dark` class
+    // (which drives Tailwind's dark: utilities) comes from the registry rather
+    // than "anything that isn't 'light'".
+    root.classList.toggle('dark', isDarkTheme(theme))
     localStorage.setItem('kairos.theme', theme)
   }, [theme])
 
@@ -81,9 +90,24 @@ export function useAppStartup() {
   }, [fontWeight])
 
   useEffect(() => {
+    document.documentElement.style.setProperty('--app-font-size', FONT_SIZE_MAP[fontSize] ?? '16px')
+    localStorage.setItem('kairos.fontSize', fontSize)
+  }, [fontSize])
+
+  useEffect(() => {
     void (async () => {
       // Mark session start in the log now that the React tree and Tauri bridge are ready
       initLogger()
+
+      // Mobile OTA: tell Capgo the running bundle booted OK, so it won't roll
+      // back to the previous bundle. Must run early (within appReadyTimeout).
+      try {
+        const { isMobile } = await import('../utils/platform')
+        if (isMobile()) {
+          const { CapacitorUpdater } = await import('@capgo/capacitor-updater')
+          await CapacitorUpdater.notifyAppReady()
+        }
+      } catch { /* capgo not present in web/desktop builds */ }
 
       const { initLocalFolder } = await import('../sync/localFolder')
       const { setS3Config } = await import('../sync/s3')
@@ -103,6 +127,8 @@ export function useAppStartup() {
           if (saved.theme)       store.setTheme(saved.theme)
           if (saved.font)        store.setFont(saved.font)
           if (saved.fontWeight)  store.setFontWeight(saved.fontWeight)
+          if (saved.fontSize)    store.setFontSize(saved.fontSize)
+          if (saved.trashRetentionDays !== undefined) store.setTrashRetentionDays(saved.trashRetentionDays)
           if (saved.aiUrl)       store.setAiUrl(saved.aiUrl)
           if (saved.storageChoices) store.setStorageChoices(saved.storageChoices)
           if (saved.s3Config !== undefined && saved.s3Config !== store.s3Config) {
@@ -233,6 +259,28 @@ export function useAppStartup() {
           }
         }
       } catch { /* updater not available or no pubkey set yet */ }
+
+      // Mobile OTA update check (self-hosted via GitHub Releases)
+      try {
+        const { isMobile } = await import('../utils/platform')
+        if (isMobile()) {
+          const { checkMobileUpdate } = await import('./useMobileUpdater')
+          const result = await checkMobileUpdate()
+          if (result.kind === 'available') {
+            toast(`Update available — v${result.version}`, {
+              description: result.notes || 'A new version of Kairos is ready to install.',
+              duration: Infinity,
+              action: { label: 'View & install', onClick: () => goToSettings('updates') },
+            })
+          } else if (result.kind === 'needs-native') {
+            toast('App update required', {
+              description: 'A newer version needs the latest app build. Update Kairos from where you installed it.',
+              duration: 12000,
+              action: { label: 'Details', onClick: () => goToSettings('updates') },
+            })
+          }
+        }
+      } catch { /* offline, or capgo unavailable (web/desktop build) */ }
 
       const { pingS3, isS3Connected } = await import('../sync/s3')
       const { pingWebDAV, isWebDAVConnected } = await import('../sync/webdav')

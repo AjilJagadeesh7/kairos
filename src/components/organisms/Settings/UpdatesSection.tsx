@@ -1,19 +1,29 @@
 import { useEffect } from 'react'
 import { useAppUpdater } from '../../../hooks/useAppUpdater'
-import { CHANGELOG } from '../../../data/changelog'
-import { isDesktop } from '../../../utils/platform'
+import { useMobileUpdater } from '../../../hooks/useMobileUpdater'
+import { isDesktop, isMobile } from '../../../utils/platform'
 import { SectionCard } from '../../molecules/SectionCard'
+import { ChangelogAccordion } from './ChangelogAccordion'
+import { SectionLabel } from '../../atoms/SectionLabel'
 import { Button } from '../../atoms/Button'
 import { Icon } from '../../../icons/Icon'
 
 const VERSION = __APP_VERSION__
 
 export function UpdatesSection() {
-  const { status, info, progressPct, error, checkForUpdate, downloadAndInstall, restart } = useAppUpdater()
+  // Desktop uses the Tauri updater; mobile uses the Capgo OTA updater. Both
+  // hooks are called unconditionally (React rules); we drive the one matching
+  // the platform. They return the same shape.
+  const desktopUpdater = useAppUpdater()
+  const mobileUpdater  = useMobileUpdater()
+  const onMobile       = isMobile()
+  const hasUpdater     = isDesktop() || onMobile
+  const { status, info, progressPct, error, checkForUpdate, downloadAndInstall, restart } =
+    onMobile ? mobileUpdater : desktopUpdater
 
   useEffect(() => {
-    if (isDesktop()) void checkForUpdate()
-  }, [checkForUpdate])
+    if (hasUpdater) void checkForUpdate()
+  }, [hasUpdater, checkForUpdate])
 
   return (
     <div className="space-y-4">
@@ -23,14 +33,19 @@ export function UpdatesSection() {
             <p className="text-sm text-text2">
               Current version: <span className="font-mono font-medium text-text">v{VERSION}</span>
             </p>
-            {!isDesktop() && (
+            {onMobile && (
               <p className="mt-1 text-xs text-text3">
-                Auto-updates are available on the desktop app only.
+                Updates download over the air — no app store reinstall needed.
+              </p>
+            )}
+            {!hasUpdater && (
+              <p className="mt-1 text-xs text-text3">
+                Auto-updates are available in the desktop and mobile apps.
               </p>
             )}
           </div>
 
-          {isDesktop() && (
+          {hasUpdater && (
             <div className="flex shrink-0 flex-col items-end gap-2">
               {status === 'idle' || status === 'up-to-date' ? (
                 <div className="flex items-center gap-2">
@@ -72,8 +87,18 @@ export function UpdatesSection() {
                     <Icon name="check-circle-2" size={13} /> Ready to install
                   </span>
                   <Button variant="primary" size="md" onClick={() => void restart()}>
-                    Restart &amp; Update
+                    {onMobile ? 'Reload & Update' : 'Restart & Update'}
                   </Button>
+                </div>
+              ) : status === 'needs-native' ? (
+                <div className="flex max-w-[16rem] flex-col items-end gap-1.5 text-right">
+                  <span className="flex items-center gap-1 text-xs text-amber-400">
+                    <Icon name="alert-triangle" size={13} /> App update required
+                  </span>
+                  <span className="text-xs text-text3">
+                    v{info?.version} needs a newer app build. Update Kairos from where you
+                    installed it (store or APK).
+                  </span>
                 </div>
               ) : status === 'error' ? (
                 <div className="flex flex-col items-end gap-1.5">
@@ -97,53 +122,10 @@ export function UpdatesSection() {
         )}
       </SectionCard>
 
-      <SectionCard title="Changelog">
-        <div className="space-y-6">
-          {CHANGELOG.map(entry => (
-            <div key={entry.version}>
-              <div className="mb-3 flex items-center gap-2">
-                <span className="font-mono text-sm font-semibold text-text">v{entry.version}</span>
-                <span className="text-xs text-text3">{entry.date}</span>
-                {entry.version === VERSION && (
-                  <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-medium text-accent">
-                    current
-                  </span>
-                )}
-              </div>
-
-              {entry.highlights.map(h => (
-                <p key={h} className="mb-2 text-sm text-text2">{h}</p>
-              ))}
-
-              {entry.added && entry.added.length > 0 && (
-                <ChangeGroup label="Added" color="text-green-500" items={entry.added} />
-              )}
-              {entry.improved && entry.improved.length > 0 && (
-                <ChangeGroup label="Improved" color="text-blue-400" items={entry.improved} />
-              )}
-              {entry.fixed && entry.fixed.length > 0 && (
-                <ChangeGroup label="Fixed" color="text-amber-400" items={entry.fixed} />
-              )}
-            </div>
-          ))}
-        </div>
-      </SectionCard>
-    </div>
-  )
-}
-
-function ChangeGroup({ label, color, items }: { label: string; color: string; items: string[] }) {
-  return (
-    <div className="mb-3">
-      <p className={`mb-1 text-[11px] font-semibold uppercase tracking-wider ${color}`}>{label}</p>
-      <ul className="space-y-0.5">
-        {items.map(item => (
-          <li key={item} className="flex items-start gap-1.5 text-xs text-text2">
-            <span className={`mt-1 shrink-0 ${color}`}>•</span>
-            {item}
-          </li>
-        ))}
-      </ul>
+      <section>
+        <SectionLabel className="mb-2 px-1">Changelog</SectionLabel>
+        <ChangelogAccordion />
+      </section>
     </div>
   )
 }

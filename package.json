@@ -1,15 +1,18 @@
 {
   "name": "kairos",
   "private": true,
-  "version": "0.0.6",
+  "version": "0.0.7",
   "license": "AGPL-3.0-or-later",
   "type": "module",
+  "otaMinNative": "0.0.7",
+  "otaComment": "otaMinNative = the earliest APK/AAB version whose native shell can run OTA web bundles. It MUST equal the first release whose APK bundles @capgo/capacitor-updater, and MUST be bumped to the new version whenever a release changes anything native (android/, ios/, or adds a Capacitor plugin). Web-only releases leave it untouched, so existing installs keep receiving OTA updates.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "tauri": "tauri",
     "build:mobile": "vite build && npx cap sync",
+    "build:ota": "vite build && node scripts/build-mobile-bundle.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -21,13 +24,13 @@
     "@capacitor/ios": "^7.6.6",
     "@capacitor/preferences": "^7.0.0",
     "@capacitor/share": "^7.0.0",
+    "@capgo/capacitor-updater": "^7.50.2",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@emoji-mart/data": "^1.2.1",
     "@emoji-mart/react": "^1.1.1",
     "@excalidraw/excalidraw": "^0.18.1",
-    "@googleapis/drive": "^20.1.0",
     "@milkdown/core": "^7.20.0",
     "@milkdown/crepe": "^7.20.0",
     "@milkdown/ctx": "^7.20.0",
@@ -64,7 +67,6 @@
     "dexie": "^4.4.2",
     "dexie-react-hooks": "^4.4.0",
     "fflate": "^0.8.3",
-    "gapi-script": "^1.2.0",
     "html2pdf.js": "^0.14.0",
     "js-yaml": "^4.1.1",
     "katex": "^0.17.0",
@@ -85,6 +87,9 @@
   "overrides": {
     "protobufjs": "^7.5.9",
     "lodash-es": "^4.18.1",
+    "@xenova/transformers": {
+      "sharp": "^0.35.0"
+    },
     "@excalidraw/excalidraw": {
       "nanoid": "^3.3.8"
     },
@@ -119,6 +124,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "happy-dom": "^20.11.1",
     "playwright": "^1.60.0",
     "postcss": "^8.5.9",
     "tailwindcss": "^3.4.17",

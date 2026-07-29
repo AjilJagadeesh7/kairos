@@ -1,4 +1,64 @@
-import type { Board, KanbanTask, KanbanColumn, KanbanFilters, KanbanTag, Priority } from '../types/kanban.types'
+import type { Board, KanbanTask, KanbanColumn, KanbanFilters, KanbanTag, Priority, IssueType } from '../types/kanban.types'
+import type { IconToken } from '../icons/tokens'
+
+/** Display metadata for each Jira-style issue type. */
+export const ISSUE_TYPE_META: Record<IssueType, { label: string; icon: IconToken; color: string }> = {
+  story:   { label: 'Story',   icon: 'bookmark',     color: '#22c55e' },
+  task:    { label: 'Task',    icon: 'check-square', color: '#3b82f6' },
+  bug:     { label: 'Bug',     icon: 'bug',          color: '#ef4444' },
+  subtask: { label: 'Subtask', icon: 'git-fork',     color: '#6366f1' },
+}
+
+export const ISSUE_TYPES: IssueType[] = ['story', 'task', 'bug', 'subtask']
+/** Types allowed for a top-level (parentless) issue. */
+export const PARENT_ISSUE_TYPES: IssueType[] = ['story', 'task', 'bug']
+/** Types allowed for a child issue nested under a parent. */
+export const CHILD_ISSUE_TYPES: IssueType[] = ['subtask', 'bug']
+
+/** Derives a stable key prefix (e.g. "KAI") from a board title. */
+export function deriveKeyPrefix(title: string): string {
+  const words = title.trim().split(/\s+/).filter(Boolean)
+  const raw = words.length >= 2
+    ? words.slice(0, 3).map(w => w[0]).join('')
+    : (words[0] ?? 'TASK').slice(0, 4)
+  return raw.replace(/[^A-Za-z0-9]/g, '').toUpperCase() || 'TASK'
+}
+
+export function taskKey(prefix: string, n: number): string {
+  return `${prefix}-${n}`
+}
+
+/** Extracts the trailing sequence number from a key, or 0 if absent. */
+export function keySeq(key: string | undefined): number {
+  if (!key) return 0
+  const m = key.match(/-(\d+)$/)
+  return m ? Number(m[1]) : 0
+}
+
+/** The board's terminal "done" column id (explicit flag, else the last column). */
+export function doneColumnId(board: Board): string | undefined {
+  const flagged = board.columns.find(c => c.isDone)
+  if (flagged) return flagged.id
+  const sorted = [...board.columns].sort((a, b) => a.order - b.order)
+  return sorted[sorted.length - 1]?.id
+}
+
+export function isTaskDone(task: KanbanTask, board: Board): boolean {
+  return task.columnId === doneColumnId(board)
+}
+
+/** A task/issue is overdue when it has a past due date and isn't in a done column. */
+export function isTaskOverdue(task: KanbanTask, board: Board): boolean {
+  return !!task.due && !isTaskDone(task, board) && isDueOverdue(task.due)
+}
+
+/** Child-issue rollup: how many first-class children sit in the done column. */
+export function calcChildProgress(task: KanbanTask, board: Board): { done: number; total: number } {
+  const children = board.tasks.filter(t => t.parentId === task.id)
+  if (children.length === 0) return { done: 0, total: 0 }
+  const done = children.filter(c => isTaskDone(c, board)).length
+  return { done, total: children.length }
+}
 
 export const PRIORITY_COLORS: Record<Priority, string> = {
   low: '#94a3b8',
@@ -25,6 +85,16 @@ export function tagTextColor(hexBg: string): string {
   const g = parseInt(hexBg.slice(3, 5), 16)
   const b = parseInt(hexBg.slice(5, 7), 16)
   return (0.299 * r + 0.587 * g + 0.114 * b) > 140 ? '#111111' : '#ffffff'
+}
+
+/**
+ * Stable fallback colour for a tag that has no explicit colour, derived from its
+ * name (DJB2) so the same tag always looks the same everywhere it appears.
+ */
+export function tagColorFromName(name: string): string {
+  let h = 5381
+  for (let i = 0; i < name.length; i++) h = ((h << 5) + h) ^ name.charCodeAt(i)
+  return TAG_COLOR_PALETTE[Math.abs(h) % TAG_COLOR_PALETTE.length]
 }
 
 export function nextTagColor(existingTags: KanbanTag[]): string {
@@ -99,6 +169,23 @@ export function filterAndSortTasks(tasks: KanbanTask[], filters: KanbanFilters):
     result = result.filter(t => t.priority && filters.priorities.includes(t.priority))
   }
 
+  if (filters.types?.length) {
+    result = result.filter(t => filters.types.includes(t.type))
+  }
+
+  if (filters.query?.trim()) {
+    const q = filters.query.trim().toLowerCase()
+    result = result.filter(t =>
+      t.title.toLowerCase().includes(q) || (t.key ?? '').toLowerCase().includes(q),
+    )
+  }
+
+  if (filters.sprint) {
+    result = filters.sprint === '__backlog__'
+      ? result.filter(t => !t.sprintId)
+      : result.filter(t => t.sprintId === filters.sprint)
+  }
+
   if (filters.due !== 'all') {
     result = result.filter(t => {
       if (!t.due) return false
@@ -141,17 +228,29 @@ export function exportBoardToMarkdown(board: Board): string {
 
   const lines: string[] = [`# ${board.title}`, '']
 
+  const doneCol = doneColumnId(board)
   for (const col of sortedColumns) {
     lines.push(`## ${col.title}`, '')
+    // Only top-level issues head a column; children are nested beneath their parent.
     const colTasks = board.tasks
-      .filter(t => t.columnId === col.id)
+      .filter(t => t.columnId === col.id && !t.parentId)
       .sort((a, b) => a.order - b.order)
 
     for (const task of colTasks) {
-      const done = !!task.completedAt
+      const done = !!task.completedAt || task.columnId === doneCol
+      const keyStr = task.key ? `${task.key} ` : ''
       const tagStr = task.tags.map(t => `#${t}`).join(' ')
       const tagsDisplay = tagStr ? ` ${tagStr}` : ''
-      lines.push(`- [${done ? 'x' : ' '}] ${task.title}${tagsDisplay}`)
+      lines.push(`- [${done ? 'x' : ' '}] ${keyStr}${task.title}${tagsDisplay}`)
+
+      const children = board.tasks
+        .filter(t => t.parentId === task.id)
+        .sort((a, b) => a.order - b.order)
+      for (const child of children) {
+        const childDone = !!child.completedAt || child.columnId === doneCol
+        const ck = child.key ? `${child.key} ` : ''
+        lines.push(`  - [${childDone ? 'x' : ' '}] ${ck}${child.title}`)
+      }
 
       for (const sub of [...task.subtasks].sort((a, b) => a.order - b.order)) {
         const subDone = sub.done || (sub.checkpoints.length > 0 && sub.checkpoints.every(c => c.done))
@@ -197,6 +296,11 @@ export function duplicateBoardWithNewIds(board: Board, idFn: () => string): Boar
       })),
     }
   })
+
+  // Re-point parent links to the duplicated child ids.
+  for (const t of tasks) {
+    if (t.parentId) t.parentId = taskIdMap.get(t.parentId) ?? t.parentId
+  }
 
   const now = new Date().toISOString()
   return {

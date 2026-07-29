@@ -17,8 +17,6 @@ interface EditorReadingModeProps {
   tags: string[]
   tagMap: Map<string, TagRecord>
   editorRootRef: React.RefObject<HTMLDivElement>
-  exportingPDF: boolean
-  onExportPDF: () => void
   onExitReadingMode: () => void
   onContentChange: (v: string) => void
   onWikilinkClick: (t: string) => void
@@ -26,7 +24,7 @@ interface EditorReadingModeProps {
 
 export function EditorReadingMode({
   note, title, content, restoreKey, tags, tagMap,
-  editorRootRef, exportingPDF, onExportPDF,
+  editorRootRef,
   onExitReadingMode, onContentChange, onWikilinkClick,
 }: EditorReadingModeProps) {
   const bannerUrl = useResolvedBanner(note.userFrontmatter?.banner as string | undefined)
@@ -47,7 +45,7 @@ export function EditorReadingMode({
               <Icon name="chevron-down" size={11} />
             </div>
           }>
-            <ExportMenu note={note} exportingPDF={exportingPDF} onExportPDF={onExportPDF} size="sm" />
+            <ExportMenu note={note} size="sm" />
           </Dropdown>
           <button
             type="button"

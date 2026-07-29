@@ -4,12 +4,13 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useKanbanStore } from '../store/useKanbanStore'
 import { BoardList } from '../components/organisms/Kanban/BoardList/BoardList'
 import { BoardView } from '../components/organisms/Kanban/BoardView/BoardView'
+import { TaskPageView } from '../components/organisms/Kanban/TaskDetail/TaskPageView'
 import { ErrorBoundary } from '../components/common/ErrorBoundary'
 import { VaultBanner } from '../components/common/VaultBanner'
 import { Icon } from '../icons/Icon'
 
 export function KanbanPage(): JSX.Element {
-  const { boardId } = useParams<{ boardId?: string }>()
+  const { boardId, taskId } = useParams<{ boardId?: string; taskId?: string }>()
   const navigate = useNavigate()
   const boards = useKanbanStore(s => s.boards)
   const isLoaded = useKanbanStore(s => s.isLoaded)
@@ -43,12 +44,23 @@ export function KanbanPage(): JSX.Element {
   }
 
   const activeBoard = boardId ? boards.find(b => b.id === boardId) : null
+  const activeTask = activeBoard && taskId ? activeBoard.tasks.find(t => t.id === taskId) ?? null : null
 
   return (
     <main className="flex h-full flex-col overflow-hidden bg-[rgb(var(--bg))]">
       <VaultBanner />
-      <ErrorBoundary resetKeys={[boardId]}>
-        {activeBoard ? (
+      <ErrorBoundary resetKeys={[boardId, taskId]}>
+        {activeBoard && taskId ? (
+          activeTask
+            ? <TaskPageView board={activeBoard} task={activeTask} />
+            : (
+              <div className="flex flex-1 flex-col items-center justify-center gap-3 text-[rgb(var(--text-3))]">
+                <Icon name="alert-triangle" size={24} />
+                <p className="text-sm">Issue not found.</p>
+                <button onClick={() => navigate(`/kanban/${boardId}`)} className="text-xs text-[rgb(var(--accent))] hover:underline">Back to board</button>
+              </div>
+            )
+        ) : activeBoard ? (
           <BoardView board={activeBoard} />
         ) : (
           <BoardList boards={[...boards].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())} />

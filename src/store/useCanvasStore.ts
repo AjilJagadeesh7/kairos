@@ -67,6 +67,12 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       deleteCanvas: (canvasId) => {
+        const doomed = get().canvases.find(c => c.id === canvasId)
+        if (doomed) {
+          void import('../trash/trashService')
+            .then(({ trashCanvas }) => trashCanvas(doomed))
+            .catch(err => console.warn('[trash] capture failed:', err))
+        }
         set(s => ({ canvases: s.canvases.filter(c => c.id !== canvasId) }))
         void fsDel(canvasId)
       },

@@ -91,11 +91,11 @@ function buildDecorations(doc: Node): DecorationSet {
     // Mark the title paragraph
     decos.push(Decoration.node(pos + 1, pos + 1 + first.nodeSize, { class: 'callout-title' }))
 
-    // Hide the [!TYPE] marker token — leave any custom title text visible.
-    // pos+2 = first char inside the paragraph; account for any leading whitespace.
+    // Dim the [!TYPE] marker token (kept in the flow — hiding it with
+    // display:none breaks caret placement and scrambles text while typing).
     const leadingSpaces = rawText.length - trimmed.length
     const markerStart = pos + 2 + leadingSpaces
-    decos.push(Decoration.inline(markerStart, markerStart + match[0].length, { style: 'display:none' }))
+    decos.push(Decoration.inline(markerStart, markerStart + match[0].length, { class: 'callout-marker' }))
 
     return false
   })

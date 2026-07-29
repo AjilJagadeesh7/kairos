@@ -8,6 +8,7 @@ export type UpdateStatus =
   | 'available'
   | 'downloading'
   | 'ready'
+  | 'needs-native' // mobile-only: OTA bundle requires a newer APK than installed
   | 'error'
 
 export interface UpdateInfo {

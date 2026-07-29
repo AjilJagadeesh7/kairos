@@ -11,15 +11,16 @@ import { useCanvasHistory } from '../../../hooks/useCanvasHistory'
 import { CanvasToolbar } from './CanvasToolbar'
 import { CanvasNodeContextMenu } from './CanvasNodeContextMenu'
 import { NotePickerModal } from './NotePickerModal'
+import { AttachmentPickerModal } from './AttachmentPickerModal'
 import { TextNode } from './nodes/TextNode'
 import { NoteNode } from './nodes/NoteNode'
-import { WebNode } from './nodes/WebNode'
+import { AttachmentNode } from './nodes/AttachmentNode'
 import { useCanvasNodeTypes } from '../../../plugins/pluginContext'
 import { toFlowNodes, toCanvasNode, toCanvasEdge } from './canvasUtils'
 import { useCanvasKeyboard } from './useCanvasKeyboard'
-import type { Canvas, CanvasEdge } from '../../../types'
+import type { Attachment, Canvas, CanvasEdge } from '../../../types'
 
-const BUILTIN_NODE_TYPES = { text: TextNode, note: NoteNode, web: WebNode }
+const BUILTIN_NODE_TYPES = { text: TextNode, note: NoteNode, attachment: AttachmentNode }
 
 interface NodeCtxMenu { x: number; y: number; nodeId: string; locked: boolean }
 interface EditingEdge  { id: string; x: number; y: number; label: string }
@@ -36,6 +37,7 @@ function CanvasInner({ canvas }: { canvas: Canvas }) {
   const [edges,          setEdges]          = useState<Edge[]>(() => canvas.edges as Edge[])
   const [showMinimap,    setShowMinimap]    = useState(false)
   const [showNotePicker, setShowNotePicker] = useState(false)
+  const [showFilePicker,  setShowFilePicker] = useState(false)
   const [selectMode,     setSelectMode]     = useState(false)
   const [nodeCtxMenu,    setNodeCtxMenu]    = useState<NodeCtxMenu | null>(null)
   const [editingEdge,    setEditingEdge]    = useState<EditingEdge | null>(null)
@@ -162,10 +164,10 @@ function CanvasInner({ canvas }: { canvas: Canvas }) {
   }
 
   // ── Add nodes ───────────────────────────────────────────────────────────
-  function addNode(type: 'text' | 'note' | 'web', data: Record<string, unknown>, pos?: { x: number; y: number }) {
+  function addNode(type: 'text' | 'note' | 'attachment', data: Record<string, unknown>, pos?: { x: number; y: number }) {
     const id       = crypto.randomUUID()
     const position = pos ?? { x: 160 + Math.random() * 120, y: 100 + Math.random() * 80 }
-    const sizes: Record<string, { w: number; h: number }> = { text: { w: 260, h: 140 }, note: { w: 260, h: 180 }, web: { w: 420, h: 300 } }
+    const sizes: Record<string, { w: number; h: number }> = { text: { w: 260, h: 140 }, note: { w: 260, h: 180 }, attachment: { w: 360, h: 300 } }
     const { w, h } = sizes[type]
     history.push({ nodes: nodesRef.current, edges: edgesRef.current })
     setNodes(ns => [...ns, { id, type, position, data, width: w, height: h, dragHandle: '.drag-handle' }])
@@ -175,6 +177,11 @@ function CanvasInner({ canvas }: { canvas: Canvas }) {
   function handleAddNote(noteId: string, noteTitle: string) {
     setShowNotePicker(false)
     addNode('note', { noteId, noteTitle })
+  }
+
+  function handleAddAttachment(att: Attachment) {
+    setShowFilePicker(false)
+    addNode('attachment', { attachmentId: att.id, name: att.name })
   }
 
   const onPaneDoubleClick = useCallback((e: React.MouseEvent) => {
@@ -208,12 +215,19 @@ function CanvasInner({ canvas }: { canvas: Canvas }) {
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden">
-      <div className="absolute inset-x-2 top-3 z-10 flex overflow-x-auto md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:overflow-visible">
+      {/* Hugs the toolbar at every width. The old `inset-x-2` below `md` made this
+          a full-width transparent strip at z-10, which swallowed every click that
+          landed beside the toolbar — panning, node selection and the tab bar row
+          all went dead in a narrow window while working fine when maximised. */}
+      {/* z-[100]: React Flow elevates selected/dragged nodes to z-index 1000+ and
+          its panels sit at 5, so the old z-10 let a node overlapping the toolbar
+          render above it and swallow the clicks. */}
+      <div className="absolute left-1/2 top-3 z-[100] flex w-max max-w-[calc(100%-1rem)] -translate-x-1/2 overflow-x-auto">
         <CanvasToolbar
           canvas={canvas}
           onAddText={() => addNode('text', { text: '' })}
           onAddNote={() => setShowNotePicker(true)}
-          onAddWeb={() => addNode('web', { url: '' })}
+          onAddAttachment={() => setShowFilePicker(true)}
           showMinimap={showMinimap}
           onToggleMinimap={() => setShowMinimap(v => !v)}
           selectMode={selectMode}
@@ -262,6 +276,8 @@ function CanvasInner({ canvas }: { canvas: Canvas }) {
       </ReactFlow>
 
       {showNotePicker && <NotePickerModal onPick={handleAddNote} onClose={() => setShowNotePicker(false)} />}
+
+      {showFilePicker && <AttachmentPickerModal onPick={handleAddAttachment} onClose={() => setShowFilePicker(false)} />}
 
       {nodeCtxMenu && (
         <CanvasNodeContextMenu

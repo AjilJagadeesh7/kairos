@@ -17,6 +17,25 @@ export type StorageTarget = 'indexdb' | 'local'
 export const SYNC_PROVIDERS = ['local', 's3', 'webdav', 'kairos'] as const
 export type SyncProviderId = (typeof SYNC_PROVIDERS)[number]
 
+/** Credentials for an S3-compatible bucket (AWS S3, R2, MinIO, B2, Wasabi, …). */
+export interface S3Config {
+  /** Base endpoint URL, no trailing slash. e.g. https://xxxx.r2.cloudflarestorage.com */
+  endpoint: string
+  bucket: string
+  accessKey: string
+  secretKey: string
+  /** "auto" for R2, "us-east-1" for AWS, etc. */
+  region: string
+}
+
+/** Credentials for a WebDAV server (Nextcloud, ownCloud, Koofr, …). */
+export interface WebDAVConfig {
+  /** Full URL to the sync directory, no trailing slash. */
+  url: string
+  username: string
+  password: string
+}
+
 export interface SyncProviderMeta {
   id: SyncProviderId
   /** Full human label, e.g. "S3 / Backblaze B2". */

@@ -103,7 +103,8 @@ function taskDoc(task: KanbanTask, boardTitle: string): UnifiedDoc {
     id: `task:${task.id}`,
     kind: 'task',
     title: task.title,
-    meta: boardTitle,
+    // Issue key + type so "KAI-42" and "bug" surface the issue.
+    meta: [task.key, task.type, boardTitle].filter(Boolean).join(' '),
     body: (task.description ?? '').slice(0, 1000),
     updatedAt: task.updatedAt,
   }

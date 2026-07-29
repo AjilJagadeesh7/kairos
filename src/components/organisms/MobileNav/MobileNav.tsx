@@ -21,6 +21,7 @@ const NAV: NavEntry[] = [
   { to: '/canvas',  iconName: 'pen-tool',      label: 'Canvas'  },
   { to: '/attachments', iconName: 'paperclip', label: 'Attachments' },
   { to: '/graph',   iconName: 'network',       label: 'Graph'   },
+  { to: '/trash',   iconName: 'trash-2',       label: 'Trash'   },
 ]
 
 const SETTINGS: NavEntry = { to: '/settings', iconName: 'settings-2', label: 'Settings' }

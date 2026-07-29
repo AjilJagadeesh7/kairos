@@ -100,6 +100,14 @@ jobs:
           echo "Resolved versionName=$NAME versionCode=$CODE"
       - name: Build web assets & sync Capacitor
         run: npm run build:mobile
+      - name: Build mobile OTA bundle
+        # Zips the just-built dist/ into kairos-mobile-<ver>.zip and writes
+        # mobile-latest.json, which the app polls for self-hosted OTA updates.
+        # minNative is read from package.json "otaMinNative" by the script.
+        env:
+          OTA_VERSION: ${{ steps.ver.outputs.name }}
+          OTA_REPO: ${{ github.repository }}
+        run: node scripts/build-mobile-bundle.mjs
       - name: Build APK + AAB
         env:
           ANDROID_VERSION_NAME: ${{ steps.ver.outputs.name }}
@@ -131,6 +139,11 @@ jobs:
           # The .aab only exists for signed release builds; glob picks up what's there.
           ARTIFACTS=( Kairos-"${GITHUB_REF_NAME}".apk )
           [ -f "Kairos-${GITHUB_REF_NAME}.aab" ] && ARTIFACTS+=( "Kairos-${GITHUB_REF_NAME}.aab" )
+          # Self-hosted OTA assets (web bundle + manifest) live at repo root.
+          OTA_ZIP="../mobile-bundle/kairos-mobile-${GITHUB_REF_NAME#v}.zip"
+          if [ -f "$OTA_ZIP" ]; then
+            ARTIFACTS+=( "$OTA_ZIP" "../mobile-bundle/mobile-latest.json" )
+          fi
           gh release upload "$GITHUB_REF_NAME" "${ARTIFACTS[@]}" \
             --clobber --repo "$GITHUB_REPOSITORY" \
           || gh release create "$GITHUB_REF_NAME" "${ARTIFACTS[@]}" \

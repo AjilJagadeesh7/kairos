@@ -1,26 +1,19 @@
 /**
  * S3-compatible sync provider — plain .md files, no encryption.
  * Works with Cloudflare R2, AWS S3, MinIO, Backblaze B2, Wasabi, etc.
- * Uses AWS Signature V4 built entirely from the Web Crypto API — no SDK required.
+ * Request signing lives in `s3Signature.ts`, transport in `s3Transport.ts`.
  */
 import { serializeNote, deserializeNote, noteIdToPath } from '../adapters/storage/noteSerializer'
-import { isDesktop, isMobile } from '../utils/platform'
-import type { Note, SyncCategory } from '../types'
+import { buildAuthHeaders, sha256HexBytes } from './s3Signature'
+import { s3Send, s3Fetch, s3SendBinary } from './s3Transport'
+import type { Note, S3Config, SyncCategory } from '../types'
 import type { RemoteBlob, RemoteProvider } from './remoteProvider'
+
+export type { S3Config }
 
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
-
-export type S3Config = {
-  /** Base endpoint URL, no trailing slash. e.g. https://xxxx.r2.cloudflarestorage.com */
-  endpoint: string
-  bucket: string
-  accessKey: string
-  secretKey: string
-  /** "auto" for R2, "us-east-1" for AWS, etc. */
-  region: string
-}
 
 let _config: S3Config | null = null
 
@@ -34,114 +27,6 @@ export function isS3Connected(): boolean {
 
 const ROOT_PREFIX = 'kairos/'
 const KEY_PREFIX = `${ROOT_PREFIX}notes/`
-
-// ---------------------------------------------------------------------------
-// AWS Signature V4 — pure Web Crypto
-// ---------------------------------------------------------------------------
-
-function toHex(buf: ArrayBuffer): string {
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('')
-}
-
-async function sha256Hex(data: string): Promise<string> {
-  return toHex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(data)))
-}
-
-async function hmac(keyBuf: BufferSource, data: string): Promise<ArrayBuffer> {
-  const key = await crypto.subtle.importKey('raw', keyBuf, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
-  return crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data))
-}
-
-async function deriveSigKey(secretKey: string, dateStamp: string, region: string): Promise<ArrayBuffer> {
-  const k1 = await hmac(new TextEncoder().encode('AWS4' + secretKey), dateStamp)
-  const k2  = await hmac(k1, region)
-  const k3  = await hmac(k2, 's3')
-  return hmac(k3, 'aws4_request')
-}
-
-async function sha256HexBytes(bytes: Uint8Array): Promise<string> {
-  return toHex(await crypto.subtle.digest('SHA-256', bytes as BufferSource))
-}
-
-async function buildAuthHeaders(
-  method: string, url: URL, bodyStr: string, cfg: S3Config,
-  extraSignedHeaders: Record<string, string> = {},
-  bodyHashOverride?: string,
-): Promise<Record<string, string>> {
-  const now       = new Date()
-  const amzDate   = now.toISOString().replace(/[:-]|\.\d{3}/g, '').slice(0, 15) + 'Z'
-  const dateStamp = amzDate.slice(0, 8)
-  const bodyHash  = bodyHashOverride ?? await sha256Hex(bodyStr)
-
-  const headers: Record<string, string> = {
-    host: url.host, 'x-amz-content-sha256': bodyHash, 'x-amz-date': amzDate, ...extraSignedHeaders,
-  }
-
-  const sortedKeys       = Object.keys(headers).sort()
-  const signedHeadersStr = sortedKeys.join(';')
-  const canonicalHeaders = sortedKeys.map((k) => `${k}:${headers[k]}\n`).join('')
-  const canonicalQueryStr = [...url.searchParams.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-    .join('&')
-
-  const canonicalRequest = [method, url.pathname, canonicalQueryStr, canonicalHeaders, signedHeadersStr, bodyHash].join('\n')
-  const credScope        = `${dateStamp}/${cfg.region}/s3/aws4_request`
-  const stringToSign     = `AWS4-HMAC-SHA256\n${amzDate}\n${credScope}\n${await sha256Hex(canonicalRequest)}`
-  const sigBuf           = await hmac(await deriveSigKey(cfg.secretKey, dateStamp, cfg.region), stringToSign)
-
-  return {
-    ...headers,
-    Authorization: `AWS4-HMAC-SHA256 Credential=${cfg.accessKey}/${credScope}, SignedHeaders=${signedHeadersStr}, Signature=${toHex(sigBuf)}`,
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Low-level transport
-//
-// SigV4 requests carry "non-simple" headers (Authorization, x-amz-*), so a
-// plain browser fetch fires a CORS preflight the bucket answers with 403 →
-// the request never runs. We bypass the WebView network stack exactly like
-// WebDAV does:
-//   - Desktop (Tauri): rewrite https:// → mvproxy:// so the Rust scheme handler
-//     performs the request server-side (it answers preflight locally, forwards
-//     every header/verb/body, and sets Host from the URL — which still matches
-//     the signed host header).
-//   - Mobile (Capacitor): native HTTP bridge, not subject to CORS.
-//   - Web: plain fetch (works only if the bucket sends CORS headers).
-// ---------------------------------------------------------------------------
-
-interface S3Result {
-  status: number
-  ok: boolean
-  text: () => Promise<string>
-}
-
-async function s3Send(method: string, url: URL, body: string | null, headers: Record<string, string>): Promise<S3Result> {
-  if (isMobile()) {
-    const { CapacitorHttp } = await import('@capacitor/core')
-    const res = await CapacitorHttp.request({
-      url: url.toString(), method, headers, data: body ?? undefined, responseType: 'text',
-    })
-    const text = typeof res.data === 'string' ? res.data : (res.data == null ? '' : String(res.data))
-    return { status: res.status, ok: res.status >= 200 && res.status < 300, text: () => Promise.resolve(text) }
-  }
-
-  const target = isDesktop() ? url.toString().replace(/^https?:\/\//, 'mvproxy://') : url.toString()
-  const res = await fetch(target, { method, headers, body: body ?? undefined })
-  return { status: res.status, ok: res.ok, text: () => res.text() }
-}
-
-async function s3Fetch(method: string, url: URL, body: string | null, cfg: S3Config,
-  extraSignedHeaders: Record<string, string> = {}): Promise<S3Result> {
-  const authHeaders = await buildAuthHeaders(method, url, body ?? '', cfg, extraSignedHeaders)
-  const res = await s3Send(method, url, body, authHeaders)
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`S3 ${method} ${url.pathname} → ${res.status}: ${text.slice(0, 300)}`)
-  }
-  return res
-}
 
 // ---------------------------------------------------------------------------
 // URL helpers
@@ -289,21 +174,6 @@ export async function deleteS3Blob(category: SyncCategory, filename: string): Pr
 // Binary objects — media attachments at kairos/<relPath>
 // ---------------------------------------------------------------------------
 
-async function s3SendBinary(method: string, url: URL, body: Uint8Array | null, headers: Record<string, string>): Promise<{ ok: boolean; status: number; bytes: Uint8Array | null }> {
-  if (isMobile()) {
-    if (method === 'GET') {
-      const { CapacitorHttp } = await import('@capacitor/core')
-      const res = await CapacitorHttp.request({ url: url.toString(), method, headers, responseType: 'arraybuffer' })
-      const ok = res.status >= 200 && res.status < 300
-      return { ok, status: res.status, bytes: ok && typeof res.data === 'string' ? s3Base64ToBytes(res.data) : null }
-    }
-    throw new Error('S3 binary upload not supported on mobile')
-  }
-  const target = isDesktop() ? url.toString().replace(/^https?:\/\//, 'mvproxy://') : url.toString()
-  const res = await fetch(target, { method, headers, body: body as BodyInit | undefined })
-  return { ok: res.ok, status: res.status, bytes: res.ok && method === 'GET' ? new Uint8Array(await res.arrayBuffer()) : null }
-}
-
 export async function putS3Binary(relPath: string, bytes: Uint8Array): Promise<void> {
   const cfg = _config
   if (!cfg) throw new Error('S3 not configured')
@@ -342,13 +212,6 @@ export async function deleteS3Binary(relPath: string): Promise<void> {
   const headers = await buildAuthHeaders('DELETE', url, '', cfg)
   const res     = await s3Send('DELETE', url, null, headers)
   if (!res.ok && res.status !== 404) throw new Error(`S3 DELETE binary ${url.pathname} → ${res.status}`)
-}
-
-function s3Base64ToBytes(b64: string): Uint8Array {
-  const bin = atob(b64)
-  const out = new Uint8Array(bin.length)
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i)
-  return out
 }
 
 export const s3Provider: RemoteProvider = {

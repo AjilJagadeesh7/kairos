@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use tauri::{AppHandle, State, WebviewUrl, WebviewWindowBuilder};
+use tauri::State;
 use tauri::http::{Request, Response};
 use tokio::sync::Mutex;
 use serde::{Deserialize, Serialize};
@@ -19,6 +19,12 @@ const STRIP_RESPONSE_HEADERS: &[&str] = &[
     "x-frame-options",
     "content-security-policy",
     "content-security-policy-report-only",
+    // We always request identity encoding, so upstream's length/encoding no
+    // longer describe what we hand back. A stale content-length truncates the
+    // response; a stale content-encoding makes the webview try to gunzip plain
+    // text (blank page).
+    "content-length",
+    "content-encoding",
 ];
 
 async fn proxy_fetch(request: Request<Vec<u8>>) -> Response<Vec<u8>> {
@@ -70,7 +76,8 @@ async fn proxy_fetch(request: Request<Vec<u8>>) -> Response<Vec<u8>> {
     let mut fwd_headers: Vec<(String, String)> = Vec::new();
     for (name, value) in request.headers() {
         let n = name.as_str().to_lowercase();
-        if !matches!(n.as_str(), "host" | "origin" | "referer") {
+        // accept-encoding is dropped deliberately — see the identity header below.
+        if !matches!(n.as_str(), "host" | "origin" | "referer" | "accept-encoding") {
             if let Ok(v) = value.to_str() { fwd_headers.push((name.as_str().to_string(), v.to_string())); }
         }
     }
@@ -78,12 +85,17 @@ async fn proxy_fetch(request: Request<Vec<u8>>) -> Response<Vec<u8>> {
 
     let mut req = client.request(method, &target);
     for (name, v) in fwd_headers { req = req.header(name.as_str(), v); }
+    // reqwest is built without the gzip/brotli features, so it hands back
+    // compressed bytes verbatim — which we could not then rewrite. Asking for
+    // identity keeps every body plain text so inject_base_tag is safe.
+    req = req.header("accept-encoding", "identity");
     // PROPFIND carries an XML query body; PUT carries the file contents.
     if !body.is_empty() { req = req.body(body); }
 
     match req.send().await {
         Ok(resp) => {
             let status = resp.status().as_u16();
+
             let mut builder = Response::builder().status(status);
             for (name, value) in resp.headers() {
                 let n = name.as_str().to_lowercase();
@@ -91,6 +103,9 @@ async fn proxy_fetch(request: Request<Vec<u8>>) -> Response<Vec<u8>> {
                 if let Ok(v) = value.to_str() { builder = builder.header(name.as_str(), v); }
             }
             builder = builder.header("Access-Control-Allow-Origin", "*");
+
+            // Every body passes through byte-for-byte — WebDAV XML, JSON and
+            // binaries are all this proxy carries now.
             let body = resp.bytes().await.unwrap_or_default().to_vec();
             builder.body(body).unwrap_or_else(|_| Response::builder().status(500).body(vec![]).unwrap())
         }
@@ -100,21 +115,6 @@ async fn proxy_fetch(request: Request<Vec<u8>>) -> Response<Vec<u8>> {
             .body(format!("proxy error: {e}").into_bytes())
             .unwrap(),
     }
-}
-
-// ---------------------------------------------------------------------------
-// In-app browser command (unchanged)
-// ---------------------------------------------------------------------------
-
-#[tauri::command]
-fn open_app_browser(app: AppHandle, url: String) -> Result<(), String> {
-    let parsed = url.parse::<reqwest::Url>().map_err(|e| e.to_string())?;
-    let label = format!("appbrowser-{}", std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis());
-    WebviewWindowBuilder::new(&app, label, WebviewUrl::External(parsed))
-        .title("Kairos — Browser").inner_size(1100.0, 760.0).resizable(true)
-        .build().map_err(|e| e.to_string())?;
-    Ok(())
 }
 
 // ---------------------------------------------------------------------------
@@ -326,7 +326,6 @@ pub fn run() {
     tauri::Builder::default()
         .manage(search_state)
         .invoke_handler(tauri::generate_handler![
-            open_app_browser,
             build_search_index,
             update_note_index,
             remove_note_index,
