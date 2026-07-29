@@ -48,8 +48,8 @@ export const THEME_REGISTRY: ThemeEntry[] = [
   { id: 'doom64-dark',     label: 'Doom 64',         isDark: true,  swatchBg: '#0C0806', swatchAccent: '#C0392B' },
 
   // Neo Brutalism — hard borders, high contrast
-  { id: 'brutalism-light', label: 'Neo Brutalism',   isDark: false, swatchBg: '#FDFBF0', swatchAccent: '#FFD400' },
-  { id: 'brutalism-dark',  label: 'Neo Brutalism',   isDark: true,  swatchBg: '#111111', swatchAccent: '#FFE500' },
+  { id: 'brutalism-light', label: 'Neo Brutalism',   isDark: false, swatchBg: '#FFFFFF', swatchAccent: '#FF3333' },
+  { id: 'brutalism-dark',  label: 'Neo Brutalism',   isDark: true,  swatchBg: '#000000', swatchAccent: '#FF6666' },
 
   // Retro Arcade — cabinet art: amber, cyan, bold outlines
   { id: 'arcade-light',    label: 'Retro Arcade',    isDark: false, swatchBg: '#FFF6E5', swatchAccent: '#E4322B' },

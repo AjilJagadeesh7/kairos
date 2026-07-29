@@ -605,30 +605,30 @@
 /* Borders are deliberately full-contrast (near-black on light, near-white on
    dark) — the hard outline is the whole point of the style. */
 :root[data-theme='brutalism-light'] {
-  --bg:          253 251 240;   /* #FDFBF0 paper                             */
-  --surface:     255 255 255;   /* #FFFFFF                                   */
-  --surface-2:   245 240 220;   /* #F5F0DC                                   */
-  --surface-3:   237 230 204;   /* #EDE6CC                                   */
-  --border:       17  17  17;   /* #111111 hard black                        */
-  --text:         10  10  10;   /* #0A0A0A                                   */
-  --text-2:       61  61  61;   /* #3D3D3D                                   */
-  --text-3:      110 110 110;   /* #6E6E6E                                   */
-  --accent:      255 212   0;   /* #FFD400 signal yellow                     */
-  --accent-fg:    10  10  10;   /* #0A0A0A black on yellow                   */
-  --accent-hover:255 196   0;   /* #FFC400                                   */
+  --bg:          255 255 255;   /* #FFFFFF background                        */
+  --surface:     255 255 255;   /* #FFFFFF card — separated by border, not fill */
+  --surface-2:   240 240 240;   /* #F0F0F0 muted / sidebar                   */
+  --surface-3:   224 224 224;   /* #E0E0E0 hover step                        */
+  --border:        0   0   0;   /* #000000 hard black                        */
+  --text:          0   0   0;   /* #000000 foreground                        */
+  --text-2:       51  51  51;   /* #333333 muted foreground                  */
+  --text-3:      102 102 102;   /* #666666 placeholders                      */
+  --accent:      255  51  51;   /* #FF3333 primary                           */
+  --accent-fg:   255 255 255;   /* #FFFFFF white on red                      */
+  --accent-hover:230  26  26;   /* #E61A1A                                   */
 }
 :root[data-theme='brutalism-dark'] {
-  --bg:           17  17  17;   /* #111111                                   */
-  --surface:      26  26  26;   /* #1A1A1A                                   */
-  --surface-2:    32  32  32;   /* #202020                                   */
-  --surface-3:    44  44  44;   /* #2C2C2C                                   */
-  --border:      245 245 245;   /* #F5F5F5 hard white                        */
-  --text:        250 250 250;   /* #FAFAFA                                   */
-  --text-2:      196 196 196;   /* #C4C4C4                                   */
-  --text-3:      138 138 138;   /* #8A8A8A                                   */
-  --accent:      255 229   0;   /* #FFE500                                   */
-  --accent-fg:    17  17  17;   /* #111111                                   */
-  --accent-hover:255 240  77;   /* #FFF04D                                   */
+  --bg:            0   0   0;   /* #000000 background                        */
+  --surface:      26  26  26;   /* #1A1A1A muted                             */
+  --surface-2:    51  51  51;   /* #333333 card / popover                    */
+  --surface-3:    64  64  64;   /* #404040 hover step                        */
+  --border:      255 255 255;   /* #FFFFFF hard white                        */
+  --text:        255 255 255;   /* #FFFFFF foreground                        */
+  --text-2:      204 204 204;   /* #CCCCCC muted foreground                  */
+  --text-3:      153 153 153;   /* #999999 placeholders                      */
+  --accent:      255 102 102;   /* #FF6666 primary                           */
+  --accent-fg:     0   0   0;   /* #000000 black on red                      */
+  --accent-hover:255 138 138;   /* #FF8A8A                                   */
 }
 
 /* ─── BUBBLEGUM BOLD BORDERS ─────────────────────────────────────────────── */
@@ -663,6 +663,68 @@
 :root[data-theme^='bubblegum'] .btn-pill.active,
 :root[data-theme^='bubblegum'] .btn-pill[aria-selected='true'] {
   box-shadow: 2px 2px 0 rgb(var(--border));
+}
+
+/* ─── NEO BRUTALISM HARD EDGES ───────────────────────────────────────────── */
+/* The palette on its own just reads "red and white" — the style *is* the
+   geometry: square corners, 2px full-contrast outlines, and a hard drop shadow
+   with no blur or spread. Applies to both variants unless noted. */
+
+/* Square everything except deliberately circular UI — avatars, radios, status
+   dots and toggle knobs stay round, as they do in the reference design. */
+:root[data-theme^='brutalism'] [class*='rounded']:not([class*='rounded-full']) {
+  border-radius: 0;
+}
+:root[data-theme^='brutalism'] .btn:not(.btn-pill) {
+  border-radius: 0;
+}
+
+/* Hard outlines. Only all-sides `.border` is thickened; directional dividers
+   (border-t/-b) stay hairline so panel seams don't get noisy. Inputs inherit
+   this through their own `border` class — styling every <input> instead would
+   box the deliberately borderless ones (note title, inline rename, edge label). */
+:root[data-theme^='brutalism'] .border {
+  border-width: 2px;
+}
+/* Buttons that read as buttons get the outline; ghost/link stay chrome-free so
+   toolbars don't turn into a grid of boxes. */
+:root[data-theme^='brutalism'] .btn-primary,
+:root[data-theme^='brutalism'] .btn-danger,
+:root[data-theme^='brutalism'] .btn-hollow {
+  border: 2px solid rgb(var(--border));
+}
+
+/* The offset shadow is light-mode only: on a black background the same shadow
+   in black vanishes and in white it glows, so dark stays flat and border-led —
+   which is exactly how the reference dark theme reads. */
+:root[data-theme='brutalism-light'] .shadow-sm,
+:root[data-theme='brutalism-light'] .shadow,
+:root[data-theme='brutalism-light'] .shadow-md,
+:root[data-theme='brutalism-light'] .shadow-lg,
+:root[data-theme='brutalism-light'] .shadow-xl,
+:root[data-theme='brutalism-light'] .shadow-2xl,
+:root[data-theme='brutalism-light'] .btn-primary,
+:root[data-theme='brutalism-light'] .btn-danger {
+  box-shadow: 4px 4px 0 0 rgb(var(--border));
+}
+:root[data-theme='brutalism-dark'] .shadow-sm,
+:root[data-theme='brutalism-dark'] .shadow,
+:root[data-theme='brutalism-dark'] .shadow-md,
+:root[data-theme='brutalism-dark'] .shadow-lg,
+:root[data-theme='brutalism-dark'] .shadow-xl,
+:root[data-theme='brutalism-dark'] .shadow-2xl {
+  box-shadow: none;
+}
+
+/* Filled buttons press into the page instead of fading. */
+:root[data-theme='brutalism-light'] .btn-primary:hover,
+:root[data-theme='brutalism-light'] .btn-danger:hover {
+  box-shadow: 5px 5px 0 0 rgb(var(--border));
+  opacity: 1;
+}
+:root[data-theme='brutalism-light'] .btn-primary:active,
+:root[data-theme='brutalism-light'] .btn-danger:active {
+  box-shadow: 1px 1px 0 0 rgb(var(--border));
 }
 
 html, body, #root {
@@ -941,8 +1003,8 @@ body {
 :root[data-theme='caffeine-dark']   .milkdown { --crepe-color-inline-code: #D9A876; }
 :root[data-theme='doom64-light']    .milkdown { --crepe-color-inline-code: #A93226; }
 :root[data-theme='doom64-dark']     .milkdown { --crepe-color-inline-code: #E06C4F; }
-:root[data-theme='brutalism-light'] .milkdown { --crepe-color-inline-code: #8A6A00; }
-:root[data-theme='brutalism-dark']  .milkdown { --crepe-color-inline-code: #FFE500; }
+:root[data-theme='brutalism-light'] .milkdown { --crepe-color-inline-code: #0066FF; }
+:root[data-theme='brutalism-dark']  .milkdown { --crepe-color-inline-code: #3399FF; }
 :root[data-theme='arcade-light']    .milkdown { --crepe-color-inline-code: #E4322B; }
 :root[data-theme='arcade-dark']     .milkdown { --crepe-color-inline-code: #8FE3FF; }
 
