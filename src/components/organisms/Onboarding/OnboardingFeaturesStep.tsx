@@ -40,7 +40,7 @@ export function OnboardingFeaturesStep({ headingId, onBack, onNext }: FeaturesSt
         <FeatureCard
           iconName="pen-tool"
           title="Canvas"
-          desc="Arrange notes, text, and web pages on an infinite visual board."
+          desc="Arrange notes, text, and files on an infinite visual board."
         />
         <FeatureCard
           iconName="paperclip"

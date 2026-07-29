@@ -44,7 +44,7 @@ export function CanvasList() {
             <Icon name="pen-tool" size={32} />
             <div>
               <p className="font-medium">No canvases yet</p>
-              <p className="mt-1 text-sm">Create an infinite board for notes, links, and web pages</p>
+              <p className="mt-1 text-sm">Create an infinite board for notes, text, and attachments</p>
             </div>
           </button>
         ) : (

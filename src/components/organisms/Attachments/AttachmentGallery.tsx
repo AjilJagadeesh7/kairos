@@ -5,12 +5,8 @@ import { resolveAttachment, kindFromName } from '../../../attachments/attachment
 import { formatBytes } from '../../../tiers/checks'
 import { EmptyState } from '../../molecules/EmptyState'
 import { Icon } from '../../../icons/Icon'
-import type { IconToken } from '../../../icons/tokens'
-import type { Attachment, AttachmentKind } from '../../../types'
-
-const KIND_ICON: Record<AttachmentKind, IconToken> = {
-  image: 'image', video: 'film', audio: 'music', pdf: 'file-text', file: 'file-down',
-}
+import { KIND_ICON } from '../../../utils/attachmentIcons'
+import type { Attachment } from '../../../types'
 
 /** Grid of all attachments, shown at /attachments when no file is selected. */
 export function AttachmentGallery(): JSX.Element {

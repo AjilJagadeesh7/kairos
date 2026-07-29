@@ -1,4 +1,4 @@
-export type CanvasNodeType = 'text' | 'note' | 'web'
+export type CanvasNodeType = 'text' | 'note' | 'attachment'
 
 export interface CanvasTextData {
   text: string
@@ -12,13 +12,17 @@ export interface CanvasNoteData {
   [key: string]: unknown
 }
 
-export interface CanvasWebData {
-  url: string
-  title?: string
+/** A file from the attachments library placed on the board — document, image,
+ *  video or audio. The bytes live in the attachment record; the node only
+ *  references it by id. */
+export interface CanvasAttachmentData {
+  attachmentId: string
+  /** Snapshot of the filename so a node still reads sensibly if the file is gone. */
+  name?: string
   [key: string]: unknown
 }
 
-export type CanvasNodeData = CanvasTextData | CanvasNoteData | CanvasWebData
+export type CanvasNodeData = CanvasTextData | CanvasNoteData | CanvasAttachmentData
 
 export interface CanvasNode {
   id: string

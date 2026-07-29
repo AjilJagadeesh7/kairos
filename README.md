@@ -13,7 +13,7 @@ No accounts. No cloud required. No telemetry. Your data never leaves your machin
 | **Notes** | Rich markdown editor with wikilinks, transclusion, backlinks, tags, version history, PDF export |
 | **Journal** | Daily entries with a calendar sidebar, full-text search, auto-save |
 | **Kanban** | Drag-and-drop boards with subtasks, priorities, due dates, and note links |
-| **Canvas** | Freeform whiteboard — text cards, embedded notes, web pages, custom nodes |
+| **Canvas** | Freeform whiteboard — text cards, embedded notes, attachments, custom nodes |
 | **Knowledge Graph** | Force-directed graph of wikilink connections between notes |
 | **Plugins** | First-class plugin system — inject UI anywhere, add themes, custom node types, editor blocks |
 
@@ -49,7 +49,7 @@ No accounts. No cloud required. No telemetry. Your data never leaves your machin
 ### Canvas
 
 - Freeform whiteboard powered by ReactFlow
-- Text cards, embedded note cards (live wikilink preview), web page iframes
+- Text cards, embedded note cards (live wikilink preview), attachment cards (documents, images, video, audio)
 - Minimap, fit-view, named canvas list, custom plugin node types
 
 ### Knowledge Graph

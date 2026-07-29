@@ -1,8 +1,20 @@
 import type { Node } from '@xyflow/react'
 import type { CanvasNode, CanvasEdge } from '../../../types'
 
+/**
+ * Canvases saved before the web node was removed still carry `type: 'web'`
+ * nodes. Nothing renders them any more, so degrade each to a text node holding
+ * the page title and URL rather than handing React Flow an unknown type. The
+ * rewrite sticks on the canvas's next save.
+ */
+function migrateLegacyNode(n: CanvasNode): CanvasNode {
+  if ((n.type as string) !== 'web') return n
+  const { url, title } = n.data as { url?: string; title?: string }
+  return { ...n, type: 'text', data: { text: [title, url].filter(Boolean).join('\n') } }
+}
+
 export function toFlowNodes(nodes: CanvasNode[]): Node[] {
-  return nodes.map(n => ({
+  return nodes.map(migrateLegacyNode).map(n => ({
     id:         n.id,
     type:       n.type,
     position:   n.position,
