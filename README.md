@@ -1,21 +1,40 @@
+<div align="center">
+
+<img src="public/logo.png" alt="Kairos" width="88" />
+
 # Kairos
 
-**A privacy-first, local-first knowledge workspace — notes, journal, kanban, canvas, and knowledge graph, all on your device.**
+**A local-first knowledge workspace — notes, journal, kanban, canvas, handwriting and a knowledge graph, all stored as plain files on your own device.**
 
-No accounts. No cloud required. No telemetry. Your data never leaves your machine unless you explicitly turn on sync.
+[![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](./LICENSE)
+[![Release](https://img.shields.io/github/v/release/AjilJagadeesh7/kairos?display_name=tag&color=success)](https://github.com/AjilJagadeesh7/kairos/releases)
+[![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android-lightgrey)](#install)
+
+</div>
+
+No account. No server. No telemetry. Kairos reads and writes an ordinary folder on
+your disk — notes are `.md` files you can open in any editor, and everything else is
+plain JSON. Uninstall the app and your work is still sitting there in readable form.
 
 ---
 
-## What's inside
+## Install
 
-| Module | What it does |
-| ------ | ------------ |
-| **Notes** | Rich markdown editor with wikilinks, transclusion, backlinks, tags, version history, PDF export |
-| **Journal** | Daily entries with a calendar sidebar, full-text search, auto-save |
-| **Kanban** | Drag-and-drop boards with subtasks, priorities, due dates, and note links |
-| **Canvas** | Freeform whiteboard — text cards, embedded notes, attachments, custom nodes |
-| **Knowledge Graph** | Force-directed graph of wikilink connections between notes |
-| **Plugins** | First-class plugin system — inject UI anywhere, add themes, custom node types, editor blocks |
+Grab an installer from the [latest release](https://github.com/AjilJagadeesh7/kairos/releases/latest).
+
+| Platform | Package | Updates |
+| -------- | ------- | ------- |
+| Windows | `.msi` / `.exe` | Built-in updater, checks on launch |
+| macOS (Apple Silicon + Intel) | `.dmg` | Built-in updater, checks on launch |
+| Linux | `.AppImage` / `.deb` | Built-in updater, checks on launch |
+| Android | `.apk` (or `.aab` for Play) | Over-the-air web-bundle updates |
+
+Desktop releases are signed and verified by the updater before install. Android
+builds fetch new web bundles over the air, with a native-compatibility gate that
+declines any bundle the installed shell is too old to run. An iOS project is
+included in the repo but is not distributed — build it yourself with Xcode.
+
+On first launch, choose a folder to be your vault. That's the whole setup.
 
 ---
 
@@ -23,60 +42,109 @@ No accounts. No cloud required. No telemetry. Your data never leaves your machin
 
 ### Notes
 
-- Rich markdown editor (Milkdown / ProseMirror) — bold, italic, tables, code, math, callouts
-- **Wikilinks** — type `[[` to link notes with autocomplete; hover for a preview popover
-- **Transclusion** — type `![[` to embed another note's content as a live card
-- Full-text search (fuzzy + prefix) and semantic AI search via local Ollama
-- Tags with colours, backlinks panel, frontmatter properties, note word/char counts
-- **Version history** — every save is snapshotted; restore any version with one click
-- **11 note templates** — Meeting Notes, Project Plan, Brainstorm, Bug Report, Weekly Review, and more
-- Reading mode, PDF export, Markdown export
+- Markdown editor built on Milkdown / ProseMirror — tables, code blocks, math, callouts, images
+- **Slash commands** — type `/` on an empty line for headings, lists, checklists, quotes, code, tables, dividers and callouts
+- **Wikilinks** — `[[` to link with autocomplete and a hover preview; `![[` to transclude another note as a live card
+- Backlinks panel, coloured tags, frontmatter properties, word and character counts
+- **Annotations** — highlights and sticky notes in reading mode, stored alongside the note so the `.md` stays clean, and re-anchored on render so they survive edits elsewhere
+- **Version history** — every save is snapshotted; restore any version in one click
+- 11 starter templates; Markdown and HTML export
 
-### Journal
+### Journal and periodic notes
 
-- Daily entries keyed by date at `/journal/YYYY-MM-DD`
-- Calendar sidebar with Monday-first grid
-- Search across all entries by content or date
-- Version history per entry, auto-save with 2s debounce + Ctrl+S
+- Daily entries at `/journal/YYYY-MM-DD` with a calendar sidebar
+- Weekly, monthly, quarterly and yearly notes
+- Auto-save (2s debounce, or `Ctrl+S`), per-entry history, search by content or date
 
 ### Kanban
 
-- Multiple boards, drag-and-drop columns and cards
-- Subtasks, checkpoints, priorities (urgent / high / medium / low), due dates, labels
-- Filter by priority, due date, and tag; sort by manual order, priority, or due date
-- Undo / redo per board
+- **Typed issues** — `story`, `task`, `bug`, `subtask`, with parent/child links and their own pages
+- **Readable keys** — each board derives a prefix from its title and issues stable keys like `KAIR-42`
+- **Five views** — Summary, Timeline (Gantt), Backlog, Board and List, each deep-linkable via `?view=`
+- Sprints, swimlanes grouped by parent story, filters by priority/due/tag/type, and per-board undo–redo
+- Purpose-built markdown description editor with a Write/Preview toggle
 
 ### Canvas
 
-- Freeform whiteboard powered by ReactFlow
-- Text cards, embedded note cards (live wikilink preview), attachment cards (documents, images, video, audio)
-- Minimap, fit-view, named canvas list, custom plugin node types
+- Freeform whiteboard powered by React Flow
+- Text cards, live note cards, and attachment cards for documents, images, video and audio
+- Minimap, fit-view, named canvas list, and custom node types from plugins
 
-### Knowledge Graph
+### Pen notes
 
-- Force-directed 2D graph of note–note wikilink connections
-- Tag clustering, neighbourhood focus mode, cosine-similarity semantic edges
-- Right-click node to create a new wikilink, pin nodes, search + highlight
+- Stylus-first handwriting canvas with pressure-sensitive ink
+- Own sidebar, toolbar and version history, saved into the vault like everything else
 
-### Sync (optional, always encrypted)
+### Attachments
 
-- S3-compatible (AWS S3, Backblaze B2, Cloudflare R2, MinIO, any compatible provider)
-- WebDAV
-- Notes are encrypted on-device before upload — the server never sees plaintext
+- File library with tree and gallery views plus an in-app viewer
+- Embed in notes or drop onto a canvas; files are tracked by id, so renaming or moving one never breaks a reference
 
-### AI (fully local)
+### Knowledge graph
 
-- Semantic search via local embeddings (all-MiniLM-L6-v2, runs in-browser via transformers.js)
-- Optional: connect to a local [Ollama](https://ollama.com) instance for LLM features
-- Zero data sent to OpenAI, Anthropic, or any cloud AI service
+- Force-directed 2D graph of wikilink connections between notes
+- Tag clustering, neighbourhood focus mode, node pinning, search and highlight
+- Right-click a node to create a new wikilink
+
+### Trash
+
+- Every delete is recoverable — notes, journal entries, boards, canvases, pen notes and attachments
+- Restore returns an item under its original id, timestamps and folder, rebuilding its vault file, so it is indistinguishable from one that was never deleted
+- Retention is yours to set: forever, 1, 7, 30 or 90 days, swept at startup and hourly
+- Device-local by design — the trash is never synced, so a pull from another device cannot resurrect something you deleted here
+
+### Workspace
+
+- Split panes with tabs, so a board and its notes can sit side by side
+- Command palette (`Ctrl/Cmd+K`) searching every content type at once
+- 18 themes in light and dark, plus font family, weight and size settings
+- Customisable keyboard shortcuts
 
 ---
 
-## Plugin System
+## Your data
 
-Kairos has a first-class plugin system. Plugins are plain JavaScript files that live in your vault — no marketplace account required, no build pipeline needed for simple plugins.
+Kairos owns no database you can't read. The vault is just a folder:
 
-### What plugins can do
+```
+vault/
+├── notes/          *.md — one file per note, YAML frontmatter
+├── journal/        YYYY-MM-DD.md
+├── kanban/         *.json — boards, issues, sprints
+├── canvas/         *.json
+├── pennotes/       ink strokes
+├── attachments/    your files, plus an attachments.json index
+├── history/        notes/ and journal/ version snapshots
+├── plugins/        <plugin-id>/index.js + manifest.json
+└── config/
+```
+
+---
+
+## Sync — bring your own backend
+
+Kairos does not run a sync service. Instead it pushes and pulls your vault against
+storage **you** own, configured in **Settings → Sync**:
+
+| Backend | Works with |
+| ------- | ---------- |
+| Local folder | Anything that syncs a directory — Syncthing, Dropbox, iCloud Drive, a NAS mount |
+| S3-compatible | Cloudflare R2, AWS S3, Backblaze B2, MinIO, Wasabi, any S3 API |
+| WebDAV | Nextcloud, ownCloud, Koofr, pCloud, Box, most NAS boxes |
+
+Enter your own bucket or server credentials; they stay on device. Files are stored
+in the same plain `.md` / `.json` form as your local vault, which keeps them
+readable by any other tool — and means the backend can read them too, so pick
+storage you're willing to trust, or one you host yourself. Changes queue while
+offline and flush when the connection returns.
+
+---
+
+## Plugins
+
+Plugins are plain JavaScript files that live in your vault. No marketplace account,
+no build step, no bundler for simple ones. Every capability is gated by a permission
+declared in the manifest.
 
 | Capability | API | Permission |
 | ---------- | --- | ---------- |
@@ -88,15 +156,14 @@ Kairos has a first-class plugin system. Plugins are plain JavaScript files that 
 | Add editor toolbar buttons | `api.editor.registerToolbarItem(...)` | `editor:extend` |
 | Inject raw Milkdown / ProseMirror plugins | `api.editor.registerMilkdownPlugin(...)` | `editor:extend` |
 | Register custom canvas node types | `api.canvas.registerNodeType(type, Component)` | `canvas:extend` |
-| Override built-in icons | `api.registerIconPack(...)` | `ui:icons` |
+| Override icons, or map icons by rule | `api.registerIconPack(...)` / `registerIconRules(...)` | `ui:icons` |
 | Read and write notes | `api.notes.*` | `read:notes` / `write:notes` |
-| Read and write kanban tasks | `api.kanban.*` | `read:kanban` / `write:kanban` |
+| Read and write kanban issues | `api.kanban.*` | `read:kanban` / `write:kanban` |
 | Subscribe to app events | `api.on(event, handler)` | `events` |
-| Persist plugin data | `api.readPluginData / writePluginData` | — |
+| Persist plugin data | `api.readPluginData` / `writePluginData` | — |
 
-### Available UI slots
-
-Slots are named positions across the app where plugins can inject React components:
+<details>
+<summary><strong>UI slots</strong> — named positions where a plugin can render</summary>
 
 ```
 editor:toolbar:start / end    Notes editor toolbar (left / right)
@@ -114,7 +181,9 @@ layout:status-bar             App-wide status bar
 settings:sidebar:end          Settings sidebar
 ```
 
-### Minimal example
+</details>
+
+### A complete plugin
 
 ```js
 // {vault}/plugins/word-count/index.js
@@ -128,7 +197,7 @@ export default function setup(api) {
         const note = api.notes.get(noteId)
         setCount(note?.content.split(/\s+/).length ?? 0)
       },
-      style: { fontSize: 11, padding: '0 8px' }
+      style: { fontSize: 11, padding: '0 8px' },
     }, count === null ? 'Count words' : `${count} words`)
   }
 
@@ -149,151 +218,94 @@ export default function setup(api) {
 }
 ```
 
-Drop the folder into `{vault}/plugins/` and restart. It appears in **Settings → Plugins** automatically.
-
-Full plugin documentation is available inside the app under **Settings → Plugins → Build a Plugin**.
-
----
-
-## Platforms
-
-| Platform | Method |
-| -------- | ------ |
-| Desktop (Windows, macOS, Linux) | Tauri v2 |
-| Web / PWA | File System Access API |
-| Mobile (iOS, Android) | Capacitor *(in progress)* |
-
-Desktop builds include **over-the-air updates** — the app checks for new releases on startup.
+Drop the folder into `{vault}/plugins/` and restart — it shows up under
+**Settings → Plugins**. Full API reference lives in the app at
+**Settings → Plugins → Build a Plugin**.
 
 ---
 
-## Tech Stack
-
-| Layer | Library |
-| ----- | ------- |
-| UI | React 18 + TypeScript + Vite |
-| Styling | Tailwind CSS v4 + CSS variables theme system |
-| Editor | Milkdown / Crepe (ProseMirror) |
-| Canvas | ReactFlow |
-| Graph | react-force-graph-2d |
-| State | Zustand |
-| Local DB | Dexie.js (IndexedDB) |
-| Storage | Tauri FS (desktop) · File System Access API (web) |
-| Embeddings | transformers.js — all-MiniLM-L6-v2, runs locally |
-| Desktop shell | Tauri v2 |
-| PWA | vite-plugin-pwa + Workbox |
-
----
-
-## Getting Started (Development)
+## Development
 
 ### Prerequisites
 
-- Node.js 20+
-- Rust + Cargo (for desktop builds only)
-- A Chromium-based browser (for File System Access API in web mode)
+- Node.js 20+ (CI builds on the current LTS)
+- Rust and Cargo — desktop builds only
+- JDK 17 and the Android SDK — Android builds only
 
-### Web / PWA
-
-```bash
-npm install
-npm run dev
-```
-
-Open `http://localhost:5173`, click **Set up vault**, and pick a local folder. Notes are saved as plain `.md` files — readable by any text editor.
-
-### Desktop (Tauri)
+### Run it
 
 ```bash
 npm install
-npm run tauri dev
+npm run tauri dev    # desktop shell — the way to run Kairos
+npm run dev          # UI-only dev server at :5173, for fast iteration on components
+npm test             # vitest
+npm run lint
+npm run build        # typecheck + production web build
 ```
 
 ```bash
-# Production build
-npm run tauri build
+npm run tauri build     # desktop installers
+npm run build:mobile    # web build + cap sync
 ```
 
----
-
-## Project Structure
+### Layout
 
 ```
 src/
 ├── components/
-│   ├── atoms/              # Button, TagBadge, IconButton, ToggleSwitch, …
-│   ├── molecules/          # SlotRenderer, ModalShell, TagSelector, Dropdown, …
-│   └── organisms/
-│       ├── ActivityBar/    # App navigation bar
-│       ├── Canvas/         # CanvasView, CanvasToolbar, node types
-│       ├── Editor/         # MarkdownEditor, EditorDraft, HistoryPanel, …
-│       ├── Graph/          # GraphView, GraphSidebar
-│       ├── Journal/        # JournalCalendar, JournalEditor
-│       ├── Kanban/         # BoardView, BoardList, task modals
-│       ├── Notes/          # NotesHome, NoteTemplateModal
-│       ├── Settings/       # All settings sections including plugin docs
-│       └── Sidebar/        # Notes sidebar, FolderTree
-├── hooks/                  # useAppStartup, useSidebarNotes, useGraphData, …
-├── pages/                  # NotesPage, JournalPage, KanbanPage, CanvasPage, GraphPage, …
-├── plugins/                # Plugin system — registry, API factory, loader, slot types
-├── providers/              # PluginThemeProvider
-├── store/                  # Zustand stores (useAppStore, useKanbanStore, …)
-├── sync/                   # plainFolder, s3, webdav, syncOrchestrator, offlineQueue
-├── search/                 # universalSearch — full-text index covering all content types
-├── types/                  # Shared TypeScript types
-└── utils/                  # wikilinks, timeAgo, stripMarkdown, folderTree, …
+│   ├── atoms/          Button, IconButton, ToggleSwitch, TagBadge, …
+│   ├── molecules/      ModalShell, EmptyState, SlotRenderer, Dropdown, …
+│   └── organisms/      One folder per feature — Editor, Kanban, Canvas, Graph,
+│                       Journal, PenNote, Attachments, Settings, Sidebar, …
+├── hooks/              useAppStartup, useVaultWatcher, useGraphData, …
+├── pages/              One page component per route
+├── plugins/            Registry, API factory, loader, permission gate, slot types
+├── store/              Zustand stores — useAppStore, useKanbanStore, …
+├── sync/               Vault I/O plus the local-folder, S3 and WebDAV providers
+├── search/             universalSearch — one index across every content type
+├── trash/              Soft-delete capture and restore
+├── types/              Shared TypeScript types
+└── utils/              wikilinks, folderTree, stripMarkdown, platform, …
 
-src-tauri/                  # Tauri v2 Rust shell + capabilities
+src-tauri/              Tauri v2 Rust shell and capabilities
+android/ · ios/         Capacitor native projects
 ```
 
----
+### Stack
 
-## Sync Setup
-
-### S3 / S3-compatible
-
-Go to **Settings → Sync** and enter your bucket name, region, endpoint, access key, and secret key. Works with AWS S3, Backblaze B2, Cloudflare R2, MinIO, and any S3-compatible provider.
-
-### WebDAV
-
-Enter your WebDAV server URL and credentials in **Settings → Sync**.
-
----
-
-## Adding a Feature to the Command Palette
-
-The command palette (`src/components/organisms/CommandPalette.tsx`) is the single entry point for all searchable content. When adding a new content type or route, see the detailed checklist in [CLAUDE.md](./CLAUDE.md#adding-a-new-feature--command-palette-checklist).
-
----
-
-## Releases
-
-Desktop builds are distributed as signed installers for Windows (`.msi`), macOS (`.dmg`), and Linux (`.AppImage`).
-
-PWA installs update automatically via the service worker — a "Reload to update" prompt appears when a new version is ready.
+React 18 · TypeScript · Vite · Tailwind CSS · Zustand · Dexie (IndexedDB) ·
+Milkdown/Crepe (ProseMirror) · React Flow · react-force-graph-2d · Tauri v2 ·
+Capacitor
 
 ---
 
 ## Contributing
 
-Pull requests are welcome. Open an issue before starting large changes so the approach can be discussed first.
+Contributions are welcome. Please open an issue before starting anything large so
+the approach can be agreed first — it saves rework on both sides.
 
-By submitting a PR you agree your contribution will be licensed under AGPL-3.0.
+- Keep modules under 300 lines and put shared types in `src/types/` — see [CLAUDE.md](./CLAUDE.md) for the conventions the codebase follows
+- New content types and routes must be wired into the command palette; there's a [checklist](./CLAUDE.md#adding-a-new-feature--command-palette-checklist)
+- Any new delete path must go through `src/trash/trashService.ts`, or that content becomes unrecoverable
+- Run `npm test` and `npm run build` before opening a PR
+
+By submitting a pull request you agree your contribution is licensed under AGPL-3.0.
 
 ---
 
 ## License
 
-GNU Affero General Public License v3.0 — see [LICENSE](./LICENSE).
+[GNU Affero General Public License v3.0](./LICENSE).
 
-Any modified version of Kairos distributed over a network must also be made available under AGPL-3.0.
+You're free to use, study, modify and share Kairos. If you distribute a modified
+version — including running it as a network service — that version must also be
+made available under AGPL-3.0.
 
 ---
 
-## Author
+## Maintainer
 
-Built by **Ajil Jagadeesh**
+Built by **Ajil Jagadeesh** — [@AjilJagadeesh7](https://github.com/AjilJagadeesh7) ·
+[ajiljagadeesh8@protonmail.com](mailto:ajiljagadeesh8@protonmail.com)
 
-- GitHub: [@AjilJagadeesh7](https://github.com/AjilJagadeesh7)
-- Email: ajiljagadeesh8@protonmail.com
-<meta name="google-site-verification" content="8VJtAqFu9l8SE0ZTCVw9CRGSWGIj6RaL7634fHNheCc" />
+Bugs and ideas belong in [Issues](https://github.com/AjilJagadeesh7/kairos/issues).
