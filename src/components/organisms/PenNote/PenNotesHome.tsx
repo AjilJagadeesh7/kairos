@@ -2,9 +2,12 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { usePenNoteStore } from '../../../store/usePenNoteStore'
+import { useSortPref } from '../../../store/useSortStore'
 import { timeAgo } from '../../../utils/timeAgo'
+import { sortItems, sortNames } from '../../../utils/sortItems'
 import { Button } from '../../atoms/Button'
 import { SectionLabel } from '../../atoms/SectionLabel'
+import { SortMenu } from '../../molecules/SortMenu'
 import { Icon } from '../../../icons/Icon'
 import type { PenNote } from '../../../types'
 
@@ -28,9 +31,7 @@ function getChildFolders(notes: PenNote[], explicit: string[], atPath: string): 
 
 /** Pen notes that live directly at the given path (exact match) */
 function getNotesAt(notes: PenNote[], atPath: string): PenNote[] {
-  return notes
-    .filter(n => (n.folder?.trim() ?? '') === atPath)
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+  return notes.filter(n => (n.folder?.trim() ?? '') === atPath)
 }
 
 // ---------------------------------------------------------------------------
@@ -89,8 +90,16 @@ export function PenNotesHome() {
   // Current directory path — "" = root
   const [currentPath, setCurrentPath] = useState('')
 
-  const childFolders = useMemo(() => getChildFolders(penNotes, folders, currentPath), [penNotes, folders, currentPath])
-  const directNotes  = useMemo(() => getNotesAt(penNotes, currentPath), [penNotes, currentPath])
+  const sortPref = useSortPref('pennotes')
+
+  const childFolders = useMemo(
+    () => sortNames(getChildFolders(penNotes, folders, currentPath), sortPref),
+    [penNotes, folders, currentPath, sortPref],
+  )
+  const directNotes = useMemo(
+    () => sortItems(getNotesAt(penNotes, currentPath), sortPref, n => n.title || 'Untitled'),
+    [penNotes, currentPath, sortPref],
+  )
 
   const isEmpty = childFolders.length === 0 && directNotes.length === 0
   const breadcrumbs = currentPath ? currentPath.split('/') : []
@@ -136,6 +145,8 @@ export function PenNotesHome() {
         </nav>
 
         <span className="shrink-0 text-[11px] text-text3">{childFolders.length + directNotes.length} items</span>
+
+        <SortMenu scope="pennotes" variant="button" className="shrink-0" />
 
         <Button variant="primary" size="md" onClick={handleNew} className="inline-flex items-center gap-1.5">
           <Icon name="plus" size={14} /> New pen note

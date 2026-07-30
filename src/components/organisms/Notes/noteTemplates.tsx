@@ -1,11 +1,22 @@
 import { Icon } from '../../../icons/Icon'
+import { workBodies, type TemplateDates } from './noteTemplateBodiesWork'
+import { personalBodies } from './noteTemplateBodiesPersonal'
 import type { NoteTemplate } from '../../../types'
 
+/**
+ * Template metadata. The markdown bodies live in the two sibling
+ * `noteTemplateBodies*.ts` files so no file breaks the 300-line limit.
+ */
 export function makeTemplates(): NoteTemplate[] {
   const d = new Date()
-  const longDate      = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long',  year: 'numeric' })
-  const shortDate     = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-  const shortDateYear = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  const dates: TemplateDates = {
+    longDate:      d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+    shortDate:     d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+    shortDateYear: d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+  }
+
+  const body = { ...workBodies(dates), ...personalBodies(dates) }
+
   return [
     {
       id: 'blank',
@@ -18,268 +29,106 @@ export function makeTemplates(): NoteTemplate[] {
     {
       id: 'meeting',
       name: 'Meeting Notes',
-      description: 'Attendees, agenda, decisions, actions',
-      icon: <Icon name="users" size={18} />,
+      description: 'Agenda table, decisions, action items',
+      icon: <Icon name="calendar-days" size={18} />,
       title: 'Meeting — ',
-      content: `> [!NOTE] ${longDate}
-> **Attendees:** ·
-
-#### 🗓️ Agenda
-1.
-2.
-
-#### 💬 Discussion & Decisions
-
-##### Topic 1
-
-#### ✅ Action Items
-| Task | Owner | Due |
-|------|-------|-----|
-| | | |
-
-#### 🔁 Follow-up
--
-`,
+      content: body.meeting,
     },
     {
-      id: 'project',
-      name: 'Project Plan',
-      description: 'Goal, milestones, tasks, risks',
-      icon: <Icon name="bar-chart-2" size={18} />,
-      title: 'Project: ',
-      content: `> [!ABSTRACT] At a glance
-> **Goal:**
-> **Owner:**
-> **Target:**
-
-#### 🎯 Milestones
-- [ ] **Phase 1 —**
-- [ ] **Phase 2 —**
-- [ ] **Phase 3 —**
-
-#### 🧩 Tasks
-- [ ]
-- [ ]
-
-#### ⚠️ Risks & Mitigations
-| Risk | Likelihood | Mitigation |
-|------|-----------|------------|
-| | | |
-
-#### 🔗 Resources & Links
--
-
-#### 🗒️ Notes
-`,
-    },
-    {
-      id: 'brainstorm',
-      name: 'Brainstorm',
-      description: 'Capture ideas, evaluate, decide',
-      icon: <Icon name="lightbulb" size={18} />,
-      title: 'Brainstorm: ',
-      content: `> [!QUESTION] Problem / Question
-> What are we trying to solve?
-
-#### 🚧 Constraints
--
-
-#### 💡 Ideas
--
--
--
--
-
-#### ⚖️ Evaluation
-| Idea | Pros | Cons |
-|------|------|------|
-| | | |
-
-#### 🚀 Decision & Next Steps
--
-`,
-    },
-    {
-      id: 'book',
-      name: 'Book Notes',
-      description: 'Summary, key ideas, quotes, takeaways',
-      icon: <Icon name="book-open" size={18} />,
-      title: 'Book: ',
-      content: `> [!INFO] Metadata
-> **Author:**
-> **Finished:**
-> **Rating:** ⭐⭐⭐⭐⭐
-
-#### ✏️ In One Sentence
-
-#### 🔑 Key Ideas
-1.
-2.
-3.
-
-#### ❝ Favourite Quotes
->
-
->
-
-#### 🎒 What I'll Apply
--
-
-#### 📚 Related Reading
--
-`,
-    },
-    {
-      id: 'todo',
-      name: 'To-Do List',
-      description: 'Prioritised task checklist',
-      icon: <Icon name="check-square" size={18} />,
-      title: 'To-Do: ',
-      content: `#### 🔴 High priority
-- [ ]
-- [ ]
-
-#### 🟡 Medium priority
-- [ ]
-- [ ]
-
-#### 🟢 Low priority / someday
-- [ ]
-
-#### ✔️ Done
-`,
+      id: 'oneonone',
+      name: '1:1',
+      description: 'Talking points, goals check-in, feedback',
+      icon: <Icon name="users" size={18} />,
+      title: '1:1 with ',
+      content: body.oneonone,
     },
     {
       id: 'standup',
       name: 'Daily Standup',
-      description: 'Yesterday, today, blockers',
+      description: 'Yesterday, today, blockers table',
       icon: <Icon name="zap" size={18} />,
-      title: `Standup ${shortDate}`,
-      content: `#### ⏮️ Yesterday
--
-
-#### ▶️ Today
--
-
-#### 🚧 Blockers
--
-
-#### 🗒️ Notes
-`,
+      title: `Standup ${dates.shortDate}`,
+      content: body.standup,
     },
     {
-      id: 'research',
-      name: 'Research Note',
-      description: 'Topic, sources, findings, gaps',
-      icon: <Icon name="flask-conical" size={18} />,
-      title: 'Research: ',
-      content: `> [!ABSTRACT] Topic
-
-#### 🌐 Background
-
-#### 📑 Sources
-| Source | Key Finding | Credibility |
-|--------|-------------|-------------|
-| | | |
-
-#### 🔬 Findings
-
-#### ❓ Open Questions
--
-
-#### 🧾 Conclusion
-`,
+      id: 'project',
+      name: 'Project Plan',
+      description: 'Milestones, workstreams, risk register',
+      icon: <Icon name="bar-chart-2" size={18} />,
+      title: 'Project: ',
+      content: body.project,
     },
     {
-      id: 'learning',
-      name: 'Study Notes',
-      description: 'Concept, examples, review questions',
-      icon: <Icon name="graduation-cap" size={18} />,
-      title: 'Notes: ',
-      content: `> [!ABSTRACT] Topic
-
-#### 🧠 Core Concepts
-##### Concept 1
-
-##### Concept 2
-
-#### 🧪 Examples
-\`\`\`
-
-\`\`\`
-
-#### 📖 Key Terms
-| Term | Definition |
-|------|-----------|
-| | |
-
-#### 📝 Summary
-
-#### 🔁 Review Questions
-1.
-2.
-3.
-`,
+      id: 'decision',
+      name: 'Decision Record',
+      description: 'Context, options compared, consequences',
+      icon: <Icon name="git-fork" size={18} />,
+      title: 'Decision: ',
+      content: body.decision,
     },
     {
       id: 'bug',
       name: 'Bug Report',
-      description: 'Steps to reproduce, expected vs actual',
+      description: 'Environment, repro steps, fix checklist',
       icon: <Icon name="bug" size={18} />,
       title: 'Bug: ',
-      content: `> [!WARNING] Summary
-> One-line description of the bug.
-
-#### 🖥️ Environment
-> **Version:**
-> **OS / Browser:**
-
-#### 🔢 Steps to Reproduce
-1.
-2.
-3.
-
-#### ✅ Expected Behaviour
-
-#### ❌ Actual Behaviour
-
-#### 🔍 Root Cause
-
-#### 🛠️ Fix / Workaround
-
-#### 🔗 Related Issues
--
-`,
+      content: body.bug,
+    },
+    {
+      id: 'brainstorm',
+      name: 'Brainstorm',
+      description: 'Ideas, scored shortlist, next steps',
+      icon: <Icon name="lightbulb" size={18} />,
+      title: 'Brainstorm: ',
+      content: body.brainstorm,
+    },
+    {
+      id: 'research',
+      name: 'Research Note',
+      description: 'Source table, findings, open questions',
+      icon: <Icon name="flask-conical" size={18} />,
+      title: 'Research: ',
+      content: body.research,
+    },
+    {
+      id: 'learning',
+      name: 'Study Notes',
+      description: 'Concepts, key terms, review questions',
+      icon: <Icon name="graduation-cap" size={18} />,
+      title: 'Notes: ',
+      content: body.learning,
+    },
+    {
+      id: 'book',
+      name: 'Book Notes',
+      description: 'Key ideas, quotes, what to apply',
+      icon: <Icon name="book-open" size={18} />,
+      title: 'Book: ',
+      content: body.book,
+    },
+    {
+      id: 'todo',
+      name: 'To-Do List',
+      description: 'Prioritised checklist + scheduled table',
+      icon: <Icon name="check-square" size={18} />,
+      title: 'To-Do: ',
+      content: body.todo,
+    },
+    {
+      id: 'habit',
+      name: 'Habit Tracker',
+      description: 'Weekly grid with a streak review',
+      icon: <Icon name="crosshair" size={18} />,
+      title: `Habits — week of ${dates.shortDateYear}`,
+      content: body.habit,
     },
     {
       id: 'weekly',
       name: 'Weekly Review',
-      description: 'Wins, lessons, goals for next week',
-      icon: <Icon name="globe" size={18} />,
-      title: `Week of ${shortDateYear}`,
-      content: `#### 🏆 Wins this week
--
-
-#### 🌧️ What didn't go well
--
-
-#### 🎓 Lessons learned
--
-
-#### 📊 Metrics / Progress
-| Metric | Target | Actual |
-|--------|--------|--------|
-| | | |
-
-#### 🎯 Goals for next week
-- [ ]
-- [ ]
-- [ ]
-
-#### 🔋 Energy & mood
-
-#### 🗒️ Notes
-`,
+      description: 'Wins, lessons, metrics, next week',
+      icon: <Icon name="history" size={18} />,
+      title: `Week of ${dates.shortDateYear}`,
+      content: body.weekly,
     },
   ]
 }

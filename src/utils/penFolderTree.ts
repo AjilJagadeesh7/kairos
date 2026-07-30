@@ -1,4 +1,5 @@
-import type { PenNote } from '../types'
+import { compareBy, nameOrder } from './sortItems'
+import type { PenNote, SortPref } from '../types'
 
 export interface PenFolderNode {
   path: string                 // "" = root, "Lectures", "Lectures/Physics"
@@ -12,7 +13,11 @@ export interface PenFolderNode {
  * folder registry (so empty folders persist). Mirrors utils/folderTree for
  * notes, kept separate to avoid coupling the notes sidebar to pen notes.
  */
-export function buildPenFolderTree(notes: PenNote[], explicitFolders: string[]): PenFolderNode {
+export function buildPenFolderTree(
+  notes: PenNote[],
+  explicitFolders: string[],
+  sort: SortPref = { field: 'updated', dir: 'desc' },
+): PenFolderNode {
   const allPaths = new Set<string>(explicitFolders.filter(Boolean))
   for (const note of notes) {
     if (!note.folder) continue
@@ -34,11 +39,14 @@ export function buildPenFolderTree(notes: PenNote[], explicitFolders: string[]):
     ;(nodeMap.get(note.folder ?? '') ?? root).notes.push(note)
   }
 
-  function sort(node: PenFolderNode) {
-    node.children.sort((a, b) => a.name.localeCompare(b.name))
-    node.notes.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    node.children.forEach(sort)
+  const folderOrder  = nameOrder(sort)
+  const compareNotes = compareBy<PenNote>(sort, n => n.title || 'Untitled')
+
+  function sortNode(node: PenFolderNode) {
+    node.children.sort((a, b) => a.name.localeCompare(b.name) * folderOrder)
+    node.notes.sort(compareNotes)
+    node.children.forEach(sortNode)
   }
-  sort(root)
+  sortNode(root)
   return root
 }

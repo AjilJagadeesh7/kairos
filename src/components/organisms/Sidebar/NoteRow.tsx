@@ -3,7 +3,9 @@ import { useAppStore } from '../../../store/useAppStore'
 import { usePaneStore } from '../../../store/usePaneStore'
 import { useIconRules, resolveNoteIcon } from '../../../plugins/pluginContext'
 import { useHistoryRequestStore } from '../../../store/useHistoryRequestStore'
+import { useSelectionStore, useIsSelecting, useIsSelected } from '../../../store/useSelectionStore'
 import { NoteContextMenu } from './NoteContextMenu'
+import { Checkbox } from '../../atoms/Checkbox'
 import { Icon } from '../../../icons/Icon'
 import type { Note } from '../../../types'
 
@@ -33,6 +35,10 @@ export function NoteRow({
   const iconRules = useIconRules()
   const iconRule  = resolveNoteIcon(note.title, note.tags, iconRules)
 
+  const isSelecting = useIsSelecting('notes')
+  const isSelected  = useIsSelected('notes', note.id)
+  const toggle      = useSelectionStore(s => s.toggle)
+
   function handleOpenInNewTab() {
     const { focusedPaneId, openInNewTab } = usePaneStore.getState()
     openInNewTab(focusedPaneId, `/notes/${note.id}`, note.title || 'Note')
@@ -47,30 +53,43 @@ export function NoteRow({
         data-note-item
         aria-label={label}
         aria-current={isActive ? 'true' : undefined}
-        draggable
+        data-selected={isSelecting && isSelected ? 'true' : undefined}
+        draggable={!isSelecting}
         onDragStart={(e) => {
           e.dataTransfer.effectAllowed = 'move'
           e.dataTransfer.setData('kairos/noteId', note.id)
           onDragStart(note.id)
         }}
-        onClick={onOpen}
-        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen() } }}
-        onContextMenu={e => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY }) }}
+        onClick={e => (isSelecting ? toggle(note.id, e.shiftKey) : onOpen())}
+        onKeyDown={e => {
+          if (e.key !== 'Enter' && e.key !== ' ') return
+          e.preventDefault()
+          if (isSelecting) toggle(note.id, e.shiftKey)
+          else onOpen()
+        }}
+        onContextMenu={e => {
+          e.preventDefault(); e.stopPropagation()
+          if (!isSelecting) setCtxMenu({ x: e.clientX, y: e.clientY })
+        }}
         style={{ paddingLeft: `${8 + depth * 16}px` }}
         className={`group relative flex h-[26px] cursor-pointer select-none items-center gap-1.5 pr-2 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-accent/50 ${
-          isActive ? 'bg-accent/15 text-text' : 'text-text2 hover:bg-surface3 hover:text-text'
+          isSelected ? 'bg-accent/20 text-text'
+            : isActive ? 'bg-accent/15 text-text'
+            : 'text-text2 hover:bg-surface3 hover:text-text'
         }`}
       >
         <span
           className="relative flex w-5 shrink-0 items-center justify-center"
-          aria-hidden
-          style={iconRule?.color ? { color: iconRule.color } : undefined}
+          aria-hidden={!isSelecting}
+          style={iconRule?.color && !isSelecting ? { color: iconRule.color } : undefined}
         >
-          {iconRule
-            ? <span className="text-[12px] leading-none">{iconRule.emoji}</span>
-            : isPinned
-              ? <Icon name="pin" size={11} className="text-accent" />
-              : <Icon name="file-text" size={11} className={isActive ? 'text-accent/60' : 'text-text3'} />
+          {isSelecting
+            ? <Checkbox checked={isSelected} label={`Select "${label}"`} onChange={e => { e.stopPropagation(); toggle(note.id, e.shiftKey) }} />
+            : iconRule
+              ? <span className="text-[12px] leading-none">{iconRule.emoji}</span>
+              : isPinned
+                ? <Icon name="pin" size={11} className="text-accent" />
+                : <Icon name="file-text" size={11} className={isActive ? 'text-accent/60' : 'text-text3'} />
           }
         </span>
         <span className="min-w-0 flex-1 truncate">{label}</span>

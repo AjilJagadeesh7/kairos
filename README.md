@@ -48,7 +48,8 @@ On first launch, choose a folder to be your vault. That's the whole setup.
 - Backlinks panel, coloured tags, frontmatter properties, word and character counts
 - **Annotations** — highlights and sticky notes in reading mode, stored alongside the note so the `.md` stays clean, and re-anchored on render so they survive edits elsewhere
 - **Version history** — every save is snapshotted; restore any version in one click
-- 11 starter templates; Markdown and HTML export
+- 14 starter templates — meetings, 1:1s, project plans, decision records, bug reports, research and study notes, book notes, habit tracking and weekly reviews, each pre-built with the tables and checklists that structure actually needs
+- Markdown and HTML export
 
 ### Journal and periodic notes
 

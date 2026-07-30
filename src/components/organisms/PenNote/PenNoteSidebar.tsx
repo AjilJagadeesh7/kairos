@@ -2,8 +2,10 @@ import { useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { usePenNoteStore } from '../../../store/usePenNoteStore'
 import { useConfirmStore } from '../../../store/useConfirmStore'
+import { useSortPref } from '../../../store/useSortStore'
 import { buildPenFolderTree, type PenFolderNode } from '../../../utils/penFolderTree'
 import { InlineEditInput } from '../../molecules/InlineEditInput'
+import { SortMenu } from '../../molecules/SortMenu'
 import { Icon } from '../../../icons/Icon'
 
 type EditState =
@@ -32,7 +34,8 @@ export function PenNoteSidebar(): JSX.Element {
   const renameFolder = usePenNoteStore(s => s.renameFolder)
   const deleteFolder = usePenNoteStore(s => s.deleteFolder)
 
-  const tree = useMemo(() => buildPenFolderTree(penNotes, folders), [penNotes, folders])
+  const sortPref = useSortPref('pennotes')
+  const tree = useMemo(() => buildPenFolderTree(penNotes, folders, sortPref), [penNotes, folders, sortPref])
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [edit, setEdit] = useState<EditState>(null)
   const dragId = useRef<string | null>(null)
@@ -134,6 +137,7 @@ export function PenNoteSidebar(): JSX.Element {
       <div className="flex h-10 shrink-0 items-center justify-between px-3">
         <span className="text-xs font-semibold uppercase tracking-widest text-text3">Pen notes</span>
         <div className="flex items-center gap-0.5">
+          <SortMenu scope="pennotes" />
           <button type="button" aria-label="New folder" title="New folder" onClick={() => setEdit({ kind: 'new-folder', parent: '' })}
             className="flex h-6 w-6 items-center justify-center rounded text-text3 transition hover:bg-surface3 hover:text-text">
             <Icon name="folder-plus" size={14} />

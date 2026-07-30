@@ -1,15 +1,22 @@
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCanvasStore } from '../../../store/useCanvasStore'
+import { useSortPref } from '../../../store/useSortStore'
 import { timeAgo } from '../../../utils/timeAgo'
+import { sortItems } from '../../../utils/sortItems'
 import { Button } from '../../atoms/Button'
+import { SortMenu } from '../../molecules/SortMenu'
 import { Icon } from '../../../icons/Icon'
 
 export function CanvasList() {
   const navigate     = useNavigate()
-  const canvases     = useCanvasStore(s => s.canvases)
+  const allCanvases  = useCanvasStore(s => s.canvases)
   const createCanvas = useCanvasStore(s => s.createCanvas)
   const deleteCanvas = useCanvasStore(s => s.deleteCanvas)
   const setCanvasNoSync = useCanvasStore(s => s.setCanvasNoSync)
+
+  const sortPref = useSortPref('canvas')
+  const canvases = useMemo(() => sortItems(allCanvases, sortPref, c => c.title), [allCanvases, sortPref])
 
   function handleNew() {
     const id = createCanvas()
@@ -28,10 +35,13 @@ export function CanvasList() {
               {canvases.length}
             </span>
           </div>
-          <Button variant="submit" size="md" onClick={handleNew}>
-            <Icon name="plus" size={14} />
-            New canvas
-          </Button>
+          <div className="flex items-center gap-2">
+            {canvases.length > 0 && <SortMenu scope="canvas" variant="button" />}
+            <Button variant="submit" size="md" onClick={handleNew}>
+              <Icon name="plus" size={14} />
+              New canvas
+            </Button>
+          </div>
         </div>
 
         {/* Empty state */}

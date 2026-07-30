@@ -1,7 +1,9 @@
 
 import { memo } from 'react'
 import { TagBadge } from '../atoms/TagBadge'
+import { Checkbox } from '../atoms/Checkbox'
 import { useAppStore } from '../../store/useAppStore'
+import { useSelectionStore, useIsSelecting, useIsSelected } from '../../store/useSelectionStore'
 import { useIconRules, resolveNoteIcon } from '../../plugins/pluginContext'
 import { timeAgo } from '../../utils/timeAgo'
 import type { Note, TagRecord } from '../../types'
@@ -25,6 +27,10 @@ export const NoteListItem = memo(function NoteListItem({ note, isActive, isCopie
   const iconRule  = resolveNoteIcon(note.title, note.tags, iconRules)
   const label = note.title || 'Untitled note'
 
+  const isSelecting = useIsSelecting('notes')
+  const isSelected  = useIsSelected('notes', note.id)
+  const toggle      = useSelectionStore(s => s.toggle)
+
   return (
     <div
       role="button"
@@ -32,21 +38,29 @@ export const NoteListItem = memo(function NoteListItem({ note, isActive, isCopie
       data-note-item
       aria-label={label}
       aria-current={isActive ? 'true' : undefined}
-      onClick={onOpen}
+      data-selected={isSelecting && isSelected ? 'true' : undefined}
+      onClick={e => (isSelecting ? toggle(note.id, e.shiftKey) : onOpen())}
       onKeyDown={e => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen() }
+        if (e.key !== 'Enter' && e.key !== ' ') return
+        e.preventDefault()
+        if (isSelecting) toggle(note.id, e.shiftKey)
+        else onOpen()
       }}
       className={`group flex cursor-pointer select-none items-center gap-2 rounded-md px-2 py-[5px] text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 ${
-        isActive
-          ? 'bg-accent/12 text-text font-medium'
-          : 'text-text2 hover:bg-surface3 hover:text-text'
+        isSelected
+          ? 'bg-accent/20 text-text'
+          : isActive
+            ? 'bg-accent/12 text-text font-medium'
+            : 'text-text2 hover:bg-surface3 hover:text-text'
       }`}
     >
-      {iconRule
-        ? <span className="shrink-0 text-[13px] leading-none" style={iconRule.color ? { color: iconRule.color } : undefined}>{iconRule.emoji}</span>
-        : isPinned
-          ? <Icon name="pin" size={12} className="shrink-0 text-accent" aria-hidden />
-          : <Icon name="file-text" size={12} className={`shrink-0 ${isActive ? 'text-accent/60' : 'text-text3'}`} aria-hidden />
+      {isSelecting
+        ? <Checkbox checked={isSelected} label={`Select "${label}"`} onChange={e => { e.stopPropagation(); toggle(note.id, e.shiftKey) }} />
+        : iconRule
+          ? <span className="shrink-0 text-[13px] leading-none" style={iconRule.color ? { color: iconRule.color } : undefined}>{iconRule.emoji}</span>
+          : isPinned
+            ? <Icon name="pin" size={12} className="shrink-0 text-accent" aria-hidden />
+            : <Icon name="file-text" size={12} className={`shrink-0 ${isActive ? 'text-accent/60' : 'text-text3'}`} aria-hidden />
       }
 
       <div className="min-w-0 flex-1">
@@ -64,8 +78,8 @@ export const NoteListItem = memo(function NoteListItem({ note, isActive, isCopie
         )}
       </div>
 
-      {/* Actions */}
-      <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+      {/* Actions — hidden in selection mode, where the row click means "select" */}
+      <div className={`flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 ${isSelecting ? 'hidden' : ''}`}>
         <button
           type="button"
           title={isPinned ? 'Unpin' : 'Pin'}

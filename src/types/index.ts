@@ -30,6 +30,8 @@ export type { Attachment, AttachmentMeta, AttachmentKind } from './attachment.ty
 export type { JournalEntry } from './journal.types'
 export type { Canvas, CanvasNode, CanvasEdge, CanvasNodeType, CanvasNodeData, CanvasTextData, CanvasNoteData, CanvasAttachmentData } from './canvas.types'
 export type { ContentVersion, VersionHistory } from './history.types'
+export type { SelectionScope } from './selection.types'
+export type { SortField, SortDir, SortPref, SortScope } from './sort.types'
 export type { KairosTier, TierLimits, StorageBreakdown, StorageUsage, UpgradeReason } from './tier.types'
 export type { FrontmatterFieldType, FrontmatterField, FrontmatterPanelMode } from './frontmatter.types'
 export type {

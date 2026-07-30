@@ -1,4 +1,5 @@
-import type { Attachment } from '../types'
+import { compareBy, nameOrder } from './sortItems'
+import type { Attachment, SortPref } from '../types'
 
 /** A folder node in the attachments tree. Mirrors utils/folderTree for notes. */
 export interface AttachmentNode {
@@ -9,7 +10,11 @@ export interface AttachmentNode {
 }
 
 /** Build a virtual folder tree from the flat attachment list + explicit folders. */
-export function buildAttachmentTree(items: Attachment[], explicitFolders: string[]): AttachmentNode {
+export function buildAttachmentTree(
+  items: Attachment[],
+  explicitFolders: string[],
+  sort: SortPref = { field: 'title', dir: 'asc' },
+): AttachmentNode {
   const allPaths = new Set<string>(explicitFolders.filter(Boolean))
   for (const it of items) {
     if (!it.folder) continue
@@ -29,9 +34,12 @@ export function buildAttachmentTree(items: Attachment[], explicitFolders: string
 
   for (const it of items) (nodeMap.get(it.folder ?? '') ?? root).items.push(it)
 
+  const folderOrder  = nameOrder(sort)
+  const compareFiles = compareBy<Attachment>(sort, a => a.name ?? '')
+
   function sortNode(node: AttachmentNode) {
-    node.children.sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
-    node.items.sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
+    node.children.sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '') * folderOrder)
+    node.items.sort(compareFiles)
     node.children.forEach(sortNode)
   }
   sortNode(root)

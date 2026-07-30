@@ -1,17 +1,26 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAttachmentStore } from '../../../store/useAttachmentStore'
+import { useSortPref } from '../../../store/useSortStore'
 import { resolveAttachment, kindFromName } from '../../../attachments/attachmentService'
 import { formatBytes } from '../../../tiers/checks'
+import { sortItems } from '../../../utils/sortItems'
 import { EmptyState } from '../../molecules/EmptyState'
+import { SortMenu } from '../../molecules/SortMenu'
 import { Icon } from '../../../icons/Icon'
 import { KIND_ICON } from '../../../utils/attachmentIcons'
 import type { Attachment } from '../../../types'
 
 /** Grid of all attachments, shown at /attachments when no file is selected. */
 export function AttachmentGallery(): JSX.Element {
-  const attachments = useAttachmentStore(s => s.attachments)
+  const allAttachments = useAttachmentStore(s => s.attachments)
   const navigate = useNavigate()
+
+  const sortPref = useSortPref('attachments')
+  const attachments = useMemo(
+    () => sortItems(allAttachments, sortPref, a => a.name),
+    [allAttachments, sortPref],
+  )
 
   if (attachments.length === 0) {
     return (
@@ -27,6 +36,12 @@ export function AttachmentGallery(): JSX.Element {
 
   return (
     <div className="h-full overflow-y-auto p-6">
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <p className="text-[11px] text-text3">
+          {attachments.length} {attachments.length === 1 ? 'file' : 'files'}
+        </p>
+        <SortMenu scope="attachments" variant="button" />
+      </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         {attachments.map(att => (
           <GalleryTile key={att.id} att={att} onOpen={() => navigate(`/attachments/${att.id}`)} />

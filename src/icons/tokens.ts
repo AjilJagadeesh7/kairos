@@ -8,6 +8,7 @@ export type IconToken =
   | 'arrow-left'
   | 'arrow-right'
   | 'arrow-up-right'
+  | 'arrow-up-down'
   | 'bar-chart-2'
   | 'bold'
   | 'book-open'

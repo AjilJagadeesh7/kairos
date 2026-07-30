@@ -1,5 +1,5 @@
 import {
-  AlertTriangle, ArrowLeft, ArrowRight, ArrowUpRight,
+  AlertTriangle, ArrowLeft, ArrowRight, ArrowUpRight, ArrowUpDown,
   BarChart2, Bold, BookOpen, Bookmark, Brackets, BrainCircuit, Bug,
   Calendar, CalendarDays, Check, CheckCircle2, CheckSquare,
   ChevronDown, ChevronLeft, ChevronRight, ChevronUp,
@@ -25,6 +25,7 @@ export const builtinPack: IconPack = {
   'arrow-left':      ArrowLeft,
   'arrow-right':     ArrowRight,
   'arrow-up-right':  ArrowUpRight,
+  'arrow-up-down':   ArrowUpDown,
   'bar-chart-2':     BarChart2,
   'bold':            Bold,
   'book-open':       BookOpen,

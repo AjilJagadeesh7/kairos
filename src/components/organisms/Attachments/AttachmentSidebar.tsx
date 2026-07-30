@@ -1,24 +1,32 @@
-import { useMemo, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useAttachmentStore } from '../../../store/useAttachmentStore'
+import { useSelectionStore, useIsSelecting, exitSelection } from '../../../store/useSelectionStore'
+import { useSortPref } from '../../../store/useSortStore'
+import { useBulkDelete } from '../../../hooks/useBulkDelete'
 import { buildAttachmentTree } from '../../../utils/attachmentTree'
+import { sortItems } from '../../../utils/sortItems'
 import { AttachmentBranch } from './AttachmentTree'
 import { AttachmentFileRow } from './AttachmentFileRow'
 import { IconButton } from '../../atoms/IconButton'
 import { SectionLabel } from '../../atoms/SectionLabel'
 import { InlineEditInput } from '../../molecules/InlineEditInput'
 import { EmptyState } from '../../molecules/EmptyState'
+import { SelectionToolbar } from '../../molecules/SelectionToolbar'
+import { SortMenu } from '../../molecules/SortMenu'
 import { Icon } from '../../../icons/Icon'
 
 /** Sidebar for the Attachments page: folder tree of all files, upload, and search. */
 export function AttachmentSidebar({ onClose }: { onClose?: () => void }): JSX.Element {
   const { id: activeId } = useParams<{ id?: string }>()
+  const navigate    = useNavigate()
   const attachments = useAttachmentStore(s => s.attachments)
   const folderList  = useAttachmentStore(s => s.folderList)
   const isLoaded    = useAttachmentStore(s => s.isLoaded)
   const importFiles = useAttachmentStore(s => s.importFiles)
   const createFolder = useAttachmentStore(s => s.createFolder)
   const moveToFolder = useAttachmentStore(s => s.moveToFolder)
+  const deleteAttachment = useAttachmentStore(s => s.deleteAttachment)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState('')
@@ -26,13 +34,40 @@ export function AttachmentSidebar({ onClose }: { onClose?: () => void }): JSX.El
   const [rootName, setRootName] = useState('')
   const [rootDragOver, setRootDragOver] = useState(false)
 
-  const tree = useMemo(() => buildAttachmentTree(attachments, folderList), [attachments, folderList])
+  const sortPref = useSortPref('attachments')
+
+  const tree = useMemo(
+    () => buildAttachmentTree(attachments, folderList, sortPref),
+    [attachments, folderList, sortPref],
+  )
 
   const searchResults = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return []
-    return attachments.filter(a => a.name.toLowerCase().includes(q))
-  }, [query, attachments])
+    return sortItems(attachments.filter(a => a.name.toLowerCase().includes(q)), sortPref, a => a.name)
+  }, [query, attachments, sortPref])
+
+  // ── Multi-select ──
+  const isSelecting = useIsSelecting('attachments')
+  const enterSelect = useSelectionStore(s => s.enter)
+  const setOrder    = useSelectionStore(s => s.setOrder)
+
+  // Follows the search filter, so select-all can't reach past what's listed.
+  const selectableIds = useMemo(
+    () => (query.trim() ? searchResults : sortItems(attachments, sortPref, a => a.name)).map(a => a.id),
+    [query, searchResults, attachments, sortPref],
+  )
+
+  useEffect(() => { if (isSelecting) setOrder(selectableIds) }, [isSelecting, selectableIds, setOrder])
+  useEffect(() => () => exitSelection('attachments'), [])
+
+  // Leave the viewer if the file it is showing is among the deleted.
+  const removeAttachment = useCallback(async (id: string) => {
+    await deleteAttachment(id)
+    if (activeId === id) navigate('/attachments')
+  }, [deleteAttachment, activeId, navigate])
+
+  const deleteSelected = useBulkDelete({ scope: 'attachments', noun: 'file', remove: removeAttachment })
 
   const onPick = async (files: FileList | null) => {
     if (files) await importFiles(files)
@@ -58,6 +93,16 @@ export function AttachmentSidebar({ onClose }: { onClose?: () => void }): JSX.El
         <SectionLabel className="flex-1">Attachments</SectionLabel>
         <IconButton icon="plus"         label="Upload files" size="xs" onClick={() => fileInputRef.current?.click()} />
         <IconButton icon="folder-plus"  label="New folder"   size="xs" onClick={() => setCreatingRoot(true)} />
+        {attachments.length > 0 && <SortMenu scope="attachments" />}
+        {attachments.length > 0 && (
+          <IconButton
+            icon="check-square"
+            label={isSelecting ? 'Exit selection' : 'Select files'}
+            size="xs"
+            onClick={() => (isSelecting ? exitSelection('attachments') : enterSelect('attachments', selectableIds))}
+            className={isSelecting ? 'bg-accent/15 text-accent' : ''}
+          />
+        )}
         {onClose && <IconButton icon="x" label="Close sidebar" size="xs" onClick={onClose} className="xl:hidden" />}
       </div>
       <input ref={fileInputRef} type="file" multiple className="hidden" onChange={e => void onPick(e.target.files)} />
@@ -79,6 +124,15 @@ export function AttachmentSidebar({ onClose }: { onClose?: () => void }): JSX.El
           )}
         </div>
       </div>
+
+      {isSelecting && (
+        <SelectionToolbar
+          scope="attachments"
+          noun="file"
+          onDelete={deleteSelected}
+          onExit={() => exitSelection('attachments')}
+        />
+      )}
 
       {/* Body */}
       <div

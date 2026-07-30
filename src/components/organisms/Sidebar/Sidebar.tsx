@@ -4,8 +4,14 @@ import { useNavigate } from 'react-router-dom'
 
 import { useAppStore } from '../../../store/useAppStore'
 import { useSidebarNotes } from '../../../hooks/useSidebarNotes'
+import { useBulkDelete } from '../../../hooks/useBulkDelete'
+import { useSelectionStore, useIsSelecting, exitSelection } from '../../../store/useSelectionStore'
+import { useSortPref } from '../../../store/useSortStore'
 import { buildFolderTree, getAllFolderPaths } from '../../../utils/folderTree'
+import { sortItems } from '../../../utils/sortItems'
 import { SearchModePills } from '../../molecules/SearchModePills'
+import { SelectionToolbar } from '../../molecules/SelectionToolbar'
+import { SortMenu } from '../../molecules/SortMenu'
 import { VirtualNoteList } from '../../molecules/VirtualNoteList'
 import { NoteTemplateModal } from '../Notes/NoteTemplateModal'
 import { FolderTree } from './FolderTree'
@@ -55,9 +61,11 @@ export function Sidebar({ onClose }: Props): JSX.Element {
   // Only show tree when not searching
   const isSearching = query.trim().length > 0
 
+  const sortPref = useSortPref('notes')
+
   const folderTree = useMemo(
-    () => buildFolderTree(notes, folderList),
-    [notes, folderList],
+    () => buildFolderTree(notes, folderList, sortPref),
+    [notes, folderList, sortPref],
   )
 
   const allFolderPaths = useMemo(() => getAllFolderPaths(folderTree), [folderTree])
@@ -67,15 +75,35 @@ export function Sidebar({ onClose }: Props): JSX.Element {
     [pinnedNoteIds, notes],
   )
 
-  // In search results, surface pinned notes first
+  // Search results follow the sort preference, with pinned notes surfaced first.
   const sortedVisible = useMemo(
-    () => [...visible].sort((a, b) => {
-      const ap = pinnedNoteIds.includes(a.id) ? 0 : 1
-      const bp = pinnedNoteIds.includes(b.id) ? 0 : 1
-      return ap - bp
-    }),
-    [visible, pinnedNoteIds],
+    () => sortItems(visible, sortPref, n => n.title || 'Untitled note')
+      .sort((a, b) => {
+        const ap = pinnedNoteIds.includes(a.id) ? 0 : 1
+        const bp = pinnedNoteIds.includes(b.id) ? 0 : 1
+        return ap - bp
+      }),
+    [visible, pinnedNoteIds, sortPref],
   )
+
+  // ── Multi-select ──
+  const isSelecting    = useIsSelecting('notes')
+  const enterSelect    = useSelectionStore(s => s.enter)
+  const setOrder       = useSelectionStore(s => s.setOrder)
+  const deleteSelected = useBulkDelete({ scope: 'notes', noun: 'note', remove: deleteNoteById })
+
+  // Selectable ids track whatever the list is currently showing, so select-all
+  // never reaches past the filtered set.
+  const selectableIds = useMemo(
+    () => (isSearching
+      ? sortedVisible
+      : sortItems(notes, sortPref, n => n.title || 'Untitled note')
+    ).map(n => n.id),
+    [isSearching, sortedVisible, notes, sortPref],
+  )
+
+  useEffect(() => { if (isSelecting) setOrder(selectableIds) }, [isSelecting, selectableIds, setOrder])
+  useEffect(() => () => exitSelection('notes'), [])
 
   function openNewNoteTemplates(folder?: string) {
     setTemplateFolder(folder)
@@ -121,6 +149,16 @@ export function Sidebar({ onClose }: Props): JSX.Element {
           <SectionLabel className="flex-1">Files</SectionLabel>
           <IconButton icon="plus"        label="New note"       size="xs" onClick={() => openNewNoteTemplates()} />
           <IconButton icon="folder-plus" label="New folder"     size="xs" onClick={() => setCreatingRootFolder(true)} />
+          {selectableIds.length > 0 && (
+            <IconButton
+              icon="check-square"
+              label={isSelecting ? 'Exit selection' : 'Select notes'}
+              size="xs"
+              onClick={() => (isSelecting ? exitSelection('notes') : enterSelect('notes', selectableIds))}
+              className={isSelecting ? 'bg-accent/15 text-accent' : ''}
+            />
+          )}
+          <SortMenu scope="notes" />
           <IconButton icon="refresh-cw"  label="Refresh notes"  size="xs" onClick={() => void loadNotes()} disabled={isRefreshing}
             iconClassName={isRefreshing ? 'animate-spin' : ''} />
           {onClose && (
@@ -165,6 +203,16 @@ export function Sidebar({ onClose }: Props): JSX.Element {
             </div>
           )}
         </div>
+
+        {/* ── Selection bar ── */}
+        {isSelecting && (
+          <SelectionToolbar
+            scope="notes"
+            noun="note"
+            onDelete={deleteSelected}
+            onExit={() => exitSelection('notes')}
+          />
+        )}
 
         {/* ── Body: tree view or search results ── */}
         <div className="min-h-0 flex-1 overflow-hidden">

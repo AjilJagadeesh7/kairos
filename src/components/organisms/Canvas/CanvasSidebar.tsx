@@ -1,23 +1,51 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useCanvasStore } from '../../../store/useCanvasStore'
-import { timeAgo } from '../../../utils/timeAgo'
+import { useSelectionStore, useIsSelecting, exitSelection } from '../../../store/useSelectionStore'
+import { useSortPref } from '../../../store/useSortStore'
+import { sortItems } from '../../../utils/sortItems'
+import { useBulkDelete } from '../../../hooks/useBulkDelete'
 import { Icon } from '../../../icons/Icon'
 import { IconButton } from '../../atoms/IconButton'
 import { SectionLabel } from '../../atoms/SectionLabel'
 import { Divider } from '../../atoms/Divider'
-import { InlineEditInput } from '../../molecules/InlineEditInput'
+import { SelectionToolbar } from '../../molecules/SelectionToolbar'
+import { SortMenu } from '../../molecules/SortMenu'
+import { CanvasSidebarRow } from './CanvasSidebarRow'
 
 export function CanvasSidebar() {
   const navigate      = useNavigate()
   const { canvasId }  = useParams<{ canvasId?: string }>()
-  const canvases      = useCanvasStore(s => s.canvases)
+  const allCanvases   = useCanvasStore(s => s.canvases)
   const createCanvas  = useCanvasStore(s => s.createCanvas)
   const deleteCanvas  = useCanvasStore(s => s.deleteCanvas)
   const updateCanvasTitle = useCanvasStore(s => s.updateCanvasTitle)
 
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameVal, setRenameVal]   = useState('')
+
+  const sortPref = useSortPref('canvas')
+  const canvases = useMemo(() => sortItems(allCanvases, sortPref, c => c.title), [allCanvases, sortPref])
+
+  // ── Multi-select ──
+  const isSelecting = useIsSelecting('canvas')
+  const enterSelect = useSelectionStore(s => s.enter)
+  const setOrder    = useSelectionStore(s => s.setOrder)
+
+  const selectableIds = useMemo(() => canvases.map(c => c.id), [canvases])
+
+  useEffect(() => { if (isSelecting) setOrder(selectableIds) }, [isSelecting, selectableIds, setOrder])
+  useEffect(() => () => exitSelection('canvas'), [])
+
+  // Leave the canvas route if the one on screen is among the deleted.
+  const removeCanvas = useCallback((id: string) => {
+    deleteCanvas(id)
+    if (canvasId === id) navigate('/canvas')
+  }, [deleteCanvas, canvasId, navigate])
+
+  const deleteSelected = useBulkDelete({
+    scope: 'canvas', noun: 'canvas', plural: 'canvases', remove: removeCanvas,
+  })
 
   function commitRename() {
     if (!renamingId) return
@@ -42,10 +70,32 @@ export function CanvasSidebar() {
       {/* Header */}
       <div className="flex h-10 shrink-0 items-center justify-between px-3">
         <SectionLabel>Canvas</SectionLabel>
-        <IconButton icon="plus" label="New canvas" size="xs" onClick={handleNew} />
+        <div className="flex items-center gap-1">
+          {canvases.length > 0 && <SortMenu scope="canvas" />}
+          {canvases.length > 0 && (
+            <IconButton
+              icon="check-square"
+              label={isSelecting ? 'Exit selection' : 'Select canvases'}
+              size="xs"
+              onClick={() => (isSelecting ? exitSelection('canvas') : enterSelect('canvas', selectableIds))}
+              className={isSelecting ? 'bg-accent/15 text-accent' : ''}
+            />
+          )}
+          <IconButton icon="plus" label="New canvas" size="xs" onClick={handleNew} />
+        </div>
       </div>
 
       <Divider />
+
+      {isSelecting && (
+        <SelectionToolbar
+          scope="canvas"
+          noun="canvas"
+          plural="canvases"
+          onDelete={deleteSelected}
+          onExit={() => exitSelection('canvas')}
+        />
+      )}
 
       {/* Canvas list */}
       <div className="flex-1 overflow-y-auto py-1">
@@ -59,57 +109,21 @@ export function CanvasSidebar() {
             <span className="text-[12px]">New canvas</span>
           </button>
         ) : (
-          canvases.map(canvas => {
-            const isActive = canvas.id === canvasId
-            return (
-              <div
-                key={canvas.id}
-                className={`group relative flex cursor-pointer items-center gap-2 px-3 py-2 transition ${
-                  isActive ? 'bg-[rgb(var(--accent))]/10 text-[rgb(var(--text))]' : 'text-[rgb(var(--text-2))] hover:bg-[rgb(var(--surface-3))] hover:text-[rgb(var(--text))]'
-                }`}
-                onClick={() => navigate(`/canvas/${canvas.id}`)}
-              >
-                {isActive && <span className="absolute inset-y-1 left-0 w-0.5 rounded-r-full bg-[rgb(var(--accent))]" />}
-
-                <Icon name="layout-dashboard" size={13} className={`shrink-0 ${isActive ? 'text-[rgb(var(--accent))]' : 'text-[rgb(var(--text-3))]'}`} />
-
-                <div className="min-w-0 flex-1">
-                  {renamingId === canvas.id ? (
-                    <InlineEditInput
-                      value={renameVal}
-                      onChange={setRenameVal}
-                      onCommit={commitRename}
-                      onCancel={() => setRenamingId(null)}
-                      className="w-full px-1"
-                    />
-                  ) : (
-                    <p className="truncate text-[12px] font-medium leading-tight">{canvas.title}</p>
-                  )}
-                  <p className="text-[10px] text-[rgb(var(--text-3))]">{timeAgo(canvas.updatedAt)}</p>
-                </div>
-
-                {/* Hover actions */}
-                <div className="absolute right-2 top-0 flex h-full items-center gap-0.5 opacity-0 transition group-hover:opacity-100">
-                  <button
-                    type="button"
-                    title="Rename"
-                    onClick={e => { e.stopPropagation(); setRenamingId(canvas.id); setRenameVal(canvas.title) }}
-                    className="flex h-5 w-5 items-center justify-center rounded text-[rgb(var(--text-3))] transition hover:text-[rgb(var(--text))]"
-                  >
-                    <Icon name="pencil" size={11} />
-                  </button>
-                  <button
-                    type="button"
-                    title="Delete"
-                    onClick={e => handleDelete(canvas.id, e)}
-                    className="flex h-5 w-5 items-center justify-center rounded text-[rgb(var(--text-3))] transition hover:text-red-400"
-                  >
-                    <Icon name="trash-2" size={11} />
-                  </button>
-                </div>
-              </div>
-            )
-          })
+          canvases.map(canvas => (
+            <CanvasSidebarRow
+              key={canvas.id}
+              canvas={canvas}
+              isActive={canvas.id === canvasId}
+              isRenaming={renamingId === canvas.id}
+              renameVal={renameVal}
+              onRenameChange={setRenameVal}
+              onRenameCommit={commitRename}
+              onRenameCancel={() => setRenamingId(null)}
+              onOpen={() => navigate(`/canvas/${canvas.id}`)}
+              onStartRename={() => { setRenamingId(canvas.id); setRenameVal(canvas.title) }}
+              onDelete={e => handleDelete(canvas.id, e)}
+            />
+          ))
         )}
       </div>
     </div>

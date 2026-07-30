@@ -1,4 +1,5 @@
-import type { Note } from '../types'
+import { compareBy, nameOrder } from './sortItems'
+import type { Note, SortPref } from '../types'
 
 export interface FolderNode {
   path: string       // full path: "" = root, "Projects", "Projects/Work"
@@ -12,7 +13,12 @@ export interface FolderNode {
  * registry (so empty folders persist across sessions).
  * Returns the root node (path = "", name = "").
  */
-export function buildFolderTree(notes: Note[], explicitFolders: string[]): FolderNode {
+export function buildFolderTree(
+  notes: Note[],
+  explicitFolders: string[],
+  /** Sort preference for both folder names and the notes inside them. */
+  sort: SortPref = { field: 'updated', dir: 'desc' },
+): FolderNode {
   // Collect all paths that need a node
   const allPaths = new Set<string>(explicitFolders.filter(Boolean))
   for (const note of notes) {
@@ -45,10 +51,14 @@ export function buildFolderTree(notes: Note[], explicitFolders: string[]): Folde
     node.notes.push(note)
   }
 
-  // Sort each level: folders alphabetically, notes by updatedAt desc
+  // Sort each level. Folders carry no timestamps, so they follow the name order;
+  // notes use the full preference.
+  const folderOrder  = nameOrder(sort)
+  const compareNotes = compareBy<Note>(sort, n => n.title || 'Untitled note')
+
   function sortNode(node: FolderNode) {
-    node.children.sort((a, b) => a.name.localeCompare(b.name))
-    node.notes.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    node.children.sort((a, b) => a.name.localeCompare(b.name) * folderOrder)
+    node.notes.sort(compareNotes)
     node.children.forEach(sortNode)
   }
   sortNode(root)
