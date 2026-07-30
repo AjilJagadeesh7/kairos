@@ -1,10 +1,17 @@
 import { describe, it, expect } from 'vitest'
 import { CHANGELOG } from './changelog'
 
+/** Look an entry up by version, so parser assertions aren't pinned to "newest". */
+const entry = (version: string) => {
+  const found = CHANGELOG.find(e => e.version === version)
+  if (!found) throw new Error(`No changelog entry for ${version}`)
+  return found
+}
+
 describe('changelog parser', () => {
   it('parses at least the released versions, newest first', () => {
     expect(CHANGELOG.length).toBeGreaterThanOrEqual(3)
-    expect(CHANGELOG[0].version).toBe('0.0.7')
+    expect(CHANGELOG[0].version).toBe('0.1.0')
     expect(CHANGELOG.map(e => e.version)).toContain('0.0.5')
   })
 
@@ -20,9 +27,9 @@ describe('changelog parser', () => {
   })
 
   it('files removals under `removed`, not `improved`', () => {
-    const latest = CHANGELOG[0]
-    expect(latest.removed?.some(i => i.includes('PDF export'))).toBe(true)
-    expect(latest.improved?.some(i => i.includes('PDF export'))).toBe(false)
+    const v = entry('0.0.7')   // the release that dropped PDF export
+    expect(v.removed?.some(i => i.includes('PDF export'))).toBe(true)
+    expect(v.improved?.some(i => i.includes('PDF export'))).toBe(false)
   })
 
   it('strips markdown from bullets and intro text', () => {
@@ -33,8 +40,16 @@ describe('changelog parser', () => {
   })
 
   it('keeps the intro paragraph out of the change buckets', () => {
-    const latest = CHANGELOG[0]
-    expect(latest.highlights.join(' ')).toContain('largest release')
-    expect(latest.added?.join(' ')).not.toContain('largest release')
+    const v = entry('0.0.7')
+    expect(v.highlights.join(' ')).toContain('largest release')
+    expect(v.added?.join(' ')).not.toContain('largest release')
+  })
+
+  it('parses the current release into the buckets it declares', () => {
+    const v = entry('0.1.0')
+    expect(v.date).toBe('2026-07-31')
+    expect(v.added?.some(i => i.includes('Multi-select'))).toBe(true)
+    expect(v.improved?.some(i => i.includes('templates rebuilt'))).toBe(true)
+    expect(v.fixed?.some(i => i.includes('clipped by the sidebar'))).toBe(true)
   })
 })

@@ -4,6 +4,59 @@ All notable changes to Kairos are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0] — 2026-07-31
+
+First release on the 0.1 line. Kairos has spent seven releases in `0.0.x` — the
+number now reflects what the app actually is: a vault format, a plugin API and
+two update channels that people can reasonably build on. This release itself is
+a refinement one — **multi-select with bulk delete** across the sidebars,
+**configurable sorting** everywhere lists appear, and **note templates rebuilt**
+so a new note starts as a real structure rather than empty headings.
+
+This is a web-only release, so it reaches mobile over the air — no reinstall.
+
+### Added
+
+- **Multi-select and bulk delete** in the notes, canvas and attachments
+  sidebars. A checkbox button in each header enters selection mode: rows swap
+  their icon for a checkbox, a bar appears with select-all and a live
+  `N of M selected` count, and shift-click takes a range. Deleting asks once and
+  routes every item through the normal trash capture, so a bulk delete is as
+  recoverable as any single one. Escape leaves selection mode.
+- **Sorting for every list.** Notes, canvas, attachments and pen notes can each
+  be ordered by **name**, **last updated** or **date created**, ascending or
+  descending. The preference is per content type and shared between a sidebar
+  and its home page, so a list never reorders just because you reached it from a
+  different screen. Folders follow the direction when sorting by name and stay
+  A→Z under the date fields, where reversing them would mean nothing.
+- **Three new note templates** — **1:1** (talking points, goals check-in,
+  two-way feedback), **Decision Record** (context, options compared in a table,
+  consequences, revisit trigger) and **Habit Tracker** (a seven-column weekly
+  grid with a streak review).
+
+### Changed
+
+- **Note templates rebuilt.** Every template previously opened as scaffolding —
+  headings over empty table rows and bare bullets — with no indication of what
+  belonged where. Each one now ships with a worked example row in its tables,
+  realistic checklist items, and sections that earn their place: the meeting
+  template has an agenda table and a decision log, the project plan has a
+  five-column risk register, the bug report has an environment table and a fix
+  checklist. Fourteen templates in total.
+- Sorting now happens inside the folder-tree builders, so it applies at every
+  level of nesting rather than only to the top of a list.
+
+### Fixed
+
+- **The sort menu was clipped by the sidebar.** The sidebar container uses
+  `overflow-hidden` for its resize animation, which cut off any menu extending
+  past its edge — a z-index could never have helped, since clipping ignores it.
+  Dropdowns can now render in a portal positioned against their trigger,
+  flipping above or right-aligning when space is short.
+- **The Brainstorm template's callout rendered as a plain quote.** It used
+  `[!QUESTION]`, which is not a recognised callout type, so it silently lost its
+  styling. Every template now uses only types the editor actually knows.
+
 ## [0.0.7] — 2026-07-28
 
 The largest release so far. Kanban grows into a Jira-grade issue tracker with

@@ -1,7 +1,7 @@
 {
   "name": "kairos",
   "private": true,
-  "version": "0.0.7",
+  "version": "0.1.0",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "otaMinNative": "0.0.7",
