@@ -11,7 +11,7 @@ const entry = (version: string) => {
 describe('changelog parser', () => {
   it('parses at least the released versions, newest first', () => {
     expect(CHANGELOG.length).toBeGreaterThanOrEqual(3)
-    expect(CHANGELOG[0].version).toBe('0.1.0')
+    expect(CHANGELOG[0].version).toBe('0.1.1')
     expect(CHANGELOG.map(e => e.version)).toContain('0.0.5')
   })
 

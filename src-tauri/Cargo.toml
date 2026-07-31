@@ -1,6 +1,6 @@
 [package]
 name = "kairos"
-version = "0.1.0"
+version = "0.1.1"
 description = "Kairos — privacy-first note-taking with semantic search"
 authors = []
 edition = "2021"

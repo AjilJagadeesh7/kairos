@@ -7,7 +7,7 @@ const FEATURES: Array<{ iconName: IconToken; title: string; desc: string }> = [
   {
     iconName: 'sticky-note',
     title: 'Notes',
-    desc: 'Markdown editor with wikilinks ([[title]]), transclusion (![[title]]), tags, backlinks, full-text & semantic search, version history, PDF export, and 11 note templates.',
+    desc: 'Markdown editor with wikilinks ([[title]]), transclusion (![[title]]), slash commands, tags, backlinks, full-text search, version history, and 14 note templates.',
   },
   {
     iconName: 'calendar-days',
@@ -17,17 +17,17 @@ const FEATURES: Array<{ iconName: IconToken; title: string; desc: string }> = [
   {
     iconName: 'square-kanban',
     title: 'Kanban',
-    desc: 'Multi-board task management with drag-and-drop columns, subtasks, checkpoints, priorities, due dates, and labels.',
+    desc: 'Multi-board issue tracking with typed issues, parent/child links, sprints, and five views — Summary, Timeline, Backlog, Board and List.',
   },
   {
     iconName: 'pen-tool',
     title: 'Canvas',
-    desc: 'Infinite freeform whiteboard for sketching, diagramming, and visually connecting ideas with nodes, arrows, and sticky notes.',
+    desc: 'Infinite freeform whiteboard for connecting ideas — text cards, live note cards, and attachment cards for documents, images, video and audio.',
   },
   {
     iconName: 'network',
     title: 'Knowledge Graph',
-    desc: 'Force-directed 3D graph of note connections via wikilinks. Tag clusters, neighbourhood focus, and right-click link creation.',
+    desc: 'Force-directed 2D graph of note connections via wikilinks. Tag clusters, neighbourhood focus, and right-click link creation.',
   },
   {
     iconName: 'history',
@@ -35,14 +35,14 @@ const FEATURES: Array<{ iconName: IconToken; title: string; desc: string }> = [
     desc: 'Every save creates a snapshot. Browse previous versions of any note or journal entry and restore with one click.',
   },
   {
-    iconName: 'folder-sync',
-    title: 'Sync',
-    desc: 'Optional S3-compatible and WebDAV sync. Notes are encrypted on-device before upload — the server never sees plaintext.',
+    iconName: 'trash-2',
+    title: 'Trash',
+    desc: 'Every delete is recoverable. Notes, boards, canvases, pen notes and attachments go to the Trash under their original id and folder, with a retention window you choose.',
   },
   {
-    iconName: 'brain-circuit',
-    title: 'Local AI',
-    desc: 'Semantic search and embeddings via a local Ollama endpoint. No data leaves your device to any cloud AI service.',
+    iconName: 'folder-sync',
+    title: 'Sync',
+    desc: 'Optional, and to storage you own — a local folder, an S3-compatible bucket (R2, B2, MinIO), or WebDAV. There is no Kairos server.',
   },
 ]
 
@@ -50,9 +50,9 @@ const PRIVACY_POINTS = [
   'No accounts, no sign-up, no email required.',
   'All notes are stored locally on your device only.',
   'No telemetry, analytics, or usage tracking of any kind.',
-  'Sync is completely optional. When enabled, notes are encrypted with your key before leaving your device.',
-  'The sync server (S3/WebDAV) stores only ciphertext — it cannot read your notes.',
-  'AI features use a local model endpoint you configure; no data is sent to any cloud AI service.',
+  'Sync is optional, and goes to storage you own — a local folder, your own S3 bucket, or your WebDAV server. There is no Kairos server.',
+  'Synced files stay in the same plain Markdown and JSON as your local vault, so any tool can read them — including whoever hosts the storage you picked. Choose a provider you trust, or self-host.',
+  'Search runs on your device; nothing is sent to an external service.',
   'The app works fully offline; no network connection is ever required.',
 ]
 
@@ -77,11 +77,12 @@ export function AboutSection() {
             requiring an account or sending any data to external servers.
           </p>
           <p>
-            Everything lives on your device. Sync is optional and always encrypted end-to-end before leaving your machine.
+            Everything lives on your device as plain files you can read with any editor. Sync is optional, and when you turn
+            it on it pushes to storage you own — never to a Kairos server, because there isn&apos;t one.
           </p>
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <span className="rounded-full bg-[rgb(var(--surface-2))] px-2.5 py-1 font-mono text-xs text-[rgb(var(--text-3))]">
-              v0.0.1
+              v{__APP_VERSION__}
             </span>
             <span className="rounded-full bg-[rgb(var(--surface-2))] px-2.5 py-1 font-mono text-xs text-[rgb(var(--text-3))]">
               AGPL-3.0

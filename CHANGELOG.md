@@ -4,6 +4,38 @@ All notable changes to Kairos are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] — 2026-07-31
+
+Fixes mobile over-the-air updates, which could not fetch their manifest, and
+corrects claims in **Settings → About** that the code does not back up.
+
+> [!IMPORTANT]
+> **Android: install this APK manually, once.** The update check itself was
+> broken, so an already-installed app cannot pull this fix over the air. After
+> 0.1.1 is installed, over-the-air updates work normally again.
+
+### Fixed
+
+- **Mobile update checks failed with "Failed to fetch".** The updater read its
+  manifest with the WebView's `fetch()`, which made it a cross-origin request
+  from the app's `https://localhost` origin — and GitHub's release-asset
+  redirects carry no `Access-Control-Allow-Origin`, so the WebView blocked every
+  response. The manifest now goes through Capacitor's native HTTP client, where
+  CORS does not apply. Bundle downloads were never affected; they were already
+  native.
+
+### Changed
+
+- **Settings → About now describes the app as it actually behaves.** It claimed
+  notes were "encrypted on-device before upload" and that a sync server "stores
+  only ciphertext" — Kairos does not encrypt synced files. They are written in
+  the same plain Markdown and JSON as your local vault, and the About page now
+  says so, and says to pick storage you trust or self-host. It also advertised
+  PDF export (removed in 0.0.7), a "3D" knowledge graph (it is 2D), semantic
+  search "via a local Ollama endpoint" (Ollama is not used), 11 note templates
+  (there are 14), and a hardcoded version badge reading v0.0.1. All corrected,
+  and the feature list now covers the Trash and the Kanban issue tracker.
+
 ## [0.1.0] — 2026-07-31
 
 First release on the 0.1 line. Kairos has spent seven releases in `0.0.x` — the

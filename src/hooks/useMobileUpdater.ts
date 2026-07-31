@@ -36,6 +36,26 @@ function cmpVersion(a: string, b: string): number {
 }
 
 async function fetchManifest(): Promise<Manifest> {
+  // On mobile the WebView runs at https://localhost, so a plain fetch() to
+  // github.com is a cross-origin request — and GitHub's release-asset redirect
+  // chain carries no Access-Control-Allow-Origin, so the WebView blocks the
+  // response and fetch() rejects with "Failed to fetch". CapacitorHttp issues
+  // the request from native code, where CORS does not apply. (The bundle
+  // download itself was never affected: CapacitorUpdater.download is native.)
+  if (isMobile()) {
+    const { CapacitorHttp } = await import('@capacitor/core')
+    const res = await CapacitorHttp.get({
+      url: MANIFEST_URL,
+      headers: { 'Cache-Control': 'no-cache' },
+    })
+    if (res.status < 200 || res.status >= 300) {
+      throw new Error(`Manifest fetch failed (${res.status})`)
+    }
+    // GitHub serves release assets as application/octet-stream, so `data` comes
+    // back as a string rather than pre-parsed JSON. Handle both.
+    return (typeof res.data === 'string' ? JSON.parse(res.data) : res.data) as Manifest
+  }
+
   const res = await fetch(MANIFEST_URL, { cache: 'no-store' })
   if (!res.ok) throw new Error(`Manifest fetch failed (${res.status})`)
   return (await res.json()) as Manifest
