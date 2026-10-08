@@ -35,6 +35,11 @@ export type { SortField, SortDir, SortPref, SortScope } from './sort.types'
 export type { KairosTier, TierLimits, StorageBreakdown, StorageUsage, UpgradeReason } from './tier.types'
 export type { FrontmatterFieldType, FrontmatterField, FrontmatterPanelMode } from './frontmatter.types'
 export type {
+  ProviderId, ProviderLocation, ProviderCapabilities, MsgRole, Msg, JSONSchema, ToolDef, ToolCall,
+  GenOpts, TokenUsage, ModelSpec, LLMProvider, EmbeddingProvider, AiProviderType, AiProviderConfig,
+  AiSurface, AiDebugTurn,
+} from './ai.types'
+export type {
   Board,
   KanbanColumn,
   KanbanTask,

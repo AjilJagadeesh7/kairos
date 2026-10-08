@@ -17,6 +17,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@aparajita/capacitor-secure-storage": "~7.1.6",
     "@capacitor/android": "^7.6.6",
     "@capacitor/app": "^7.1.2",
     "@capacitor/core": "^7.0.0",

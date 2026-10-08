@@ -1,10 +1,11 @@
+import { persistS3Secret, persistWebDAVSecret } from '../../secrets/syncCredentials'
 import type { AppSet, AppState } from '../../types'
 
 type SettingsActions = Omit<AppState,
   // everything that isn't a settings action: state fields + the note/folder slices
   | 'notes' | 'isNotesLoaded' | 'activeNoteId' | 'query' | 'searchMode' | 'syncStatus'
   | 'storageChoices' | 'theme' | 'font' | 'fontWeight' | 'fontSize' | 'trashRetentionDays'
-  | 'aiUrl' | 's3Config' | 'webdavConfig' | 'syncRules' | 'mobileSidebarOpen'
+  | 's3Config' | 'webdavConfig' | 'syncRules' | 'mobileSidebarOpen'
   | 'noteTagColors' | 'calloutColors' | 'customCallouts' | 'sidebarOpen' | 'sidebarWidth'
   | 'editorZoom' | 'userName' | 'newTabPage' | 'onboardingDone' | 'onboardingSeeded'
   | 'vaultStatus' | 'lastSyncTime' | 'keyBindings' | 'folderList' | 'pinnedNoteIds'
@@ -17,6 +18,9 @@ type SettingsActions = Omit<AppState,
 function saveShared(): void {
   void import('../../sync/settingsSync').then(({ saveCurrentSettings }) => saveCurrentSettings())
 }
+
+/** Sync credentials go to OS secure storage, never to persisted settings. */
+const warnSecret = (err: unknown) => console.warn('[secrets] could not store sync credential:', err)
 
 /** Preference, appearance and UI-chrome actions for `useAppStore`. */
 export function settingsActions(set: AppSet): SettingsActions {
@@ -36,7 +40,6 @@ export function settingsActions(set: AppSet): SettingsActions {
       saveShared()
     },
 
-    setAiUrl: (aiUrl) => set({ aiUrl }),
     setMobileSidebarOpen: (mobileSidebarOpen) => set({ mobileSidebarOpen }),
     setSearchMode: (searchMode) => set({ searchMode }),
     setQuery: (query) => set({ query }),
@@ -45,8 +48,8 @@ export function settingsActions(set: AppSet): SettingsActions {
       if (syncStatus === 'ok') updates.lastSyncTime = new Date().toISOString()
       set(updates)
     },
-    setS3Config: (s3Config) => set({ s3Config }),
-    setWebDAVConfig: (webdavConfig) => set({ webdavConfig }),
+    setS3Config: (s3Config) => { set({ s3Config }); persistS3Secret(s3Config).catch(warnSecret) },
+    setWebDAVConfig: (webdavConfig) => { set({ webdavConfig }); persistWebDAVSecret(webdavConfig).catch(warnSecret) },
     setSyncRule: (category, provider, direction, value) => set((s) => ({
       syncRules: {
         ...s.syncRules,
@@ -62,7 +65,6 @@ export function settingsActions(set: AppSet): SettingsActions {
       fontWeight:     patch.fontWeight     ?? s.fontWeight,
       fontSize:       patch.fontSize       ?? s.fontSize,
       trashRetentionDays: patch.trashRetentionDays ?? s.trashRetentionDays,
-      aiUrl:          patch.aiUrl          ?? s.aiUrl,
       noteTagColors:  patch.noteTagColors  ?? s.noteTagColors,
       calloutColors:  patch.calloutColors  ?? s.calloutColors,
       customCallouts: patch.customCallouts ?? s.customCallouts,

@@ -18,7 +18,6 @@ export type AppState = {
   fontSize: FontSize
   /** Days a deleted item stays in the trash before auto-purge; 0 = keep forever. */
   trashRetentionDays: number
-  aiUrl: string
   s3Config: S3Config | null
   webdavConfig: WebDAVConfig | null
   syncRules: SyncRules
@@ -51,14 +50,13 @@ export type AppState = {
   setFontWeight: (w: FontWeight) => void
   setFontSize: (s: FontSize) => void
   setTrashRetentionDays: (days: number) => void
-  setAiUrl: (url: string) => void
   setSearchMode: (mode: SearchMode) => void
   setQuery: (query: string) => void
   setSyncStatus: (status: SyncStatus) => void
   setS3Config: (cfg: S3Config | null) => void
   setWebDAVConfig: (cfg: WebDAVConfig | null) => void
   setSyncRule: (category: SyncCategory, provider: SyncProviderId, direction: keyof SyncDirection, value: boolean) => void
-  applySharedSettings: (patch: Partial<Pick<AppState, 'theme' | 'font' | 'fontWeight' | 'fontSize' | 'trashRetentionDays' | 'aiUrl' | 'noteTagColors' | 'calloutColors' | 'customCallouts' | 'keyBindings' | 'userName' | 'newTabPage'>>) => void
+  applySharedSettings: (patch: Partial<Pick<AppState, 'theme' | 'font' | 'fontWeight' | 'fontSize' | 'trashRetentionDays' | 'noteTagColors' | 'calloutColors' | 'customCallouts' | 'keyBindings' | 'userName' | 'newTabPage'>>) => void
   setActiveNoteId: (id?: string) => void
   setMobileSidebarOpen: (open: boolean) => void
   setStorageChoices: (choices: StorageTarget[]) => void

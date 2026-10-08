@@ -4,6 +4,7 @@ import { DEFAULT_SYNC_RULES } from '../types'
 import { noteActions } from './app/noteActions'
 import { folderActions } from './app/folderActions'
 import { settingsActions } from './app/settingsActions'
+import { redactS3, redactWebDAV } from '../secrets/syncCredentials'
 import type { AppState, StorageTarget, ThemeMode, FontOption, FontWeight, FontSize } from '../types'
 
 export type { AppState }
@@ -41,7 +42,6 @@ export const useAppStore = create<AppState>()(
       fontWeight: (localStorage.getItem('kairos.fontWeight') as FontWeight | null) ?? 'regular',
       fontSize: (localStorage.getItem('kairos.fontSize') as FontSize | null) ?? 'default',
       trashRetentionDays: 30,
-      aiUrl: 'http://localhost:11434',
       userName: '',
       newTabPage: '/',
       onboardingDone: false,
@@ -61,8 +61,9 @@ export const useAppStore = create<AppState>()(
       partialize: (state) => ({
         activeNoteId:    state.activeNoteId,
         searchMode:      state.searchMode,
-        s3Config:        state.s3Config,
-        webdavConfig:    state.webdavConfig,
+        // Secrets live in OS secure storage; persisted copies are redacted.
+        s3Config:        redactS3(state.s3Config),
+        webdavConfig:    redactWebDAV(state.webdavConfig),
         syncRules:       state.syncRules,
         storageChoices:  state.storageChoices,
         noteTagColors:   state.noteTagColors,
@@ -76,7 +77,6 @@ export const useAppStore = create<AppState>()(
         fontWeight:      state.fontWeight,
         fontSize:        state.fontSize,
         trashRetentionDays: state.trashRetentionDays,
-        aiUrl:           state.aiUrl,
         userName:        state.userName,
         newTabPage:      state.newTabPage,
         onboardingDone:  state.onboardingDone,

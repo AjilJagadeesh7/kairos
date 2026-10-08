@@ -110,37 +110,15 @@ export function useAppStartup() {
       } catch { /* capgo not present in web/desktop builds */ }
 
       const { initLocalFolder } = await import('../sync/localFolder')
-      const { setS3Config } = await import('../sync/s3')
-      const { setWebDAVConfig } = await import('../sync/webdav')
+      const { restoreSyncCredentials, restoreVaultSettings } = await import('../sync/restoreSettings')
 
       const store = useAppStore.getState()
-      if (store.s3Config) setS3Config(store.s3Config)
-      if (store.webdavConfig) setWebDAVConfig(store.webdavConfig)
+      await restoreSyncCredentials()
 
       await initLocalFolder()
       const folderStatus = await initPlainFolder()
 
-      if (folderStatus === 'ok') {
-        const { loadSettings } = await import('../sync/settingsSync')
-        const saved = await loadSettings()
-        if (saved) {
-          if (saved.theme)       store.setTheme(saved.theme)
-          if (saved.font)        store.setFont(saved.font)
-          if (saved.fontWeight)  store.setFontWeight(saved.fontWeight)
-          if (saved.fontSize)    store.setFontSize(saved.fontSize)
-          if (saved.trashRetentionDays !== undefined) store.setTrashRetentionDays(saved.trashRetentionDays)
-          if (saved.aiUrl)       store.setAiUrl(saved.aiUrl)
-          if (saved.storageChoices) store.setStorageChoices(saved.storageChoices)
-          if (saved.s3Config !== undefined && saved.s3Config !== store.s3Config) {
-            store.setS3Config(saved.s3Config)
-            if (saved.s3Config) setS3Config(saved.s3Config)
-          }
-          if (saved.webdavConfig !== undefined && saved.webdavConfig !== store.webdavConfig) {
-            store.setWebDAVConfig(saved.webdavConfig)
-            if (saved.webdavConfig) setWebDAVConfig(saved.webdavConfig)
-          }
-        }
-      }
+      if (folderStatus === 'ok') await restoreVaultSettings()
 
       useAppStore.getState().setVaultStatus(folderStatus === 'ok' ? 'ok' : folderStatus === 'missing' ? 'missing' : 'none')
 

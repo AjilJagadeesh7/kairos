@@ -18,6 +18,8 @@ import { getDeviceId } from './deviceId'
 import { useAppStore } from '../store/useAppStore'
 import { setS3Config } from './s3'
 import { setWebDAVConfig } from './webdav'
+import { getSecret, setSecret, SECRET_KEYS } from '../secrets/secureStore'
+import { redactS3, redactWebDAV } from '../secrets/syncCredentials'
 import type { S3Config } from './s3'
 import type { WebDAVConfig } from './webdav'
 import type { ThemeMode, StorageTarget, FontOption, FontWeight, FontSize, CustomCallout } from '../types'
@@ -29,7 +31,6 @@ export type PersistedSettings = {
   fontWeight?: FontWeight
   fontSize?: FontSize
   trashRetentionDays?: number
-  aiUrl?: string
   storageChoices?: StorageTarget[]
   s3Config?: S3Config | null
   webdavConfig?: WebDAVConfig | null
@@ -63,8 +64,12 @@ export async function loadSettings(): Promise<PersistedSettings | null> {
 }
 
 export async function saveCurrentSettings(): Promise<void> {
-  const { theme, font, fontWeight, fontSize, trashRetentionDays, aiUrl, storageChoices, s3Config, webdavConfig } = useAppStore.getState()
-  await saveSettings({ version: 1, theme, font, fontWeight, fontSize, trashRetentionDays, aiUrl, storageChoices, s3Config, webdavConfig })
+  const { theme, font, fontWeight, fontSize, trashRetentionDays, storageChoices, s3Config, webdavConfig } = useAppStore.getState()
+  // Secrets live in OS secure storage — the vault copy is redacted.
+  await saveSettings({
+    version: 1, theme, font, fontWeight, fontSize, trashRetentionDays, storageChoices,
+    s3Config: redactS3(s3Config), webdavConfig: redactWebDAV(webdavConfig),
+  })
   // Opportunistically mirror to the cloud (respects scope inside).
   void pushConfigToCloud()
 }
@@ -81,7 +86,6 @@ type SharedSettings = {
   fontWeight?: FontWeight
   fontSize?: FontSize
   trashRetentionDays?: number
-  aiUrl?: string
   noteTagColors?: Record<string, string>
   calloutColors?: Record<string, string>
   customCallouts?: CustomCallout[]
@@ -105,7 +109,9 @@ const deviceFile = () => `device-${getDeviceId()}.json`
 //   *_SNAP  = the JSON body last seen, used to detect a real change.
 const SHARED_MTIME  = 'kairos_cfg_shared_at',  SHARED_SNAP  = 'kairos_cfg_shared_snap'
 const DEVICE_MTIME  = 'kairos_cfg_device_at',  DEVICE_SNAP  = 'kairos_cfg_device_snap'
-const SECRETS_MTIME = 'kairos_cfg_secrets_at', SECRETS_SNAP = 'kairos_cfg_secrets_snap'
+// The secrets snapshot holds credentials, so it lives in OS secure storage
+// (SECRET_KEYS.configSecretsSnapshot), not localStorage. Only its mtime is here.
+const SECRETS_MTIME = 'kairos_cfg_secrets_at'
 
 /** Effective updatedAt for a body — bumped to now() only when it actually changed. */
 function stamp(mtimeKey: string, snapKey: string, body: unknown): string {
@@ -125,6 +131,22 @@ function adopt(mtimeKey: string, snapKey: string, body: unknown, remoteAt: strin
   localStorage.setItem(mtimeKey, remoteAt)
 }
 
+async function stampSecrets(body: unknown): Promise<string> {
+  const json = JSON.stringify(body)
+  if ((await getSecret(SECRET_KEYS.configSecretsSnapshot)) !== json) {
+    const now = new Date().toISOString()
+    await setSecret(SECRET_KEYS.configSecretsSnapshot, json)
+    localStorage.setItem(SECRETS_MTIME, now)
+    return now
+  }
+  return localStorage.getItem(SECRETS_MTIME) ?? new Date(0).toISOString()
+}
+
+async function adoptSecrets(body: unknown, remoteAt: string): Promise<void> {
+  await setSecret(SECRET_KEYS.configSecretsSnapshot, JSON.stringify(body))
+  localStorage.setItem(SECRETS_MTIME, remoteAt)
+}
+
 function remoteIsNewer(remoteAt: string, mtimeKey: string): boolean {
   const local = localStorage.getItem(mtimeKey)
   return !local || new Date(remoteAt) > new Date(local)
@@ -136,7 +158,7 @@ function sharedBody() {
   const s = useAppStore.getState()
   return {
     theme: s.theme, font: s.font, fontWeight: s.fontWeight, fontSize: s.fontSize,
-    trashRetentionDays: s.trashRetentionDays, aiUrl: s.aiUrl,
+    trashRetentionDays: s.trashRetentionDays,
     noteTagColors: s.noteTagColors, calloutColors: s.calloutColors, customCallouts: s.customCallouts,
     keyBindings: s.keyBindings, userName: s.userName, newTabPage: s.newTabPage,
   }
@@ -152,9 +174,9 @@ function buildDevice(): DeviceSettings {
   const body = deviceBody()
   return { version: 1, updatedAt: stamp(DEVICE_MTIME, DEVICE_SNAP, body), ...body }
 }
-function buildSecrets(): SecretSettings {
+async function buildSecrets(): Promise<SecretSettings> {
   const body = secretsBody()
-  return { version: 1, updatedAt: stamp(SECRETS_MTIME, SECRETS_SNAP, body), ...body }
+  return { version: 1, updatedAt: await stampSecrets(body), ...body }
 }
 
 // ---------------------------------------------------------------------------
@@ -175,7 +197,7 @@ export async function pushConfigToCloud(): Promise<void> {
   }
 
   if (secretsTargets.length > 0) {
-    const secrets = JSON.stringify(buildSecrets(), null, 2)
+    const secrets = JSON.stringify(await buildSecrets(), null, 2)
     await Promise.allSettled(secretsTargets.map((p) => p.putBlob('secrets', SECRETS_FILE, secrets)))
   }
 }
@@ -215,7 +237,7 @@ async function pullConfigFromCloud(): Promise<void> {
     if (shared && remoteIsNewer(shared.updatedAt, SHARED_MTIME)) {
       store.applySharedSettings({
         theme: shared.theme, font: shared.font, fontWeight: shared.fontWeight, fontSize: shared.fontSize,
-        trashRetentionDays: shared.trashRetentionDays, aiUrl: shared.aiUrl,
+        trashRetentionDays: shared.trashRetentionDays,
         noteTagColors: shared.noteTagColors, calloutColors: shared.calloutColors, customCallouts: shared.customCallouts,
         keyBindings: shared.keyBindings, userName: shared.userName, newTabPage: shared.newTabPage,
       })
@@ -244,7 +266,7 @@ async function pullConfigFromCloud(): Promise<void> {
     if (secret && remoteIsNewer(secret.updatedAt, SECRETS_MTIME)) {
       if (secret.s3Config !== undefined) { store.setS3Config(secret.s3Config); setS3Config(secret.s3Config) }
       if (secret.webdavConfig !== undefined) { store.setWebDAVConfig(secret.webdavConfig); setWebDAVConfig(secret.webdavConfig) }
-      adopt(SECRETS_MTIME, SECRETS_SNAP, secretsBody(), secret.updatedAt)
+      await adoptSecrets(secretsBody(), secret.updatedAt)
     }
   }
 }

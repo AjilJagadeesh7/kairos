@@ -22,6 +22,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: 'storage-sync', label: 'Storage & Sync',   iconName: 'folder-sync'     },
       { id: 'tags',         label: 'Tags',             iconName: 'tag'             },
       { id: 'callouts',     label: 'Callouts',         iconName: 'brackets'        },
+      { id: 'ai',           label: 'AI assistant',     iconName: 'brain-circuit'   },
       { id: 'keyboard',     label: 'Keyboard',         iconName: 'keyboard'        },
       { id: 'publish',      label: 'Publish & Export', iconName: 'send'            },
     ],

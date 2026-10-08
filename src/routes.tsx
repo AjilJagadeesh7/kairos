@@ -16,6 +16,7 @@ const PenNotePage = lazy(() => import('./pages/PenNotePage').then(m => ({ defaul
 const TrashPage   = lazy(() => import('./pages/TrashPage').then(m => ({ default: m.TrashPage })))
 const JournalPage      = lazy(() => import('./pages/JournalPage').then(m => ({ default: m.JournalPage })))
 const PeriodicNotesPage = lazy(() => import('./pages/PeriodicNotesPage').then(m => ({ default: m.PeriodicNotesPage })))
+const AiDebugPage = lazy(() => import('./pages/AiDebugPage').then(m => ({ default: m.AiDebugPage })))
 
 function PageLoader() {
   return (
@@ -38,6 +39,9 @@ export function AppRoutes() {
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/pricing" element={<PricingPage />} />
 
+      <Route path="/ai/debug" element={
+        <Suspense fallback={<PageLoader />}><AiDebugPage /></Suspense>
+      } />
       <Route path="/trash" element={
         <Suspense fallback={<PageLoader />}><TrashPage /></Suspense>
       } />

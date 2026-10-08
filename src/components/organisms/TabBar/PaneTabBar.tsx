@@ -24,6 +24,7 @@ export function deriveTitle(path: string, notes: { id: string; title: string }[]
   if (path === '/kanban')             return 'Kanban'
   if (path === '/graph')              return 'Graph'
   if (path === '/settings')           return 'Settings'
+  if (path === '/ai/debug')           return 'AI debug chat'
   return 'Page'
 }
 
