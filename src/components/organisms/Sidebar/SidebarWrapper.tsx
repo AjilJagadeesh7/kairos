@@ -35,8 +35,11 @@ export function SidebarWrapper({ children, className = '' }: SidebarWrapperProps
           />
         )}
         {/* Slide-in drawer */}
+        {/* overflow-hidden: anything that outgrows the drawer used to paint over the
+            page, and — while closed at translateX(-100%) — poke back in at the screen's
+            left edge. Menus inside the drawer all portal out, so nothing gets clipped. */}
         <div
-          className="fixed inset-y-0 left-0 z-40 flex flex-col border-r border-border bg-surface2 transition-transform duration-200"
+          className="fixed inset-y-0 left-0 z-40 flex flex-col overflow-hidden border-r border-border bg-surface2 transition-transform duration-200"
           style={{
             width: Math.min(sidebarWidth, window.innerWidth * 0.85),
             transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',

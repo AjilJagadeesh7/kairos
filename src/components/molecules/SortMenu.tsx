@@ -31,7 +31,7 @@ export function SortMenu({ scope, variant = 'icon', className = '' }: Props): JS
       type="button"
       aria-label={summary}
       title={summary}
-      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition hover:bg-surface3 hover:text-text ${
+      className={`btn-icon flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition hover:bg-surface3 hover:text-text ${
         active ? 'text-accent' : 'text-text2'
       }`}
     >

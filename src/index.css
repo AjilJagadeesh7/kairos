@@ -32,14 +32,24 @@
   /* Design-system buttons (Button/IconButton atoms) keep their fixed visual
      height on touch — inflating them to 44px made every size render identical
      and oversized. The 44px WCAG tap target is provided invisibly instead, by
-     a centered pseudo-element that extends the hit area beyond the bounds. */
-  .btn, .btn-icon {
+     a centered pseudo-element that extends the hit area beyond the bounds.
+     .checkbox-box rides along: it lives in a 20px-wide row gutter, so a 44px
+     min-width burst out of both sides and covered the row's own text.
+
+     The `button.btn` forms are load-bearing — a bare `.btn` is (0,1,0) and loses
+     to `button:not([role="switch"])` at (0,1,1), so for years this exemption
+     matched but never won and every atom still rendered at 44px on touch. The
+     qualified selectors tie the score and win on source order. Keep both forms:
+     the bare classes still cover non-<button> hosts, where `a`/`[role]` is only
+     (0,0,1). Don't "simplify" this back to one line. */
+  button.btn, button.btn-icon, button.checkbox-box,
+  .btn, .btn-icon, .checkbox-box {
     min-height: 0;
     min-width: 0;
     position: relative;
     overflow: visible; /* don't clip the tap-target overlay */
   }
-  .btn::after, .btn-icon::after {
+  .btn::after, .btn-icon::after, .checkbox-box::after {
     content: '';
     position: absolute;
     top: 50%;
@@ -47,6 +57,15 @@
     width: max(100%, 44px);
     height: max(100%, 44px);
     transform: translate(-50%, -50%);
+  }
+  /* .touch-compact opts a row out of 44px targets precisely because its controls
+     sit shoulder to shoulder — so the invisible overlay must go too, or each one
+     swallows taps meant for its neighbour. Only reachable now that the exemption
+     above actually applies. */
+  .touch-compact .btn::after,
+  .touch-compact .btn-icon::after,
+  .touch-compact .checkbox-box::after {
+    display: none;
   }
 
   /* Hover-revealed row actions (delete, rename, …) have no hover to reveal
@@ -1306,6 +1325,21 @@ body {
   .mv-list-toolbar-btn[disabled] {
     opacity: 0.3;
     pointer-events: none;
+  }
+
+  /* ── List item caret alignment ─────────────────────────────────────────── */
+  /* Crepe hardcodes a 32px-tall bullet box (list-item.css) while the body text
+     line is ~26px, so every list item's block is taller than the line it holds.
+     Android WebView then draws the caret against the block box rather than the
+     text line, and it floats above the words being typed. Letting the bullet
+     take the same line box as the text removes the extra height.
+     Touch-only: desktop engines position the caret on the text line regardless. */
+  .milkdown .milkdown-list-item-block li .label-wrapper,
+  .milkdown .milkdown-list-item-block li .label-wrapper .label {
+    height: auto;
+    min-height: 0;
+    padding: 0;
+    line-height: inherit;
   }
 }
 

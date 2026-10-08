@@ -38,19 +38,24 @@ export function JournalToolbar({
   return (
     <div className="touch-compact flex h-10 shrink-0 items-center gap-1.5 border-b border-border px-2 md:px-3">
       {/* Day navigation + date — one shrinkable group so the date truncates instead of overflowing */}
-      <div className="flex min-w-0 flex-1 items-center gap-1.5 md:flex-none">
+      {/* No flex-1: it made this group share leftover width 50/50 with the spacer
+          below, so on a phone the date shrank to nothing. Content-sized + min-w-0
+          still truncates if the row genuinely overflows. */}
+      <div className="flex min-w-0 items-center gap-2 md:flex-none">
         <button type="button" title="Previous day" onClick={onPrev}
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-text3 transition hover:bg-surface3 hover:text-text"
         >
           <Icon name="chevron-left" size={14} />
         </button>
 
-        <div className="flex min-w-0 items-baseline">
-          <span className="truncate text-sm font-semibold text-text">
+        <div className="flex min-w-0 items-baseline gap-2">
+          <span className={`truncate text-sm font-semibold ${isToday ? 'text-accent md:text-text' : 'text-text'}`}>
             <span className="md:hidden">{shortLabel}</span>
             <span className="hidden md:inline">{label}</span>
           </span>
-          {isToday && <span className="ml-2 shrink-0 text-[11px] font-medium text-accent">Today</span>}
+          {/* Redundant next to the date on a phone, where it also crowded the
+              next-day chevron. The accent on the date carries it there instead. */}
+          {isToday && <span className="hidden shrink-0 text-[11px] font-medium text-accent md:inline">Today</span>}
         </div>
 
         <button type="button" title="Next day" onClick={onNext}

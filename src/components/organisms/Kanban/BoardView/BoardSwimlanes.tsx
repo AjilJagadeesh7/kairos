@@ -14,6 +14,11 @@ interface Group { id: string; label: string; parent: KanbanTask | null; items: K
 
 const DROP_ANIM: DropAnimation = { duration: 200, easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)' }
 
+/** Cell grid metrics — must stay in sync with the `gap-3 px-3` on the grid row. */
+const COL_MIN  = 240
+const COL_GAP  = 12
+const LANE_PAD = 24
+
 function DroppableCell({ id, empty, children }: { id: string; empty: boolean; children: React.ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id })
   return (
@@ -91,12 +96,18 @@ export function BoardSwimlanes({ board }: Props): JSX.Element {
     if (w) setDragWidth(w)
   }
 
-  const grid = { gridTemplateColumns: `repeat(${columns.length}, minmax(240px, 1fr))` }
+  const grid = { gridTemplateColumns: `repeat(${columns.length}, minmax(${COL_MIN}px, 1fr))` }
+
+  // The cell grid has a hard 240px floor per column, so the swimlane shell has to
+  // be told to grow with it. A fixed min-width let the grid outgrow the section
+  // and the right-hand columns rendered outside its border (visible on phones).
+  const laneMinWidth =
+    columns.length * COL_MIN + Math.max(0, columns.length - 1) * COL_GAP + LANE_PAD
 
   return (
     <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="h-full overflow-auto p-4">
-        <div className="min-w-[720px] space-y-4">
+        <div className="space-y-4" style={{ minWidth: laneMinWidth }}>
           {groups.map(group => {
             const isCollapsed = collapsed.has(group.id)
             const total = group.items.length

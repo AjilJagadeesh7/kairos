@@ -32,7 +32,7 @@ export function Checkbox({
       aria-checked={indeterminate ? 'mixed' : checked}
       aria-label={label}
       onClick={onChange}
-      className={`flex ${boxSize[size]} shrink-0 items-center justify-center rounded-[4px] border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 ${
+      className={`checkbox-box flex ${boxSize[size]} shrink-0 items-center justify-center rounded-[4px] border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 ${
         filled
           ? 'border-accent bg-accent text-white'
           : 'border-border bg-surface hover:border-text3'

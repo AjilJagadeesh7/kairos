@@ -3,13 +3,14 @@
  * noteTemplates.tsx (which owns the metadata and icons) to keep both files
  * under the 300-line limit.
  *
- * Conventions across every template:
+ * Conventions across every template (keep them calm and minimal):
  *  - `###` for sections, `####` for sub-sections — the note title is the H1.
+ *  - No emoji and no coloured callouts. Section names say what goes in them;
+ *    an italic hint underneath says how to fill it in.
+ *  - Key details are a plain bullet list, not a callout.
  *  - Tables ship with one italic example row so the intended shape is obvious,
  *    followed by a blank row to type into.
- *  - Callout types must be ones calloutPlugin recognises: NOTE/INFO, TIP,
- *    IMPORTANT, WARNING, DANGER, EXAMPLE, QUOTE, ABSTRACT. Anything else
- *    silently renders as a plain blockquote.
+ *  - Status values are words (Not started / In progress / Done).
  */
 
 export interface TemplateDates {
@@ -20,195 +21,127 @@ export interface TemplateDates {
 
 export function workBodies({ longDate }: TemplateDates): Record<string, string> {
   return {
-    meeting: `> [!ABSTRACT] Meeting details
-> **Date:** ${longDate}
-> **Attendees:** —
-> **Purpose:** —
+    meeting: `- **Date:** ${longDate}
+- **Attendees:**
+- **Purpose:**
 
-### 🗓️ Agenda
-| # | Topic | Owner | Time |
-|---|-------|-------|------|
-| 1 | _Status update_ | _—_ | _10 min_ |
-| 2 |  |  |  |
-| 3 |  |  |  |
-
-### 💬 Discussion
-#### _Topic 1_
--
-
-#### _Topic 2_
--
-
-### ✅ Decisions
-| Decision | Rationale | Decided by |
-|----------|-----------|------------|
-| _Ship on Friday_ | _Last safe date before the release_ | _—_ |
+### Agenda
+| Topic | Owner | Time |
+|-------|-------|------|
+| _Status update_ | _—_ | _10 min_ |
 |  |  |  |
 
-### 📋 Action items
-- [ ] **Owner** — _what needs doing_ — due _date_
-- [ ]
+### Notes
+-
 
-### 🔁 Follow-up
-- **Next meeting:**
-- **Parked for later:**
+### Decisions
+-
+
+### Action items
+- [ ] _Owner — what needs doing, by when_
+- [ ]
 `,
 
-    oneonone: `> [!ABSTRACT] 1:1 details
-> **With:** —
-> **Date:** ${longDate}
-> **Since last time:** —
+    oneonone: `- **With:**
+- **Date:** ${longDate}
 
-### 🗣️ Their topics
+### Topics
+_Theirs first, then mine._
 -
 
-### 📌 My topics
--
-
-### 🎯 Goals check-in
+### Progress
 | Goal | Status | Notes |
 |------|--------|-------|
 | _Ship the onboarding revamp_ | _On track_ | _—_ |
 |  |  |  |
 
-### 💬 Feedback
-**Going well**
+### Feedback
 -
 
-**Could be better**
--
-
-### 📋 Action items
-- [ ] **Me** —
-- [ ] **Them** —
-
-### 🌱 Growth & career
-- **Working towards:**
-- **Support needed:**
+### Action items
+- [ ] _Me —_
+- [ ] _Them —_
 `,
 
-    standup: `### ⏮️ Yesterday
-- [x] _What actually shipped_
-- [ ] _Carried over_
+    standup: `### Yesterday
+-
 
-### ▶️ Today
-- [ ] _Main focus_
+### Today
+-
+
+### Blockers
+_Leave empty if none._
+-
+`,
+
+    project: `- **Goal:**
+- **Owner:**
+- **Target date:**
+- **Status:** In progress
+
+### Milestones
+| Milestone | Due | Status |
+|-----------|-----|--------|
+| _Kickoff and scope_ | _—_ | _Done_ |
+| _Build_ | _—_ | _In progress_ |
+| _Launch_ | _—_ | _Not started_ |
+
+### Tasks
+- [ ]
 - [ ]
 
-### 🚧 Blockers
-| Blocker | What I need | Who can help |
-|---------|-------------|--------------|
-| _Waiting on API credentials_ | _Access granted_ | _—_ |
+### Risks
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| _Scope creep_ | _High_ | _Freeze scope after kickoff_ |
 |  |  |  |
 
-### 🗒️ Notes
+### Notes
 -
 `,
 
-    project: `> [!ABSTRACT] At a glance
-> **Goal:** —
-> **Owner:** —
-> **Target date:** —
-> **Status:** 🟢 On track
+    decision: `- **Status:** Proposed
+- **Date:** ${longDate}
+- **Deciders:**
 
-### 🎯 Milestones
-| # | Milestone | Due | Status |
-|---|-----------|-----|--------|
-| 1 | _Kickoff & scope_ | _—_ | ✅ Done |
-| 2 | _Build_ | _—_ | 🟡 In progress |
-| 3 | _Launch_ | _—_ | ⬜ Not started |
-
-### 🧩 Workstreams
-#### _Workstream 1_
-- [ ]
-- [ ]
-
-#### _Workstream 2_
-- [ ]
-
-### ⚠️ Risks
-| Risk | Impact | Likelihood | Mitigation | Owner |
-|------|--------|------------|------------|-------|
-| _Scope creep_ | _High_ | _Medium_ | _Freeze scope after kickoff_ | _—_ |
-|  |  |  |  |  |
-
-### 👥 Stakeholders
-| Name | Role | Needs from us |
-|------|------|---------------|
-| _—_ | _Sponsor_ | _Weekly summary_ |
-
-### 🔗 Resources
--
-
-### 🗒️ Notes
--
-`,
-
-    decision: `> [!IMPORTANT] Decision record
-> **Status:** 🟡 Proposed
-> **Date:** ${longDate}
-> **Deciders:** —
-
-### 🧭 Context
+### Context
 _What forces a decision now? What constraints are fixed?_
 
-### 🔀 Options considered
-| Option | Pros | Cons | Effort |
-|--------|------|------|--------|
-| _A — do nothing_ | _No work_ | _Problem persists_ | _None_ |
-| _B — …_ |  |  |  |
-| _C — …_ |  |  |  |
+### Options
+| Option | Pros | Cons |
+|--------|------|------|
+| _A — do nothing_ | _No work_ | _Problem persists_ |
+| _B_ |  |  |
 
-### ✅ Decision
-_We chose **B**, because…_
+### Decision
+_We chose B, because…_
 
-### 📉 Consequences
-**We gain**
+### Consequences
 -
-
-**We accept**
--
-
-### 🔁 Revisit
-- **When:** _date, or the trigger that reopens this_
-- **Signs this was wrong:**
 `,
 
-    bug: `> [!DANGER] Summary
-> _One line: what breaks, and for whom._
+    bug: `### Summary
+_One line: what breaks, and for whom._
 
-### 🖥️ Environment
-| Field | Value |
-|-------|-------|
-| Version | _—_ |
-| OS / device | _—_ |
-| Frequency | _Always / Sometimes / Once_ |
-| Severity | _Blocker / Major / Minor_ |
+### Environment
+- **Version:**
+- **OS / device:**
+- **Severity:**
 
-### 🔢 Steps to reproduce
+### Steps to reproduce
 1.
 2.
 3.
 
-### ✅ Expected
+### Expected
 _What should have happened._
 
-### ❌ Actual
+### Actual
 _What happened instead._
 
-### 📎 Evidence
-- _Screenshot, log excerpt, or stack trace_
-
-### 🔍 Root cause
--
-
-### 🛠️ Fix
+### Fix
 - [ ] _The change_
-- [ ] Test covering the regression
-- [ ] Verified on _—_
-
-### 🔗 Related
--
+- [ ] A test covering the regression
 `,
   }
 }

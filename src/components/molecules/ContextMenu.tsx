@@ -204,6 +204,7 @@ export function ContextMenu({
             <Item label="Quote"          onClick={onBlockquote} />
           </Sub>
           <Sub label="Insert">
+            <Item label="Task list"      onClick={onTaskList} />
             <Item label="Table"          onClick={onInsertTable} />
             <Item label="Callout"        onClick={onInsertCallout} />
             <Item label="Chart"          onClick={onInsertChart} />

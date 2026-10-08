@@ -29,7 +29,7 @@ export function makeTemplates(): NoteTemplate[] {
     {
       id: 'meeting',
       name: 'Meeting Notes',
-      description: 'Agenda table, decisions, action items',
+      description: 'Agenda, notes, decisions, action items',
       icon: <Icon name="calendar-days" size={18} />,
       title: 'Meeting — ',
       content: body.meeting,
@@ -37,7 +37,7 @@ export function makeTemplates(): NoteTemplate[] {
     {
       id: 'oneonone',
       name: '1:1',
-      description: 'Talking points, goals check-in, feedback',
+      description: 'Topics, progress, feedback',
       icon: <Icon name="users" size={18} />,
       title: '1:1 with ',
       content: body.oneonone,
@@ -45,7 +45,7 @@ export function makeTemplates(): NoteTemplate[] {
     {
       id: 'standup',
       name: 'Daily Standup',
-      description: 'Yesterday, today, blockers table',
+      description: 'Yesterday, today, blockers',
       icon: <Icon name="zap" size={18} />,
       title: `Standup ${dates.shortDate}`,
       content: body.standup,
@@ -53,7 +53,7 @@ export function makeTemplates(): NoteTemplate[] {
     {
       id: 'project',
       name: 'Project Plan',
-      description: 'Milestones, workstreams, risk register',
+      description: 'Milestones, tasks, risks',
       icon: <Icon name="bar-chart-2" size={18} />,
       title: 'Project: ',
       content: body.project,
@@ -61,7 +61,7 @@ export function makeTemplates(): NoteTemplate[] {
     {
       id: 'decision',
       name: 'Decision Record',
-      description: 'Context, options compared, consequences',
+      description: 'Context, options, consequences',
       icon: <Icon name="git-fork" size={18} />,
       title: 'Decision: ',
       content: body.decision,
@@ -69,7 +69,7 @@ export function makeTemplates(): NoteTemplate[] {
     {
       id: 'bug',
       name: 'Bug Report',
-      description: 'Environment, repro steps, fix checklist',
+      description: 'Repro steps, expected vs actual, fix',
       icon: <Icon name="bug" size={18} />,
       title: 'Bug: ',
       content: body.bug,
@@ -77,7 +77,7 @@ export function makeTemplates(): NoteTemplate[] {
     {
       id: 'brainstorm',
       name: 'Brainstorm',
-      description: 'Ideas, scored shortlist, next steps',
+      description: 'Ideas, shortlist, next steps',
       icon: <Icon name="lightbulb" size={18} />,
       title: 'Brainstorm: ',
       content: body.brainstorm,
@@ -85,7 +85,7 @@ export function makeTemplates(): NoteTemplate[] {
     {
       id: 'research',
       name: 'Research Note',
-      description: 'Source table, findings, open questions',
+      description: 'Sources, findings, open questions',
       icon: <Icon name="flask-conical" size={18} />,
       title: 'Research: ',
       content: body.research,
@@ -93,7 +93,7 @@ export function makeTemplates(): NoteTemplate[] {
     {
       id: 'learning',
       name: 'Study Notes',
-      description: 'Concepts, key terms, review questions',
+      description: 'Key ideas, terms, review questions',
       icon: <Icon name="graduation-cap" size={18} />,
       title: 'Notes: ',
       content: body.learning,
@@ -109,15 +109,15 @@ export function makeTemplates(): NoteTemplate[] {
     {
       id: 'todo',
       name: 'To-Do List',
-      description: 'Prioritised checklist + scheduled table',
+      description: 'A simple checklist',
       icon: <Icon name="check-square" size={18} />,
-      title: 'To-Do: ',
+      title: 'Todo',
       content: body.todo,
     },
     {
       id: 'habit',
       name: 'Habit Tracker',
-      description: 'Weekly grid with a streak review',
+      description: 'Weekly checkbox grid',
       icon: <Icon name="crosshair" size={18} />,
       title: `Habits — week of ${dates.shortDateYear}`,
       content: body.habit,
@@ -125,7 +125,7 @@ export function makeTemplates(): NoteTemplate[] {
     {
       id: 'weekly',
       name: 'Weekly Review',
-      description: 'Wins, lessons, metrics, next week',
+      description: 'Wins, challenges, lessons, next week',
       icon: <Icon name="history" size={18} />,
       title: `Week of ${dates.shortDateYear}`,
       content: body.weekly,
