@@ -39,6 +39,34 @@ where they disagree.
 - [ ] Plain HTTP is refused for anything but localhost / private LAN addresses
 - [ ] With the AI toggle off, the AI code makes no network requests and loads nothing
 
+### P1 acceptance criteria (page bubble on notes)
+
+- [x] Diff UI for rewrite with Accept / Reject / Retry — word diff in the bubble, and the
+      original struck / proposal highlighted inline in the note (`aiSuggestionPlugin`)
+- [x] Nothing is written to a note without Accept — previews are decorations only;
+      the note changes only in `aiEditorBridge.applyPreview` / `insertAtTop`, called
+      only from Accept / "Insert at top" / "Use" / "Add tags" clicks
+- [x] Notes longer than the context budget are summarized via map-reduce, not truncated
+      (`agent/condense.ts`; a selection too long to rewrite is refused with a message)
+
+P1 decisions:
+
+- **Budget**: prompt budget = the provider's `contextTokens`, capped at 32k. Order:
+  system → facts → page → last 4 turns; the page is condensed, never cut.
+- **Routing**: free-text messages go through a JSON intent router that sees only the
+  user's message, never note content.
+- **Chat history**: Dexie table `aiChats` (schema v13), device-local. Bubble sessions
+  are saved on close/clear as "Bubble · <title>" with `source` (page id) and
+  `attachedChatIds` (empty for now) for the future graph view.
+- **Deferred**: "Add context" (attach earlier conversations) moves to P4 with the chat
+  page that lists them; "Turn this into tasks" is P3.
+- **Thinking**: `GenOpts.thinking` is not yet mapped to a provider parameter for
+  OpenAI-compatible servers (Ollama documents `reasoning_effort` but not its values);
+  inline `<think>` blocks are stripped from output instead.
+- **Fixed on the way**: `calloutPlugin` re-stamped classes on every update, which made
+  ProseMirror redraw in a loop in any note with a callout (clicks and selections lost).
+  The stamp pass is now idempotent.
+
 ## Fixed contradictions in the PRD
 
 1. **CI builds Lite only.** PRD Phase 0's "CI produces Full and Lite builds"

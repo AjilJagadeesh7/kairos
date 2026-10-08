@@ -18,9 +18,10 @@ import { WikilinkDropdown } from './WikilinkDropdown'
 import { ChartTypeModal } from './ChartTypeModal'
 import type { MarkdownEditorProps } from '../../../types'
 
-export function MarkdownEditor({ noteId, initialMarkdown, readOnly = false, onChange, onWikilinkClick, enableAttachments }: MarkdownEditorProps): JSX.Element {
+export function MarkdownEditor({ noteId, initialMarkdown, readOnly = false, onChange, onWikilinkClick, enableAttachments, editorRef }: MarkdownEditorProps): JSX.Element {
   const rootRef            = useRef<HTMLDivElement | null>(null)
-  const crepeRef           = useRef<Crepe | null>(null)
+  const ownCrepeRef        = useRef<Crepe | null>(null)
+  const crepeRef           = editorRef ?? ownCrepeRef
   const onWikilinkClickRef = useRef(onWikilinkClick)
   useEffect(() => { onWikilinkClickRef.current = onWikilinkClick }, [onWikilinkClick])
 

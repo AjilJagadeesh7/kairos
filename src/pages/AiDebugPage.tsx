@@ -26,7 +26,7 @@ export function AiDebugPage(): JSX.Element {
   if (!enabled || verified.length === 0) {
     return (
       <EmptyState
-        icon="brain-circuit"
+        icon="sparkles"
         title={enabled ? 'No tested AI provider yet' : 'The AI assistant is off'}
         description={enabled
           ? 'Add a provider and pass Test connection in Settings → AI.'

@@ -14,7 +14,8 @@
     "build:mobile": "vite build && npx cap sync",
     "build:ota": "vite build && node scripts/build-mobile-bundle.mjs",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "ai:eval": "vitest run --config vitest.eval.config.ts"
   },
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "~7.1.6",

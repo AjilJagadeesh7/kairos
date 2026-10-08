@@ -109,6 +109,7 @@ export type IconToken =
   | 'settings'
   | 'share'
   | 'smartphone'
+  | 'sparkles'
   | 'settings-2'
   | 'shield-check'
   | 'square-kanban'

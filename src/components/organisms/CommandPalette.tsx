@@ -6,6 +6,9 @@ import { useCanvasStore } from '../../store/useCanvasStore'
 import { usePenNoteStore } from '../../store/usePenNoteStore'
 import { useAttachmentStore } from '../../store/useAttachmentStore'
 import { usePaneStore } from '../../store/usePaneStore'
+import { useAiStore } from '../../store/useAiStore'
+import { toast } from 'sonner'
+import { openAiBubble } from './Ai/NoteBubble/bubbleEvent'
 import { buildUniversalIndex, searchUniversal } from '../../search/universalSearch'
 import { todayDate } from '../../store/useJournalStore'
 import { Icon } from '../../icons/Icon'
@@ -28,6 +31,7 @@ export function CommandPalette({ onClose }: Props) {
   const canvases           = useCanvasStore(s => s.canvases)
   const penNotes           = usePenNoteStore(s => s.penNotes)
   const attachments        = useAttachmentStore(s => s.attachments)
+  const aiEnabled          = useAiStore(s => s.enabled)
 
   const [query, setQuery]   = useState('')
   const [active, setActive] = useState(0)
@@ -100,10 +104,11 @@ export function CommandPalette({ onClose }: Props) {
 
     const ql = q.toLowerCase()
     const matchedNav = NAV_ITEMS.filter(
-      n => n.label.toLowerCase().includes(ql) || n.hint.toLowerCase().includes(ql),
+      n => (n.label.toLowerCase().includes(ql) || n.hint.toLowerCase().includes(ql))
+        && (aiEnabled || n.id !== 'nav-ai-bubble'),
     )
     return [...matchedNav, ...searchItems]
-  }, [query, notes, journalMap, noteMap, taskMap, taskBoardMap, canvasMap, penNoteMap, attachmentMap])
+  }, [query, notes, journalMap, noteMap, taskMap, taskBoardMap, canvasMap, penNoteMap, attachmentMap, aiEnabled])
 
   const flatItems = results
   useEffect(() => { setActive(0) }, [results])
@@ -124,6 +129,12 @@ export function CommandPalette({ onClose }: Props) {
     else if (item.kind === 'attachment') go(`/attachments/${item.attachment.id}`)
     else if (item.kind === 'nav') {
       if (item.id === 'nav-new-note') void createNote().then(id => go(`/notes/${id}`))
+      else if (item.id === 'nav-ai-bubble') {
+        const pane = usePaneStore.getState().panes.find(p => p.id === focusedPaneId)
+        const path = pane?.tabs.find(t => t.id === pane.activeTabId)?.path ?? ''
+        if (path.startsWith('/notes/')) openAiBubble(path.slice('/notes/'.length))
+        else toast('Open a note first, then ask AI about it.')
+      }
       else if (item.path) go(item.path)
     }
     onClose()

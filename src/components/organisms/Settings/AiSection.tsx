@@ -56,7 +56,7 @@ function ProvidersCard() {
     <SectionCard title="Providers">
       {providers.length === 0 ? (
         <EmptyState
-          icon="brain-circuit"
+          icon="sparkles"
           title="Add an AI provider to get started"
           description="Ollama, LM Studio or llama-server on your own machine, or a cloud API such as OpenRouter or OpenAI."
           action={{ label: 'Add provider', onClick: () => setEditing('new') }}

@@ -14,7 +14,7 @@ import {
   HardDrive, Menu, Monitor, MousePointer2,
   Network, Palette, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, PenTool, PenLine, Pencil, Highlighter, Eraser, Lasso, Hand, Pin, Plus, Puzzle,
   Redo2, RefreshCw, RotateCcw, Save, ScrollText, Search,
-  Send, Server, Settings, Settings2, Share2, ShieldCheck, Smartphone, SquareKanban,
+  Send, Server, Settings, Settings2, Share2, ShieldCheck, Smartphone, Sparkles, SquareKanban,
   StickyNote, Store, Tag, Trash2, Type, Undo2, Unlink,
   Users, WifiOff, X, Zap,
 } from 'lucide-react'
@@ -125,6 +125,7 @@ export const builtinPack: IconPack = {
   'server':          Server,
   'share':           Share2,
   'smartphone':      Smartphone,
+  'sparkles':        Sparkles,
   'settings':        Settings,
   'settings-2':      Settings2,
   'shield-check':    ShieldCheck,

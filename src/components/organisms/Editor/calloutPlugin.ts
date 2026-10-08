@@ -40,29 +40,37 @@ function getCalloutType(bq: Element): string | null {
   const text = (firstP.textContent ?? '').trimStart()
   const match = CALLOUT_RE.exec(text)
   if (!match) return null
-  return resolveType(match[1].toLowerCase())
+  // Same fallback as buildDecorations, so the two passes never disagree.
+  return resolveType(match[1].toLowerCase()) ?? 'note'
 }
 
-/** Directly stamp callout classes on blockquote DOM elements. */
+/**
+ * Directly stamp callout classes on blockquote DOM elements. Touches an
+ * element only when its classes are actually wrong: every class change is a
+ * DOM mutation ProseMirror observes and redraws, which triggers this pass
+ * again — unconditional remove/re-add looped every frame, re-creating the
+ * nodes and swallowing clicks and selections in any note with a callout.
+ */
 function stampCallouts(editorDom: Element) {
-  // Clear stale title markers first
-  for (const p of editorDom.querySelectorAll('.callout-title')) p.classList.remove('callout-title')
+  const titles = new Set<Element>()
 
   for (const bq of editorDom.querySelectorAll('blockquote')) {
-    // Remove any existing callout-* classes (handles both builtin and custom)
-    for (const cls of [...bq.classList]) {
-      if (cls === 'callout' || cls.startsWith('callout-')) bq.classList.remove(cls)
-    }
-    delete (bq as HTMLElement).dataset.callout
-
     const canonical = getCalloutType(bq)
-    if (!canonical) continue
-    bq.classList.add('callout', `callout-${canonical}`)
-    ;(bq as HTMLElement).dataset.callout = canonical
+    const wanted = canonical ? ['callout', `callout-${canonical}`] : []
+    for (const cls of [...bq.classList]) {
+      if ((cls === 'callout' || cls.startsWith('callout-')) && !wanted.includes(cls)) bq.classList.remove(cls)
+    }
+    for (const cls of wanted) if (!bq.classList.contains(cls)) bq.classList.add(cls)
+    const el = bq as HTMLElement
+    if (canonical && el.dataset.callout !== canonical) el.dataset.callout = canonical
+    if (!canonical && el.dataset.callout !== undefined) delete el.dataset.callout
 
-    const firstP = bq.querySelector(':scope > p:first-child')
-    if (firstP) firstP.classList.add('callout-title')
+    const firstP = canonical ? bq.querySelector(':scope > p:first-child') : null
+    if (firstP) titles.add(firstP)
   }
+
+  for (const p of editorDom.querySelectorAll('.callout-title')) if (!titles.has(p)) p.classList.remove('callout-title')
+  for (const p of titles) if (!p.classList.contains('callout-title')) p.classList.add('callout-title')
 }
 
 function buildDecorations(doc: Node): DecorationSet {

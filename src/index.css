@@ -129,6 +129,25 @@
   border-color: rgb(var(--accent) / 0.35);
 }
 
+/* ─── AI SUGGESTION PREVIEW (aiSuggestionPlugin) ──────────────────────────── */
+/* Removed text struck, proposed text highlighted. Visual only until Accept. */
+.ai-suggest-del {
+  text-decoration: line-through;
+  text-decoration-color: rgb(239 68 68 / 0.8);
+  background-color: rgb(239 68 68 / 0.1);
+  color: rgb(var(--text2));
+}
+.ai-suggest-ins {
+  white-space: pre-wrap;
+  color: rgb(var(--text));
+  background-color: rgb(34 197 94 / 0.14);
+  box-shadow: inset 0 -2px 0 rgb(34 197 94 / 0.5);
+  border-radius: 3px;
+  padding: 0 2px;
+  margin-left: 2px;
+  user-select: none;
+}
+
 /* ─── TRANSCLUSION ─────────────────────────────────────────────────────────── */
 
 /* Hide the raw ![[title]] text — the widget renders the embed in its place */
@@ -641,7 +660,7 @@
   --surface:      26  26  26;   /* #1A1A1A muted                             */
   --surface-2:    51  51  51;   /* #333333 card / popover                    */
   --surface-3:    64  64  64;   /* #404040 hover step                        */
-  --border:      255 255 255;   /* #FFFFFF hard white                        */
+  --border:      140 140 140;   /* #8C8C8C hard gray — white outlines glared  */
   --text:        255 255 255;   /* #FFFFFF foreground                        */
   --text-2:      204 204 204;   /* #CCCCCC muted foreground                  */
   --text-3:      153 153 153;   /* #999999 placeholders                      */

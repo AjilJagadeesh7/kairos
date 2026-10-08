@@ -139,7 +139,8 @@ async function capacitorBuffered(req: StreamRequest, signal?: AbortSignal): Prom
   return { status: res.status, body: queue }
 }
 
-async function fetchStream(req: StreamRequest, signal?: AbortSignal): Promise<StreamResponse> {
+/** Plain `fetch` streaming (browser dev, and Node for the eval script). */
+export async function fetchStream(req: StreamRequest, signal?: AbortSignal): Promise<StreamResponse> {
   let res: Response
   try {
     res = await fetch(req.url, { method: req.method, headers: req.headers, body: req.body, signal })

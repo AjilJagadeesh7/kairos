@@ -40,6 +40,11 @@ export type {
   AiSurface, AiDebugTurn,
 } from './ai.types'
 export type {
+  RewriteStyle, NoteBubbleAction, NoteIntent, SuggestionState, BubbleSuggestion, BubbleMessage,
+  NoteSnapshot, BubbleSink, Condensed, BubbleEnv, BubbleRun, UseNoteBubbleParams, SuggestionHandlers,
+  AiChatMessage, AiChatSource, AiChatRecord, EditorRange, EditorSelectionSnapshot, NoteEditorBridge,
+} from './aiChat.types'
+export type {
   Board,
   KanbanColumn,
   KanbanTask,

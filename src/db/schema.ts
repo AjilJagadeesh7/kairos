@@ -1,7 +1,8 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { Note, SettingRecord, SyncMeta, TagRecord, JournalEntry, Attachment, TrashItem } from '../types'
+import type { Note, SettingRecord, SyncMeta, TagRecord, JournalEntry, Attachment, TrashItem, AiChatRecord } from '../types'
 import type { Board } from '../types/kanban.types'
 import type { Canvas } from '../types/canvas.types'
+import { defineSchemaVersions } from './schemaVersions'
 
 type EmbeddingRecord = {
   noteId: string
@@ -20,151 +21,11 @@ export class KairosDB extends Dexie {
   canvases!: EntityTable<Canvas, 'id'>
   attachments!: EntityTable<Attachment, 'id'>
   trash!: EntityTable<TrashItem, 'id'>
+  aiChats!: EntityTable<AiChatRecord, 'id'>
 
   constructor() {
     super('kairos')
-    this.version(1).stores({
-      notes: 'id, title, *tags, createdAt, updatedAt',
-      settings: 'key',
-      syncMeta: 'noteId, lastSynced, driveFileId',
-    })
-    // Version 2: separate embeddings table so note list loads don't pull 384-float arrays
-    this.version(2)
-      .stores({
-        notes: 'id, title, *tags, createdAt, updatedAt',
-        settings: 'key',
-        syncMeta: 'noteId, lastSynced, driveFileId',
-        embeddings: 'noteId',
-      })
-      .upgrade(async (tx) => {
-        // Migrate existing embeddings out of the notes table
-        const allNotes = (await tx.table('notes').toArray()) as Array<Note & { embedding?: number[] }>
-        const records = allNotes
-          .filter((n) => n.embedding && n.embedding.length > 0)
-          .map((n) => ({ noteId: n.id, data: n.embedding! }))
-        if (records.length > 0) await tx.table('embeddings').bulkPut(records)
-        // Clear the embedding field from every note record
-        await tx.table('notes').toCollection().modify((note: Note & { embedding?: number[] }) => {
-          note.embedding = []
-        })
-      })
-    // Version 3: add fileHandles table for File System Access API directory handles
-    this.version(3).stores({
-      notes: 'id, title, *tags, createdAt, updatedAt',
-      settings: 'key',
-      syncMeta: 'noteId, lastSynced, driveFileId',
-      embeddings: 'noteId',
-      fileHandles: 'key',
-    })
-    // Version 4: add tags table for custom user tags with colors
-    this.version(4).stores({
-      notes: 'id, title, *tags, createdAt, updatedAt',
-      settings: 'key',
-      syncMeta: 'noteId, lastSynced, driveFileId',
-      embeddings: 'noteId',
-      fileHandles: 'key',
-      tags: 'name',
-    })
-    // Version 5: add boards table for kanban
-    this.version(5).stores({
-      notes: 'id, title, *tags, createdAt, updatedAt',
-      settings: 'key',
-      syncMeta: 'noteId, lastSynced, driveFileId',
-      embeddings: 'noteId',
-      fileHandles: 'key',
-      tags: 'name',
-      boards: 'id, title, updatedAt',
-    })
-    // Version 6: add dailyNotes table (superseded by v7 rename)
-    this.version(6).stores({
-      notes: 'id, title, *tags, createdAt, updatedAt',
-      settings: 'key',
-      syncMeta: 'noteId, lastSynced, driveFileId',
-      embeddings: 'noteId',
-      fileHandles: 'key',
-      tags: 'name',
-      boards: 'id, title, updatedAt',
-      dailyNotes: 'date, updatedAt',
-    })
-    // Version 7: rename dailyNotes → journal
-    this.version(7).stores({
-      notes: 'id, title, *tags, createdAt, updatedAt',
-      settings: 'key',
-      syncMeta: 'noteId, lastSynced, driveFileId',
-      embeddings: 'noteId',
-      fileHandles: 'key',
-      tags: 'name',
-      boards: 'id, title, updatedAt',
-      dailyNotes: null,
-      journal: 'date, updatedAt',
-    })
-    // Version 8: drop fileHandles (web File System Access API no longer supported)
-    this.version(8).stores({
-      notes: 'id, title, *tags, createdAt, updatedAt',
-      settings: 'key',
-      syncMeta: 'noteId, lastSynced, driveFileId',
-      embeddings: 'noteId',
-      fileHandles: null,
-      tags: 'name',
-      boards: 'id, title, updatedAt',
-      journal: 'date, updatedAt',
-    })
-    // Version 9: add canvases table
-    this.version(9).stores({
-      notes: 'id, title, *tags, createdAt, updatedAt',
-      settings: 'key',
-      syncMeta: 'noteId, lastSynced, driveFileId',
-      embeddings: 'noteId',
-      tags: 'name',
-      boards: 'id, title, updatedAt',
-      journal: 'date, updatedAt',
-      canvases: 'id, title, updatedAt',
-    })
-    // Version 10: add attachments table (file-based media for notes/journal)
-    this.version(10).stores({
-      notes: 'id, title, *tags, createdAt, updatedAt',
-      settings: 'key',
-      syncMeta: 'noteId, lastSynced, driveFileId',
-      embeddings: 'noteId',
-      tags: 'name',
-      boards: 'id, title, updatedAt',
-      journal: 'date, updatedAt',
-      canvases: 'id, title, updatedAt',
-      attachments: 'id, [ownerType+ownerId], ownerId, filename',
-    })
-    // Version 11: attachments become first-class, standalone items (own id, name,
-    // folder) instead of being owner-scoped to a note/journal. Clean break — the
-    // old owner-scoped rows are cleared (users re-add files under the new model).
-    this.version(11)
-      .stores({
-        notes: 'id, title, *tags, createdAt, updatedAt',
-        settings: 'key',
-        syncMeta: 'noteId, lastSynced, driveFileId',
-        embeddings: 'noteId',
-        tags: 'name',
-        boards: 'id, title, updatedAt',
-        journal: 'date, updatedAt',
-        canvases: 'id, title, updatedAt',
-        attachments: 'id, name, folder, createdAt',
-      })
-      .upgrade(async (tx) => {
-        await tx.table('attachments').clear()
-      })
-    // Version 12: add trash table — soft-deleted items awaiting restore or purge.
-    // Deliberately device-local (never mirrored to the vault or a sync provider)
-    // so a pull from another device can't resurrect something you deleted here.
-    this.version(12).stores({
-      notes: 'id, title, *tags, createdAt, updatedAt',
-      settings: 'key',
-      syncMeta: 'noteId, lastSynced, driveFileId',
-      embeddings: 'noteId',
-      tags: 'name',
-      boards: 'id, title, updatedAt',
-      journal: 'date, updatedAt',
-      canvases: 'id, title, updatedAt',
-      attachments: 'id, name, folder, createdAt',
-      trash: 'id, kind, deletedAt',
-    })
+    defineSchemaVersions(this)
   }
 }
 

@@ -16,6 +16,7 @@ import { chartCodeBlockPlugin } from '../components/organisms/Editor/chartCodeBl
 import { addBlockPlugin } from '../components/organisms/Editor/mobileAddBlockPlugin'
 import { mobileListToolbarPlugin } from '../components/organisms/Editor/mobileListToolbarPlugin'
 import { clickBelowAppendPlugin } from '../components/organisms/Editor/clickBelowAppendPlugin'
+import { aiSuggestionPlugin } from '../components/organisms/Editor/aiSuggestionPlugin'
 import { assertUploadSize } from '../tiers/uploadGuard'
 import { importAttachment, attachmentRef } from '../attachments/attachmentService'
 import type { MutableRefObject, RefObject } from 'react'
@@ -146,6 +147,7 @@ export function useCrepeEditor({
     crepe.editor.use(addBlockPlugin)
     crepe.editor.use(mobileListToolbarPlugin)
     crepe.editor.use(clickBelowAppendPlugin)
+    crepe.editor.use(aiSuggestionPlugin)
     crepe.on(listener => { listener.markdownUpdated((_ctx, md) => onChangeRef.current(md)) })
 
     void crepe.create().then(() => {

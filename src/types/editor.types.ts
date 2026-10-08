@@ -1,3 +1,5 @@
+import type { MutableRefObject } from 'react'
+import type { Crepe } from '@milkdown/crepe'
 import type { Note } from './note.types'
 
 export type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved'
@@ -37,6 +39,9 @@ export type MarkdownEditorProps = {
   /** When true, imported media is stored as standalone attachments (referenced by
    *  `attachment://<id>`); otherwise it is inlined as base64 (e.g. kanban). */
   enableAttachments?: boolean
+  /** Receives the live Crepe instance (null while it isn't mounted), so a
+   *  sibling such as the AI bubble can read the selection and apply edits. */
+  editorRef?: MutableRefObject<Crepe | null>
 }
 
 export type TableCommandRunner = {

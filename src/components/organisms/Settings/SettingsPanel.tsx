@@ -23,7 +23,7 @@ const SECTION_META: Partial<Record<Section, { label: string; description: string
   'storage-sync': { label: 'Storage & Sync',   description: 'Vault location, cloud sync',               icon: 'folder-sync'     },
   'tags':         { label: 'Tags',             description: 'Manage and colour your note tags',          icon: 'tag'             },
   'callouts':     { label: 'Callouts',         description: 'Custom callout types and styles',           icon: 'brackets'        },
-  'ai':           { label: 'AI assistant',     description: 'Providers, consent and where requests go',  icon: 'brain-circuit'   },
+  'ai':           { label: 'AI assistant',     description: 'Providers, consent and where requests go',  icon: 'sparkles'   },
   'keyboard':     { label: 'Keyboard',         description: 'Shortcuts and key bindings',                icon: 'keyboard'        },
   'publish':      { label: 'Publish & Export', description: 'Export notes to HTML, Markdown or PDF',    icon: 'send'            },
   'plugins':      { label: 'Plugins',          description: 'Installed plugins and developer tools',     icon: 'puzzle'          },

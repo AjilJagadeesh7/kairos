@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import type { Crepe } from '@milkdown/crepe'
 
 import { useNoteDraft } from '../../../hooks/useNoteDraft'
 import { useConflictStore } from '../../../store/useConflictStore'
@@ -10,8 +11,9 @@ import { EditorDraftSidebar } from './EditorDraftSidebar'
 import { MarkdownEditor } from './MarkdownEditor'
 import { HistoryPanel } from './HistoryPanel'
 import { ConflictBanner } from './ConflictBanner'
+import { NoteAiBubble } from '../Ai/NoteBubble/NoteAiBubble'
 import { Icon } from '../../../icons/Icon'
-import type { EditorDraftProps } from '../../../types'
+import type { EditorDraftProps, NoteSnapshot } from '../../../types'
 
 export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
   const draft    = useNoteDraft({ note, onSave })
@@ -20,6 +22,12 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
   // On mobile the sidebar is an overlay drawer — start closed so content is the hero.
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768)
   const editorRootRef = useRef<HTMLDivElement>(null)
+  const crepeRef      = useRef<Crepe | null>(null)
+
+  const aiNote = useMemo((): NoteSnapshot => ({
+    id: note.id, title: draft.title, content: draft.content, tags: draft.tags, updatedAt: note.updatedAt,
+  }), [note.id, note.updatedAt, draft.title, draft.content, draft.tags])
+  const tagVocabulary = useMemo(() => draft.allTags.map(t => t.name), [draft.allTags])
 
   return (
     <section className="relative flex h-full flex-col bg-bg">
@@ -57,7 +65,7 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
             {/* ── Main writing area ─────────────────────────────────────── */}
             {/* No overflow here — .ProseMirror is the scroll container (see index.css).
                 min-h-0 lets the flex chain constrain ProseMirror's height so it scrolls. */}
-            <div className="flex flex-1 min-h-0 flex-col">
+            <div className="relative flex flex-1 min-h-0 flex-col">
               <div ref={editorRootRef} className="flex flex-1 min-h-0 flex-col p-2">
                 {/* Pre-editor elements — shrink-0 so they don't compete with the editor for height.
                     px-11 matches the ProseMirror content padding below so the title aligns with the
@@ -104,9 +112,18 @@ export function EditorDraft({ note, onSave }: EditorDraftProps): JSX.Element {
                     onChange={draft.setContent}
                     onWikilinkClick={draft.handleWikilinkClick}
                     enableAttachments
+                    editorRef={crepeRef}
                   />
                 </div>
               </div>
+
+              <NoteAiBubble
+                note={aiNote}
+                vocabulary={tagVocabulary}
+                editorRef={crepeRef}
+                onApplyTitle={draft.setTitle}
+                onApplyTags={tags => void draft.saveTags(tags)}
+              />
             </div>
 
             {sidebarOpen && (

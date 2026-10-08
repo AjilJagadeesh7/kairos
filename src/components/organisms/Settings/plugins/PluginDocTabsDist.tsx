@@ -93,7 +93,7 @@ export default async function setup(api) {
             'lightbulb','link','link-2','list','loader-2','more-horizontal',
             'network','palette','pencil','pin','plus','puzzle',
             'redo-2','refresh-cw','rotate-ccw','save','scroll-text','search',
-            'send','settings','settings-2','shield-check','square-kanban',
+            'send','settings','settings-2','shield-check','sparkles','square-kanban',
             'sticky-note','store','tag','trash-2','undo-2','unlink',
             'users','wifi-off','x','zap',
           ].map(t => <InlineCode key={t}>{t}</InlineCode>)}
