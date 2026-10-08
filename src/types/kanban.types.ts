@@ -87,6 +87,8 @@ export interface KanbanTask {
   createdAt: string
   updatedAt: string
   completedAt?: string
+  /** Last time the card changed column (tracked since the AI review feature). */
+  movedAt?: string
 }
 
 export interface KanbanColumn {

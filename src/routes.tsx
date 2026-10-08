@@ -17,6 +17,7 @@ const TrashPage   = lazy(() => import('./pages/TrashPage').then(m => ({ default:
 const JournalPage      = lazy(() => import('./pages/JournalPage').then(m => ({ default: m.JournalPage })))
 const PeriodicNotesPage = lazy(() => import('./pages/PeriodicNotesPage').then(m => ({ default: m.PeriodicNotesPage })))
 const AiDebugPage = lazy(() => import('./pages/AiDebugPage').then(m => ({ default: m.AiDebugPage })))
+const ChatPage    = lazy(() => import('./pages/ChatPage').then(m => ({ default: m.ChatPage })))
 
 function PageLoader() {
   return (
@@ -39,6 +40,10 @@ export function AppRoutes() {
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/pricing" element={<PricingPage />} />
 
+      {/* One route, so saving a new thread (/chat → /chat/:id) doesn't remount the page. */}
+      <Route path="/chat/:chatId?" element={
+        <Suspense fallback={<PageLoader />}><ChatPage /></Suspense>
+      } />
       <Route path="/ai/debug" element={
         <Suspense fallback={<PageLoader />}><AiDebugPage /></Suspense>
       } />

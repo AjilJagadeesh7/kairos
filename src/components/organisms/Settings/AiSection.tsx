@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Suspense, lazy, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAiStore } from '../../../store/useAiStore'
 import { useConfirmStore } from '../../../store/useConfirmStore'
@@ -13,6 +13,9 @@ import { LocationBadge } from '../../atoms/LocationBadge'
 import { Select, type SelectOption } from '../../atoms/Select'
 import { Icon } from '../../../icons/Icon'
 import { ProviderEditorModal } from '../Ai/ProviderEditorModal'
+// Loaded only once AI is on: they pull in the index and chat-history modules.
+const AiIndexCard = lazy(() => import('./AiIndexCard').then((m) => ({ default: m.AiIndexCard })))
+const AiHistoryCard = lazy(() => import('./AiHistoryCard').then((m) => ({ default: m.AiHistoryCard })))
 import type { AiProviderConfig, AiSurface } from '../../../types'
 
 const NONE = '__none__'
@@ -34,6 +37,12 @@ export function AiSection() {
       </SectionCard>
       {enabled && <ProvidersCard />}
       {enabled && <SurfacesCard />}
+      {enabled && (
+        <Suspense fallback={null}>
+          <AiIndexCard />
+          <AiHistoryCard />
+        </Suspense>
+      )}
     </div>
   )
 }

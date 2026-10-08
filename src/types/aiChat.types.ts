@@ -2,13 +2,17 @@
  *  editor bridge the bubble uses to preview and apply suggestions. */
 import type { LLMProvider, Msg, ProviderLocation, TokenUsage } from './ai.types'
 import type { BoardBubbleAction, BoardFacts, BoardPlan } from './boardBubble.types'
+import type { TaskPlan } from './noteTasks.types'
+import type { ChatSourceRef, VaultFacts } from './globalChat.types'
 
 export type RewriteStyle = 'shorter' | 'formal' | 'casual' | 'grammar'
 
 export type NoteBubbleAction =
-  | 'summarize' | 'rewrite' | 'continue' | 'suggest_title' | 'suggest_tags' | 'question'
+  | 'summarize' | 'rewrite' | 'continue' | 'suggest_title' | 'suggest_tags' | 'question' | 'extract_tasks'
 
-export type BubbleAction = NoteBubbleAction | BoardBubbleAction
+export type GlobalChatAction = 'pending' | 'review' | 'query' | 'chitchat'
+
+export type BubbleAction = NoteBubbleAction | BoardBubbleAction | GlobalChatAction
 
 /** Router output for a free-text message in the note bubble. */
 export type NoteIntent =
@@ -41,6 +45,12 @@ export interface BubbleMessage {
   boardFacts?: BoardFacts
   /** Board bubble: proposed changes awaiting Apply. */
   plan?: BoardPlan
+  /** Note bubble: action items proposed as cards on a chosen board. */
+  taskPlan?: TaskPlan
+  /** Global chat: vault facts computed in code, rendered as-is. */
+  vaultFacts?: VaultFacts
+  /** Notes and cards the answer drew from (source chips). */
+  sources?: ChatSourceRef[]
   usage?: TokenUsage
   /** Shown above the content, e.g. "1,240 words · edited 2 days ago". */
   meta?: string
@@ -82,6 +92,8 @@ export interface BubbleBaseEnv {
   history: () => Msg[]
   /** Condensed pages for this session, so a second action doesn't redo map-reduce. */
   cache: Map<string, Condensed>
+  /** Earlier conversations the user attached ("Add context"), fitted to the budget, or null. */
+  attachedContext: () => Promise<string | null>
 }
 
 /** What every note-bubble action runner gets. */
@@ -124,6 +136,10 @@ export interface AiChatMessage {
   action?: BubbleAction
   /** What the user did with a suggestion: accepted, rejected, inserted, applied. */
   outcome?: string
+  /** Global chat: kept so a reopened thread renders as it did. */
+  meta?: string
+  vaultFacts?: VaultFacts
+  sources?: ChatSourceRef[]
 }
 
 export interface AiChatSource {

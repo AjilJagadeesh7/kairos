@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useBubbleSession } from './useBubbleSession'
 import { useBubbleSuggestions } from './useBubbleSuggestions'
+import { useTaskPlan } from './useTaskPlan'
 import type { BubbleBaseEnv, BubbleEnv, UseNoteBubbleParams } from '../types'
 
 /**
@@ -39,5 +40,7 @@ export function useNoteBubble(params: UseNoteBubbleParams) {
     paramsRef, messagesRef: session.messagesRef, add: session.add, patch: session.patch, run: session.run,
   })
 
-  return { ...session, ...suggestions }
+  const tasks = useTaskPlan({ messagesRef: session.messagesRef, add: session.add, patch: session.patch })
+
+  return { ...session, ...suggestions, tasks }
 }

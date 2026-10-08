@@ -35,6 +35,8 @@ export default function BoardBubblePanel({ boardId, onClose }: BoardBubblePanelP
       messages={bubble.messages}
       busy={bubble.busy}
       progress={bubble.progress}
+      attached={bubble.attached}
+      onAttach={bubble.setAttached}
       renderMessage={(m, openSettings) => (
         <BubbleMessageFrame key={m.id} message={m} onSwitchProvider={openSettings}>
           {m.boardFacts && <BoardFactsView facts={m.boardFacts} onOpenCard={openCard} />}

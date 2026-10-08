@@ -6,7 +6,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { v4 as uuid } from 'uuid'
-import type { AiProviderConfig, AiSurface } from '../types'
+import type { AiProviderConfig, AiSurface, ChatRetention, IndexSource } from '../types'
 
 /** Consent is per provider *and* destination: pointing a provider at a
  *  different host asks again. */
@@ -25,6 +25,13 @@ interface AiState {
   surfaceProvider: Record<AiSurface, string | null>
   /** consentKey → ISO time the cloud consent dialog was accepted. */
   consents: Record<string, string>
+  /** Board + column last picked for "Turn this into tasks". */
+  taskTarget: { boardId: string; columnId: string } | null
+  /** Where the global chat's semantic search gets vectors from. */
+  indexSource: IndexSource
+  /** The built index: which embedding model made it (a different one needs a rebuild). */
+  indexMeta: { modelId: string; builtAt: string } | null
+  chatRetention: ChatRetention
 
   setEnabled: (enabled: boolean) => void
   /** `id` lets the editor pre-allocate one (consent is recorded per id before saving). */
@@ -34,6 +41,10 @@ interface AiState {
   markVerified: (id: string, verified: boolean) => void
   setSurfaceProvider: (surface: AiSurface, providerId: string | null) => void
   grantConsent: (cfg: AiProviderConfig) => void
+  setTaskTarget: (target: { boardId: string; columnId: string }) => void
+  setIndexSource: (source: IndexSource) => void
+  setIndexMeta: (meta: { modelId: string; builtAt: string } | null) => void
+  setChatRetention: (retention: ChatRetention) => void
 }
 
 export const useAiStore = create<AiState>()(
@@ -43,6 +54,10 @@ export const useAiStore = create<AiState>()(
       providers: [],
       surfaceProvider: { global: null, bubble: null },
       consents: {},
+      taskTarget: null,
+      indexSource: 'on-device',
+      indexMeta: null,
+      chatRetention: 'keep',
 
       setEnabled: (enabled) => set({ enabled }),
 
@@ -80,6 +95,11 @@ export const useAiStore = create<AiState>()(
       }),
 
       grantConsent: (cfg) => set((s) => ({ consents: { ...s.consents, [consentKey(cfg)]: new Date().toISOString() } })),
+
+      setTaskTarget: (taskTarget) => set({ taskTarget }),
+      setIndexSource: (indexSource) => set({ indexSource }),
+      setIndexMeta: (indexMeta) => set({ indexMeta }),
+      setChatRetention: (chatRetention) => set({ chatRetention }),
     }),
     { name: 'kairos-ai' },
   ),

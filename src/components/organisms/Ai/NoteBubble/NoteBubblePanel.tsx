@@ -7,6 +7,7 @@ import { useNoteBubble } from '../../../../hooks/useNoteBubble'
 import { createNoteEditorBridge } from '../../Editor/aiEditorBridge'
 import { notice } from '../../../../ai/agent/bubbleEnv'
 import { runContinue, runRewrite } from '../../../../ai/agent/noteWriting'
+import { runExtractTasks } from '../../../../ai/agent/noteTasks'
 import { runMessage, runSuggestTags, runSuggestTitle, runSummarize } from '../../../../ai/agent/noteActions'
 import { REWRITE_STYLES } from '../../../../ai/prompts/noteBubble.v1'
 import type { NoteSnapshot, RewriteStyle } from '../../../../types'
@@ -51,8 +52,10 @@ export default function NoteBubblePanel({ getNote, editorRef, vocabulary, onAppl
       messages={bubble.messages}
       busy={bubble.busy}
       progress={bubble.progress}
+      attached={bubble.attached}
+      onAttach={bubble.setAttached}
       renderMessage={(m, openSettings) => (
-        <BubbleMessageView key={m.id} message={m} busy={bubble.busy} handlers={bubble} onSwitchProvider={openSettings} />
+        <BubbleMessageView key={m.id} message={m} busy={bubble.busy} handlers={bubble} taskHandlers={bubble.tasks} onSwitchProvider={openSettings} />
       )}
       quickActions={
         <BubbleQuickActions
@@ -61,6 +64,7 @@ export default function NoteBubblePanel({ getNote, editorRef, vocabulary, onAppl
           onContinue={() => void bubble.run('Continue writing', (env) => runContinue(env))}
           onTitle={() => void bubble.run('Suggest a title', runSuggestTitle)}
           onTags={() => void bubble.run('Suggest tags', runSuggestTags)}
+          onTasks={() => void bubble.run('Turn this into tasks', runExtractTasks)}
           onRewrite={rewrite}
         />
       }

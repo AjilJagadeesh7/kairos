@@ -10,6 +10,7 @@ interface Props {
   onContinue: () => void
   onTitle: () => void
   onTags: () => void
+  onTasks: () => void
   onRewrite: (style: RewriteStyle) => void
 }
 
@@ -27,7 +28,7 @@ function Action({ icon, label, onClick, disabled }: { icon?: IconToken; label: s
   )
 }
 
-export function BubbleQuickActions({ disabled, onSummarize, onContinue, onTitle, onTags, onRewrite }: Props) {
+export function BubbleQuickActions({ disabled, onSummarize, onContinue, onTitle, onTags, onTasks, onRewrite }: Props) {
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap gap-1">
@@ -35,6 +36,7 @@ export function BubbleQuickActions({ disabled, onSummarize, onContinue, onTitle,
         <Action icon="pen-line" label="Continue" onClick={onContinue} disabled={disabled} />
         <Action icon="type" label="Title" onClick={onTitle} disabled={disabled} />
         <Action icon="tag" label="Tags" onClick={onTags} disabled={disabled} />
+        <Action icon="check-square" label="Tasks" onClick={onTasks} disabled={disabled} />
       </div>
       <div className="flex flex-wrap items-center gap-1">
         <span className="mr-0.5 text-[10px] font-medium uppercase tracking-wider text-text3">Selection</span>

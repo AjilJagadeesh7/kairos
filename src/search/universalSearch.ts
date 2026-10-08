@@ -11,7 +11,7 @@
  *  - Recency boost applied post-search so stale results don't outrank fresh ones
  */
 import MiniSearch from 'minisearch'
-import type { Note, JournalEntry, Canvas, PenNote, Attachment } from '../types'
+import type { Note, JournalEntry, Canvas, PenNote, Attachment, AiChatRecord } from '../types'
 import type { Board, KanbanTask } from '../types/kanban.types'
 
 // ─── Document shape ──────────────────────────────────────────────────────────
@@ -27,7 +27,7 @@ interface UnifiedDoc {
 
 // ─── Result types ─────────────────────────────────────────────────────────────
 
-export type ResultKind = 'note' | 'journal' | 'task' | 'canvas' | 'pennote' | 'attachment'
+export type ResultKind = 'note' | 'journal' | 'task' | 'canvas' | 'pennote' | 'attachment' | 'chat'
 
 export interface UniversalHit {
   id: string
@@ -143,6 +143,17 @@ function attachmentDoc(att: Attachment): UnifiedDoc {
   }
 }
 
+function chatDoc(chat: AiChatRecord): UnifiedDoc {
+  return {
+    id: `chat:${chat.id}`,
+    kind: 'chat',
+    title: chat.title,
+    meta: chat.surface === 'global' ? 'AI chat' : 'AI bubble chat',
+    body: chat.messages.map((m) => m.content).join('\n').slice(0, 2000),
+    updatedAt: chat.updatedAt,
+  }
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
@@ -156,6 +167,7 @@ export function buildUniversalIndex(
   canvases: Canvas[],
   penNotes: PenNote[] = [],
   attachments: Attachment[] = [],
+  chats: AiChatRecord[] = [],
 ): void {
   const idx = getIndex()
   if (_built) idx.removeAll()
@@ -170,6 +182,7 @@ export function buildUniversalIndex(
   for (const canvas of canvases) docs.push(canvasDoc(canvas))
   for (const penNote of penNotes) docs.push(penNoteDoc(penNote))
   for (const att of attachments) docs.push(attachmentDoc(att))
+  for (const chat of chats) docs.push(chatDoc(chat))
 
   idx.addAll(docs)
   _built = true

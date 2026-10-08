@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { Note, SettingRecord, SyncMeta, TagRecord, JournalEntry, Attachment, TrashItem, AiChatRecord } from '../types'
+import type { Note, SettingRecord, SyncMeta, TagRecord, JournalEntry, Attachment, TrashItem, AiChatRecord, IndexChunk } from '../types'
 import type { Board } from '../types/kanban.types'
 import type { Canvas } from '../types/canvas.types'
 import { defineSchemaVersions } from './schemaVersions'
@@ -22,6 +22,7 @@ export class KairosDB extends Dexie {
   attachments!: EntityTable<Attachment, 'id'>
   trash!: EntityTable<TrashItem, 'id'>
   aiChats!: EntityTable<AiChatRecord, 'id'>
+  aiChunks!: EntityTable<IndexChunk, 'id'>
 
   constructor() {
     super('kairos')

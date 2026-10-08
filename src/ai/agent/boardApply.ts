@@ -64,7 +64,7 @@ export function applyPlan(board: Board, actions: PlanAction[], now = new Date())
       const id = uuid()
       const built = buildTask(b, id, r.columnId, r.title, stamp, {})
       b = updateTask(built.board, id, (t) => ({
-        ...t, description: r.description, due: r.due, tags: r.tags, priority: r.priority,
+        ...t, description: r.description, due: r.due, tags: r.tags, priority: r.priority, linkedNotes: r.linkedNotes ?? [],
       }))
       b = addMissingBoardTags(b, r.tags, undo.addedBoardTags)
       undo.created.push(id)

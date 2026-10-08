@@ -49,10 +49,11 @@ export async function runBoardQuestion(env: BoardBubbleEnv, question: string): P
   const board = env.board()
   const factsText = JSON.stringify(computeBoardFacts(board, env.now()))
   const turns = env.history()
+  const attached = await env.attachedContext()
   const msg = newMessage({ role: 'assistant', content: '', action: 'board_question', streaming: true })
   env.sink.add(msg)
 
-  const overhead = messagesTokens(boardQuestionMessages(factsText, '', [], question))
+  const overhead = messagesTokens(boardQuestionMessages(factsText, '', [], question, attached))
   const listing = boardListing(board, question, pageAllowance(env.budget, overhead, turns))
   const meta = listingMeta(listing)
   if (meta) env.sink.patch(msg.id, (m) => ({ ...m, meta }))
@@ -60,7 +61,7 @@ export async function runBoardQuestion(env: BoardBubbleEnv, question: string): P
   const history = fitTurns(turns, usableBudget(env.budget) - used)
 
   const { stopped } = await streamInto(env, msg.id,
-    boardQuestionMessages(factsText, listing.text, history, question), GEN.question)
+    boardQuestionMessages(factsText, listing.text, history, question, attached), GEN.question)
   if (stopped) env.sink.patch(msg.id, (m) => ({ ...m, meta: join(m.meta ?? '', 'Stopped') }))
 }
 

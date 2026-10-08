@@ -13,12 +13,16 @@ import { buildUniversalIndex, searchUniversal } from '../../search/universalSear
 import { todayDate } from '../../store/useJournalStore'
 import { Icon } from '../../icons/Icon'
 import type { KanbanTask, Board } from '../../types/kanban.types'
-import { NAV_ITEMS, itemKey, groupResults } from './commandPaletteItems'
+import type { AiChatRecord } from '../../types'
+import { NAV_ITEMS, AI_ONLY_NAV, itemKey, groupResults } from './commandPaletteItems'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { db } from '../../db/schema'
 import type { ResultItem } from './commandPaletteItems'
 import { ResultRow, SectionLabel } from './CommandPaletteRow'
 import { KbdKey } from '../atoms/KbdKey'
 
 const MAX_RESULTS = 30
+const NO_CHATS: AiChatRecord[] = []
 
 interface Props { onClose: () => void }
 
@@ -32,6 +36,7 @@ export function CommandPalette({ onClose }: Props) {
   const penNotes           = usePenNoteStore(s => s.penNotes)
   const attachments        = useAttachmentStore(s => s.attachments)
   const aiEnabled          = useAiStore(s => s.enabled)
+  const chats              = useLiveQuery(() => (aiEnabled ? db.aiChats.toArray() : []), [aiEnabled]) ?? NO_CHATS
 
   const [query, setQuery]   = useState('')
   const [active, setActive] = useState(0)
@@ -42,6 +47,12 @@ export function CommandPalette({ onClose }: Props) {
     buildUniversalIndex(notes, journalEntries, boards, canvases, penNotes, attachments)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Chats load from IndexedDB after the first build; rebuild once they arrive.
+  useEffect(() => {
+    if (chats.length) buildUniversalIndex(notes, journalEntries, boards, canvases, penNotes, attachments, chats)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chats])
 
   useEffect(() => { inputRef.current?.focus() }, [])
 
@@ -60,6 +71,7 @@ export function CommandPalette({ onClose }: Props) {
   const canvasMap  = useMemo(() => new Map(canvases.map(c => [c.id, c])), [canvases])
   const penNoteMap = useMemo(() => new Map(penNotes.map(p => [p.id, p])), [penNotes])
   const attachmentMap = useMemo(() => new Map(attachments.map(a => [a.id, a])), [attachments])
+  const chatMap    = useMemo(() => new Map(chats.map(c => [c.id, c])), [chats])
 
   const results: ResultItem[] = useMemo(() => {
     const q = query.trim()
@@ -99,16 +111,19 @@ export function CommandPalette({ onClose }: Props) {
       } else if (hit.kind === 'attachment') {
         const attachment = attachmentMap.get(hit.id.slice(11))
         if (attachment) searchItems.push({ kind: 'attachment', attachment, score: hit.score })
+      } else if (hit.kind === 'chat') {
+        const chat = chatMap.get(hit.id.slice(5))
+        if (chat) searchItems.push({ kind: 'chat', chat, score: hit.score })
       }
     }
 
     const ql = q.toLowerCase()
     const matchedNav = NAV_ITEMS.filter(
       n => (n.label.toLowerCase().includes(ql) || n.hint.toLowerCase().includes(ql))
-        && (aiEnabled || n.id !== 'nav-ai-bubble'),
+        && (aiEnabled || !AI_ONLY_NAV.has(n.id)),
     )
     return [...matchedNav, ...searchItems]
-  }, [query, notes, journalMap, noteMap, taskMap, taskBoardMap, canvasMap, penNoteMap, attachmentMap, aiEnabled])
+  }, [query, notes, journalMap, noteMap, taskMap, taskBoardMap, canvasMap, penNoteMap, attachmentMap, chatMap, aiEnabled])
 
   const flatItems = results
   useEffect(() => { setActive(0) }, [results])
@@ -127,6 +142,7 @@ export function CommandPalette({ onClose }: Props) {
     else if (item.kind === 'canvas')  go(`/canvas/${item.canvas.id}`)
     else if (item.kind === 'pennote') go(`/pennote/${item.penNote.id}`)
     else if (item.kind === 'attachment') go(`/attachments/${item.attachment.id}`)
+    else if (item.kind === 'chat')    go(`/chat/${item.chat.id}`)
     else if (item.kind === 'nav') {
       if (item.id === 'nav-new-note') void createNote().then(id => go(`/notes/${id}`))
       else if (item.id === 'nav-ai-bubble') {

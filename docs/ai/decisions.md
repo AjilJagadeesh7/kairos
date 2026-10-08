@@ -133,6 +133,103 @@ P2 decisions:
   - invented numbers in the summary;
   - intent routing (≥ 80%).
 
+### P3 acceptance criteria (note to tasks)
+
+- [x] Each created card links back to its source note — cards are created with
+      `linkedNotes: [noteId]` (`agent/taskPlanActions.ts`); checked in the browser on the
+      card's Linked notes section
+- [ ] On a test set of 10 meeting notes, ≥ 80% of action items are extracted without
+      invented items — the test set and scorer exist (`eval/noteTasks.eval.ts`,
+      `npm run ai:eval`) but have **not been run against a real model yet**
+
+P3 decisions:
+
+- **Two sources of items**:
+  - Unchecked `- [ ]` lines are found by code, so they are never missed.
+  - Prose action items come from the model.
+  - Every model item must carry a verbatim `quote`. Code checks the quote is in the
+    note, ignoring markdown/punctuation, with ≥ 85% word overlap as a fallback. An item
+    that fails is shown greyed as "Not found in the note" and is never created.
+  - Items quoting a `[x]` line are flagged "Already done in the note".
+- **Board and column picker** live in the plan card. The default is the last board
+  used, else the first board, and its first non-done column. The pick is remembered in
+  `useAiStore.taskTarget` (device-local).
+- **Re-running** on the same note flags items already on the chosen board as cards
+  linked to this note with the same title ("Already on Release as REL-1"), so nothing
+  is duplicated.
+- **Selection**: with text selected, only the selection is read. Long notes are read in
+  parts, never cut. More than 20 usable items is refused with a request to select less
+  (PRD max 20 actions).
+- **Thinking** is on for extract_tasks (PRD); dates are resolved in code as in P2.
+
+### P4 acceptance criteria (global chat, read-only)
+
+- [x] Index builds on demand with progress and pause; encrypted at rest. Per the
+      encryption decision above, it is **stored like notes** (device-local IndexedDB
+      `aiChunks`, Dexie v14, never synced).
+  - Settings → AI → Semantic index has Build / Pause / Resume / Update / Rebuild /
+    Delete, a progress bar and the index size.
+  - Incremental: unchanged notes are skipped.
+  - Notes saved after the build are re-embedded, debounced 5 s and only while the app
+    is in the foreground.
+  - Verified on the production build: the index builds with 384-dim MiniLM vectors, and
+    "which database engine?" finds the Postgres note with no shared words.
+- [x] Every answer that uses vault data shows source chips.
+  - Pending and review answers list the cards and notes in their facts.
+  - Q&A lists the retrieved notes, numbered as cited ([1], [2]…), cited ones first.
+  - Each chip opens its note, journal day or card.
+- [x] Review numbers match computed facts exactly. Pending and day/week/month reviews
+  are computed in code (`agent/vaultFacts.ts`, using the board UI's done/overdue rules)
+  and rendered by code (`VaultFactsView`); the model may only use those numbers.
+- [x] Chat threads persist locally and respect the retention setting.
+  - Global threads save after every turn and reopen with their facts and chips.
+  - Retention options: keep / 30 days / never ("never" deletes saved chats and stops
+    saving).
+  - Swept at startup and hourly; Clear all is in Settings.
+
+P4 decisions:
+
+- **Retrieval** is hybrid when the on-device index exists:
+  - Keyword search (MiniSearch over chunks: title ×3, tags ×2, heading ×2, text)
+    always runs on the vault as it is now.
+  - Vectors from the index are fused in by reciprocal-rank fusion.
+  - A vector whose note changed since it was indexed is ignored until re-indexed.
+  - Top 8 passages, at most 3 per note.
+  - The answer's meta line says whether semantic search took part.
+- **Embedding sources**: on-device (the existing MiniLM worker, both builds) or keyword
+  only. Provider embeddings stay in P6 with the other provider work.
+- **Global intents**: pending, review (day/week/month), query (optional since/tags),
+  change, chitchat. The router sees only the message. "change" is refused in P4 with a
+  pointer to the page bubble; writes are P5.
+- **Kanban activity for reviews**: `mutateBoard` now stamps `movedAt` when a card
+  changes column. It sets `completedAt` on entering the done column and clears it on
+  leaving. Moves made before this version aren't recorded.
+- **Chat page**: `/chat/:chatId?`, a single route so saving a new thread doesn't
+  remount it.
+  - Listed in the Activity bar, mobile nav and command palette (AI only).
+  - Threads are searchable in Ctrl+K.
+  - Saved bubble conversations are read-only and offer "Continue as global chat", which
+    opens a new thread with that conversation attached.
+- **Add context** (deferred from P1): a paperclip in the global chat and both bubbles.
+  - It attaches earlier conversations as an `<earlier_conversations>` data block, using
+    up to 25% of the budget.
+  - Trimmed to the latest lines, or map-reduced into a summary when trimming would drop
+    more than half.
+  - In the bubbles it feeds the question flows only. It never widens what a surface can
+    do.
+- **Deleting chats** asks for confirmation but doesn't go through the trash: chat
+  history is device-local AI data, not vault content, and the PRD's retention and
+  Clear all already remove it.
+- **Fixed on the way**:
+  - The embedding worker now sets `env.allowLocalModels = false`. Before, transformers.js
+    asked the app's own server for `/models/…`, got the SPA's index.html, and failed, so
+    on-device embeddings, and with them the existing semantic search, never worked in
+    the built app.
+  - The worker now reports its error instead of returning an empty vector silently.
+- **Known issue (dev server only)**: under `npm run dev`, transformers.js fails with
+  "registerBackend of undefined" because `@xenova/transformers` is excluded from Vite's
+  dependency pre-bundling. Production builds work. The exclusion was left as it is.
+
 ## Fixed contradictions in the PRD
 
 1. **CI builds Lite only.** PRD Phase 0's "CI produces Full and Lite builds"

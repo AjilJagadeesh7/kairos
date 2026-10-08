@@ -6,6 +6,7 @@ import { computeNoteFacts, factsHeader, factsJSON } from './noteFacts'
 import { fitTurns, messagesTokens, usableBudget } from './budget'
 import { routeNoteIntent } from './noteIntent'
 import { runContinue, runRewrite } from './noteWriting'
+import { runExtractTasks } from './noteTasks'
 import {
   questionMessages, summarizeMessages, tagsMessages, titleMessages,
 } from '../prompts/noteBubble.v1'
@@ -95,10 +96,11 @@ export async function runQuestion(env: BubbleEnv, question: string): Promise<voi
   const note = env.note()
   const factsText = factsJSON(computeNoteFacts(note))
   const turns = env.history()
+  const attached = await env.attachedContext()
   const msg = newMessage({ role: 'assistant', content: '', action: 'question', streaming: true })
   env.sink.add(msg)
 
-  const overhead = messagesTokens(questionMessages(note.title, '', false, factsText, [], question))
+  const overhead = messagesTokens(questionMessages(note.title, '', false, factsText, [], question, attached))
   const page = await fitPage(env, overhead, turns)
   const meta = condensedMeta(page)
   if (meta) env.sink.patch(msg.id, (m) => ({ ...m, meta }))
@@ -106,7 +108,7 @@ export async function runQuestion(env: BubbleEnv, question: string): Promise<voi
   const history = fitTurns(turns, usableBudget(env.budget) - used)
 
   const { stopped } = await streamInto(env, msg.id,
-    questionMessages(note.title, page.text, page.condensed, factsText, history, question), GEN.question)
+    questionMessages(note.title, page.text, page.condensed, factsText, history, question, attached), GEN.question)
   if (stopped) env.sink.patch(msg.id, (m) => ({ ...m, meta: m.meta ? `${m.meta} · Stopped` : 'Stopped' }))
 }
 
@@ -123,9 +125,7 @@ export async function runMessage(env: BubbleEnv, text: string): Promise<void> {
     case 'rewrite':
       if (!selection) { notice(env, 'Select the text you want rewritten in the note, then ask again.'); return }
       return runRewrite(env, intent.style, selection)
-    case 'extract_tasks':
-      notice(env, "Turning a note into tasks isn't available in the bubble yet.")
-      return
+    case 'extract_tasks': return runExtractTasks(env)
     case 'question': return runQuestion(env, text)
   }
 }

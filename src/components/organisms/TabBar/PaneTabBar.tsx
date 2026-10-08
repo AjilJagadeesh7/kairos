@@ -25,6 +25,7 @@ export function deriveTitle(path: string, notes: { id: string; title: string }[]
   if (path === '/graph')              return 'Graph'
   if (path === '/settings')           return 'Settings'
   if (path === '/ai/debug')           return 'AI debug chat'
+  if (path === '/chat' || path.startsWith('/chat/')) return 'AI chat'
   return 'Page'
 }
 
@@ -36,6 +37,7 @@ function tabIcon(type: PaneTab['type'], size = 13) {
     case 'graph':    return <Icon name="network"      size={size} />
     case 'settings': return <Icon name="settings-2"    size={size} />
     case 'attachments': return <Icon name="paperclip"  size={size} />
+    case 'chat':     return <Icon name="sparkles"     size={size} />
     default:         return <Icon name="home"       size={size} />
   }
 }

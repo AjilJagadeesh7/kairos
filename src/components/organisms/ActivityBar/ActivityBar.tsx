@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePaneStore, pathToType } from '../../../store/usePaneStore'
 import { useAppStore } from '../../../store/useAppStore'
 import { usePluginRegistry } from '../../../plugins/pluginContext'
+import { useAiStore } from '../../../store/useAiStore'
 import { SyncStatusBadge } from '../../molecules/SyncStatusBadge'
 import { SlotRenderer } from '../../molecules/SlotRenderer'
 import { THEME_REGISTRY } from '../../../themes/registry'
@@ -162,6 +163,7 @@ export function ActivityBar() {
     return pane?.tabs.find(t => t.id === pane.activeTabId)?.path ?? '/'
   })
 
+  const aiEnabled = useAiStore(s => s.enabled)
   const activeType = pathToType(activePath)
   const focusedHasSidebar = SIDEBAR_TYPES.has(activeType)
 
@@ -200,6 +202,7 @@ export function ActivityBar() {
       {/* Primary nav */}
       <nav className="flex flex-1 flex-col items-center py-1">
         {TOP_NAV.map(item => <NavBtn key={item.to} {...item} activePath={activePath} onNav={go} />)}
+        {aiEnabled && <NavBtn to="/chat" iconName="sparkles" label="AI chat" activePath={activePath} onNav={go} />}
 
         {pluginPages.map(({ path, navLabel, navIcon: NavIconComponent, navIconName }) => (
           <NavBtn

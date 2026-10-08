@@ -163,4 +163,20 @@ export function defineSchemaVersions(db: Dexie): void {
     trash: 'id, kind, deletedAt',
     aiChats: 'id, surface, source.id, updatedAt',
   })
+  // Version 14: semantic index for the AI global chat — note/journal chunks
+  // with their vectors. Device-local, never synced; rebuilt from the vault.
+  db.version(14).stores({
+    notes: 'id, title, *tags, createdAt, updatedAt',
+    settings: 'key',
+    syncMeta: 'noteId, lastSynced, driveFileId',
+    embeddings: 'noteId',
+    tags: 'name',
+    boards: 'id, title, updatedAt',
+    journal: 'date, updatedAt',
+    canvases: 'id, title, updatedAt',
+    attachments: 'id, name, folder, createdAt',
+    trash: 'id, kind, deletedAt',
+    aiChats: 'id, surface, source.id, updatedAt',
+    aiChunks: 'id, docId',
+  })
 }

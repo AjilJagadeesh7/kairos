@@ -27,6 +27,7 @@ function rowContent(item: ResultItem): { iconName: IconToken; primary: string; s
   if (item.kind === 'canvas')  return { iconName: 'pen-tool',      primary: item.canvas.title || 'Untitled canvas', secondary: 'Canvas' }
   if (item.kind === 'pennote') return { iconName: 'pen-line',      primary: item.penNote.title || 'Untitled pen note', secondary: item.penNote.folder || 'Pen note' }
   if (item.kind === 'attachment') return { iconName: 'paperclip',  primary: item.attachment.name, secondary: item.attachment.folder || 'Attachment' }
+  if (item.kind === 'chat')    return { iconName: 'sparkles',      primary: item.chat.title, secondary: item.chat.surface === 'global' ? 'AI chat' : 'AI bubble chat' }
   return { iconName: item.iconName, primary: item.label, secondary: item.hint }
 }
 

@@ -65,7 +65,7 @@ export function fakeBridge(selection: { markdown: string; from?: number; to?: nu
 }
 
 export function fakeEnv(provider: LLMProvider, note: Partial<NoteSnapshot>, opts: {
-  bridge?: NoteEditorBridge; budget?: number; history?: Msg[]; vocabulary?: string[]
+  bridge?: NoteEditorBridge; budget?: number; history?: Msg[]; vocabulary?: string[]; attached?: string
 } = {}) {
   const messages: BubbleMessage[] = []
   const progress: string[] = []
@@ -87,6 +87,7 @@ export function fakeEnv(provider: LLMProvider, note: Partial<NoteSnapshot>, opts
     isStopped: () => stopped,
     history: () => opts.history ?? [],
     cache: new Map<string, Condensed>(),
+    attachedContext: async () => opts.attached ?? null,
   }
   return { env, messages, progress, stop: () => { stopped = true } }
 }

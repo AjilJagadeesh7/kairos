@@ -41,7 +41,7 @@ export function sprintBoard(): Board {
   }
 }
 
-export function fakeBoardEnv(provider: LLMProvider, board: Board, opts: { budget?: number; history?: Msg[] } = {}) {
+export function fakeBoardEnv(provider: LLMProvider, board: Board, opts: { budget?: number; history?: Msg[]; attached?: string } = {}) {
   const messages: BubbleMessage[] = []
   const progress: string[] = []
   let stopped = false
@@ -61,6 +61,7 @@ export function fakeBoardEnv(provider: LLMProvider, board: Board, opts: { budget
     isStopped: () => stopped,
     history: () => opts.history ?? [],
     cache: new Map<string, Condensed>(),
+    attachedContext: async () => opts.attached ?? null,
   }
   return { env, messages, progress, stop: () => { stopped = true } }
 }

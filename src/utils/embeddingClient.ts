@@ -12,17 +12,31 @@ function getWorker(): Worker {
   return worker
 }
 
-function runWorker(id: string, text: string): Promise<number[]> {
+function runWorkerDetailed(id: string, text: string): Promise<{ embedding: number[]; error?: string }> {
   return new Promise((resolve) => {
     const w = getWorker()
-    const listener = (event: MessageEvent<{ id: string; embedding: number[] }>) => {
+    const listener = (event: MessageEvent<{ id: string; embedding: number[]; error?: string }>) => {
       if (event.data.id !== id) return
       w.removeEventListener('message', listener)
-      resolve(event.data.embedding)
+      resolve(event.data)
     }
     w.addEventListener('message', listener)
     w.postMessage({ id, text })
   })
+}
+
+async function runWorker(id: string, text: string): Promise<number[]> {
+  return (await runWorkerDetailed(id, text)).embedding
+}
+
+/**
+ * Embeds `text` with the on-device model, no caching (the AI index keeps its
+ * own). Throws when the model can't run, so the index can say why.
+ */
+export async function embedRaw(id: string, text: string): Promise<number[]> {
+  const { embedding, error } = await runWorkerDetailed(id, text)
+  if (error) throw new Error(`On-device embedding model failed: ${error}`)
+  return embedding
 }
 
 async function hashText(text: string): Promise<string> {

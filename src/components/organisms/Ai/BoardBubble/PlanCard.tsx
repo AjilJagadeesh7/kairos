@@ -2,22 +2,22 @@ import { useState } from 'react'
 import { Button } from '../../../atoms/Button'
 import { Checkbox } from '../../../atoms/Checkbox'
 import { Icon } from '../../../../icons/Icon'
-import type { BoardPlan, PlanAction, PlanHandlers } from '../../../../types'
+import type { BoardPlan, PlanAction, PlanHandlers, PlanState } from '../../../../types'
 
-interface Props {
-  messageId: string
-  plan: BoardPlan
-  busy: boolean
-  handlers: PlanHandlers
+interface RowProps {
+  action: PlanAction
+  pending: boolean
+  checked: boolean
+  /** Why Apply skipped this action (board changed since the plan). */
+  skipped?: string
+  onToggle: () => void
 }
 
-function ActionRow({ action, plan, onToggle }: { action: PlanAction; plan: BoardPlan; onToggle: () => void }) {
+/** One proposed change: checkbox, one-line summary, expandable field changes. */
+export function PlanRow({ action, pending, checked, skipped, onToggle }: RowProps) {
   const [open, setOpen] = useState(false)
-  const pending = plan.state === 'pending'
   const blocked = !action.resolved
-  const skipped = plan.skipped?.[action.id]
   const reason = action.unresolved ?? skipped
-  const checked = !blocked && plan.selected.includes(action.id)
 
   return (
     <li className={`rounded-lg border border-border/70 px-2 py-1.5 ${blocked ? 'bg-surface2/40 opacity-60' : ''}`}>
@@ -63,43 +63,76 @@ function ActionRow({ action, plan, onToggle }: { action: PlanAction; plan: Board
   )
 }
 
-function Footer({ messageId, plan, busy, handlers }: Props) {
-  const count = plan.selected.length
-  if (plan.state === 'pending') {
+interface FooterProps {
+  state: PlanState
+  selectedCount: number
+  busy: boolean
+  /** e.g. "Applied 2 of 3." */
+  appliedText: string
+  undoable: boolean
+  onApply: () => void
+  onCancel: () => void
+  onUndo: () => void
+}
+
+/** Apply selected / Cancel while pending; the outcome (and Undo) afterwards. */
+export function PlanFooter({ state, selectedCount, busy, appliedText, undoable, onApply, onCancel, onUndo }: FooterProps) {
+  if (state === 'pending') {
     return (
       <div className="flex items-center gap-2">
-        <Button variant="primary" size="sm" disabled={!count || busy} onClick={() => handlers.apply(messageId)}>
-          Apply selected{count ? ` (${count})` : ''}
+        <Button variant="primary" size="sm" disabled={!selectedCount || busy} onClick={onApply}>
+          Apply selected{selectedCount ? ` (${selectedCount})` : ''}
         </Button>
-        <Button variant="ghost" size="sm" onClick={() => handlers.cancel(messageId)}>Cancel</Button>
+        <Button variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
       </div>
     )
   }
-  const text = plan.state === 'cancelled' ? 'Cancelled — nothing was changed.'
-    : plan.state === 'undone' ? 'Undone — the board is back as it was.'
-    : `Applied ${plan.appliedCount ?? 0} of ${plan.actions.length}.`
+  const text = state === 'cancelled' ? 'Cancelled — nothing was changed.'
+    : state === 'undone' ? 'Undone — the board is back as it was.'
+    : appliedText
   return (
     <div className="flex items-center gap-2 text-[11.5px] text-text3">
-      <Icon name={plan.state === 'applied' ? 'check' : plan.state === 'undone' ? 'undo-2' : 'x'} size={12} />
+      <Icon name={state === 'applied' ? 'check' : state === 'undone' ? 'undo-2' : 'x'} size={12} />
       <span className="flex-1">{text}</span>
-      {plan.state === 'applied' && plan.undoable && (
-        <Button variant="hollow" size="xs" onClick={() => handlers.undo(messageId)}>Undo</Button>
-      )}
+      {state === 'applied' && undoable && <Button variant="hollow" size="xs" onClick={onUndo}>Undo</Button>}
     </div>
   )
 }
 
+interface Props {
+  messageId: string
+  plan: BoardPlan
+  busy: boolean
+  handlers: PlanHandlers
+}
+
 /** Proposed board changes. Nothing is written until "Apply selected". */
-export function PlanCard(props: Props) {
-  const { messageId, plan, handlers } = props
+export function PlanCard({ messageId, plan, busy, handlers }: Props) {
+  const pending = plan.state === 'pending'
   return (
     <div className="flex flex-col gap-2">
       <ul className="flex flex-col gap-1">
         {plan.actions.map((a) => (
-          <ActionRow key={a.id} action={a} plan={plan} onToggle={() => handlers.toggle(messageId, a.id)} />
+          <PlanRow
+            key={a.id}
+            action={a}
+            pending={pending}
+            checked={!!a.resolved && plan.selected.includes(a.id)}
+            skipped={plan.skipped?.[a.id]}
+            onToggle={() => handlers.toggle(messageId, a.id)}
+          />
         ))}
       </ul>
-      <Footer {...props} />
+      <PlanFooter
+        state={plan.state}
+        selectedCount={plan.selected.length}
+        busy={busy}
+        appliedText={`Applied ${plan.appliedCount ?? 0} of ${plan.actions.length}.`}
+        undoable={!!plan.undoable}
+        onApply={() => handlers.apply(messageId)}
+        onCancel={() => handlers.cancel(messageId)}
+        onUndo={() => handlers.undo(messageId)}
+      />
     </div>
   )
 }

@@ -5,55 +5,89 @@ import { providerForSurface } from '../ai/providers/registry'
 import { locationForUrl } from '../ai/net/urlPolicy'
 import { promptBudget } from '../ai/agent/budget'
 import { StoppedError } from '../ai/agent/condense'
-import { newMessage } from '../ai/agent/bubbleEnv'
-import { bubbleChatRecord, saveChat } from '../ai/history/chatHistory'
+import { fitText, newMessage } from '../ai/agent/bubbleEnv'
+import { chatRecord, fromChatMessage } from '../ai/history/chatHistory'
+import { getChat, saveChat } from '../ai/history/chatStore'
+import { ATTACH_SHARE, attachedContextBlock } from '../ai/history/attachContext'
 import type {
-  AiChatRecord, AiChatSource, BubbleBaseEnv, BubbleMessage, BubbleRun, BubbleSink, Condensed, LLMProvider, Msg,
+  AiChatRecord, AiChatSource, AiSurface, BubbleBaseEnv, BubbleMessage, BubbleRun, BubbleSink, Condensed, LLMProvider, Msg,
 } from '../types'
 
 /** Earlier turns for follow-up questions: what was said, not the suggestion/plan UI. */
 function historyOf(messages: BubbleMessage[]): Msg[] {
   return messages
-    .filter((m) => (m.role === 'user' || (m.role === 'assistant' && !m.suggestion && !m.plan)) && m.content.trim())
+    .filter((m) => (m.role === 'user' || (m.role === 'assistant' && !m.suggestion && !m.plan && !m.taskPlan)) && m.content.trim())
     .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }))
 }
 
 export interface BubbleSessionOptions<E extends BubbleBaseEnv> {
-  /** The page this session runs on, for chat history. */
-  source: () => AiChatSource
+  /** Which provider setting to use. Default: the page bubble. */
+  surface?: AiSurface
+  /** A saved global thread to continue. Bubble sessions always start empty. */
+  initial?: AiChatRecord | null
+  /** The page this session runs on (bubble), or null (global chat). */
+  source: () => AiChatSource | null
   /** Adds the page-specific parts to the env each action gets. */
   extendEnv: (base: BubbleBaseEnv) => E
   /** Runs before every action (e.g. retire a suggestion still showing). */
   beforeRun?: (session: { messages: BubbleMessage[]; patch: BubbleSink['patch'] }) => void
   /** Runs when the session ends: clear, close, or leaving the page. */
   onEnd?: () => void
+  /** Called after the session was saved (global threads save after every turn). */
+  onSaved?: (record: AiChatRecord) => void
 }
 
 /**
- * One ephemeral bubble session on any page. Every mount starts empty;
- * closing (unmount) or clearing saves the conversation to chat history.
+ * One chat session. Bubble sessions are ephemeral: every mount starts empty,
+ * and closing or clearing saves them. Global threads save after every turn
+ * and can be reopened.
  */
 export function useBubbleSession<E extends BubbleBaseEnv>(options: BubbleSessionOptions<E>) {
-  const config = useAiStore((s) => s.providers.find((p) => p.id === s.surfaceProvider.bubble) ?? null)
-  const [messages, setMessages] = useState<BubbleMessage[]>([])
+  const surface = options.surface ?? 'bubble'
+  const config = useAiStore((s) => s.providers.find((p) => p.id === s.surfaceProvider[surface]) ?? null)
+  const [messages, setMessages] = useState<BubbleMessage[]>(() => options.initial?.messages.map(fromChatMessage) ?? [])
+  const [attached, setAttached] = useState<string[]>(() => options.initial?.attachedChatIds ?? [])
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState<string | null>(null)
 
   const optionsRef = useRef(options)
   const messagesRef = useRef(messages)
+  const attachedRef = useRef(attached)
   useEffect(() => { optionsRef.current = options }, [options])
   useEffect(() => { messagesRef.current = messages }, [messages])
+  useEffect(() => { attachedRef.current = attached }, [attached])
 
   const busyRef = useRef(false)
+  const saveAfterTurn = useRef(false)
   const stopRequested = useRef(false)
   const active = useRef<LLMProvider | null>(null)
   const cache = useRef(new Map<string, Condensed>())
-  const session = useRef({ id: uuid(), createdAt: new Date().toISOString() })
-  const providerInfo = useRef<AiChatRecord['provider']>(null)
+  const session = useRef({
+    id: options.initial?.id ?? uuid(),
+    createdAt: options.initial?.createdAt ?? new Date().toISOString(),
+  })
+  const providerInfo = useRef<AiChatRecord['provider']>(options.initial?.provider ?? null)
 
   const add = useCallback((m: BubbleMessage) => setMessages((ms) => [...ms, m]), [])
   const patch = useCallback((id: string, update: (m: BubbleMessage) => BubbleMessage) =>
     setMessages((ms) => ms.map((m) => (m.id === id ? update(m) : m))), [])
+
+  /** Saves the session to chat history (no-op when nothing was asked). */
+  const persist = useCallback((list: BubbleMessage[] = messagesRef.current) => {
+    const record = chatRecord({
+      id: session.current.id,
+      surface,
+      source: optionsRef.current.source(),
+      provider: providerInfo.current,
+      messages: list,
+      attachedChatIds: attachedRef.current,
+      createdAt: session.current.createdAt,
+    })
+    if (!record) return
+    saveChat(record)
+      .then(() => optionsRef.current.onSaved?.(record))
+      .catch((err) => console.warn('[ai] could not save chat:', err))
+  }, [surface])
 
   const run: BubbleRun<E> = useCallback(async (userText, job) => {
     if (busyRef.current) return
@@ -64,17 +98,23 @@ export function useBubbleSession<E extends BubbleBaseEnv>(options: BubbleSession
     stopRequested.current = false
     setBusy(true)
     try {
-      const { provider, config: cfg } = await providerForSurface('bubble')
+      const { provider, config: cfg } = await providerForSurface(surface)
       active.current = provider
       providerInfo.current = { id: cfg.id, name: cfg.name, model: cfg.model, location: locationForUrl(cfg.baseUrl) }
-      await job(optionsRef.current.extendEnv({
+      const base: BubbleBaseEnv = {
         provider,
         budget: promptBudget(cfg),
         sink: { add, patch, progress: setProgress },
         isStopped: () => stopRequested.current,
         history: () => history,
         cache: cache.current,
-      }))
+        attachedContext: async () => {
+          const records = (await Promise.all(attachedRef.current.map(getChat))).filter((r): r is AiChatRecord => !!r)
+          const share = Math.floor(base.budget * ATTACH_SHARE)
+          return attachedContextBlock(records, share, async (title, text, target) => (await fitText(base, title, text, target)).text)
+        },
+      }
+      await job(optionsRef.current.extendEnv(base))
     } catch (err) {
       if (err instanceof StoppedError || stopRequested.current) {
         add(newMessage({ role: 'notice', content: 'Stopped.' }))
@@ -87,24 +127,20 @@ export function useBubbleSession<E extends BubbleBaseEnv>(options: BubbleSession
       setBusy(false)
       setProgress(null)
       setMessages((ms) => ms.map((m) => (m.streaming ? { ...m, streaming: false } : m)))
+      saveAfterTurn.current = surface === 'global'
     }
-  }, [add, patch])
+  }, [add, patch, surface])
+
+  // Global threads persist after every turn (once the final messages have rendered).
+  useEffect(() => {
+    if (busy || !saveAfterTurn.current) return
+    saveAfterTurn.current = false
+    persist(messages)
+  }, [busy, messages, persist])
 
   const stop = useCallback(() => {
     stopRequested.current = true
     active.current?.abort()
-  }, [])
-
-  /** Saves the session to chat history (no-op when nothing was asked). */
-  const persist = useCallback(() => {
-    const record = bubbleChatRecord({
-      id: session.current.id,
-      source: optionsRef.current.source(),
-      provider: providerInfo.current,
-      messages: messagesRef.current,
-      createdAt: session.current.createdAt,
-    })
-    if (record) saveChat(record).catch((err) => console.warn('[ai] could not save bubble chat:', err))
   }, [])
 
   const clear = useCallback(() => {
@@ -113,6 +149,7 @@ export function useBubbleSession<E extends BubbleBaseEnv>(options: BubbleSession
     persist()
     session.current = { id: uuid(), createdAt: new Date().toISOString() }
     cache.current.clear()
+    setAttached([])
     setMessages([])
   }, [persist, stop])
 
@@ -124,5 +161,7 @@ export function useBubbleSession<E extends BubbleBaseEnv>(options: BubbleSession
     persist()
   }, [persist])
 
-  return { config, messages, messagesRef, busy, progress, run, stop, clear, add, patch }
+  return {
+    config, messages, messagesRef, busy, progress, run, stop, clear, add, patch, attached, setAttached,
+  }
 }

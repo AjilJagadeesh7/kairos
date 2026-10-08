@@ -1,5 +1,5 @@
 import type { IconToken } from '../../icons/tokens'
-import type { Note, JournalEntry, Canvas, PenNote, Attachment } from '../../types'
+import type { Note, JournalEntry, Canvas, PenNote, Attachment, AiChatRecord } from '../../types'
 import type { KanbanTask, Board } from '../../types/kanban.types'
 import { todayDate } from '../../store/useJournalStore'
 
@@ -20,6 +20,7 @@ export type ResultItem =
   | { kind: 'canvas';  canvas: Canvas;                  score: number }
   | { kind: 'pennote'; penNote: PenNote;                score: number }
   | { kind: 'attachment'; attachment: Attachment;       score: number }
+  | { kind: 'chat';    chat: AiChatRecord;              score: number }
   | NavItem
 
 export interface GroupedSection {
@@ -34,8 +35,12 @@ export function itemKey(item: ResultItem): string {
   if (item.kind === 'canvas')  return `canvas:${item.canvas.id}`
   if (item.kind === 'pennote') return `pennote:${item.penNote.id}`
   if (item.kind === 'attachment') return `attachment:${item.attachment.id}`
+  if (item.kind === 'chat')    return `chat:${item.chat.id}`
   return item.id
 }
+
+/** Nav items shown only while the AI assistant is on. */
+export const AI_ONLY_NAV = new Set(['nav-ai-bubble', 'nav-ai-chat'])
 
 export function groupResults(items: ResultItem[]): GroupedSection[] {
   const nav      = items.filter(i => i.kind === 'nav')
@@ -45,6 +50,7 @@ export function groupResults(items: ResultItem[]): GroupedSection[] {
   const canvases = items.filter(i => i.kind === 'canvas')
   const penNotes = items.filter(i => i.kind === 'pennote')
   const attachments = items.filter(i => i.kind === 'attachment')
+  const chats    = items.filter(i => i.kind === 'chat')
 
   const sections: GroupedSection[] = []
   if (nav.length)      sections.push({ label: 'Navigate',     items: nav })
@@ -54,6 +60,7 @@ export function groupResults(items: ResultItem[]): GroupedSection[] {
   if (tasks.length)    sections.push({ label: 'Kanban tasks', items: tasks })
   if (canvases.length) sections.push({ label: 'Canvases',     items: canvases })
   if (attachments.length) sections.push({ label: 'Attachments', items: attachments })
+  if (chats.length)    sections.push({ label: 'AI chats',     items: chats })
   return sections
 }
 
@@ -74,6 +81,7 @@ export const NAV_ITEMS: NavItem[] = [
   { kind: 'nav', id: 'nav-s-sync',     label: 'Settings → Sync',    hint: 'Vault folder, S3, WebDAV sync',         iconName: 'settings',     path: '/settings?section=storage-sync' },
   { kind: 'nav', id: 'nav-s-ai',       label: 'Settings → AI',      hint: 'AI assistant, providers, API keys', iconName: 'settings',  path: '/settings?section=ai' },
   { kind: 'nav', id: 'nav-ai-bubble',  label: 'Ask AI about this page', hint: 'Notes: summarize, rewrite, title, tags · Boards: overview, add or move cards', iconName: 'sparkles', path: undefined },
+  { kind: 'nav', id: 'nav-ai-chat',   label: 'AI chat',            hint: 'Ask across your notes and boards, reviews, what is pending', iconName: 'sparkles', path: '/chat' },
   { kind: 'nav', id: 'nav-ai-debug',  label: 'AI debug chat',      hint: 'Raw streaming output from a provider', iconName: 'bug',  path: '/ai/debug' },
   { kind: 'nav', id: 'nav-s-plugins',  label: 'Settings → Plugins', hint: 'Manage installed plugins',       iconName: 'settings',     path: '/settings?section=plugins' },
   { kind: 'nav', id: 'nav-s-keyboard', label: 'Settings → Keyboard',hint: 'Customize key bindings',         iconName: 'settings',     path: '/settings?section=keyboard' },

@@ -3,6 +3,7 @@ import { Toaster } from 'sonner'
 import { useAppStore } from './store/useAppStore'
 import { usePaneStore } from './store/usePaneStore'
 import { useAppStartup } from './hooks/useAppStartup'
+import { useAiBackground } from './hooks/useAiBackground'
 import { useClickProbe } from './hooks/useClickProbe'
 import { isDarkTheme } from './themes/registry'
 import { useAutoSync } from './hooks/useAutoSync'
@@ -35,6 +36,7 @@ function AppInner() {
   const [showShortcuts, setShowShortcuts]           = useState(false)
   const [showCommandPalette, setShowCommandPalette] = useState(false)
   useAppStartup()
+  useAiBackground()
   useClickProbe()   // dev-only; logs what element actually receives each click
   useAutoSync()
   useCalloutStyles()

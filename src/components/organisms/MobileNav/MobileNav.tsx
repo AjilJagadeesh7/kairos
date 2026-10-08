@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { usePaneStore } from '../../../store/usePaneStore'
 import { usePluginRegistry } from '../../../plugins/pluginContext'
 import { useAppStore } from '../../../store/useAppStore'
+import { useAiStore } from '../../../store/useAiStore'
 import { todayDate } from '../../../store/useJournalStore'
 import { THEME_REGISTRY } from '../../../themes/registry'
 import { Icon } from '../../../icons/Icon'
@@ -53,6 +54,7 @@ function NavTile({ entry, active, onSelect }: {
 
 export function MobileNav() {
   const { pages: pluginPages } = usePluginRegistry()
+  const aiEnabled = useAiStore(s => s.enabled)
   const theme    = useAppStore(s => s.theme)
   const setTheme = useAppStore(s => s.setTheme)
   const [open, setOpen]       = useState(false)
@@ -96,6 +98,7 @@ export function MobileNav() {
 
   const navEntries: NavEntry[] = [
     ...NAV,
+    ...(aiEnabled ? [{ to: '/chat', iconName: 'sparkles' as IconToken, label: 'AI chat' }] : []),
     ...pluginPages.map(p => ({
       to: p.path,
       iconName: (p.navIconName ?? 'puzzle') as IconToken,

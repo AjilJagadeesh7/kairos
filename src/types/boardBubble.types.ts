@@ -17,6 +17,10 @@ export interface FactCard {
   due?: string
   /** Why a card counts as blocked. */
   why?: string
+  /** Global chat: which card on which board, for source chips. */
+  id?: string
+  boardId?: string
+  board?: string
 }
 
 /** A capped list plus its true size, so long lists never distort the count. */
@@ -69,7 +73,7 @@ export interface FieldChange {
 
 /** A validated action, in terms of real ids. Only these are ever executed. */
 export type ResolvedAction =
-  | { tool: 'create_card'; columnId: string; title: string; description?: string; due?: string; tags: string[]; priority: Priority | null }
+  | { tool: 'create_card'; columnId: string; title: string; description?: string; due?: string; tags: string[]; priority: Priority | null; linkedNotes?: string[] }
   | { tool: 'update_card'; taskId: string; patch: CardPatch }
   | { tool: 'move_card'; taskId: string; toColumnId: string }
 

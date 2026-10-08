@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button } from '../../../atoms/Button'
 import { IconButton } from '../../../atoms/IconButton'
 import { LocationBadge } from '../../../atoms/LocationBadge'
 import { EmptyState } from '../../../molecules/EmptyState'
+import { ChatComposer } from './ChatComposer'
+import { AttachChatsButton } from '../Chat/AttachChatsButton'
 import { destinationLabel, locationForUrl } from '../../../../ai/net/urlPolicy'
 import type { AiProviderConfig, BubbleMessage } from '../../../../types'
 
@@ -18,6 +19,9 @@ interface BubblePanelShellProps {
   messages: BubbleMessage[]
   busy: boolean
   progress: string | null
+  /** Conversations attached as context ("Add context"). */
+  attached: string[]
+  onAttach: (ids: string[]) => void
   renderMessage: (message: BubbleMessage, openSettings: () => void) => ReactNode
   quickActions: ReactNode
   onSend: (text: string) => void
@@ -28,22 +32,14 @@ interface BubblePanelShellProps {
 
 /** Frame shared by every page bubble: header, provider setup card, messages, composer. */
 export function BubblePanelShell(props: BubblePanelShellProps) {
-  const { config, messages, busy, progress } = props
+  const { config, messages, progress } = props
   const navigate = useNavigate()
-  const [draft, setDraft] = useState('')
   const endRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'end' }) }, [messages, progress])
 
   const openSettings = () => navigate('/settings?section=ai')
   const location = config ? locationForUrl(config.baseUrl) : null
-
-  function send() {
-    const text = draft.trim()
-    if (!text || busy) return
-    setDraft('')
-    props.onSend(text)
-  }
 
   return (
     <div
@@ -88,19 +84,13 @@ export function BubblePanelShell(props: BubblePanelShellProps) {
 
           <div className="flex flex-col gap-2 border-t border-border px-3 py-2">
             {props.quickActions}
-            <div className="flex items-end gap-2">
-              <textarea
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
-                rows={1}
-                placeholder={props.placeholder}
-                className="max-h-28 min-h-[34px] flex-1 resize-none rounded-lg border border-border bg-surface px-2.5 py-1.5 text-[13px] text-text outline-none placeholder:text-text3 focus:border-accent"
-              />
-              {busy
-                ? <Button variant="hollow" size="md" onClick={props.onStop}>Stop</Button>
-                : <Button variant="primary" size="md" disabled={!draft.trim()} onClick={send}>Send</Button>}
-            </div>
+            <ChatComposer
+              placeholder={props.placeholder}
+              busy={props.busy}
+              onSend={props.onSend}
+              onStop={props.onStop}
+              leading={<AttachChatsButton attached={props.attached} onChange={props.onAttach} />}
+            />
           </div>
         </>
       )}

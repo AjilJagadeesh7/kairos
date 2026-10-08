@@ -40,7 +40,7 @@ export type {
   AiSurface, AiDebugTurn,
 } from './ai.types'
 export type {
-  RewriteStyle, NoteBubbleAction, BubbleAction, NoteIntent, SuggestionState, BubbleSuggestion, BubbleMessage,
+  RewriteStyle, NoteBubbleAction, GlobalChatAction, BubbleAction, NoteIntent, SuggestionState, BubbleSuggestion, BubbleMessage,
   NoteSnapshot, BubbleSink, Condensed, BubbleBaseEnv, BubbleEnv, BubbleRun, UseNoteBubbleParams, SuggestionHandlers,
   AiChatMessage, AiChatSource, AiChatRecord, EditorRange, EditorSelectionSnapshot, NoteEditorBridge,
 } from './aiChat.types'
@@ -48,6 +48,11 @@ export type {
   BoardBubbleAction, BoardIntent, FactCard, FactList, BoardColumnFact, BoardFacts, PlanTool, CardPatch,
   FieldChange, ResolvedAction, PlanAction, PlanState, BoardPlan, BatchUndo, BoardBubbleEnv, PlanHandlers,
 } from './boardBubble.types'
+export type { ExtractedTask, TaskPlan, TaskPlanHandlers } from './noteTasks.types'
+export type {
+  ReviewPeriod, GlobalIntent, ChatSourceRef, NoteRef, NoteOpenItems, PendingFacts, ReviewFacts, VaultFacts,
+  IndexSource, IndexChunk, RetrievedChunk, RetrieveFilter, VaultSnapshot, ChatRetention, GlobalEnv,
+} from './globalChat.types'
 export type {
   Board,
   KanbanColumn,

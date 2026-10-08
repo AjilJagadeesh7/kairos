@@ -1,13 +1,15 @@
 import { DiffView } from './DiffView'
 import { BubbleSuggestionView } from './BubbleSuggestionView'
+import { TaskPlanCard } from './TaskPlanCard'
 import { BubbleMessageFrame, BubbleReplyText } from '../Bubble/BubbleMessageFrame'
 import { REWRITE_STYLES } from '../../../../ai/prompts/noteBubble.v1'
-import type { BubbleMessage, SuggestionHandlers } from '../../../../types'
+import type { BubbleMessage, SuggestionHandlers, TaskPlanHandlers } from '../../../../types'
 
 interface Props {
   message: BubbleMessage
   busy: boolean
   handlers: SuggestionHandlers
+  taskHandlers: TaskPlanHandlers
   onSwitchProvider: () => void
 }
 
@@ -24,11 +26,12 @@ function Body({ message }: { message: BubbleMessage }) {
   return <BubbleReplyText message={message} highlight={s?.kind === 'insert' && s.state === 'pending' && !message.streaming} />
 }
 
-export function BubbleMessageView({ message, busy, handlers, onSwitchProvider }: Props) {
+export function BubbleMessageView({ message, busy, handlers, taskHandlers, onSwitchProvider }: Props) {
   return (
     <BubbleMessageFrame message={message} onSwitchProvider={onSwitchProvider}>
       <Body message={message} />
       <BubbleSuggestionView message={message} busy={busy} handlers={handlers} />
+      {message.taskPlan && <TaskPlanCard messageId={message.id} plan={message.taskPlan} busy={busy} handlers={taskHandlers} />}
     </BubbleMessageFrame>
   )
 }

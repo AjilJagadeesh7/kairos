@@ -1,5 +1,6 @@
 import type { Board, KanbanColumn, KanbanTask, KanbanFilters, IssueType, Sprint, BoardGroupBy } from '../../types/kanban.types'
 import { migrateBoard } from './migrate'
+import { doneColumnId } from '../../utils/kanban'
 
 export interface BoardHistory {
   past: Board[]
@@ -101,7 +102,8 @@ export function mutateBoard(
   if (idx === -1) return
 
   const oldBoard = boards[idx]
-  const newBoard = { ...updater(oldBoard), updatedAt: new Date().toISOString() }
+  const now = new Date().toISOString()
+  const newBoard = stampActivity(oldBoard, { ...updater(oldBoard), updatedAt: now }, now)
   const newBoards = boards.map((b, i) => (i === idx ? newBoard : b))
 
   let newHistory = history
@@ -115,6 +117,32 @@ export function mutateBoard(
 
   set({ boards: newBoards, history: newHistory })
   void fsUpsertBoard(newBoard)
+}
+
+/**
+ * Records column changes for reviews: `movedAt` when a card changes column,
+ * `completedAt` set on entering the done column and cleared on leaving it.
+ * Every board write goes through `mutateBoard`, so drags, AI plans and undo
+ * are all covered.
+ */
+export function stampActivity(oldBoard: Board, newBoard: Board, now: string): Board {
+  const doneId = doneColumnId(newBoard)
+  const before = new Map(oldBoard.tasks.map((t) => [t.id, t]))
+  let changed = false
+  const tasks = newBoard.tasks.map((t) => {
+    const prev = before.get(t.id)
+    if (prev && prev.columnId === t.columnId) return t
+    const done = t.columnId === doneId
+    const next: KanbanTask = {
+      ...t,
+      ...(prev ? { movedAt: now } : {}),
+      completedAt: done ? (prev?.columnId === doneId ? t.completedAt : now) : undefined,
+    }
+    if (!prev && !done && !t.completedAt) return t
+    changed = true
+    return next
+  })
+  return changed ? { ...newBoard, tasks } : newBoard
 }
 
 export async function fsUpsertBoard(board: Board): Promise<void> {

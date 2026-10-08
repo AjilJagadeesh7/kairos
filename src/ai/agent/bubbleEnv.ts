@@ -13,6 +13,8 @@ export const GEN = {
   question: { maxTokens: 800, temperature: 0.4, thinking: false },
   // Multi-action plans get thinking (PRD); the tool calls are the only output used.
   plan:     { maxTokens: 1500, temperature: 0.2, thinking: true },
+  // extract_tasks gets thinking (PRD); temperature low so items stay literal.
+  extract:  { maxTokens: 2000, temperature: 0.1, thinking: true },
   rewrite:  (inputTokens: number, retry: boolean): GenOpts => ({
     maxTokens: Math.min(4096, Math.ceil(inputTokens * 1.6) + 100),
     temperature: retry ? 0.8 : 0.4,
