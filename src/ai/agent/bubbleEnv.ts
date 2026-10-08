@@ -4,13 +4,15 @@ import { estimateTokens } from '../text/tokens'
 import { stripThinking } from '../text/clean'
 import { condenseToFit } from './condense'
 import { pageAllowance } from './budget'
-import type { BubbleEnv, BubbleMessage, Condensed, GenOpts, Msg } from '../../types'
+import type { BubbleBaseEnv, BubbleEnv, BubbleMessage, Condensed, GenOpts, Msg } from '../../types'
 
 export const GEN = {
   summary:  { maxTokens: 600, temperature: 0.3, thinking: false },
   continue: { maxTokens: 400, temperature: 0.7, thinking: false },
   json:     { maxTokens: 200, temperature: 0.3, thinking: false },
   question: { maxTokens: 800, temperature: 0.4, thinking: false },
+  // Multi-action plans get thinking (PRD); the tool calls are the only output used.
+  plan:     { maxTokens: 1500, temperature: 0.2, thinking: true },
   rewrite:  (inputTokens: number, retry: boolean): GenOpts => ({
     maxTokens: Math.min(4096, Math.ceil(inputTokens * 1.6) + 100),
     temperature: retry ? 0.8 : 0.4,
@@ -22,7 +24,7 @@ export function newMessage(message: Omit<BubbleMessage, 'id' | 'createdAt'>): Bu
   return { id: uuid(), createdAt: new Date().toISOString(), ...message }
 }
 
-export function notice(env: BubbleEnv, content: string): void {
+export function notice(env: BubbleBaseEnv, content: string): void {
   env.sink.add(newMessage({ role: 'notice', content }))
 }
 
@@ -34,7 +36,7 @@ function hash(text: string): string {
 }
 
 /** `text` as-is when it fits in `target` tokens, otherwise map-reduce condensed. */
-export async function fitText(env: BubbleEnv, title: string, text: string, target: number): Promise<Condensed> {
+export async function fitText(env: BubbleBaseEnv, title: string, text: string, target: number): Promise<Condensed> {
   if (estimateTokens(text) <= target) return { text, condensed: false, parts: 1 }
   const key = `${target}:${hash(text)}`
   const cached = env.cache.get(key)
@@ -68,7 +70,7 @@ export function condensedMeta(page: Condensed): string {
  * Streams a reply into message `id`. Resolves with the full text (reasoning
  * stripped) and whether the user stopped it.
  */
-export async function streamInto(env: BubbleEnv, id: string, messages: Msg[], opts: GenOpts): Promise<{ text: string; stopped: boolean }> {
+export async function streamInto(env: BubbleBaseEnv, id: string, messages: Msg[], opts: GenOpts): Promise<{ text: string; stopped: boolean }> {
   let raw = ''
   for await (const delta of env.provider.generate(messages, opts)) {
     raw += delta

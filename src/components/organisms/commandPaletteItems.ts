@@ -73,7 +73,7 @@ export const NAV_ITEMS: NavItem[] = [
   { kind: 'nav', id: 'nav-s-vault',    label: 'Settings → Vault',   hint: 'Connect or change vault folder', iconName: 'book-open',    path: '/settings?section=vault' },
   { kind: 'nav', id: 'nav-s-sync',     label: 'Settings → Sync',    hint: 'Vault folder, S3, WebDAV sync',         iconName: 'settings',     path: '/settings?section=storage-sync' },
   { kind: 'nav', id: 'nav-s-ai',       label: 'Settings → AI',      hint: 'AI assistant, providers, API keys', iconName: 'settings',  path: '/settings?section=ai' },
-  { kind: 'nav', id: 'nav-ai-bubble',  label: 'Ask AI about this note', hint: 'Summarize, rewrite, continue, title, tags', iconName: 'sparkles', path: undefined },
+  { kind: 'nav', id: 'nav-ai-bubble',  label: 'Ask AI about this page', hint: 'Notes: summarize, rewrite, title, tags · Boards: overview, add or move cards', iconName: 'sparkles', path: undefined },
   { kind: 'nav', id: 'nav-ai-debug',  label: 'AI debug chat',      hint: 'Raw streaming output from a provider', iconName: 'bug',  path: '/ai/debug' },
   { kind: 'nav', id: 'nav-s-plugins',  label: 'Settings → Plugins', hint: 'Manage installed plugins',       iconName: 'settings',     path: '/settings?section=plugins' },
   { kind: 'nav', id: 'nav-s-keyboard', label: 'Settings → Keyboard',hint: 'Customize key bindings',         iconName: 'settings',     path: '/settings?section=keyboard' },

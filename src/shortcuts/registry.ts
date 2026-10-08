@@ -30,7 +30,7 @@ export const EXTRA_SHORTCUTS: ShortcutDef[] = [
   { id: 'new-note',       label: 'Create new note',         context: 'Notes'   },
   { id: 'delete-note',    label: 'Delete current note',     context: 'Notes'   },
   { id: 'toggle-history', label: 'Toggle version history',  context: 'Notes'   },
-  { id: 'toggle-ai-bubble', label: 'Open / close the AI bubble', context: 'Notes' },
+  { id: 'toggle-ai-bubble', label: 'Open / close the AI bubble (note or board)', context: 'Global' },
   // Kanban
   { id: 'new-task',       label: 'New task in first column',context: 'Kanban'  },
   // Journal

@@ -4,13 +4,24 @@
  * the table is never mirrored to the vault or a sync provider.
  */
 import { db } from '../../db/schema'
-import type { AiChatMessage, AiChatRecord, AiChatSource, BubbleMessage, BubbleSuggestion } from '../../types'
+import type { AiChatMessage, AiChatRecord, AiChatSource, BoardPlan, BubbleMessage } from '../../types'
 
 export function bubbleChatTitle(pageTitle: string): string {
   return `Bubble · ${pageTitle.trim() || 'Untitled'}`
 }
 
-function outcome(s: BubbleSuggestion | undefined): string | undefined {
+function planOutcome(plan: BoardPlan): string {
+  switch (plan.state) {
+    case 'pending': return 'not applied'
+    case 'cancelled': return 'cancelled'
+    case 'undone': return 'applied, then undone'
+    case 'applied': return `applied ${plan.appliedCount ?? 0} of ${plan.actions.length}`
+  }
+}
+
+function outcome(m: BubbleMessage): string | undefined {
+  if (m.plan) return planOutcome(m.plan)
+  const s = m.suggestion
   if (!s) return undefined
   switch (s.kind) {
     case 'replace':
@@ -24,6 +35,10 @@ function outcome(s: BubbleSuggestion | undefined): string | undefined {
 function content(m: BubbleMessage): string {
   const s = m.suggestion
   if (s?.kind === 'title' || s?.kind === 'tags') return `${m.content} ${s.options.join(' · ')}`.trim()
+  if (m.plan) {
+    const lines = m.plan.actions.map((a) => `- ${a.summary}${a.unresolved ? ` (not applied: ${a.unresolved})` : ''}`)
+    return [m.content, ...lines].join('\n')
+  }
   return m.content
 }
 
@@ -44,7 +59,7 @@ export function bubbleChatRecord(params: {
       content: content(m),
       createdAt: m.createdAt,
       ...(m.action ? { action: m.action } : {}),
-      ...(outcome(m.suggestion) ? { outcome: outcome(m.suggestion) } : {}),
+      ...(outcome(m) ? { outcome: outcome(m) } : {}),
     }))
   if (!messages.some((m) => m.role === 'user')) return null
   return {

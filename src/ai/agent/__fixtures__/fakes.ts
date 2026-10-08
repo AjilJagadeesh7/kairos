@@ -1,14 +1,15 @@
 /** Test doubles for the note-bubble runners: a scripted provider, editor and sink. */
 import type {
   BubbleEnv, BubbleMessage, Condensed, EditorRange, GenOpts, JSONSchema, LLMProvider, Msg,
-  NoteEditorBridge, NoteSnapshot, ToolCall,
+  NoteEditorBridge, NoteSnapshot, ToolCall, ToolDef,
 } from '../../../types'
 
-export interface FakeCall { kind: 'generate' | 'json'; messages: Msg[]; opts: GenOpts; schema?: JSONSchema }
+export interface FakeCall { kind: 'generate' | 'json' | 'tools'; messages: Msg[]; opts: GenOpts; schema?: JSONSchema; tools?: ToolDef[] }
 
 export function fakeProvider(script: {
   generate?: (messages: Msg[], call: number) => string
   json?: (messages: Msg[], schema: JSONSchema) => unknown
+  tools?: (messages: Msg[], tools: ToolDef[]) => Array<Omit<ToolCall, 'id'>>
 }) {
   const calls: FakeCall[] = []
   let generated = 0
@@ -26,7 +27,10 @@ export function fakeProvider(script: {
       calls.push({ kind: 'json', messages, opts, schema })
       return script.json?.(messages, schema) as T
     },
-    callTools: async (): Promise<ToolCall[]> => [],
+    async callTools(messages: Msg[], tools: ToolDef[], opts: GenOpts): Promise<ToolCall[]> {
+      calls.push({ kind: 'tools', messages, opts, tools })
+      return (script.tools?.(messages, tools) ?? []).map((c, i) => ({ id: `call_${i}`, ...c }))
+    },
     abort: () => {},
     lastUsage: () => null,
   }

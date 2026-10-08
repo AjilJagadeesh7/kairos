@@ -4,7 +4,7 @@ import { deriveKeyPrefix, taskKey } from '../../utils/kanban'
 import type { Board, KanbanTask, KanbanColumn, IssueType } from '../../types/kanban.types'
 
 /** Builds a new task inside a board updater, allocating the next issue key. */
-function buildTask(
+export function buildTask(
   b: Board,
   id: string,
   columnId: string,
@@ -74,6 +74,11 @@ export function makeTaskActions(set: SetFn, get: GetFn) {
         return { ...b, tasks: remaining }
       })
       set(s => ({ activeTaskId: s.activeTaskId === taskId ? null : s.activeTaskId }))
+    },
+
+    /** Several changes as one write and one undo step (AI plans). */
+    commitBatch: (boardId: string, updater: (b: Board) => Board) => {
+      mutateBoard(get, set, boardId, updater)
     },
 
     commitDragState: (boardId: string, tasks: KanbanTask[], columns?: KanbanColumn[]) => {

@@ -8,7 +8,7 @@ import { useAttachmentStore } from '../../store/useAttachmentStore'
 import { usePaneStore } from '../../store/usePaneStore'
 import { useAiStore } from '../../store/useAiStore'
 import { toast } from 'sonner'
-import { openAiBubble } from './Ai/NoteBubble/bubbleEvent'
+import { bubblePagePath, openAiBubble } from './Ai/Bubble/bubbleEvent'
 import { buildUniversalIndex, searchUniversal } from '../../search/universalSearch'
 import { todayDate } from '../../store/useJournalStore'
 import { Icon } from '../../icons/Icon'
@@ -132,8 +132,9 @@ export function CommandPalette({ onClose }: Props) {
       else if (item.id === 'nav-ai-bubble') {
         const pane = usePaneStore.getState().panes.find(p => p.id === focusedPaneId)
         const path = pane?.tabs.find(t => t.id === pane.activeTabId)?.path ?? ''
-        if (path.startsWith('/notes/')) openAiBubble(path.slice('/notes/'.length))
-        else toast('Open a note first, then ask AI about it.')
+        const page = bubblePagePath(path)
+        if (page) openAiBubble(page)
+        else toast('Open a note or a board first, then ask AI about it.')
       }
       else if (item.path) go(item.path)
     }

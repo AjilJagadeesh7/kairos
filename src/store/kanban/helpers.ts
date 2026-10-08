@@ -36,6 +36,7 @@ export interface KanbanState {
   updateTask: (boardId: string, taskId: string, updates: Partial<KanbanTask>) => void
   deleteTask: (boardId: string, taskId: string) => void
   commitDragState: (boardId: string, tasks: KanbanTask[], columns?: KanbanColumn[]) => void
+  commitBatch: (boardId: string, updater: (b: Board) => Board) => void
 
   createSprint: (boardId: string, name: string) => string
   updateSprint: (boardId: string, sprintId: string, updates: Partial<Sprint>) => void

@@ -10,6 +10,7 @@ import { KanbanBacklogView } from './views/KanbanBacklogView'
 import { KanbanSummaryView } from './views/KanbanSummaryView'
 import { TaskDetailPanel } from '../TaskDetail/TaskDetailPanel'
 import { BoardSettings } from '../BoardSettings/BoardSettings'
+import { BoardAiBubble } from '../../Ai/BoardBubble/BoardAiBubble'
 import { useKanbanView } from '../../../../hooks/useKanbanView'
 import { useAppStore } from '../../../../store/useAppStore'
 import { eventMatchesAction } from '../../../../hooks/useShortcutKey'
@@ -95,12 +96,13 @@ export function BoardView({ board }: BoardViewProps): JSX.Element {
       <BoardHeader board={board} view={view} onOpenSettings={() => setShowSettings(true)} />
 
       {/* Active view fills all remaining space */}
-      <div className="min-h-0 flex-1 overflow-hidden">
+      <div className="relative min-h-0 flex-1 overflow-hidden">
         {view === 'board'    && (groupBy === 'parent' ? <BoardSwimlanes board={board} /> : <BoardColumns board={board} />)}
         {view === 'list'     && <KanbanListView board={board} />}
         {view === 'timeline' && <KanbanTimelineView board={board} />}
         {view === 'backlog'  && <KanbanBacklogView board={board} />}
         {view === 'summary'  && <KanbanSummaryView board={board} />}
+        <BoardAiBubble boardId={board.id} />
       </div>
 
       {/* ── Task detail drawer — slides in from the right, overlays the board ── */}

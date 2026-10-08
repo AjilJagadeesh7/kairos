@@ -47,6 +47,7 @@ function makeKanbanState(overrides: Partial<KanbanState> = {}): KanbanState {
     updateTask:         vi.fn(),
     deleteTask:         vi.fn(),
     commitDragState:    vi.fn(),
+    commitBatch:        vi.fn(),
     createSprint:       vi.fn(),
     updateSprint:       vi.fn(),
     deleteSprint:       vi.fn(),

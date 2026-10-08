@@ -1,11 +1,14 @@
 /** Types for AI conversations: the page bubble, saved chat history, and the
  *  editor bridge the bubble uses to preview and apply suggestions. */
 import type { LLMProvider, Msg, ProviderLocation, TokenUsage } from './ai.types'
+import type { BoardBubbleAction, BoardFacts, BoardPlan } from './boardBubble.types'
 
 export type RewriteStyle = 'shorter' | 'formal' | 'casual' | 'grammar'
 
 export type NoteBubbleAction =
   | 'summarize' | 'rewrite' | 'continue' | 'suggest_title' | 'suggest_tags' | 'question'
+
+export type BubbleAction = NoteBubbleAction | BoardBubbleAction
 
 /** Router output for a free-text message in the note bubble. */
 export type NoteIntent =
@@ -31,9 +34,13 @@ export interface BubbleMessage {
   role: 'user' | 'assistant' | 'error' | 'notice'
   content: string
   createdAt: string
-  action?: NoteBubbleAction
+  action?: BubbleAction
   streaming?: boolean
   suggestion?: BubbleSuggestion
+  /** Board bubble: counts computed in code, rendered as-is above the reply. */
+  boardFacts?: BoardFacts
+  /** Board bubble: proposed changes awaiting Apply. */
+  plan?: BoardPlan
   usage?: TokenUsage
   /** Shown above the content, e.g. "1,240 words · edited 2 days ago". */
   meta?: string
@@ -64,16 +71,11 @@ export interface Condensed {
   parts: number
 }
 
-/** What every note-bubble action runner gets. */
-export interface BubbleEnv {
+/** What every bubble action runner gets, on any page type. */
+export interface BubbleBaseEnv {
   provider: LLMProvider
   /** Prompt-token budget of one request. */
   budget: number
-  /** The live note (draft), read at call time. */
-  note: () => NoteSnapshot
-  /** Tag names already used in the vault, offered to "suggest tags". */
-  vocabulary: string[]
-  bridge: NoteEditorBridge
   sink: BubbleSink
   isStopped: () => boolean
   /** Earlier question/answer turns in this bubble session. */
@@ -82,8 +84,17 @@ export interface BubbleEnv {
   cache: Map<string, Condensed>
 }
 
+/** What every note-bubble action runner gets. */
+export interface BubbleEnv extends BubbleBaseEnv {
+  /** The live note (draft), read at call time. */
+  note: () => NoteSnapshot
+  /** Tag names already used in the vault, offered to "suggest tags". */
+  vocabulary: string[]
+  bridge: NoteEditorBridge
+}
+
 /** Runs one bubble action with a provider; `userText` is echoed as the user's turn. */
-export type BubbleRun = (userText: string | null, job: (env: BubbleEnv) => Promise<void>) => Promise<void>
+export type BubbleRun<E = BubbleEnv> = (userText: string | null, job: (env: E) => Promise<void>) => Promise<void>
 
 export interface UseNoteBubbleParams {
   /** The live draft, read at call time. */
@@ -110,7 +121,7 @@ export interface AiChatMessage {
   role: 'user' | 'assistant'
   content: string
   createdAt: string
-  action?: NoteBubbleAction
+  action?: BubbleAction
   /** What the user did with a suggestion: accepted, rejected, inserted, applied. */
   outcome?: string
 }
