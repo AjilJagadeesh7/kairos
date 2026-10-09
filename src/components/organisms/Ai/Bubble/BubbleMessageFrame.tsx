@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { MarkdownText } from '../../../molecules/MarkdownText'
 import { Button } from '../../../atoms/Button'
 import { Icon } from '../../../../icons/Icon'
 import type { BubbleMessage } from '../../../../types'
@@ -16,10 +17,10 @@ export function BubbleReplyText({ message, highlight = false }: { message: Bubbl
     return <p className="text-[13px] text-text3">{message.streaming ? 'Thinking…' : '(empty response)'}</p>
   }
   return (
-    <p className={`whitespace-pre-wrap break-words text-[13px] leading-relaxed text-text ${highlight ? 'rounded bg-emerald-500/10 px-1' : ''}`}>
-      {message.content}
-      {message.streaming && <span className="ml-0.5 animate-pulse text-text3">▍</span>}
-    </p>
+    <div className={highlight ? 'rounded bg-emerald-500/10 px-1' : ''}>
+      <MarkdownText text={message.content} />
+      {message.streaming && <span className="animate-pulse text-text3">▍</span>}
+    </div>
   )
 }
 

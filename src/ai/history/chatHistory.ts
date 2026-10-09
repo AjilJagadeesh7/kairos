@@ -17,7 +17,7 @@ export function globalChatTitle(firstMessage: string): string {
   return flat.length > 60 ? `${flat.slice(0, 59)}…` : flat || 'New chat'
 }
 
-function planOutcome(plan: Pick<BoardPlan, 'state' | 'appliedCount' | 'actions'>): string {
+function planOutcome(plan: Pick<BoardPlan, 'state' | 'appliedCount'> & { actions: unknown[] }): string {
   switch (plan.state) {
     case 'pending': return 'not applied'
     case 'cancelled': return 'cancelled'
@@ -28,6 +28,7 @@ function planOutcome(plan: Pick<BoardPlan, 'state' | 'appliedCount' | 'actions'>
 
 function outcome(m: BubbleMessage): string | undefined {
   if (m.plan) return planOutcome(m.plan)
+  if (m.globalPlan) return planOutcome(m.globalPlan)
   if (m.taskPlan) {
     const t = m.taskPlan
     if (t.state === 'applied') return `created ${t.createdKeys?.join(', ') || `${t.appliedCount ?? 0} cards`}`
@@ -51,8 +52,9 @@ function content(m: BubbleMessage): string {
     const lines = m.taskPlan.tasks.map((t) => `- ${t.title}${t.unresolved ? ` (not used: ${t.unresolved})` : ''}`)
     return [m.content, ...lines].join('\n')
   }
-  if (m.plan) {
-    const lines = m.plan.actions.map((a) => `- ${a.summary}${a.unresolved ? ` (not applied: ${a.unresolved})` : ''}`)
+  const plan = m.plan ?? m.globalPlan
+  if (plan) {
+    const lines = plan.actions.map((a) => `- ${a.summary}${a.unresolved ? ` (not applied: ${a.unresolved})` : ''}`)
     return [m.content, ...lines].join('\n')
   }
   return m.content

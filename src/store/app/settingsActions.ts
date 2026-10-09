@@ -10,7 +10,7 @@ type SettingsActions = Omit<AppState,
   | 'editorZoom' | 'userName' | 'newTabPage' | 'onboardingDone' | 'onboardingSeeded'
   | 'vaultStatus' | 'lastSyncTime' | 'keyBindings' | 'folderList' | 'pinnedNoteIds'
   | 'loadNotes' | 'createNote' | 'updateNote' | 'updateActiveNote' | 'updateNoteTags'
-  | 'setNoteNoSync' | 'updateNoteFrontmatter' | 'appendWikilink' | 'deleteNoteById'
+  | 'setNoteNoSync' | 'updateNoteFrontmatter' | 'appendWikilink' | 'setNoteContent' | 'deleteNoteById'
   | 'moveNoteToFolder' | 'loadFolders' | 'createFolder' | 'renameFolder' | 'deleteFolder'>
 
 /** Settings written by the user travel with the vault, so every appearance-ish

@@ -40,6 +40,8 @@ export async function buildIndex(opts: {
   storage: IndexStorage
   /** null = keyword-only: chunks are stored without vectors. */
   embed: ((text: string) => Promise<number[]>) | null
+  /** Embeds a whole document's chunks in one call (provider embeddings); preferred over `embed`. */
+  embedMany?: (texts: string[]) => Promise<number[][]>
   modelId: string | null
   onProgress?: (p: BuildProgress) => void
   shouldStop?: () => boolean
@@ -73,9 +75,11 @@ export async function buildIndex(opts: {
       result.skipped++
     } else {
       const out: IndexChunk[] = []
-      for (const c of chunks) {
+      const vectors = embed && opts.embedMany ? await opts.embedMany(chunks.map(embedInput)) : null
+      for (let j = 0; j < chunks.length; j++) {
+        const c = chunks[j]
         if (!embed) { out.push(c); continue }
-        const v = await embed(embedInput(c))
+        const v = vectors ? vectors[j] ?? [] : await embed(embedInput(c))
         // An empty vector means the model failed on this chunk; keep it keyword-searchable.
         out.push(v.length ? { ...c, vector: normalize(v), modelId: modelId ?? undefined } : c)
       }

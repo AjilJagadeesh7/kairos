@@ -54,6 +54,8 @@ export function checkProviderUrl(raw: string): UrlCheck {
 }
 
 export function locationForUrl(raw: string): ProviderLocation {
+  // The built-in on-device model (P8) has no network address.
+  if (raw.startsWith('local://')) return 'on-device'
   try {
     return isLocalHost(new URL(raw).hostname) ? 'self-hosted' : 'cloud'
   } catch {
@@ -63,6 +65,7 @@ export function locationForUrl(raw: string): ProviderLocation {
 
 /** Header label, e.g. "Self-hosted: Ollama" / "Cloud: OpenRouter". */
 export function destinationLabel(location: ProviderLocation, name: string): string {
-  if (location === 'on-device') return 'On-device'
+  // The on-device entry is named "On-device · MiniCPM5 2B (Q4_K_M)": show the model, not the prefix twice.
+  if (location === 'on-device') return name.startsWith('On-device · ') ? `On-device: ${name.slice('On-device · '.length)}` : 'On-device'
   return `${location === 'self-hosted' ? 'Self-hosted' : 'Cloud'}: ${name}`
 }

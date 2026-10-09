@@ -77,13 +77,16 @@ export type AppState = {
 
   loadNotes: () => Promise<void>
   loadFolders: () => Promise<void>
-  createNote: (initial?: { title?: string; content?: string; folder?: string }) => Promise<string>
+  /** `activate: false` adds the note without making it the active one. */
+  createNote: (initial?: { title?: string; content?: string; folder?: string; activate?: boolean }) => Promise<string>
   updateActiveNote: (patch: Pick<Note, 'title' | 'content' | 'embedding'> & { contentHash: string }) => Promise<void>
   updateNote: (noteId: string, patch: Pick<Note, 'title' | 'content' | 'embedding'> & { contentHash: string }) => Promise<void>
   updateNoteTags: (noteId: string, tags: string[]) => Promise<void>
   setNoteNoSync: (noteId: string, value: boolean) => Promise<void>
   updateNoteFrontmatter: (noteId: string, fm: Record<string, unknown>) => Promise<void>
   appendWikilink: (noteId: string, targetTitle: string) => Promise<void>
+  /** Replaces a note's body (tags re-read from it). Used by AI plan Apply/Undo. */
+  setNoteContent: (noteId: string, content: string) => Promise<void>
   deleteNoteById: (id: string) => Promise<void>
   moveNoteToFolder: (noteId: string, folder: string) => Promise<void>
   createFolder: (path: string) => Promise<void>

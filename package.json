@@ -15,7 +15,10 @@
     "build:ota": "vite build && node scripts/build-mobile-bundle.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
-    "ai:eval": "vitest run --config vitest.eval.config.ts"
+    "ai:eval": "vitest run --config vitest.eval.config.ts",
+    "dev:full": "node scripts/build-full.mjs dev",
+    "build:full:desktop": "node scripts/build-full.mjs desktop",
+    "build:full:android": "node scripts/build-full.mjs android"
   },
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "~7.1.6",

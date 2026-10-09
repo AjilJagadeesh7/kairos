@@ -2,7 +2,7 @@ import { useCallback, type MutableRefObject } from 'react'
 import { useKanbanStore } from '../store/useKanbanStore'
 import { applyPlan } from '../ai/agent/boardApply'
 import { newMessage } from '../ai/agent/bubbleEnv'
-import { useBatchUndo } from './useBatchUndo'
+import { boardRevert, useBatchUndo } from './useBatchUndo'
 import type { BoardPlan, BubbleMessage, BubbleSink, PlanHandlers } from '../types'
 
 export { UNDO_WINDOW_MS } from './useBatchUndo'
@@ -42,12 +42,13 @@ export function useBoardPlan({ boardId, messagesRef, add, patch }: Deps): PlanHa
   }, [pendingPlan, setPlan])
 
   const undo = useCallback((messageId: string) => {
-    const kept = batch.undo(messageId)
-    if (kept === null) return
-    setPlan(messageId, (p) => ({ ...p, state: 'undone', undoable: false }))
-    if (kept.length) {
-      add(newMessage({ role: 'notice', content: `Kept ${kept.join(', ')} — edited after it was added, so Undo left it in place.` }))
-    }
+    void batch.undo(messageId).then((kept) => {
+      if (kept === null) return
+      setPlan(messageId, (p) => ({ ...p, state: 'undone', undoable: false }))
+      if (kept.length) {
+        add(newMessage({ role: 'notice', content: `Kept ${kept.join(', ')} — edited after it was added, so Undo left it in place.` }))
+      }
+    })
   }, [add, batch, setPlan])
 
   const apply = useCallback((messageId: string) => {
@@ -68,7 +69,7 @@ export function useBoardPlan({ boardId, messagesRef, add, patch }: Deps): PlanHa
       return
     }
     batch.register(messageId, {
-      boardId, boardTitle: current.title, applied: result.applied, undo: result.undo,
+      target: current.title, applied: result.applied, revert: boardRevert(boardId, result.undo),
       onUndo: () => undo(messageId),
       onExpire: () => setPlan(messageId, (p) => ({ ...p, undoable: false })),
     })

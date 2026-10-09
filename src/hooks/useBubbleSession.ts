@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { v4 as uuid } from 'uuid'
 import { useAiStore } from '../store/useAiStore'
+import { useOnDeviceStore } from '../store/useOnDeviceStore'
+import { ON_DEVICE_PROVIDER_ID, onDeviceConfig } from '../ai/onDevice/onDeviceConfig'
 import { providerForSurface } from '../ai/providers/registry'
 import { locationForUrl } from '../ai/net/urlPolicy'
 import { promptBudget } from '../ai/agent/budget'
@@ -16,7 +18,7 @@ import type {
 /** Earlier turns for follow-up questions: what was said, not the suggestion/plan UI. */
 function historyOf(messages: BubbleMessage[]): Msg[] {
   return messages
-    .filter((m) => (m.role === 'user' || (m.role === 'assistant' && !m.suggestion && !m.plan && !m.taskPlan)) && m.content.trim())
+    .filter((m) => (m.role === 'user' || (m.role === 'assistant' && !m.suggestion && !m.plan && !m.taskPlan && !m.globalPlan)) && m.content.trim())
     .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }))
 }
 
@@ -44,7 +46,11 @@ export interface BubbleSessionOptions<E extends BubbleBaseEnv> {
  */
 export function useBubbleSession<E extends BubbleBaseEnv>(options: BubbleSessionOptions<E>) {
   const surface = options.surface ?? 'bubble'
-  const config = useAiStore((s) => s.providers.find((p) => p.id === s.surfaceProvider[surface]) ?? null)
+  const configured = useAiStore((s) => s.providers.find((p) => p.id === s.surfaceProvider[surface]) ?? null)
+  const onDevice = useAiStore((s) => s.surfaceProvider[surface] === ON_DEVICE_PROVIDER_ID)
+  const modelId = useOnDeviceStore((s) => s.modelId)
+  const readyPath = useOnDeviceStore((s) => s.readyPath)
+  const config = useMemo(() => (onDevice ? onDeviceConfig(modelId, readyPath) : configured), [onDevice, modelId, readyPath, configured])
   const [messages, setMessages] = useState<BubbleMessage[]>(() => options.initial?.messages.map(fromChatMessage) ?? [])
   const [attached, setAttached] = useState<string[]>(() => options.initial?.attachedChatIds ?? [])
   const [busy, setBusy] = useState(false)

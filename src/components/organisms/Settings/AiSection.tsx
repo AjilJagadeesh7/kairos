@@ -16,6 +16,12 @@ import { ProviderEditorModal } from '../Ai/ProviderEditorModal'
 // Loaded only once AI is on: they pull in the index and chat-history modules.
 const AiIndexCard = lazy(() => import('./AiIndexCard').then((m) => ({ default: m.AiIndexCard })))
 const AiHistoryCard = lazy(() => import('./AiHistoryCard').then((m) => ({ default: m.AiHistoryCard })))
+const AiUsageCard = lazy(() => import('./AiUsageCard').then((m) => ({ default: m.AiUsageCard })))
+const AiWebCard = lazy(() => import('./AiWebCard').then((m) => ({ default: m.AiWebCard })))
+// Full build only: Lite has no on-device runtime or model download UI (the constant drops this import).
+const AiOnDeviceCard = __BUILD_FLAVOR__ === 'full' ? lazy(() => import('./AiOnDeviceCard').then((m) => ({ default: m.AiOnDeviceCard }))) : null
+import { useOnDeviceStore } from '../../../store/useOnDeviceStore'
+import { onDeviceConfig } from '../../../ai/onDevice/onDeviceConfig'
 import type { AiProviderConfig, AiSurface } from '../../../types'
 
 const NONE = '__none__'
@@ -35,12 +41,15 @@ export function AiSection() {
           <ToggleSwitch size="md" checked={enabled} onChange={setEnabled} label="AI assistant" />
         </div>
       </SectionCard>
+      {enabled && AiOnDeviceCard && <Suspense fallback={null}><AiOnDeviceCard /></Suspense>}
       {enabled && <ProvidersCard />}
       {enabled && <SurfacesCard />}
       {enabled && (
         <Suspense fallback={null}>
           <AiIndexCard />
           <AiHistoryCard />
+          <AiWebCard />
+          <AiUsageCard />
         </Suspense>
       )}
     </div>
@@ -67,7 +76,7 @@ function ProvidersCard() {
         <EmptyState
           icon="sparkles"
           title="Add an AI provider to get started"
-          description="Ollama, LM Studio or llama-server on your own machine, or a cloud API such as OpenRouter or OpenAI."
+          description="Ollama, LM Studio or llama-server on your own machine, or a cloud API: Claude, OpenAI, Gemini, OpenRouter and others."
           action={{ label: 'Add provider', onClick: () => setEditing('new') }}
         />
       ) : (
@@ -108,8 +117,11 @@ function SurfacesCard() {
   const surfaceProvider = useAiStore((s) => s.surfaceProvider)
   const setSurfaceProvider = useAiStore((s) => s.setSurfaceProvider)
 
+  // The on-device model (Full build, verified file on disk) is offered like a provider.
+  const onDevice = onDeviceConfig(useOnDeviceStore((s) => s.modelId), useOnDeviceStore((s) => s.readyPath))
   const options: SelectOption[] = [
     { value: NONE, label: 'None' },
+    ...(onDevice ? [{ value: onDevice.id, label: onDevice.name }] : []),
     ...providers.filter((p) => p.verified).map((p) => ({ value: p.id, label: `${p.name} · ${p.model}` })),
   ]
   const rows: Array<{ surface: AiSurface; label: string; hint: string }> = [

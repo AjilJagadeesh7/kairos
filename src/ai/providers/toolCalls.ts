@@ -1,6 +1,9 @@
 import { validateJSON } from '../json/validate'
 import type { JSONSchema, ToolCall, ToolDef } from '../../types'
 
+/** Thinking shares the output-token limit with the answer; this much extra keeps the answer from being cut. */
+export const THINKING_HEADROOM = 4096
+
 /** The model never sees more than this many tools in one call (PRD). */
 export const MAX_TOOLS_PER_CALL = 10
 

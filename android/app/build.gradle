@@ -32,6 +32,42 @@ android {
             }
         }
     }
+    // Kairos Lite (CI-built, the existing app id) and Kairos Full ("Pro": on-device model,
+    // built locally with `npm run build:full:android`, never by CI). Separate app ids so
+    // both can be listed on Play.
+    flavorDimensions "edition"
+    productFlavors {
+        lite {
+            dimension "edition"
+        }
+        full {
+            dimension "edition"
+            applicationIdSuffix ".pro"
+            versionNameSuffix "-pro"
+            // The on-device runtime ships for arm64 only (PRD).
+            ndk { abiFilters 'arm64-v8a' }
+        }
+    }
+    // llama.cpp is built only when a Full task runs, so Lite builds (and CI) never need the NDK.
+    if (gradle.startParameter.taskNames.any { it.toLowerCase().contains('full') }) {
+        ndkVersion "27.2.12479018"
+        externalNativeBuild {
+            cmake {
+                path "src/full/cpp/CMakeLists.txt"
+                version "3.22.1"
+            }
+        }
+        defaultConfig {
+            externalNativeBuild {
+                cmake {
+                    // Fetch and unpack llama.cpp outside the project: editors and virus scanners
+                    // watching the project can lock the folder mid-extract on Windows. Also a cache.
+                    arguments "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
+                              "-DFETCHCONTENT_BASE_DIR=${System.getProperty('user.home').replace('\\', '/')}/.cache/kairos-llama.cpp"
+                }
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false

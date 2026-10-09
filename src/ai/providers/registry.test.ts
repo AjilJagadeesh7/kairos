@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { providerFromConfig, providerForSurface, needsConsent, setProviderKey } from './registry'
+import { embeddingModelId, embeddingProviderFromConfig, providerFromConfig, providerForSurface, needsConsent, setProviderKey } from './registry'
+import { AnthropicProvider } from './anthropic'
+import { GeminiProvider } from './gemini'
 import { useAiStore } from '../../store/useAiStore'
 import { setSecretBackendForTests } from '../../secrets/secureStore'
 import type { Transport } from './openaiCompat'
@@ -84,5 +86,45 @@ describe('provider registry gates', () => {
     const p = useAiStore.getState().providers.find((x) => x.id === 'ol')!
     expect(p.verified).toBe(false)
     expect(useAiStore.getState().surfaceProvider.bubble).toBeNull()
+  })
+})
+
+describe('provider types (P6)', () => {
+  const claude: AiProviderConfig = { ...cloud, id: 'cl', type: 'anthropic', name: 'Claude', baseUrl: 'https://api.anthropic.com/v1', model: 'claude-sonnet-5-5' }
+  const gemini: AiProviderConfig = { ...cloud, id: 'gm', type: 'gemini', name: 'Gemini', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', model: 'gemini-2.5-flash', embeddingModel: 'gemini-embedding-001' }
+
+  it('builds the adapter for each type, behind the same consent and key gates', async () => {
+    await expect(providerFromConfig(claude, { transport })).rejects.toMatchObject({ kind: 'consent' })
+    useAiStore.getState().grantConsent(claude)
+    useAiStore.getState().grantConsent(gemini)
+    await expect(providerFromConfig(claude, { transport })).rejects.toMatchObject({ kind: 'config', message: expect.stringMatching(/API key/) })
+    await setProviderKey('cl', 'sk-ant')
+    await setProviderKey('gm', 'AIza')
+    expect(await providerFromConfig(claude, { transport })).toBeInstanceOf(AnthropicProvider)
+    expect(await providerFromConfig(gemini, { transport })).toBeInstanceOf(GeminiProvider)
+    expect(sent).toBe(0)
+  })
+
+  it('embeddings: refused for Claude, need a model, and follow consent like chat', async () => {
+    await expect(embeddingProviderFromConfig(claude, { transport })).rejects.toMatchObject({ kind: 'config', message: expect.stringMatching(/no embeddings endpoint/) })
+    await expect(embeddingProviderFromConfig({ ...gemini, embeddingModel: '' }, { transport })).rejects.toMatchObject({ kind: 'config' })
+    await expect(embeddingProviderFromConfig(gemini, { transport, apiKey: 'AIza' })).rejects.toMatchObject({ kind: 'consent' })
+    expect(sent).toBe(0)
+    useAiStore.getState().grantConsent(gemini)
+    const e = await embeddingProviderFromConfig(gemini, { transport, apiKey: 'AIza' })
+    expect(e.modelId).toBe('gemini:generativelanguage.googleapis.com:gemini-embedding-001')
+    expect(embeddingModelId({ ...gemini, embeddingModel: 'other' })).not.toBe(e.modelId)
+  })
+
+  it('counts token usage per month, on the device, without the key', async () => {
+    useAiStore.setState({ usage: null })
+    await setProviderKey('ol', 'sk-secret-local')
+    await (await providerFromConfig(local, { transport: async () => {
+      async function* body() { yield '{"choices":[{"message":{"content":"OK"}}],"usage":{"prompt_tokens":12,"completion_tokens":3}}' }
+      return { status: 200, body: body() }
+    } })).generateJSON([{ role: 'user', content: 'x' }], { type: 'string' }, { maxTokens: 5, temperature: 0, thinking: false }).catch(() => {})
+    expect(useAiStore.getState().usage).toMatchObject({ promptTokens: 24, completionTokens: 6, requests: 2 })
+    // Nothing the store persists contains the key.
+    expect(JSON.stringify(useAiStore.getState())).not.toContain('sk-secret-local')
   })
 })

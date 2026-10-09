@@ -1,4 +1,10 @@
+#[macro_use]
+mod handlers;
 mod ai_http;
+#[cfg(feature = "local-llm")]
+mod local_model;
+#[cfg(feature = "local-llm")]
+mod local_llm;
 mod secrets;
 
 use std::sync::Arc;
@@ -328,22 +334,28 @@ pub fn run() {
 
     let ai_http_handles: ai_http::AiHttpHandles = Default::default();
 
-    tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    #[cfg(feature = "local-llm")]
+    let builder = builder
+        .manage(local_model::Downloads::default())
+        .manage(local_llm::LocalLlm::default())
+        .invoke_handler(app_handlers!(
+            local_model::model_device_info,
+            local_model::model_status,
+            local_model::model_download,
+            local_model::model_pause,
+            local_model::model_delete,
+            local_llm::llm_available,
+            local_llm::llm_load,
+            local_llm::llm_unload,
+            local_llm::llm_generate,
+            local_llm::llm_abort
+        ));
+    #[cfg(not(feature = "local-llm"))]
+    let builder = builder.invoke_handler(app_handlers!());
+    builder
         .manage(search_state)
         .manage(ai_http_handles)
-        .invoke_handler(tauri::generate_handler![
-            build_search_index,
-            update_note_index,
-            remove_note_index,
-            search_fulltext,
-            recognize_ink_available,
-            recognize_ink,
-            secrets::secret_get,
-            secrets::secret_set,
-            secrets::secret_delete,
-            ai_http::ai_http_stream,
-            ai_http::ai_http_abort,
-        ])
         .register_asynchronous_uri_scheme_protocol("mvproxy", |_app, request, responder| {
             tauri::async_runtime::spawn(async move {
                 responder.respond(proxy_fetch(request).await);

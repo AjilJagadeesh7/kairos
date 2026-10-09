@@ -23,9 +23,21 @@ tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
 tauri-plugin-clipboard-manager = "2"
 tantivy = { version = "0.26", default-features = false, features = ["mmap"] }
-tokio = { version = "1", features = ["sync", "rt"] }
+tokio = { version = "1", features = ["sync", "rt", "fs", "io-util"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # OS secret storage for API keys and sync credentials (v1 = native store per OS).
 keyring = { version = "4.2", features = ["v1"] }
 url = "2"
+# Full build only (`local-llm`): model downloads (SHA-256) and the device check.
+sha2 = { version = "0.11", optional = true }
+sysinfo = { version = "0.39", optional = true, default-features = false, features = ["system", "disk"] }
+# The on-device runtime: llama.cpp (vendored, built with CMake; bindgen needs LLVM/libclang).
+llama-cpp-2 = { version = "0.1.159", optional = true }
+
+[features]
+# The Full build: on-device model support. CI builds without it (Lite); see `npm run build:full`.
+local-llm = ["dep:sha2", "dep:sysinfo", "dep:llama-cpp-2"]
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt"] }

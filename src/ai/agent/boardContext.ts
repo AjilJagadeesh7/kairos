@@ -34,12 +34,12 @@ export function cardLine(t: KanbanTask, board: Board, colName: Map<string, strin
   return `- ${t.key} "${oneLine(t.title, 160)}" ${attrs}${desc}`
 }
 
-function words(text: string): string[] {
+export function words(text: string): string[] {
   return (text.toLowerCase().match(/[\p{L}\p{N}][\p{L}\p{N}-]*/gu) ?? []).filter((w) => w.length > 2 && !STOPWORDS.has(w))
 }
 
 /** How strongly a card matches the message: key mentions win, then word overlap. */
-function relevance(t: KanbanTask, query: string, queryWords: Set<string>, colTitle: string): number {
+export function relevance(t: KanbanTask, query: string, queryWords: Set<string>, colTitle: string): number {
   if (t.key && new RegExp(`\\b${t.key.replace(/[-]/g, '\\-')}\\b`, 'i').test(query)) return 100
   const hay = new Set(words(`${t.title} ${t.tags.join(' ')} ${colTitle}`))
   let score = 0

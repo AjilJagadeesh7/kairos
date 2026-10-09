@@ -4,21 +4,14 @@ import type { FactList } from './boardBubble.types'
 import type { Board } from './kanban.types'
 import type { JournalEntry } from './journal.types'
 import type { Note } from './note.types'
+import type { WebAccess } from './web.types'
 
 export type ReviewPeriod = 'day' | 'week' | 'month'
 
-/** Router output for a global-chat message. Sees only the message. */
-export type GlobalIntent =
-  | { kind: 'pending' }
-  | { kind: 'review'; period: ReviewPeriod }
-  | { kind: 'query'; since: ReviewPeriod | null; tags: string[] }
-  | { kind: 'change' }
-  | { kind: 'chitchat' }
-
 /** A note, journal entry or card an answer drew from — shown as a tappable chip. */
 export interface ChatSourceRef {
-  kind: 'note' | 'journal' | 'card'
-  /** Note id, journal date, or card id. */
+  kind: 'note' | 'journal' | 'card' | 'web'
+  /** Note id, journal date, card id, or (web) the page URL. */
   id: string
   boardId?: string
   title: string
@@ -68,7 +61,8 @@ export type VaultFacts = PendingFacts | ReviewFacts
 
 // ── Semantic index ───────────────────────────────────────────────────────────
 
-export type IndexSource = 'on-device' | 'keyword'
+/** Where vectors come from: the on-device model, a provider's embeddings endpoint, or none. */
+export type IndexSource = 'on-device' | 'provider' | 'keyword'
 
 export interface IndexChunk {
   /** `${kind}:${docId}#${n}` */
@@ -102,6 +96,8 @@ export interface VaultSnapshot {
   notes: Note[]
   journal: JournalEntry[]
   boards: Board[]
+  /** Folder paths that exist (for create_note). */
+  folders?: string[]
 }
 
 export type ChatRetention = 'keep' | '30d' | 'never'
@@ -111,4 +107,6 @@ export interface GlobalEnv extends BubbleBaseEnv {
   vault: () => VaultSnapshot
   now: () => Date
   retrieve: (query: string, filter: RetrieveFilter) => Promise<{ chunks: RetrievedChunk[]; mode: 'hybrid' | 'keyword' }>
+  /** Web search / fetch (P7): null unless web access is on. Requests wait for the user's approval when asked to. */
+  web: WebAccess | null
 }

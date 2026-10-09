@@ -12,6 +12,9 @@ export default defineConfig({
   ],
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
+    // Full = on-device runtime included; Lite (default, and the only flavor CI builds) has none.
+    // A constant, so Lite builds drop the on-device code entirely.
+    __BUILD_FLAVOR__: JSON.stringify(process.env.KAIROS_FLAVOR === 'full' ? 'full' : 'lite'),
   },
 
   resolve: {
@@ -59,7 +62,12 @@ export default defineConfig({
   },
   // Pre-bundle heavy deps during dev so hot-reload is fast
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom', 'zustand', 'dexie', 'dexie-react-hooks', 'chart.js', 'react-chartjs-2'],
+    include: [
+      'react', 'react-dom', 'react-router-dom', 'zustand', 'dexie', 'dexie-react-hooks', 'chart.js', 'react-chartjs-2',
+      // transformers.js stays excluded, but its CommonJS onnxruntime dependency must be pre-bundled,
+      // or the embedding worker fails in dev with "Cannot read properties of undefined (reading 'registerBackend')".
+      '@xenova/transformers > onnxruntime-web',
+    ],
     exclude: ['@mlc-ai/web-llm', '@xenova/transformers', '@excalidraw/excalidraw'],
   },
   worker: {

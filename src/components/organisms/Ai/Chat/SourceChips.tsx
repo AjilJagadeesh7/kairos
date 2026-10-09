@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { Icon } from '../../../../icons/Icon'
+import { openExternal } from '../../../../utils/openExternal'
 import type { ChatSourceRef } from '../../../../types'
 
 /** Where a source chip leads: the note, the journal day, or the card's page. */
@@ -9,7 +10,13 @@ function sourcePath(s: ChatSourceRef): string {
   return s.boardId ? `/kanban/${s.boardId}/${s.id}` : '/kanban'
 }
 
-/** Tappable chips for the notes and cards an answer drew from (PRD). */
+const ICON = { card: 'square-kanban', journal: 'calendar-days', note: 'file-text', web: 'globe' } as const
+
+function host(url: string): string {
+  try { return new URL(url).host.replace(/^www\./, '') } catch { return url }
+}
+
+/** Tappable chips for the notes, cards and web pages an answer drew from (PRD). Web chips open in the browser. */
 export function SourceChips({ sources }: { sources: ChatSourceRef[] }) {
   const navigate = useNavigate()
   if (!sources.length) return null
@@ -19,13 +26,13 @@ export function SourceChips({ sources }: { sources: ChatSourceRef[] }) {
         <button
           key={`${s.kind}:${s.id}`}
           type="button"
-          onClick={() => navigate(sourcePath(s))}
-          title={`Open ${s.title}`}
+          onClick={() => (s.kind === 'web' ? void openExternal(s.id) : navigate(sourcePath(s)))}
+          title={s.kind === 'web' ? s.id : `Open ${s.title}`}
           className="flex max-w-[220px] items-center gap-1 rounded-md border border-border bg-bg px-1.5 py-0.5 text-[11px] text-text2 hover:border-accent hover:text-text"
         >
           {s.n !== undefined && <span className="font-mono text-[10px] text-text3">[{s.n}]</span>}
-          <Icon name={s.kind === 'card' ? 'square-kanban' : s.kind === 'journal' ? 'calendar-days' : 'file-text'} size={11} className="shrink-0" />
-          <span className="truncate">{s.title}</span>
+          <Icon name={ICON[s.kind]} size={11} className="shrink-0" />
+          <span className="truncate">{s.kind === 'web' ? `${s.title} · ${host(s.id)}` : s.title}</span>
         </button>
       ))}
     </div>

@@ -164,6 +164,14 @@ export function parseCompletion(text: string): Completion {
   }
 }
 
+/** POST /embeddings response → vectors in input order. */
+export function parseEmbeddings(text: string): number[][] {
+  const body = JSON.parse(text) as { data?: Array<{ index?: number; embedding?: number[] }> }
+  return [...(body.data ?? [])]
+    .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+    .map((d) => (Array.isArray(d.embedding) ? d.embedding : []))
+}
+
 /** Model ids from GET /models (`{ data: [{ id }] }`). */
 export function parseModelList(text: string): string[] {
   const body = JSON.parse(text) as { data?: Array<{ id?: string }> }

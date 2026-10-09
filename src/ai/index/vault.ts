@@ -20,5 +20,6 @@ export function vaultSnapshot(): VaultSnapshot {
     notes: useAppStore.getState().notes,
     journal: Object.values(useJournalStore.getState().entries),
     boards: useKanbanStore.getState().boards,
+    folders: useAppStore.getState().folderList,
   }
 }

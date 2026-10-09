@@ -6,13 +6,14 @@ import { Button } from '../../atoms/Button'
 import { LocationBadge } from '../../atoms/LocationBadge'
 import { Icon } from '../../../icons/Icon'
 import { ConsentDialog } from './ConsentDialog'
-import { PROVIDER_PRESETS, MAX_CONTEXT_TOKENS } from './providerPresets'
+import { PROVIDER_PRESETS, PROVIDER_TYPES, MAX_CONTEXT_TOKENS } from './providerPresets'
+import { Select } from '../../atoms/Select'
 import { useAiStore } from '../../../store/useAiStore'
 import { useProviderTest } from '../../../hooks/useProviderTest'
 import { checkProviderUrl, locationForUrl } from '../../../ai/net/urlPolicy'
-import { getProviderKey, setProviderKey } from '../../../ai/providers/registry'
+import { getProviderKey, setProviderKey, supportsEmbeddings } from '../../../ai/providers/registry'
 import { isSecureStorePersistent } from '../../../secrets/secureStore'
-import type { AiProviderConfig } from '../../../types'
+import type { AiProviderConfig, AiProviderType } from '../../../types'
 
 interface ProviderEditorModalProps {
   /** Omit to add a new provider. */
@@ -29,10 +30,12 @@ export function ProviderEditorModal({ existing, onClose }: ProviderEditorModalPr
 
   // New providers get their id up front: consent is recorded per id before saving.
   const [id] = useState(() => existing?.id ?? uuid())
+  const [type, setType] = useState<AiProviderType>(existing?.type ?? 'openai-compat')
   const [name, setName] = useState(existing?.name ?? '')
   const [baseUrl, setBaseUrl] = useState(existing?.baseUrl ?? '')
   const [model, setModel] = useState(existing?.model ?? '')
   const [contextTokens, setContextTokens] = useState(String(existing?.contextTokens ?? 8192))
+  const [embeddingModel, setEmbeddingModel] = useState(existing?.embeddingModel ?? '')
   const [apiKey, setApiKey] = useState('')
   const [hasStoredKey, setHasStoredKey] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -46,17 +49,21 @@ export function ProviderEditorModal({ existing, onClose }: ProviderEditorModalPr
   const urlCheck = url ? checkProviderUrl(url) : null
   const tokens = Math.min(MAX_CONTEXT_TOKENS, Math.max(1024, parseInt(contextTokens, 10) || 8192))
   const draft: AiProviderConfig = useMemo(() => ({
-    id, type: 'openai-compat', name: name.trim() || hostLabel(url), baseUrl: url, model: model.trim(),
+    id, type, name: name.trim() || hostLabel(url), baseUrl: url, model: model.trim(),
     verified: false, contextTokens: tokens, createdAt: existing?.createdAt ?? new Date().toISOString(),
-  }), [id, name, url, model, tokens, existing?.createdAt])
+    ...(embeddingModel.trim() && supportsEmbeddings({ type }) ? { embeddingModel: embeddingModel.trim() } : {}),
+  }), [id, type, name, url, model, tokens, embeddingModel, existing?.createdAt])
+  const typeInfo = PROVIDER_TYPES.find((t) => t.value === type) ?? PROVIDER_TYPES[0]
 
   // Anything that changes what Test connection exercised invalidates its result.
-  const signature = `${url}|${draft.model}|${apiKey.trim() || (hasStoredKey ? 'stored' : '')}`
+  const signature = `${type}|${url}|${draft.model}|${apiKey.trim() || (hasStoredKey ? 'stored' : '')}`
   const canTest = Boolean(urlCheck?.ok && draft.model)
   const tested = tester.passed(signature)
 
   function applyPreset(i: number) {
     const p = PROVIDER_PRESETS[i]
+    setType(p.type)
+    setEmbeddingModel(p.embeddingModel ?? '')
     setName(p.name)
     setBaseUrl(p.baseUrl)
     setContextTokens(String(p.contextTokens))
@@ -65,12 +72,12 @@ export function ProviderEditorModal({ existing, onClose }: ProviderEditorModalPr
   async function save() {
     setSaving(true)
     try {
-      const values = { type: draft.type, name: draft.name, baseUrl: draft.baseUrl, model: draft.model, contextTokens: draft.contextTokens }
+      const values = { type: draft.type, name: draft.name, baseUrl: draft.baseUrl, model: draft.model, contextTokens: draft.contextTokens, embeddingModel: draft.embeddingModel }
       if (existing) updateProvider(id, values)
       else addProvider(values, id)
       if (apiKey.trim()) await setProviderKey(id, apiKey)
       // A rename alone keeps an earlier pass; new URL, model or key needs a fresh test.
-      const unchanged = existing && existing.baseUrl === draft.baseUrl && existing.model === draft.model && !apiKey.trim()
+      const unchanged = existing && existing.type === draft.type && existing.baseUrl === draft.baseUrl && existing.model === draft.model && !apiKey.trim()
       markVerified(id, tested || Boolean(unchanged && existing.verified))
       onClose()
     } finally {
@@ -94,9 +101,13 @@ export function ProviderEditorModal({ existing, onClose }: ProviderEditorModalPr
           </div>
         )}
 
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs font-medium text-text2">Provider type</span>
+          <Select value={type} options={PROVIDER_TYPES.map((t) => ({ value: t.value, label: t.label }))} onChange={(v) => setType(v as AiProviderType)} />
+        </div>
         <Field label="Name" placeholder="e.g. Ollama on my desktop" value={name} onChange={setName} />
         <div className="space-y-1">
-          <Field label="Base URL (OpenAI-compatible)" placeholder="http://localhost:11434/v1" value={baseUrl} onChange={setBaseUrl} type="url" mono />
+          <Field label={typeInfo.urlLabel} placeholder={typeInfo.urlPlaceholder} value={baseUrl} onChange={setBaseUrl} type="url" mono />
           {urlCheck && !urlCheck.ok && <p className="text-[11px] text-red-500">{urlCheck.reason}</p>}
         </div>
         <div className="space-y-1">
@@ -115,7 +126,7 @@ export function ProviderEditorModal({ existing, onClose }: ProviderEditorModalPr
               : 'This environment has no secure storage — the key is kept in memory until reload.'}
           </p>
         </div>
-        <Field label="Model" placeholder="e.g. qwen3:4b" value={model} onChange={setModel} mono />
+        <Field label="Model" placeholder={typeInfo.modelPlaceholder} value={model} onChange={setModel} mono />
         {tester.state.status === 'ok' && tester.state.models.length > 0 && (
           <div className="flex max-h-24 flex-wrap gap-1 overflow-y-auto">
             {tester.state.models.map((m) => (
@@ -124,6 +135,11 @@ export function ProviderEditorModal({ existing, onClose }: ProviderEditorModalPr
           </div>
         )}
         <Field label="Prompt budget (tokens)" value={contextTokens} onChange={setContextTokens} type="number" />
+        {supportsEmbeddings({ type }) ? (
+          <Field label="Embedding model (optional, for semantic search)" placeholder="e.g. nomic-embed-text" value={embeddingModel} onChange={setEmbeddingModel} mono />
+        ) : (
+          <p className="text-[11px] text-text3">Claude has no embeddings endpoint: for semantic search, use the on-device model or another provider.</p>
+        )}
 
         <TestStatus state={tester.state} stale={tester.state.status === 'ok' && !tested} />
 

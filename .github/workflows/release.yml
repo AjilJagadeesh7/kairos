@@ -123,13 +123,14 @@ jobs:
             # APK (sideload) and the AAB (Play Console) via signingConfigs.
             echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > release.keystore
             export ANDROID_KEYSTORE_PATH="$PWD/release.keystore"
-            ./gradlew assembleRelease bundleRelease
-            cp app/build/outputs/apk/release/app-release.apk "Kairos-${GITHUB_REF_NAME}.apk"
-            cp app/build/outputs/bundle/release/app-release.aab "Kairos-${GITHUB_REF_NAME}.aab"
+            # CI builds and publishes Kairos Lite only; Full is built locally (npm run build:full:android).
+            ./gradlew assembleLiteRelease bundleLiteRelease
+            cp app/build/outputs/apk/lite/release/app-lite-release.apk "Kairos-${GITHUB_REF_NAME}.apk"
+            cp app/build/outputs/bundle/liteRelease/app-lite-release.aab "Kairos-${GITHUB_REF_NAME}.aab"
           else
             # No keystore configured — ship a debug-signed APK (sideloadable only).
-            ./gradlew assembleDebug
-            cp app/build/outputs/apk/debug/app-debug.apk "Kairos-${GITHUB_REF_NAME}.apk"
+            ./gradlew assembleLiteDebug
+            cp app/build/outputs/apk/lite/debug/app-lite-debug.apk "Kairos-${GITHUB_REF_NAME}.apk"
           fi
       - name: Attach Android artifacts to the release
         env:

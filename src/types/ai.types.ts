@@ -99,7 +99,8 @@ export interface EmbeddingProvider {
 
 // ── Settings ────────────────────────────────────────────────────────────────
 
-export type AiProviderType = 'openai-compat'
+/** Which adapter speaks to it. OpenAI itself uses `openai-compat`. */
+export type AiProviderType = 'openai-compat' | 'anthropic' | 'gemini' | 'on-device'
 
 /** A user-configured provider. The API key is NOT here — it lives in secure
  *  storage under `aiProviderSecretKey(id)`. */
@@ -115,7 +116,18 @@ export interface AiProviderConfig {
   verified: boolean
   /** Prompt-token budget cap for this provider. */
   contextTokens: number
+  /** Embedding model for semantic search through this provider (not Anthropic: no endpoint). */
+  embeddingModel?: string
   createdAt: string
+}
+
+/** This calendar month's token use across providers, for the optional threshold warning. */
+export interface AiUsageMonth {
+  /** YYYY-MM, local time. */
+  month: string
+  promptTokens: number
+  completionTokens: number
+  requests: number
 }
 
 export type AiSurface = 'global' | 'bubble'

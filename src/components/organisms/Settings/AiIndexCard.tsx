@@ -3,6 +3,9 @@ import { useAiStore } from '../../../store/useAiStore'
 import { useAiIndexStore } from '../../../store/useAiIndexStore'
 import { useConfirmStore } from '../../../store/useConfirmStore'
 import { ON_DEVICE_MODEL } from '../../../ai/index/indexStorage'
+import { activeModelId } from '../../../ai/index/embedSource'
+import { supportsEmbeddings } from '../../../ai/providers/registry'
+import { locationForUrl } from '../../../ai/net/urlPolicy'
 import { SectionCard } from '../../molecules/SectionCard'
 import { Button } from '../../atoms/Button'
 import { ProgressBar } from '../../atoms/ProgressBar'
@@ -11,6 +14,7 @@ import type { IndexSource } from '../../../types'
 
 const SOURCES: SelectOption<IndexSource>[] = [
   { value: 'on-device', label: 'On-device (MiniLM)' },
+  { value: 'provider', label: 'Provider embeddings' },
   { value: 'keyword', label: 'Keyword only' },
 ]
 
@@ -23,16 +27,25 @@ export function AiIndexCard() {
   const source = useAiStore((s) => s.indexSource)
   const setSource = useAiStore((s) => s.setIndexSource)
   const meta = useAiStore((s) => s.indexMeta)
+  const providers = useAiStore((s) => s.providers)
+  const providerId = useAiStore((s) => s.indexProviderId)
+  const setProviderId = useAiStore((s) => s.setIndexProviderId)
+  const embedders = providers.filter((p) => p.verified && supportsEmbeddings(p) && p.embeddingModel)
+  const chosen = embedders.find((p) => p.id === providerId) ?? null
   const { status, progress, error, stats, build, pause, remove, refreshStats } = useAiIndexStore()
   const confirm = useConfirmStore((s) => s.confirm)
 
   useEffect(() => { void refreshStats() }, [refreshStats])
 
-  const stale = !!meta && meta.modelId !== ON_DEVICE_MODEL
+  // Re-read on every render: the source, provider or its embedding model may have changed.
+  const wanted = activeModelId()
+  const stale = !!meta && !!wanted && meta.modelId !== wanted
+  const ready = source === 'on-device' || (source === 'provider' && !!chosen)
   const building = status === 'building'
 
   async function rebuild() {
-    const ok = await confirm({ title: 'Rebuild the semantic index?', message: 'Every note and journal entry is embedded again on this device.', confirmLabel: 'Rebuild' })
+    const where = source === 'provider' && chosen ? `by ${chosen.name}` : 'on this device'
+    const ok = await confirm({ title: 'Rebuild the semantic index?', message: `Every note and journal entry is embedded again ${where}.`, confirmLabel: 'Rebuild' })
     if (!ok) return
     await remove()
     await build()
@@ -52,12 +65,35 @@ export function AiIndexCard() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-sm text-text">Embedding source</p>
-            <p className="text-[11px] text-text3">{source === 'keyword' ? 'No index needed — search matches words only.' : `${ON_DEVICE_MODEL} · runs in the app, nothing leaves the device`}</p>
+            <p className="text-[11px] text-text3">
+              {source === 'keyword' ? 'No index needed — search matches words only.'
+                : source === 'provider' ? (chosen ? `${chosen.embeddingModel} via ${chosen.name}` : 'Pick a provider that has an embedding model set')
+                : `${ON_DEVICE_MODEL} · runs in the app, nothing leaves the device`}
+            </p>
           </div>
           <Select value={source} options={SOURCES} onChange={setSource} />
         </div>
 
-        {source === 'on-device' && (
+        {source === 'provider' && (
+          <div className="space-y-1">
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-sm text-text">Embedding provider</p>
+              <Select
+                value={chosen?.id ?? ''}
+                options={[{ value: '', label: embedders.length ? 'Choose…' : 'None available' }, ...embedders.map((p) => ({ value: p.id, label: `${p.name} · ${p.embeddingModel}` }))]}
+                onChange={(v) => setProviderId(v || null)}
+              />
+            </div>
+            <p className="text-[11px] text-text3">
+              {chosen && locationForUrl(chosen.baseUrl) === 'cloud'
+                ? `Note and journal text is sent to ${chosen.name} to be embedded, under the consent you gave it. Your questions are too.`
+                : chosen ? `Embedded by ${chosen.name} on your own machine or network.`
+                : 'Set an embedding model on a tested OpenAI-compatible or Gemini provider to use it here. Claude has no embeddings endpoint.'}
+            </p>
+          </div>
+        )}
+
+        {ready && (
           <div className="space-y-2 rounded-lg border border-border px-3 py-2">
             <p className="text-[12px] text-text2">
               {building ? 'Building…'

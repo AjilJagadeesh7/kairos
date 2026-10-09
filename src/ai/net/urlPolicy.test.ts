@@ -42,5 +42,7 @@ describe('locationForUrl', () => {
     expect(destinationLabel('self-hosted', 'Ollama')).toBe('Self-hosted: Ollama')
     expect(destinationLabel('cloud', 'OpenRouter')).toBe('Cloud: OpenRouter')
     expect(destinationLabel('on-device', 'x')).toBe('On-device')
+    expect(destinationLabel('on-device', 'On-device · MiniCPM5 2B (Q4_K_M)')).toBe('On-device: MiniCPM5 2B (Q4_K_M)')
+    expect(locationForUrl('local://on-device')).toBe('on-device')
   })
 })

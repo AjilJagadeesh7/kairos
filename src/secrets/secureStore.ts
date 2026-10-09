@@ -97,4 +97,5 @@ export const SECRET_KEYS = {
   s3SecretKey: 'sync.s3.secretKey',
   configSecretsSnapshot: 'sync.config.secretsSnapshot',
   aiProvider: (providerId: string) => `ai.provider.${providerId}.apiKey`,
+  braveSearch: 'ai.web.brave.apiKey',
 } as const

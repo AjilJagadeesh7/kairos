@@ -8,7 +8,8 @@ import { create } from 'zustand'
 import { useAiStore } from './useAiStore'
 import { buildIndex } from '../ai/index/buildIndex'
 import { vaultDocs } from '../ai/index/indexDocs'
-import { clearIndex, dexieIndexStorage, indexStats, ON_DEVICE_MODEL } from '../ai/index/indexStorage'
+import { clearIndex, dexieIndexStorage, indexStats } from '../ai/index/indexStorage'
+import { activeEmbedder } from '../ai/index/embedSource'
 import { ensureVaultLoaded, vaultSnapshot } from '../ai/index/vault'
 
 type Status = 'idle' | 'building' | 'paused' | 'error'
@@ -30,12 +31,6 @@ interface IndexState {
 
 let stopRequested = false
 
-async function embedder() {
-  const { embedRaw } = await import('../utils/embeddingClient')
-  let n = 0
-  return (text: string) => embedRaw(`ai-index-${n++}`, text)
-}
-
 export const useAiIndexStore = create<IndexState>()((set, get) => ({
   status: 'idle',
   progress: null,
@@ -48,17 +43,20 @@ export const useAiIndexStore = create<IndexState>()((set, get) => ({
     set({ status: 'building', error: null, progress: { done: 0, total: 0 } })
     try {
       await ensureVaultLoaded()
+      const embedder = await activeEmbedder()
+      if (!embedder) throw new Error('Choose an embedding source first')
       const result = await buildIndex({
         docs: vaultDocs(vaultSnapshot()),
         storage: dexieIndexStorage,
-        embed: await embedder(),
-        modelId: ON_DEVICE_MODEL,
+        embed: embedder.embed,
+        embedMany: embedder.embedMany,
+        modelId: embedder.modelId,
         onProgress: (progress) => set({ progress }),
         shouldStop: () => stopRequested,
       })
       if (result.stopped) set({ status: 'paused' })
       else {
-        useAiStore.getState().setIndexMeta({ modelId: ON_DEVICE_MODEL, builtAt: new Date().toISOString() })
+        useAiStore.getState().setIndexMeta({ modelId: embedder.modelId, builtAt: new Date().toISOString() })
         set({ status: 'idle', progress: null })
       }
     } catch (err) {
@@ -71,13 +69,17 @@ export const useAiIndexStore = create<IndexState>()((set, get) => ({
 
   update: async (keys) => {
     const meta = useAiStore.getState().indexMeta
-    if (!meta || get().status === 'building' || useAiStore.getState().indexSource !== 'on-device') return
+    if (!meta || get().status === 'building') return
     try {
+      const embedder = await activeEmbedder()
+      // Only top up an index built with the current source; a different one needs a rebuild.
+      if (!embedder || embedder.modelId !== meta.modelId) return
       await buildIndex({
         docs: vaultDocs(vaultSnapshot()),
         storage: dexieIndexStorage,
-        embed: await embedder(),
-        modelId: ON_DEVICE_MODEL,
+        embed: embedder.embed,
+        embedMany: embedder.embedMany,
+        modelId: embedder.modelId,
         only: keys,
       })
     } catch (err) {

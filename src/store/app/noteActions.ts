@@ -7,7 +7,7 @@ import type { AppGet, AppSet, AppState, Note } from '../../types'
 
 type NoteActions = Pick<AppState,
   | 'loadNotes' | 'createNote' | 'updateNote' | 'updateActiveNote' | 'updateNoteTags'
-  | 'setNoteNoSync' | 'updateNoteFrontmatter' | 'appendWikilink' | 'deleteNoteById'
+  | 'setNoteNoSync' | 'updateNoteFrontmatter' | 'appendWikilink' | 'setNoteContent' | 'deleteNoteById'
   | 'moveNoteToFolder'>
 
 /** Persist a note to the vault, best-effort — the in-memory store is the source of truth. */
@@ -52,11 +52,12 @@ export function noteActions(set: AppSet, get: AppGet): NoteActions {
       return run('create-note', async () => {
         const now = new Date().toISOString()
         const id = uuidv4()
+        const content = initial?.content ?? ''
         const note: Note = {
           id,
           title: initial?.title ?? 'Untitled note',
-          content: initial?.content ?? '',
-          tags: [],
+          content,
+          tags: parseTags(content),
           embedding: [],
           createdAt: now,
           updatedAt: now,
@@ -71,7 +72,8 @@ export function noteActions(set: AppSet, get: AppGet): NoteActions {
 
         // Add to in-memory store and search index
         indexNote(note)
-        set(s => ({ notes: [note, ...s.notes], activeNoteId: id }))
+        // `activate: false` (AI plans) adds the note without changing which note is open.
+        set(s => ({ notes: [note, ...s.notes], ...(initial?.activate === false ? {} : { activeNoteId: id }) }))
         return id
       }, 'Creating note…')
     },
@@ -174,6 +176,12 @@ export function noteActions(set: AppSet, get: AppGet): NoteActions {
       }
       set(s => ({ notes: s.notes.map(n => n.id === noteId ? updated : n) }))
       await writeNote(updated)
+    },
+
+    setNoteContent: async (noteId, content) => {
+      const existing = get().notes.find(n => n.id === noteId)
+      if (!existing) return
+      await commit({ ...existing, content, tags: parseTags(content), updatedAt: new Date().toISOString() })
     },
 
     deleteNoteById: async (id) => {

@@ -9,6 +9,8 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         // Local plugins must be registered before the bridge starts.
         registerPlugin(AiHttpPlugin.class);
+        // Full build adds the on-device model plugins; Lite adds nothing.
+        FlavorPlugins.register(this);
         super.onCreate(savedInstanceState);
     }
 }

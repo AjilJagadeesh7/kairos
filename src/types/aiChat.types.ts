@@ -4,13 +4,14 @@ import type { LLMProvider, Msg, ProviderLocation, TokenUsage } from './ai.types'
 import type { BoardBubbleAction, BoardFacts, BoardPlan } from './boardBubble.types'
 import type { TaskPlan } from './noteTasks.types'
 import type { ChatSourceRef, VaultFacts } from './globalChat.types'
+import type { GlobalPlan } from './globalPlan.types'
 
 export type RewriteStyle = 'shorter' | 'formal' | 'casual' | 'grammar'
 
 export type NoteBubbleAction =
   | 'summarize' | 'rewrite' | 'continue' | 'suggest_title' | 'suggest_tags' | 'question' | 'extract_tasks'
 
-export type GlobalChatAction = 'pending' | 'review' | 'query' | 'chitchat'
+export type GlobalChatAction = 'pending' | 'review' | 'query' | 'chitchat' | 'global_plan' | 'web' | 'agent'
 
 export type BubbleAction = NoteBubbleAction | BoardBubbleAction | GlobalChatAction
 
@@ -47,6 +48,8 @@ export interface BubbleMessage {
   plan?: BoardPlan
   /** Note bubble: action items proposed as cards on a chosen board. */
   taskPlan?: TaskPlan
+  /** Global chat: proposed changes across boards and notes, awaiting Apply. */
+  globalPlan?: GlobalPlan
   /** Global chat: vault facts computed in code, rendered as-is. */
   vaultFacts?: VaultFacts
   /** Notes and cards the answer drew from (source chips). */

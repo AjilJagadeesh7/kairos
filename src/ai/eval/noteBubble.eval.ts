@@ -2,13 +2,13 @@
  * Note-bubble eval against a real provider. Not part of `npm test`.
  *
  *   AI_EVAL_BASE_URL=http://localhost:11434/v1 AI_EVAL_MODEL=qwen3:4b npm run ai:eval
+ *   (AI_EVAL_TYPE=anthropic|gemini with AI_EVAL_API_KEY for the native adapters)
  *
  * Optional: AI_EVAL_API_KEY, AI_EVAL_CONTEXT (prompt-token budget, default 8000).
  * Prints a pass/fail table; a case fails on wrong or invented content, not wording.
  */
 import { afterAll, describe, expect, it } from 'vitest'
-import { OpenAICompatProvider } from '../providers/openaiCompat'
-import { fetchStream } from '../transport/httpStream'
+import { evalAdapter, evalType } from './evalAdapter'
 import { checkProviderUrl } from '../net/urlPolicy'
 import { runSuggestTags, runSuggestTitle, runSummarize } from '../agent/noteActions'
 import { runContinue, runRewrite } from '../agent/noteWriting'
@@ -28,14 +28,14 @@ const model = process.env.AI_EVAL_MODEL ?? ''
 const budget = Number(process.env.AI_EVAL_CONTEXT ?? 8000)
 
 const config: AiProviderConfig = {
-  id: 'eval', type: 'openai-compat', name: 'eval', baseUrl, model,
+  id: 'eval', type: evalType, name: 'eval', baseUrl, model,
   verified: true, contextTokens: budget, createdAt: new Date().toISOString(),
 }
 
 function provider() {
   const url = checkProviderUrl(baseUrl)
   if (!url.ok) throw new Error(url.reason)
-  return new OpenAICompatProvider(config, process.env.AI_EVAL_API_KEY ?? null, fetchStream)
+  return evalAdapter(config, process.env.AI_EVAL_API_KEY ?? null)
 }
 
 const report: Array<{ case: string; pass: boolean; ms: number; note: string }> = []

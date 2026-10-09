@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useAiStore } from '../store/useAiStore'
+import { monthKey, useAiStore } from '../store/useAiStore'
 import { useAppStore } from '../store/useAppStore'
 import { useJournalStore } from '../store/useJournalStore'
 import type { JournalEntry, Note } from '../types'
@@ -19,12 +19,28 @@ function stamps(notes: Note[], journal: Record<string, JournalEntry>): Map<strin
  *  - chat retention: swept at startup and hourly (there is no server cron);
  *  - semantic index: notes saved since it was built are re-embedded, debounced,
  *    and only while the app is in the foreground (PRD).
+ *  - token usage: once a month, a warning when the optional threshold is passed.
  * With the toggle off this does nothing and loads no AI code.
  */
 export function useAiBackground(): void {
   const enabled = useAiStore((s) => s.enabled)
   const retention = useAiStore((s) => s.chatRetention)
-  const indexed = useAiStore((s) => s.enabled && s.indexSource === 'on-device' && !!s.indexMeta)
+  const indexed = useAiStore((s) => s.enabled && s.indexSource !== 'keyword' && !!s.indexMeta)
+
+  useEffect(() => {
+    if (!enabled) return
+    return useAiStore.subscribe((s, p) => {
+      if (s.usage === p.usage || !s.usage || !s.monthlyTokenLimit) return
+      const month = monthKey()
+      const total = s.usage.promptTokens + s.usage.completionTokens
+      if (s.usage.month !== month || total <= s.monthlyTokenLimit || s.usageWarnedMonth === month) return
+      s.markUsageWarned(month)
+      void import('sonner').then(({ toast }) => toast.warning(
+        `AI token use this month passed your ${s.monthlyTokenLimit!.toLocaleString()} threshold (${total.toLocaleString()} so far).`,
+        { duration: 10_000, description: 'Change the threshold in Settings → AI → Token usage.' },
+      ))
+    })
+  }, [enabled])
 
   useEffect(() => {
     if (!enabled || retention === 'keep') return

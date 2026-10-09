@@ -7,7 +7,7 @@ import { doneColumnId, isDueOverdue } from '../../utils/kanban'
 import { isoDate } from '../text/relativeDates'
 import { dueDay, FACT_LIST_CAP } from './boardFacts'
 import type {
-  Board, FactCard, FactList, KanbanTask, NoteOpenItems, NoteRef, PendingFacts, ReviewFacts, ReviewPeriod, VaultSnapshot,
+  Board, ChatSourceRef, FactCard, FactList, KanbanTask, NoteOpenItems, NoteRef, PendingFacts, ReviewFacts, ReviewPeriod, VaultSnapshot,
 } from '../../types'
 
 const UNCHECKED = /^\s*[-*+]\s+\[ \]\s+(.+)$/gm
@@ -124,4 +124,23 @@ export function vaultFactsHeader(f: PendingFacts | ReviewFacts): string {
   }
   const label = f.period === 'day' ? 'Today' : f.period === 'week' ? `Since Monday ${f.since}` : `Since ${f.since}`
   return `${label} · ${f.notesCreated.count} notes created · ${f.notesEdited.count} edited · ${f.cardsCompleted.count} cards completed`
+}
+
+/** The cards and notes a set of facts lists, as source chips. */
+export function factSources(f: PendingFacts | ReviewFacts): ChatSourceRef[] {
+  const out: ChatSourceRef[] = []
+  const seen = new Set<string>()
+  const push = (s: ChatSourceRef) => {
+    const k = `${s.kind}:${s.id}`
+    if (!seen.has(k)) { seen.add(k); out.push(s) }
+  }
+  const cards = f.kind === 'pending'
+    ? [...f.overdue.cards, ...f.dueThisWeek.cards]
+    : [...f.cardsCompleted.cards, ...f.cardsMoved.cards, ...f.cardsCreated.cards]
+  const notes = f.kind === 'pending'
+    ? f.notesWithOpenItems.notes
+    : [...f.notesCreated.notes, ...f.notesEdited.notes, ...f.journalEntries.notes]
+  for (const c of cards) if (c.id) push({ kind: 'card', id: c.id, boardId: c.boardId, title: `${c.key} ${c.title}` })
+  for (const n of notes) push({ kind: n.kind, id: n.id, title: n.title })
+  return out
 }

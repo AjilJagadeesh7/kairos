@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { Button } from '../../../atoms/Button'
 import { Checkbox } from '../../../atoms/Checkbox'
 import { Icon } from '../../../../icons/Icon'
-import type { BoardPlan, PlanAction, PlanHandlers, PlanState } from '../../../../types'
+import type { BoardPlan, GlobalPlan, PlanAction, PlanHandlers, PlanState } from '../../../../types'
 
 interface RowProps {
-  action: PlanAction
+  /** A board action or a global one: only these fields are shown. */
+  action: Pick<PlanAction, 'summary' | 'changes' | 'unresolved'> & { resolved: unknown }
   pending: boolean
   checked: boolean
   /** Why Apply skipped this action (board changed since the plan). */
@@ -69,6 +70,8 @@ interface FooterProps {
   busy: boolean
   /** e.g. "Applied 2 of 3." */
   appliedText: string
+  /** Shown after Undo. */
+  undoneText?: string
   undoable: boolean
   onApply: () => void
   onCancel: () => void
@@ -76,7 +79,7 @@ interface FooterProps {
 }
 
 /** Apply selected / Cancel while pending; the outcome (and Undo) afterwards. */
-export function PlanFooter({ state, selectedCount, busy, appliedText, undoable, onApply, onCancel, onUndo }: FooterProps) {
+export function PlanFooter({ state, selectedCount, busy, appliedText, undoneText, undoable, onApply, onCancel, onUndo }: FooterProps) {
   if (state === 'pending') {
     return (
       <div className="flex items-center gap-2">
@@ -88,7 +91,7 @@ export function PlanFooter({ state, selectedCount, busy, appliedText, undoable, 
     )
   }
   const text = state === 'cancelled' ? 'Cancelled — nothing was changed.'
-    : state === 'undone' ? 'Undone — the board is back as it was.'
+    : state === 'undone' ? undoneText ?? 'Undone — the board is back as it was.'
     : appliedText
   return (
     <div className="flex items-center gap-2 text-[11.5px] text-text3">
@@ -101,13 +104,13 @@ export function PlanFooter({ state, selectedCount, busy, appliedText, undoable, 
 
 interface Props {
   messageId: string
-  plan: BoardPlan
+  plan: BoardPlan | GlobalPlan
   busy: boolean
   handlers: PlanHandlers
 }
 
-/** Proposed board changes. Nothing is written until "Apply selected". */
-export function PlanCard({ messageId, plan, busy, handlers }: Props) {
+/** Proposed changes (one board, or across the vault). Nothing is written until "Apply selected". */
+export function PlanCard({ messageId, plan, busy, handlers, undoneText }: Props & { undoneText?: string }) {
   const pending = plan.state === 'pending'
   return (
     <div className="flex flex-col gap-2">
@@ -128,6 +131,7 @@ export function PlanCard({ messageId, plan, busy, handlers }: Props) {
         selectedCount={plan.selected.length}
         busy={busy}
         appliedText={`Applied ${plan.appliedCount ?? 0} of ${plan.actions.length}.`}
+        undoneText={undoneText}
         undoable={!!plan.undoable}
         onApply={() => handlers.apply(messageId)}
         onCancel={() => handlers.cancel(messageId)}

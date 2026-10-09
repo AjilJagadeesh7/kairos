@@ -37,7 +37,7 @@ export type { FrontmatterFieldType, FrontmatterField, FrontmatterPanelMode } fro
 export type {
   ProviderId, ProviderLocation, ProviderCapabilities, MsgRole, Msg, JSONSchema, ToolDef, ToolCall,
   GenOpts, TokenUsage, ModelSpec, LLMProvider, EmbeddingProvider, AiProviderType, AiProviderConfig,
-  AiSurface, AiDebugTurn,
+  AiSurface, AiDebugTurn, AiUsageMonth,
 } from './ai.types'
 export type {
   RewriteStyle, NoteBubbleAction, GlobalChatAction, BubbleAction, NoteIntent, SuggestionState, BubbleSuggestion, BubbleMessage,
@@ -49,8 +49,11 @@ export type {
   FieldChange, ResolvedAction, PlanAction, PlanState, BoardPlan, BatchUndo, BoardBubbleEnv, PlanHandlers,
 } from './boardBubble.types'
 export type { ExtractedTask, TaskPlan, TaskPlanHandlers } from './noteTasks.types'
+export type { GlobalResolved, GlobalPlanAction, GlobalPlan, AllowedIds, GlobalUndo } from './globalPlan.types'
+export type { DeviceInfo, ModelStatus, ModelDownloadEvent, LocalGenerateRequest, LocalTokenEvent, LocalRuntime } from './onDevice.types'
+export type { WebProviderKind, WebSettings, SearchResult, FetchedPage, WebRequest, PendingWebRequest, WebAccess } from './web.types'
 export type {
-  ReviewPeriod, GlobalIntent, ChatSourceRef, NoteRef, NoteOpenItems, PendingFacts, ReviewFacts, VaultFacts,
+  ReviewPeriod, ChatSourceRef, NoteRef, NoteOpenItems, PendingFacts, ReviewFacts, VaultFacts,
   IndexSource, IndexChunk, RetrievedChunk, RetrieveFilter, VaultSnapshot, ChatRetention, GlobalEnv,
 } from './globalChat.types'
 export type {

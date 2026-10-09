@@ -3,156 +3,56 @@
  * llama-server, vLLM, OpenRouter, Groq, Mistral, Together, OpenAI itself.
  * Feature logic lives elsewhere — this file only speaks the wire protocol.
  */
-import { streamHttp, AbortedError, type StreamRequest, type StreamResponse } from '../transport/httpStream'
 import { parseSSE } from '../transport/sse'
-import { extractJSON, validateJSON } from '../json/validate'
-import { locationForUrl } from '../net/urlPolicy'
-import { jsonInstruction, jsonRetryMessage, toolFallbackInstruction } from '../prompts/jsonOutput.v1'
-import { ProviderError, errorForStatus, parseErrorBody } from './errors'
-import { MAX_TOOLS_PER_CALL, toolFallbackSchema, validateToolCalls, type RawToolCall } from './toolCalls'
+import { ProviderError, errorForStatus } from './errors'
+import { HttpProvider, collect, type Adaptation, type CompleteExtras, type Completion, type Transport } from './httpProvider'
 import {
-  DEFAULT_FLAGS, adaptToRejection, buildBody, parseCompletion, parseModelList, parseStreamEvent,
-  type BodyExtras, type CompatFlags, type Completion,
+  DEFAULT_FLAGS, adaptToRejection, buildBody, parseCompletion, parseEmbeddings, parseModelList, parseStreamEvent,
+  type CompatFlags,
 } from './openaiCompatWire'
-import type {
-  AiProviderConfig, GenOpts, JSONSchema, LLMProvider, Msg, ProviderCapabilities, TokenUsage, ToolCall, ToolDef,
-} from '../../types'
+import type { AiProviderConfig, GenOpts, Msg } from '../../types'
 
-export type Transport = (req: StreamRequest, signal?: AbortSignal) => Promise<StreamResponse>
+export type { Transport } from './httpProvider'
 
-const MAX_ADAPTATIONS = 5
-
-/** The server (or model) doesn't support native tools — use the JSON fallback. */
-class ToolsRejected extends ProviderError {
-  constructor(name: string) { super('bad_request', `${name} doesn't support native tool calling`) }
-}
-const TEST_TIMEOUT_MS = 30_000
-
-async function collect(body: AsyncIterable<string>, limit = 1_000_000): Promise<string> {
-  let text = ''
-  for await (const chunk of body) {
-    text += chunk
-    if (text.length > limit) break
-  }
-  return text
-}
-
-/** Adds an instruction to the system prompt (or creates one). */
-function withSystem(messages: Msg[], instruction: string): Msg[] {
-  if (messages[0]?.role === 'system') {
-    return [{ ...messages[0], content: `${messages[0].content}\n\n${instruction}` }, ...messages.slice(1)]
-  }
-  return [{ role: 'system', content: instruction }, ...messages]
-}
-
-export class OpenAICompatProvider implements LLMProvider {
+export class OpenAICompatProvider extends HttpProvider {
   readonly id = 'openai-compat' as const
-  readonly capabilities: ProviderCapabilities
   private flags: CompatFlags = { ...DEFAULT_FLAGS }
-  private readonly controllers = new Set<AbortController>()
-  private usage: TokenUsage | null = null
 
-  private readonly config: AiProviderConfig
-  private readonly apiKey: string | null
-  private readonly transport: Transport
-
-  constructor(config: AiProviderConfig, apiKey: string | null, transport: Transport = streamHttp) {
-    this.config = config
-    this.apiKey = apiKey
-    this.transport = transport
-    this.capabilities = {
-      nativeTools: true,
-      jsonSchema: true,
-      contextTokens: config.contextTokens,
-      embeddings: true,
-      location: locationForUrl(config.baseUrl),
-    }
+  constructor(config: AiProviderConfig, apiKey: string | null, transport?: Transport) {
+    super(config, apiKey, transport, { embeddings: true })
   }
 
-  // ── plumbing ──────────────────────────────────────────────────────────────
-
-  private headers(): Record<string, string> {
+  protected headers(): Record<string, string> {
     const h: Record<string, string> = { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' }
     if (this.apiKey) h.Authorization = `Bearer ${this.apiKey}`
     return h
   }
 
-  private url(path: string): string {
-    return `${this.config.baseUrl.replace(/\/+$/, '')}${path}`
+  protected nativeToolsEnabled(): boolean {
+    return this.flags.nativeTools
   }
 
-  private toProviderError(err: unknown, signal?: AbortSignal): ProviderError {
-    if (err instanceof ProviderError) return err
-    if ((signal?.reason as Error | undefined)?.name === 'TimeoutError') {
-      return new ProviderError('network', `${this.config.name} didn't respond in time`)
-    }
-    if (err instanceof AbortedError || signal?.aborted) return new ProviderError('aborted', 'Stopped')
-    const message = err instanceof Error ? err.message : String(err)
-    return new ProviderError('network', `Couldn't reach ${this.config.name}: ${message}`)
+  /** A 400 naming an optional parameter flips its flag; `tools` flips to the JSON fallback. */
+  private adapt = (status: number, message: string, body: Record<string, unknown>): Adaptation => {
+    const adapted = adaptToRejection(status, message, this.flags, body)
+    if (!adapted) return null
+    const toolsRejected = this.flags.nativeTools && !adapted.nativeTools
+    this.flags = adapted
+    return toolsRejected ? 'tools-rejected' : 'retry'
   }
 
-  private async send(req: StreamRequest, signal: AbortSignal): Promise<StreamResponse> {
-    try {
-      return await this.transport(req, signal)
-    } catch (err) {
-      throw this.toProviderError(err, signal)
-    }
-  }
-
-  /** POST with automatic retry when the server rejects an optional parameter. */
-  private async post(
-    path: string, build: (flags: CompatFlags) => Record<string, unknown>, signal: AbortSignal,
-  ): Promise<StreamResponse> {
-    for (let i = 0; i <= MAX_ADAPTATIONS; i++) {
-      const body = build(this.flags)
-      const res = await this.send({ url: this.url(path), method: 'POST', headers: this.headers(), body: JSON.stringify(body) }, signal)
-      if (res.status >= 200 && res.status < 300) return res
-      const text = await collect(res.body)
-      const adapted = adaptToRejection(res.status, parseErrorBody(text).message || text, this.flags, body)
-      if (!adapted) throw errorForStatus(res.status, text, this.config.name)
-      const toolsRejected = this.flags.nativeTools && !adapted.nativeTools
-      this.flags = adapted
-      // Resending without `tools` would be pointless — the caller switches to
-      // the JSON fallback, which needs a different prompt.
-      if (toolsRejected) throw new ToolsRejected(this.config.name)
-    }
-    throw new ProviderError('bad_request', `${this.config.name} kept rejecting the request parameters`)
-  }
-
-  private track(): AbortController {
-    const ctrl = new AbortController()
-    this.controllers.add(ctrl)
-    return ctrl
-  }
-
-  private async complete(messages: Msg[], opts: GenOpts, extras: BodyExtras = {}, signal?: AbortSignal): Promise<Completion> {
-    const ctrl = this.track()
-    const onOuterAbort = () => ctrl.abort(signal?.reason)
-    signal?.addEventListener('abort', onOuterAbort, { once: true })
-    try {
-      const res = await this.post('/chat/completions', (f) => buildBody(this.config.model, messages, opts, f, extras), ctrl.signal)
-      const text = await collect(res.body)
-      let completion: Completion
-      try { completion = parseCompletion(text) } catch {
-        throw new ProviderError('bad_request', `${this.config.name} sent a response that isn't a chat completion`)
-      }
-      this.usage = completion.usage
-      return completion
-    } catch (err) {
-      throw this.toProviderError(err, ctrl.signal)
-    } finally {
-      signal?.removeEventListener('abort', onOuterAbort)
-      this.controllers.delete(ctrl)
+  protected async request(messages: Msg[], opts: GenOpts, extras: CompleteExtras, signal: AbortSignal): Promise<Completion> {
+    const res = await this.post('/chat/completions', () => buildBody(this.config.model, messages, opts, this.flags, extras), signal, this.adapt)
+    const text = await collect(res.body)
+    try { return parseCompletion(text) } catch {
+      throw new ProviderError('bad_request', `${this.config.name} sent a response that isn't a chat completion`)
     }
   }
-
-  // ── LLMProvider ───────────────────────────────────────────────────────────
 
   async isAvailable(): Promise<boolean> {
     try {
-      const res = await this.send({ url: this.url('/models'), method: 'GET', headers: this.headers() }, AbortSignal.timeout(10_000))
-      await collect(res.body)
-      return res.status >= 200 && res.status < 300
+      const { status } = await this.getJSON('/models', AbortSignal.timeout(10_000))
+      return status >= 200 && status < 300
     } catch {
       return false
     }
@@ -162,7 +62,7 @@ export class OpenAICompatProvider implements LLMProvider {
     const ctrl = this.track()
     this.usage = null
     try {
-      const res = await this.post('/chat/completions', (f) => buildBody(this.config.model, messages, opts, f, { stream: true }), ctrl.signal)
+      const res = await this.post('/chat/completions', () => buildBody(this.config.model, messages, opts, this.flags, { stream: true }), ctrl.signal, this.adapt)
       // Keep the raw text in case the server ignored `stream` and sent plain JSON.
       let raw = ''
       let sawEvent = false
@@ -189,92 +89,30 @@ export class OpenAICompatProvider implements LLMProvider {
       if (e.kind === 'aborted') return // Stop ends generation quietly
       throw e
     } finally {
-      this.controllers.delete(ctrl)
+      this.endStream(ctrl)
     }
   }
-
-  async generateJSON<T>(messages: Msg[], schema: JSONSchema, opts: GenOpts): Promise<T> {
-    let convo = withSystem(messages, jsonInstruction(schema))
-    let errors: string[] = []
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const { content } = await this.complete(convo, opts, { schema })
-      try {
-        const value = extractJSON(content)
-        const result = validateJSON(value, schema)
-        if (result.ok) return value as T
-        errors = result.errors
-      } catch (err) {
-        errors = [(err as Error).message]
-      }
-      convo = [...convo, { role: 'assistant', content }, { role: 'user', content: jsonRetryMessage(errors) }]
-    }
-    throw new ProviderError('invalid_output', `${this.config.name} returned output that doesn't match the expected format: ${errors.slice(0, 3).join('; ')}`)
-  }
-
-  async callTools(messages: Msg[], tools: ToolDef[], opts: GenOpts): Promise<ToolCall[]> {
-    if (tools.length > MAX_TOOLS_PER_CALL) {
-      throw new ProviderError('config', `At most ${MAX_TOOLS_PER_CALL} tools per call (got ${tools.length})`)
-    }
-    let convo = messages
-    let errors: string[] = []
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const { raw, content } = await this.proposeCalls(convo, tools, opts)
-      const result = validateToolCalls(raw, tools)
-      if (result.errors.length === 0) return result.calls
-      errors = result.errors
-      convo = [...convo, { role: 'assistant', content: content || JSON.stringify(raw) }, { role: 'user', content: jsonRetryMessage(errors) }]
-    }
-    throw new ProviderError('invalid_output', `${this.config.name} proposed invalid tool calls: ${errors.slice(0, 3).join('; ')}`)
-  }
-
-  private async proposeCalls(messages: Msg[], tools: ToolDef[], opts: GenOpts): Promise<{ raw: RawToolCall[]; content: string }> {
-    if (this.flags.nativeTools) {
-      try {
-        const completion = await this.complete(messages, opts, { tools })
-        return { raw: completion.toolCalls, content: completion.content }
-      } catch (err) {
-        if (!(err instanceof ToolsRejected)) throw err
-      }
-    }
-    const fallback = await this.generateJSON<{ tool_calls: Array<{ name: string; arguments: unknown }> }>(
-      withSystem(messages, toolFallbackInstruction(tools)), toolFallbackSchema(tools), opts,
-    )
-    return {
-      raw: fallback.tool_calls.map((c, i) => ({ id: `call_${i}`, name: c.name, arguments: c.arguments })),
-      content: JSON.stringify(fallback),
-    }
-  }
-
-  abort(): void {
-    for (const ctrl of this.controllers) ctrl.abort()
-    this.controllers.clear()
-  }
-
-  lastUsage(): TokenUsage | null {
-    return this.usage
-  }
-
-  // ── settings helpers ──────────────────────────────────────────────────────
 
   /** Model ids from GET /models; empty if the server doesn't list them. */
   async listModels(): Promise<string[]> {
-    const signal = AbortSignal.timeout(TEST_TIMEOUT_MS)
-    const res = await this.send({ url: this.url('/models'), method: 'GET', headers: this.headers() }, signal)
-    const text = await collect(res.body)
-    if (res.status === 401 || res.status === 403) throw errorForStatus(res.status, text, this.config.name)
-    if (res.status < 200 || res.status >= 300) return []
+    const { status, text } = await this.getJSON('/models', AbortSignal.timeout(30_000))
+    if (status === 401 || status === 403) throw errorForStatus(status, text, this.config.name)
+    if (status < 200 || status >= 300) return []
     try { return parseModelList(text) } catch { return [] }
   }
 
-  /** Lists models, then makes a tiny real completion with the configured model. */
-  async testConnection(): Promise<{ models: string[] }> {
-    const models = await this.listModels()
-    await this.complete(
-      [{ role: 'user', content: 'Reply with OK.' }],
-      { maxTokens: 16, temperature: 0, thinking: false },
-      {},
-      AbortSignal.timeout(TEST_TIMEOUT_MS),
-    )
-    return { models }
+  /** POST /embeddings (OpenAI, Ollama, LM Studio, vLLM…). One vector per text, in order. */
+  async embed(texts: string[], model: string, _task?: 'document' | 'query'): Promise<number[][]> {
+    const ctrl = this.track()
+    try {
+      const res = await this.post('/embeddings', () => ({ model, input: texts }), ctrl.signal)
+      const vectors = parseEmbeddings(await collect(res.body, 50_000_000))
+      if (vectors.length !== texts.length) throw this.malformed()
+      return vectors
+    } catch (err) {
+      throw this.toProviderError(err, ctrl.signal)
+    } finally {
+      this.untrack(ctrl)
+    }
   }
 }

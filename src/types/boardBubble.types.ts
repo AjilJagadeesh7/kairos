@@ -66,7 +66,7 @@ export type PlanTool = 'create_card' | 'update_card' | 'move_card'
 export type CardPatch = Partial<Pick<KanbanTask, 'title' | 'description' | 'due' | 'tags' | 'priority'>>
 
 export interface FieldChange {
-  field: 'column' | 'title' | 'description' | 'due' | 'tags' | 'priority'
+  field: 'column' | 'title' | 'description' | 'due' | 'tags' | 'priority' | 'board' | 'body' | 'folder' | 'link' | 'source note'
   before: string
   after: string
 }

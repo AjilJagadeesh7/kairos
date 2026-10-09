@@ -230,6 +230,311 @@ P4 decisions:
   "registerBackend of undefined" because `@xenova/transformers` is excluded from Vite's
   dependency pre-bundling. Production builds work. The exclusion was left as it is.
 
+### P5 acceptance criteria (global chat, writes)
+
+- [x] All writes go through plan and confirm; max 20 actions per plan.
+  - A change request becomes a plan card in the chat (`agent/globalPlanRun.ts`). Apply
+    is the only write path (`hooks/useGlobalPlan.ts`).
+  - The whole plan is one batch with one 10-second Undo across boards and notes.
+  - Plans over 20 actions are refused with a request to narrow it down.
+  - Unit tests check the vault is unchanged until Apply. The browser smoke test checks
+    the stores before and after Apply and Undo.
+- [x] Instructions embedded in note content do not trigger actions. Prompt-injection
+  test notes are in the test suite (`agent/__fixtures__/injection.ts`,
+  `globalPlanRun.test.ts`, and the injection cases in `eval/globalPlan.eval.ts`):
+  - The router sees only the user's message. Questions, pending and reviews never
+    offer the model a tool. The tests use a model that "obeys" the notes and show no
+    tool call and no write.
+  - In a change request, vault text and lookup results are data blocks. Fake closing
+    tags inside notes are neutralised.
+  - Even a model that obeys the notes only produces a proposal.
+  - If anything read for the plan addresses an AI (`text/injection.ts`), the plan
+    card names it, starts with **nothing selected**, and Apply stays disabled until
+    the user ticks changes themselves. This was checked in the browser.
+
+P5 decisions:
+
+- **What the model sees is chosen by code**:
+  - every board's columns and tags;
+  - the cards most relevant to the request across all boards (all of them when they
+    fit);
+  - passages from the hybrid retrieval;
+  - what's pending.
+- **Read tools** (`search_notes`, `get_note`, `list_cards`, `get_board`):
+  - The model may use them for at most 2 rounds of up to 4 calls each.
+  - They run in code and return results in a `<tool_results>` data block. The last
+    round offers only write tools.
+  - Read and write tools together are 9 (PRD: at most 10).
+- **allowedIds**:
+  - A card or note may appear in an action only if it was in what the model was shown
+    in that request (context or lookups). Anything else is greyed as "wasn't among the
+    cards the assistant was shown".
+  - Boards resolve from the full board list.
+  - When two boards share a key, the model must name the board.
+- **Write tools**: `create_note`, `create_card` (any board, optional `sourceNoteId` →
+  linked note), `update_card`, `move_card`, `link_notes`. `update_note` and `add_tag`
+  stay in the note bubble (P1 suggestions), as in the PRD scopes.
+- **New notes**:
+  - A title another note already has is refused, since wikilinks go by title.
+  - Folders must exist.
+  - Tags become `#tags` in the body, which is how Kairos tags work.
+  - A link may point to, or come from, a note the same plan creates.
+- **Apply order**: new notes, then links, then each board as one write
+  (`agent/globalApply.ts`, through a `VaultWriter` the hook implements with the existing
+  stores). `createNote` gained `activate: false`, so an AI-created note doesn't change
+  the open note.
+- **Undo**:
+  - It reverts boards, links and new notes, newest first.
+  - A note the plan created is removed through `deleteNoteById`, so it is captured in
+    the trash first, never hard-deleted.
+  - A note or link the user edited since is kept and named.
+- **Prompts**: `globalPlan.v1`. The read-flow prompt moved to `globalChat.v2`, which tells
+  users how to ask for a change instead of saying changes are impossible.
+- **Eval**: `npm run ai:eval` adds `globalPlan.eval.ts`, with 4 plan cases and 3
+  injection cases. None of it has been run against a real model yet.
+
+### P6 acceptance criteria (custom providers: Anthropic, Gemini, provider embeddings)
+
+APIs were checked against the official docs in Oct 2026:
+- Anthropic: `POST /v1/messages`, `anthropic-version: 2023-06-01`, the SSE events,
+  `output_config.format`, `GET /v1/models`.
+- Gemini: `generateContent`, `streamGenerateContent?alt=sse`,
+  `functionDeclarations[].parametersJsonSchema`, `responseJsonSchema`, `thinkingConfig`,
+  `batchEmbedContents`, `models.list`.
+- OpenAI / Ollama: `POST /embeddings`.
+
+- [x] All Phase 1–5 features work unchanged with each provider type.
+  - `agent/crossProvider.test.ts` runs a P1 rewrite, a P2 board plan, a P4 question
+    with sources and a P5 global plan through each real adapter, using recorded wire
+    replies.
+  - The browser smoke test runs Claude and Gemini mock servers through the app.
+  - Feature code never branches on the provider.
+- [x] Tool calls use each provider's native format.
+  - Anthropic `tools[].input_schema` → `tool_use` blocks.
+  - Gemini `functionDeclarations` → `functionCall` parts.
+  - OpenAI `tools[].function`.
+  - If a model rejects tools, the adapter falls back to schema-in-prompt JSON, validated
+    and retried once (shared `HttpProvider.callTools`).
+- [x] A cloud provider gets no request before its consent dialog is accepted, and that
+  now includes embeddings: `embeddingProviderFromConfig` goes through the same gate.
+  Registry tests check that no request is sent before consent.
+- [x] API keys never appear in vault data, sync payloads, logs or exports.
+  - Keys for every type come from secure storage only.
+  - Tests check that the persisted AI settings never contain the key. The browser test
+    checks localStorage after saving Claude and Gemini.
+- [x] Provider failures show a clear error with Switch provider, and there's no silent
+  fallback. Each adapter maps its errors to the same kinds: Anthropic 401/529 and
+  error events, Gemini 429 `RESOURCE_EXHAUSTED` and blocked prompts.
+
+P6 decisions:
+
+- **Adapters**:
+  - `providers/httpProvider.ts` holds what all of them share: abort tracking, error
+    mapping, retrying without a parameter the server rejected, validated JSON with one
+    retry, and the tool-call fallback.
+  - `openaiCompat.ts`, `anthropic.ts` and `gemini.ts` (with their `*Wire.ts` files) only
+    speak their formats.
+  - Adding a provider type takes an adapter file, a case in `registry.adapterFor`, and a
+    preset.
+  - OpenAI itself uses the OpenAI-compatible adapter, which already does native function
+    calling and `json_schema`.
+- **Parameters that some models reject**:
+  - Newer Claude models reject `temperature`, so it's dropped on a 400 and the adapter
+    remembers that.
+  - Thinking (`GenOpts.thinking`) maps to Anthropic `thinking: {type: 'adaptive'}`
+    (no temperature) and to Gemini's default thinking. When thinking is off, Gemini gets
+    `thinkingBudget: 0`, dropped if the model refuses it.
+  - Thinking gets 4,096 extra output tokens so it can't crowd out the answer.
+  - Structured-output schemas are reduced to what each API accepts. Our validator
+    still checks the full schema.
+- **Provider embeddings**:
+  - The embedding source can be on-device, provider or keyword only.
+  - The provider source uses the provider's `embeddingModel`: Ollama/OpenAI
+    `/embeddings`, or Gemini `batchEmbedContents` with the RETRIEVAL_DOCUMENT/QUERY task
+    types. Claude has none, and the editor says so.
+  - The index records `type:host:model`. Changing any of them shows "rebuild to use it",
+    and semantic search stays off until then.
+- **Token usage**: counted per month on the device from each provider's usage fields
+  (Settings → AI → Token usage). There's an optional threshold, and a warning toast shows
+  once a month when it's passed.
+- **Desktop/Android**: the native HTTP layers pass any headers and allow any HTTPS host,
+  so no native change was needed for P6.
+- **Evals**: `AI_EVAL_TYPE=anthropic|gemini` runs every eval through that adapter.
+- **Not verified**: real Anthropic and Gemini accounts (only mock servers built from the
+  documented formats), the desktop app and Android.
+
+### P7 acceptance criteria (opt-in web access)
+
+APIs were checked in Oct 2026:
+- SearXNG `GET /search?q=…&format=json` (docs.searxng.org).
+- Brave `GET https://api.search.brave.com/res/v1/web/search` with `X-Subscription-Token`.
+- DuckDuckGo's `html.duckduckgo.com/html/` markup, from a live page. That page is now
+  the test fixture.
+
+- [x] With web access off, AI features make no network requests other than calls to
+  the chosen provider (scope amended above).
+  - Checked with a network monitor in the browser (Playwright `page.on('request')`) over
+    a question, a web-sounding question, pending, and a change plan.
+  - The only origins were the provider and, outside the AI scope, the app's UI font
+    from Google Fonts.
+  - In code, `env.web` is null unless web access is on and tested, and the web modules
+    aren't even loaded. Unit tests check that no web intent or tool is offered and that
+    `fetch` is never called.
+- [x] Test connection checks the SearXNG URL, Brave key or DDG scraper before the toggle
+  can be turned on.
+  - It runs one real search, or reads example.com for fetch-only.
+  - The toggle stays disabled until then, and changing the provider, URL or key turns it
+    off again.
+  - Checked in the browser with a SearXNG mock and in store tests.
+- [x] With confirmation on, no query or fetch is sent without approval.
+  - Every search shows its exact query, and every page read shows its URL, in an
+    Allow / Don't allow card.
+  - Don't allow (or Stop) sends nothing and ends the lookups.
+  - The network monitor showed nothing reaching the search host after Don't allow, and
+    only the two approved requests after Allow.
+- [x] Injection test pages don't cause any write to run.
+  - Page extraction drops scripts, navigation and hidden text (`hidden`, `aria-hidden`,
+    `display:none`, zero-size or zero-opacity, offscreen elements, comments).
+  - What's left goes to the model in a `<web_content>` or `<tool_results>` data block.
+  - Web questions offer only the two web tools.
+  - In a change plan that read a page with instructions aimed at an AI, the plan is
+    flagged and starts with nothing selected; that's the same guard as P5.
+  - Covered by unit tests (`web.test.ts`, `webActions.test.ts`) and in the browser:
+    KAI-1 stayed untouched.
+
+P7 decisions:
+
+- **Where web lives**:
+  - A new `web` intent, offered to the router only when web access is on, runs
+    `agent/webActions.ts`.
+  - Links pasted in the message are read first.
+  - The model then writes its own search query from the user's message alone (no note
+    text is in that prompt), and may read up to 3 pages per round, for 3 rounds.
+  - Change plans can also use `web_search` / `fetch_url` when web is on. `get_board` makes
+    room so the model never sees more than 10 tools.
+  - The page bubble never has web tools.
+- **Providers**:
+  - Files: `providers/search/searxng.ts`, `brave.ts` and `ddg-scraper.ts`.
+  - They sit behind one `SearchProvider` interface and go through the native HTTP layer.
+  - The Brave key is kept in OS secure storage, like the other keys.
+- **DuckDuckGo**:
+  - The only JS port (`duck-duck-scrape`, last release Jan 2025) runs on Node's HTTP
+    stack and can't use the native layer, so the parser is written in-house.
+  - It allows 1 request per 2 s with a browser user agent.
+  - On a CAPTCHA or rate limit it backs off for 60 s and doesn't retry.
+  - If a full page yields nothing, it reports that DuckDuckGo's layout changed and
+    suggests SearXNG or Brave.
+  - It is never picked automatically.
+  - In the browser dev server DDG is blocked by CORS. It works only through the
+    desktop and Android native HTTP layers, which haven't been tested.
+- **Pages**:
+  - HTTPS only, except local addresses (same rule as providers).
+  - The domain allowlist and blocklist are checked before asking, so a blocked domain is
+    never even offered.
+  - At most `maxPageBytes` are read (default 1 MB), and the extracted text is trimmed to
+    about 2,500 tokens. Being cut is stated, not silent.
+- **Source chips**: pages are numbered and cited like notes. Web chips show the host
+  and open in the system browser.
+- **Prompts**: `web.v1`. The router's `web` intent is part of `globalChat.v2`.
+- **Not verified**: a real SearXNG instance, a Brave key, and DDG through the native
+  layers.
+
+### P8 acceptance criteria (on-device runtime, Full/Lite)
+
+Checked in Oct 2026:
+- Models: [openbmb/MiniCPM5-1B-GGUF](https://huggingface.co/openbmb/MiniCPM5-1B-GGUF) and
+  [openbmb/MiniCPM5-2B-GGUF](https://huggingface.co/openbmb/MiniCPM5-2B-GGUF) (Apache-2.0).
+  Q4_K_M is 688,065,920 and 1,561,318,368 bytes. Both downloads matched their pinned SHA-256.
+- Runtime: `llama-cpp-2` / `llama-cpp-sys-2` 0.1.159. These vendor llama.cpp commit `26394b4e`;
+  Android builds from that same commit.
+- Dependencies approved on 2026-10-09:
+  - `llama-cpp-sys-2`, 5.6 MB.
+  - LLVM 23.1.3 (libclang, for bindgen), installed with winget.
+  - Android NDK r27c and CMake 3.22.1, installed automatically by Gradle.
+
+- [ ] CI produces Full and Lite builds — **amended**: CI builds Lite only; Full is built
+  locally (see "Fixed contradictions").
+  - [x] Lite contains no llama.cpp native libraries:
+    - The Lite APK has no `.so` at all; the Full APK has `lib/arm64-v8a/libkairos_llm.so` (12 MB).
+    - Tauri without `local-llm` doesn't link llama.cpp.
+    - The Lite web bundle contains none of the on-device code, catalog or UI (5 markers
+      absent); a Full build contains all of them.
+  - CI now runs `assembleLiteRelease` / `bundleLiteRelease`.
+  - Full builds: `npm run build:full:desktop` and `npm run build:full:android`. On Windows the
+    script finds LLVM's libclang and Visual Studio's CMake by itself.
+- [x] Full build: the model downloads, verifies its SHA-256, loads and streams tokens — on
+  desktop. Android is not yet run end to end.
+  - **Desktop**, checked in the real Tauri app in an isolated profile, driven over WebView2's
+    debug port:
+    - Settings → On-device model detected a paused file.
+    - Resume verified its SHA-256, and the model was marked ready.
+    - "On-device" appeared under Use for, and the chat header showed On-device.
+    - The real 2B model answered a question in the global chat, with routing through grammar
+      JSON and a streamed reply.
+  - **Download manager tests**: 4 Rust tests covering resume, checksum mismatch, pause, and
+    pinned models only. The real Hugging Face URL serves Range (206), so resume works there.
+  - **Android**:
+    - The Full APK builds with the JNI runtime.
+    - On an API 37 emulator (16 KB pages) it showed the app had to be **16 KB page-aligned**.
+      That's fixed: `-Wl,-z,max-page-size=16384` plus `ANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES`,
+      and the segments are now verified at 0x4000.
+    - The app started, and the seeded 1B model was copied in.
+    - The run was stopped before the on-device chat completed, because the app was removed
+      from the emulator mid-test. **Download, verify and generate on Android remain
+      unverified.**
+- [x] Stop aborts generation within 500 ms. Abort sets a flag the token loop checks before
+  every token; at 24 tok/s that's within one token (~40 ms). Not timed in the app.
+- [x] `generateJSON` returns schema-valid output.
+  - Decoding is constrained by GBNF generated from the schema (`gbnf.ts`).
+  - With the real 2B model, llama.cpp accepted the generated grammars. They produced valid
+    router JSON (`{"intent": "change"}`) and correct tool calls (`move_card KAI-4 → Done`).
+  - Unit tests check the grammars against valid and invalid JSON.
+  - The PRD's 20/20 run has not been done with the on-device model.
+- [x] With the AI toggle off, no model is loaded and no extra memory is used.
+  - The model loads only on the first on-device request (`OnDeviceProvider.ensureLoaded`),
+    after `providerForSurface` checks the toggle.
+  - The worker thread is idle until then.
+  - It unloads after 5 idle minutes, on Delete, or (Android) under memory pressure.
+
+Performance, measured on this PC's CPU with MiniCPM5-2B Q4_K_M in a release build:
+
+| Metric | Measured | PRD target (desktop) |
+| --- | --- | --- |
+| Model load | 1.27 s | < 3 s |
+| Time to first token | 0.44 s | < 1 s |
+| Generation | 24.1 tok/s | ≥ 20 tok/s (CPU) |
+
+Android targets have not been measured: the emulator translates ARM, so its numbers wouldn't
+mean anything. A mid-range phone is needed.
+
+P8 decisions:
+
+- **Desktop runtime** (`src-tauri/src/local_llm.rs`, `local-llm` feature):
+  - llama.cpp runs on a dedicated worker thread that owns the backend and model.
+  - Commands: `llm_available`, `llm_load`, `llm_unload`, `llm_generate` (tokens over a Tauri
+    Channel), `llm_abort`.
+  - It applies the model's chat template (llama.cpp built-in templates), samples with
+    grammar → min-p → temperature → dist (greedy at temperature 0), and splits UTF-8 safely
+    across tokens.
+  - Only `.gguf` files inside the app's models folder can be loaded.
+  - It is CPU-only for now: GPU (Vulkan/Metal/CUDA) needs those SDKs at build time and wasn't
+    needed to meet the targets.
+- **Android runtime** (`full` flavor):
+  - `src/full/cpp/kairos_llm.cpp` is a JNI bridge that mirrors the desktop logic.
+  - It is built with CMake + NDK r27c for arm64-v8a only.
+  - llama.cpp is fetched at build time as a tarball pinned by SHA-256, into a cache outside
+    the project. Inside the project, Windows file watchers broke the extract.
+  - `LocalLlmPlugin` stops generation when the app is paused, and frees the model under memory
+    pressure (`onTrimMemory`). It reloads on the next request.
+  - The native build is configured only when a Full task runs, so Lite and CI never need the
+    NDK.
+- **Thinking**: MiniCPM5 writes `<think>…</think>` before answering. The app already strips
+  it, and grammar-constrained JSON can't contain it.
+- **Tests**: `local_llm_tests.rs` runs the real model when `KAIROS_TEST_MODEL` is set:
+  timings, plain streaming, and grammar-constrained intent and tool-call JSON.
+- **Native release**: `MainActivity` (the flavor hook) and the Gradle flavors changed, and Full
+  adds native plugins. The release that ships this must bump `otaMinNative`.
+
 ## Fixed contradictions in the PRD
 
 1. **CI builds Lite only.** PRD Phase 0's "CI produces Full and Lite builds"

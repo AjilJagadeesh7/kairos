@@ -9,6 +9,8 @@ import { ChatComposer } from '../Bubble/ChatComposer'
 import { AttachChatsButton } from './AttachChatsButton'
 import { VaultFactsView } from './VaultFactsView'
 import { SourceChips } from './SourceChips'
+import { PlanCard } from '../BoardBubble/PlanCard'
+import { WebRequestCard } from './WebRequestCard'
 import { useGlobalChat } from '../../../../hooks/useGlobalChat'
 import { destinationLabel, locationForUrl } from '../../../../ai/net/urlPolicy'
 import type { AiChatRecord } from '../../../../types'
@@ -18,7 +20,7 @@ interface Props {
   onSaved: (record: AiChatRecord) => void
 }
 
-/** A global chat thread: read-only over the vault, with facts and source chips. */
+/** A global chat thread: facts, answers with source chips, and plans the user applies. */
 export function GlobalThread({ record, onSaved }: Props) {
   const navigate = useNavigate()
   const chat = useGlobalChat(record, onSaved)
@@ -63,18 +65,30 @@ export function GlobalThread({ record, onSaved }: Props) {
           {!chat.messages.length && (
             <div className="space-y-1 py-6 text-center">
               <Icon name="sparkles" size={22} className="mx-auto text-text3" />
-              <p className="text-sm font-medium text-text">Ask about your notes and boards</p>
-              <p className="text-[12px] text-text3">Reads across your vault; it can't change anything from here. Answers list the notes and cards they used.</p>
+              <p className="text-sm font-medium text-text">Ask anything</p>
+              <p className="text-[12px] text-text3">Questions about your notes and boards, planning, writing, research on the web when it's on — it looks things up as needed and shows what it used. Ask for changes and it proposes a plan; nothing changes until you apply it.</p>
             </div>
           )}
           {chat.messages.map((m) => (
             <BubbleMessageFrame key={m.id} message={m} onSwitchProvider={openSettings}>
               {m.vaultFacts && <VaultFactsView facts={m.vaultFacts} />}
               {(m.content || m.streaming || !m.vaultFacts) && <BubbleReplyText message={m} />}
+              {m.globalPlan?.warning && (
+                <p role="alert" className="flex items-start gap-1.5 rounded-lg border border-border bg-surface2/60 px-2 py-1.5 text-[11.5px] text-text">
+                  <Icon name="alert-triangle" size={13} className="mt-px shrink-0 text-text3" /> {m.globalPlan.warning}
+                </p>
+              )}
+              {m.globalPlan && (
+                <PlanCard
+                  messageId={m.id} plan={m.globalPlan} busy={chat.busy} handlers={chat.planHandlers}
+                  undoneText="Undone — your boards and notes are back as they were."
+                />
+              )}
               {m.sources && <SourceChips sources={m.sources} />}
             </BubbleMessageFrame>
           ))}
-          {chat.progress && <p className="text-[11px] text-text3">{chat.progress}</p>}
+          {chat.pendingWeb && <WebRequestCard pending={chat.pendingWeb} />}
+          {chat.progress && !chat.pendingWeb && <p className="text-[11px] text-text3">{chat.progress}</p>}
           <div ref={endRef} />
         </div>
       </div>
@@ -93,7 +107,7 @@ export function GlobalThread({ record, onSaved }: Props) {
             </Button>
           </div>
           <ChatComposer
-            placeholder="Ask about your notes, e.g. “what did I write about the Go backend?”"
+            placeholder="Ask anything — e.g. “plan my week from my open cards and save it as a note”"
             busy={chat.busy}
             onSend={(text) => void chat.send(text)}
             onStop={chat.stop}

@@ -171,20 +171,30 @@ function updateAction(call: ToolCall, board: Board): PlanAction {
   return { id: uuid(), tool: call.name, summary, changes, resolved: { tool: 'update_card', taskId: t.id, patch } }
 }
 
+/** One card tool call, validated against `board`. */
+export function boardAction(call: ToolCall, board: Board): PlanAction {
+  return call.name === 'create_card' ? createAction(call, board)
+    : call.name === 'move_card' ? moveAction(call, board)
+    : call.name === 'update_card' ? updateAction(call, board)
+    : unresolved(call, `${call.name}`, `"${call.name}" is not available on a board`)
+}
+
+/** Two moves (or two edits) of the same card would fight; the first one wins. */
+export function conflictKey(r: ResolvedAction): string | null {
+  return r.tool === 'create_card' ? null : `${r.tool}:${r.taskId}`
+}
+
+export const CONFLICT_REASON = 'Another action in this plan already changes this card'
+
 /** Validates every call against the board. Returns null when the plan is too large. */
 export function planFromToolCalls(calls: ToolCall[], board: Board): PlanAction[] | null {
   if (calls.length > MAX_PLAN_ACTIONS) return null
   const touched = new Set<string>()
   return calls.map((call) => {
-    const action = call.name === 'create_card' ? createAction(call, board)
-      : call.name === 'move_card' ? moveAction(call, board)
-      : call.name === 'update_card' ? updateAction(call, board)
-      : unresolved(call, `${call.name}`, `"${call.name}" is not available on a board`)
-    // Two moves (or two edits) of the same card would fight; keep the first.
-    const r = action.resolved
-    if (r && r.tool !== 'create_card') {
-      const key = `${r.tool}:${r.taskId}`
-      if (touched.has(key)) return { ...action, resolved: null, unresolved: 'Another action in this plan already changes this card' }
+    const action = boardAction(call, board)
+    const key = action.resolved && conflictKey(action.resolved)
+    if (key) {
+      if (touched.has(key)) return { ...action, resolved: null, unresolved: CONFLICT_REASON }
       touched.add(key)
     }
     return action

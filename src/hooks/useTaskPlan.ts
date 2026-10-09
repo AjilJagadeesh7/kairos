@@ -4,7 +4,7 @@ import { useAiStore } from '../store/useAiStore'
 import { applyPlan } from '../ai/agent/boardApply'
 import { newMessage } from '../ai/agent/bubbleEnv'
 import { resolveTaskTarget, taskActions } from '../ai/agent/taskPlanActions'
-import { useBatchUndo } from './useBatchUndo'
+import { boardRevert, useBatchUndo } from './useBatchUndo'
 import type { BubbleMessage, BubbleSink, TaskPlan, TaskPlanHandlers } from '../types'
 
 interface Deps {
@@ -43,12 +43,13 @@ export function useTaskPlan({ messagesRef, add, patch }: Deps): TaskPlanHandlers
   }, [pending, setPlan])
 
   const undo = useCallback((messageId: string) => {
-    const kept = batch.undo(messageId)
-    if (kept === null) return
-    setPlan(messageId, (p) => ({ ...p, state: 'undone', undoable: false }))
-    if (kept.length) {
-      add(newMessage({ role: 'notice', content: `Kept ${kept.join(', ')} — edited after it was added, so Undo left it in place.` }))
-    }
+    void batch.undo(messageId).then((kept) => {
+      if (kept === null) return
+      setPlan(messageId, (p) => ({ ...p, state: 'undone', undoable: false }))
+      if (kept.length) {
+        add(newMessage({ role: 'notice', content: `Kept ${kept.join(', ')} — edited after it was added, so Undo left it in place.` }))
+      }
+    })
   }, [add, batch, setPlan])
 
   const apply = useCallback((messageId: string) => {
@@ -72,7 +73,7 @@ export function useTaskPlan({ messagesRef, add, patch }: Deps): TaskPlanHandlers
       boardId: target.board.id, columnId: target.column.id, createdKeys: keys, undoable: true,
     }))
     batch.register(messageId, {
-      boardId: target.board.id, boardTitle: target.board.title, applied: result.applied, undo: result.undo,
+      target: target.board.title, applied: result.applied, revert: boardRevert(target.board.id, result.undo),
       onUndo: () => undo(messageId),
       onExpire: () => setPlan(messageId, (p) => ({ ...p, undoable: false })),
     })
