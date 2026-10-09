@@ -29,8 +29,8 @@ export default function BoardBubblePanel({ boardId, onClose }: BoardBubblePanelP
     <BubblePanelShell
       title="Ask AI · this board"
       ariaLabel="AI assistant for this board"
-      placeholder='Ask, or e.g. "add a card to fix the login bug in To Do"'
-      intro="Works on this board only. Changes come as a plan you review — nothing changes until you apply it."
+      placeholder="Ask, or say what to change…"
+      intro="Ask about this board, or tell me what to change — e.g. “add a card to fix the login bug in To Do”. Changes come as a plan you review; nothing changes until you apply it."
       config={bubble.config}
       messages={bubble.messages}
       busy={bubble.busy}
@@ -44,18 +44,19 @@ export default function BoardBubblePanel({ boardId, onClose }: BoardBubblePanelP
           {m.plan && <PlanCard messageId={m.id} plan={m.plan} busy={bubble.busy} handlers={bubble.plan} />}
         </BubbleMessageFrame>
       )}
-      quickActions={
-        <div className="flex flex-wrap gap-1">
-          <Button variant="hollow" size="xs" disabled={bubble.busy} onClick={() => void bubble.run("What's on this board?", runBoardSummary)}>
-            <Icon name="layout-dashboard" size={12} />
+      starters={
+        <div className="flex flex-wrap gap-1.5">
+          <Button variant="hollow" size="sm" disabled={bubble.busy} onClick={() => void bubble.run("What's on this board?", runBoardSummary)}>
+            <Icon name="layout-dashboard" size={13} className="text-text3" />
             What's on this board?
           </Button>
-          <Button variant="hollow" size="xs" disabled={bubble.busy} onClick={() => void bubble.run('Overdue & blocked', (env) => runBoardQuestion(env, OVERDUE_QUESTION))}>
-            <Icon name="alert-triangle" size={12} />
+          <Button variant="hollow" size="sm" disabled={bubble.busy} onClick={() => void bubble.run('Overdue & blocked', (env) => runBoardQuestion(env, OVERDUE_QUESTION))}>
+            <Icon name="alert-triangle" size={13} className="text-text3" />
             Overdue & blocked
           </Button>
         </div>
       }
+      saveNow={bubble.saveNow}
       onSend={(text) => void bubble.run(text, (env) => runBoardMessage(env, text))}
       onStop={bubble.stop}
       onClear={bubble.clear}

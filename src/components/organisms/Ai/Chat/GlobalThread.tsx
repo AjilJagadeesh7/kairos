@@ -28,6 +28,8 @@ export function GlobalThread({ record, onSaved }: Props) {
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'end' }) }, [chat.messages, chat.progress])
 
   const location = chat.config ? locationForUrl(chat.config.baseUrl) : null
+  // A bubble chat continued here: the page it was about.
+  const src = record.source
   const openSettings = () => navigate('/settings?section=ai')
 
   if (!chat.config) {
@@ -47,14 +49,19 @@ export function GlobalThread({ record, onSaved }: Props) {
     <div className="flex min-h-0 flex-1 flex-col">
       <header className="flex items-center gap-2 border-b border-border px-4 py-2">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-text">{chat.messages.length ? 'Chat' : 'New chat'}</p>
+          <p className="truncate text-sm font-semibold text-text">{src ? record.title : chat.messages.length ? 'Chat' : 'New chat'}</p>
           {location && (
             <p className="flex items-center gap-1.5 text-[11px] text-text3">
               <LocationBadge location={location} />
-              <span className="truncate">{destinationLabel(location, chat.config.name)}</span>
+              <span className="truncate">{src ? `About the ${src.kind} “${src.title}” · ` : ''}{destinationLabel(location, chat.config.name)}</span>
             </p>
           )}
         </div>
+        {src && (
+          <Button variant="hollow" size="sm" onClick={() => navigate(src.kind === 'note' ? `/notes/${src.id}` : `/kanban/${src.id}`)}>
+            <Icon name={src.kind === 'note' ? 'file-text' : 'square-kanban'} size={13} /> Open {src.kind}
+          </Button>
+        )}
         {chat.attached.length > 0 && (
           <span className="flex items-center gap-1 text-[11px] text-text3"><Icon name="paperclip" size={11} /> {chat.attached.length} attached</span>
         )}

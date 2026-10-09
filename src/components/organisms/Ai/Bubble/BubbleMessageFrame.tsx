@@ -28,7 +28,7 @@ export function BubbleReplyText({ message, highlight = false }: { message: Bubbl
 export function BubbleMessageFrame({ message, onSwitchProvider, children }: Props) {
   if (message.role === 'user') {
     return (
-      <div className="max-w-[85%] self-end whitespace-pre-wrap break-words rounded-xl rounded-br-sm bg-accent/10 px-3 py-1.5 text-[13px] text-text">
+      <div className="max-w-[85%] self-end whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-surface2 px-3 py-1.5 text-[13px] text-text">
         {message.content}
       </div>
     )
@@ -44,12 +44,14 @@ export function BubbleMessageFrame({ message, onSwitchProvider, children }: Prop
       </div>
     )
   }
+  // Replies read as plain text; cards (diffs, plans, offers) bring their own frame.
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-border bg-surface px-3 py-2">
+    <div className="group flex flex-col gap-2 px-0.5">
       {message.meta && <p className="text-[10px] text-text3">{message.meta}</p>}
       {children}
+      {message.outcome && <p className="text-[10px] uppercase tracking-wider text-text3">{message.outcome}</p>}
       {message.usage && (
-        <p className="text-[10px] text-text3">
+        <p className="-mt-1 text-[10px] text-text3 opacity-0 transition-opacity group-hover:opacity-100">
           {message.usage.promptTokens.toLocaleString('en-US')} prompt + {message.usage.completionTokens.toLocaleString('en-US')} completion tokens
         </p>
       )}

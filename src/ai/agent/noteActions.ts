@@ -4,9 +4,8 @@
  */
 import { computeNoteFacts, factsHeader, factsJSON } from './noteFacts'
 import { fitTurns, messagesTokens, usableBudget } from './budget'
-import {
-  questionMessages, summarizeMessages, tagsMessages, titleMessages,
-} from '../prompts/noteBubble.v1'
+import { summarizeMessages, tagsMessages, titleMessages } from '../prompts/noteBubble.v1'
+import { questionMessages } from '../prompts/noteQuestion.v2'
 import { GEN, condensedMeta, fitPage, newMessage, notice, streamInto } from './bubbleEnv'
 import type { BubbleEnv, JSONSchema } from '../../types'
 
@@ -89,7 +88,8 @@ export async function runSuggestTags(env: BubbleEnv): Promise<void> {
   }))
 }
 
-export async function runQuestion(env: BubbleEnv, question: string): Promise<void> {
+/** Streams an answer; returns the reply (for an edit offer), or null when stopped. */
+export async function runQuestion(env: BubbleEnv, question: string): Promise<{ id: string; text: string } | null> {
   const note = env.note()
   const factsText = factsJSON(computeNoteFacts(note))
   const turns = env.history()
@@ -104,7 +104,11 @@ export async function runQuestion(env: BubbleEnv, question: string): Promise<voi
   const used = overhead + messagesTokens([{ role: 'user', content: page.text }])
   const history = fitTurns(turns, usableBudget(env.budget) - used)
 
-  const { stopped } = await streamInto(env, msg.id,
+  const { text, stopped } = await streamInto(env, msg.id,
     questionMessages(note.title, page.text, page.condensed, factsText, history, question, attached), GEN.question)
-  if (stopped) env.sink.patch(msg.id, (m) => ({ ...m, meta: m.meta ? `${m.meta} · Stopped` : 'Stopped' }))
+  if (stopped) {
+    env.sink.patch(msg.id, (m) => ({ ...m, meta: m.meta ? `${m.meta} · Stopped` : 'Stopped' }))
+    return null
+  }
+  return { id: msg.id, text }
 }

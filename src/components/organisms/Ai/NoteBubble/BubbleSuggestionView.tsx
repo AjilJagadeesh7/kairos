@@ -55,7 +55,7 @@ export function BubbleSuggestionView({ message, busy, handlers }: { message: Bub
     case 'summary':
       return s.inserted
         ? <Status icon="check">Inserted at the top of the note</Status>
-        : <Button variant="hollow" size="xs" onClick={() => handlers.insertSummary(id)}>Insert at top of note</Button>
+        : <Button variant="hollow" size="xs" className="self-start" onClick={() => handlers.insertSummary(id)}>Insert at top of note</Button>
 
     case 'title':
       return (

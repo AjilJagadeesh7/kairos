@@ -603,6 +603,50 @@ The safety rules are unchanged.
   - Edit presets apply to the selection, or to the whole note when nothing is selected.
 - **Removed**: the bubble router (`noteIntent`) and the fixed quick-action strip.
 
+## Edit permission, calmer bubble, continuing bubble chats (2026-10-09)
+
+**Edit permission layer** (`ai/agent/editOffer.ts`, `hooks/useEditOffer.ts`).
+- The problem: a change request the decision call didn't map to an edit fell through to
+  the question prompt, which told the model "you cannot change anything", so it
+  refused ("I don't have access to the note's formatting…").
+- `noteDecide.v2` says plainly that the note can be changed (every change is previewed)
+  and maps "improve / format / simplify" to `edit_text`.
+- `noteQuestion.v2` lets the model offer the edit instead of refusing: one sentence on
+  what it would change, then an `[offer-edit]` marker line.
+- **Offer card.**
+  - It appears when the reply carries the marker, is a refusal, or the user's own words
+    look like a change request.
+  - Choices: **Allow edit**, **Always allow in this chat**, or **No thanks**. A typed
+    "yes" also allows it.
+  - Allowing runs the edit with the user's words, and it is still previewed and needs
+    Accept. Permission lets the model *propose* an edit, not write one.
+- **"Always allow"** skips the card only when the user's own words ask for a change. A
+  marker or refusal in the model's reply, which note text could provoke, never skips
+  it (PRD: note content can't trigger actions).
+- Permission lasts for one bubble chat. Clearing the chat resets it, and the banner's
+  "Ask each time" turns it off.
+
+**Bubble UI.**
+- One-line header: title, location badge (destination in the tooltip), Continue in
+  AI chat, New conversation, Close.
+- Starter prompts appear only while the chat is empty. Afterwards the full prompt menu
+  is a popover from a button in the composer.
+- The composer is one box: an auto-growing text box with attach, prompts and send/stop
+  icons under it. The global chat uses it too.
+- Replies read as plain text; only diffs, plans and offers get a card. Token counts
+  show on hover.
+
+**Continuing a bubble chat on the chat page.**
+- Saved bubble chats are no longer read-only. "Continue in AI chat" in the bubble saves
+  the session and opens it on the chat page, and opening one from the chat list does
+  the same.
+- The next turn runs the global agent, with the conversation as history. `env.focus`
+  tells it which note or board "this" means, and that note is readable by `read_note`.
+- The record becomes a global thread that keeps its source and title.
+- This replaces the earlier "Continue as global chat" button, which attached the bubble
+  chat to a new thread.
+- It needs chat history to be on.
+
 ## Fixed contradictions in the PRD
 
 1. **CI builds Lite only.** PRD Phase 0's "CI produces Full and Lite builds"

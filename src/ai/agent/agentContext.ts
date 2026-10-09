@@ -6,11 +6,27 @@
  */
 import { boardsOverview, cardListing } from './globalContext'
 import type { AgentState } from './agentTools'
-import type { VaultSnapshot } from '../../types'
+import type { AiChatSource, VaultSnapshot } from '../../types'
 
 const RECENT_NOTES = 15
 
-export function agentContext(vault: VaultSnapshot, message: string, cardTokens: number, s: AgentState): string {
+/** A chat continued from a page bubble is about that page: say which, so "this note" resolves. */
+function focusLine(vault: VaultSnapshot, focus: AiChatSource | null | undefined, s: AgentState): string {
+  if (focus?.kind === 'note') {
+    const note = vault.notes.find((n) => n.id === focus.id)
+    if (!note) return `This chat continues a conversation about a note that no longer exists ("${focus.title}").`
+    s.allowed.notes.add(note.id)
+    return `This chat continues a conversation from the page bubble on the note "${note.title}" (id=${note.id}). "This note" or "it" means that note: read it with read_note when the answer depends on it.`
+  }
+  if (focus?.kind === 'board') {
+    const board = vault.boards.find((b) => b.id === focus.id)
+    if (!board) return `This chat continues a conversation about a board that no longer exists ("${focus.title}").`
+    return `This chat continues a conversation from the page bubble on the board "${board.title}". "This board" means that board: look at it with list_cards.`
+  }
+  return ''
+}
+
+export function agentContext(vault: VaultSnapshot, message: string, cardTokens: number, s: AgentState, focus?: AiChatSource | null): string {
   const cards = cardListing(vault.boards, message, cardTokens)
   cards.ids.forEach((id) => s.allowed.cards.add(id))
   for (const b of vault.boards) {
@@ -20,6 +36,7 @@ export function agentContext(vault: VaultSnapshot, message: string, cardTokens: 
   recent.forEach((n) => s.allowed.notes.add(n.id))
   const journalDays = vault.journal.length
   return [
+    focusLine(vault, focus, s),
     `Vault: ${vault.notes.length} note${vault.notes.length === 1 ? '' : 's'}, ${journalDays} journal day${journalDays === 1 ? '' : 's'}, ${vault.boards.length} board${vault.boards.length === 1 ? '' : 's'}.`,
     boardsOverview(vault.boards),
     vault.boards.length ? cards.text : '',

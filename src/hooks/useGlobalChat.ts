@@ -36,15 +36,18 @@ async function retrieveForChat(query: string, filter: RetrieveFilter) {
 /**
  * One global chat thread: pending items, reviews and questions answered from
  * notes, with source chips (P4), and change requests proposed as plans the
- * user applies (P5). Saved after every turn.
+ * user applies (P5). Saved after every turn. A saved bubble chat opened here
+ * continues as a thread about the same page.
  */
 export function useGlobalChat(initial: AiChatRecord, onSaved?: (record: AiChatRecord) => void) {
   const session = useBubbleSession<GlobalEnv>(useMemo(() => ({
     surface: 'global' as const,
     initial,
-    source: () => null,
+    // A bubble chat continued here stays about its page, under its own name.
+    source: () => initial.source,
+    title: initial.source ? initial.title : undefined,
     extendEnv: (base: BubbleBaseEnv): GlobalEnv => ({
-      ...base, vault: vaultSnapshot, now: () => new Date(), retrieve: retrieveForChat, web: null,
+      ...base, vault: vaultSnapshot, now: () => new Date(), retrieve: retrieveForChat, web: null, focus: initial.source,
     }),
     onSaved,
   }), [initial, onSaved]))

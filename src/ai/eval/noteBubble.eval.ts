@@ -12,7 +12,9 @@ import { evalAdapter, evalType } from './evalAdapter'
 import { checkProviderUrl } from '../net/urlPolicy'
 import { runSuggestTags, runSuggestTitle, runSummarize } from '../agent/noteActions'
 import { runContinue, runRewrite } from '../agent/noteWriting'
-import { decideMessages, NOTE_TOOLS } from '../prompts/noteAgent.v1'
+import { NOTE_TOOLS } from '../prompts/noteAgent.v1'
+import { NOTE_DECIDE_PROMPT_VERSION, decideMessages } from '../prompts/noteDecide.v2'
+import { NOTE_QUESTION_PROMPT_VERSION } from '../prompts/noteQuestion.v2'
 import { fakeBridge, fakeEnv, longNote } from '../agent/__fixtures__/fakes'
 import { NOTE_BUBBLE_PROMPT_VERSION } from '../prompts/noteBubble.v1'
 import {
@@ -148,7 +150,7 @@ describe.skipIf(!baseUrl || !model)(`note bubble eval (${NOTE_BUBBLE_PROMPT_VERS
   }))
 
   afterAll(() => {
-    console.log(`\nNote bubble eval — ${model} @ ${baseUrl} — prompts ${NOTE_BUBBLE_PROMPT_VERSION}`)
+    console.log(`\nNote bubble eval — ${model} @ ${baseUrl} — prompts ${NOTE_BUBBLE_PROMPT_VERSION}, ${NOTE_DECIDE_PROMPT_VERSION}, ${NOTE_QUESTION_PROMPT_VERSION}`)
     console.table(report)
     console.log(`${report.filter((r) => r.pass).length}/${report.length} passed`)
   })

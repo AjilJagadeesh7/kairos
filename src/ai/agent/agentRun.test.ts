@@ -54,6 +54,14 @@ describe('runAgent', () => {
     expect(m.meta).toBe('searched notes for “Go backend database” · read “Go backend design”')
   })
 
+  it('a chat continued from a bubble knows which note "this" is', async () => {
+    const { provider, calls } = scripted([[]], 'It covers the database choice.')
+    const { env } = fakeGlobalEnv(provider)
+    env.focus = { kind: 'note', id: 'n-go', title: 'Go backend design' }
+    await runAgent(env, 'what else should this note cover?')
+    expect(calls[0].messages[0].content).toMatch(/continues a conversation from the page bubble on the note "Go backend design" \(id=n-go\)/)
+  })
+
   it('uses exact facts from code and shows them as the facts card', async () => {
     const { provider } = scripted([[{ name: 'vault_facts', args: { kind: 'pending' } }], []], 'Start with KAI-1.')
     const { env, messages } = fakeGlobalEnv(provider)

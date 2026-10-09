@@ -42,7 +42,7 @@ export type {
 export type {
   RewriteStyle, BubblePrompt, NoteBubbleAction, GlobalChatAction, BubbleAction, NoteIntent, SuggestionState, BubbleSuggestion, BubbleMessage,
   NoteSnapshot, BubbleSink, Condensed, BubbleBaseEnv, BubbleEnv, BubbleRun, UseNoteBubbleParams, SuggestionHandlers,
-  AiChatMessage, AiChatSource, AiChatRecord, EditorRange, EditorSelectionSnapshot, NoteEditorBridge,
+  EditOffer, EditOfferHandlers, AiChatMessage, AiChatSource, AiChatRecord, EditorRange, EditorSelectionSnapshot, NoteEditorBridge,
 } from './aiChat.types'
 export type {
   BoardBubbleAction, BoardIntent, FactCard, FactList, BoardColumnFact, BoardFacts, PlanTool, CardPatch,

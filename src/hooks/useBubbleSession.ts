@@ -37,6 +37,8 @@ export interface BubbleSessionOptions<E extends BubbleBaseEnv> {
   onEnd?: () => void
   /** Called after the session was saved (global threads save after every turn). */
   onSaved?: (record: AiChatRecord) => void
+  /** Keeps a fixed title (a bubble chat continued on the chat page) instead of naming it after the first question. */
+  title?: string
 }
 
 /**
@@ -78,22 +80,33 @@ export function useBubbleSession<E extends BubbleBaseEnv>(options: BubbleSession
   const patch = useCallback((id: string, update: (m: BubbleMessage) => BubbleMessage) =>
     setMessages((ms) => ms.map((m) => (m.id === id ? update(m) : m))), [])
 
+  const toRecord = useCallback((list: BubbleMessage[]) => chatRecord({
+    id: session.current.id,
+    surface,
+    source: optionsRef.current.source(),
+    provider: providerInfo.current,
+    messages: list,
+    attachedChatIds: attachedRef.current,
+    createdAt: session.current.createdAt,
+    title: optionsRef.current.title,
+  }), [surface])
+
   /** Saves the session to chat history (no-op when nothing was asked). */
   const persist = useCallback((list: BubbleMessage[] = messagesRef.current) => {
-    const record = chatRecord({
-      id: session.current.id,
-      surface,
-      source: optionsRef.current.source(),
-      provider: providerInfo.current,
-      messages: list,
-      attachedChatIds: attachedRef.current,
-      createdAt: session.current.createdAt,
-    })
+    const record = toRecord(list)
     if (!record) return
     saveChat(record)
       .then(() => optionsRef.current.onSaved?.(record))
       .catch((err) => console.warn('[ai] could not save chat:', err))
-  }, [surface])
+  }, [toRecord])
+
+  /** Saves now and returns the chat's id, so the chat page can continue it; null when there's nothing to save or history is off. */
+  const saveNow = useCallback(async (): Promise<string | null> => {
+    const record = toRecord(messagesRef.current)
+    if (!record || useAiStore.getState().chatRetention === 'never') return null
+    await saveChat(record)
+    return record.id
+  }, [toRecord])
 
   const run: BubbleRun<E> = useCallback(async (userText, job) => {
     if (busyRef.current) return
@@ -168,6 +181,6 @@ export function useBubbleSession<E extends BubbleBaseEnv>(options: BubbleSession
   }, [persist])
 
   return {
-    config, messages, messagesRef, busy, progress, run, stop, clear, add, patch, attached, setAttached,
+    config, messages, messagesRef, busy, progress, run, stop, clear, add, patch, attached, setAttached, saveNow,
   }
 }

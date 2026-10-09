@@ -65,7 +65,7 @@ export async function runAgent(env: GlobalEnv, text: string): Promise<void> {
   const attached = await env.attachedContext()
   // Relative dates are resolved in code (PRD): "tomorrow" → "tomorrow (2026-10-10)".
   const message = annotateRelativeDates(text, now)
-  const overview = agentContext(vault, text, Math.floor(env.budget * OVERVIEW_CARD_SHARE), s)
+  const overview = agentContext(vault, text, Math.floor(env.budget * OVERVIEW_CARD_SHARE), s, env.focus)
   const system = agentSystem(overview, isoDate(now), !!env.web)
   const base = agentMessages(system, [], attached, message)
   const history = fitTurns(env.history(), usableBudget(env.budget) - messagesTokens(base) - toolTokens)

@@ -1,5 +1,5 @@
 /** Types for the global chat: vault facts, the semantic index, retrieval, sources. */
-import type { BubbleBaseEnv } from './aiChat.types'
+import type { AiChatSource, BubbleBaseEnv } from './aiChat.types'
 import type { FactList } from './boardBubble.types'
 import type { Board } from './kanban.types'
 import type { JournalEntry } from './journal.types'
@@ -109,4 +109,6 @@ export interface GlobalEnv extends BubbleBaseEnv {
   retrieve: (query: string, filter: RetrieveFilter) => Promise<{ chunks: RetrievedChunk[]; mode: 'hybrid' | 'keyword' }>
   /** Web search / fetch (P7): null unless web access is on. Requests wait for the user's approval when asked to. */
   web: WebAccess | null
+  /** A chat continued from a page bubble: the note or board it was about. */
+  focus?: AiChatSource | null
 }

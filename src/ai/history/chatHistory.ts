@@ -1,7 +1,8 @@
 /**
  * Saved AI conversations. Bubble sessions are written when the bubble is
- * closed or cleared and are read-only afterwards; global threads are written
- * after every turn. Device-local: the table is never mirrored to the vault or
+ * closed or cleared (or handed to the chat page); global threads are written
+ * after every turn. A saved bubble chat can be continued on the chat page,
+ * where it becomes a global thread about the same page. Device-local: the table is never mirrored to the vault or
  * a sync provider. Retention lives in `chatStore.ts`.
  */
 import { v4 as uuid } from 'uuid'
@@ -35,7 +36,11 @@ function outcome(m: BubbleMessage): string | undefined {
     return planOutcome({ state: t.state, actions: [] })
   }
   const s = m.suggestion
-  if (!s) return undefined
+  if (!s) {
+    const o = m.editOffer
+    if (o) return o.state === 'granted' ? 'edit allowed' : o.state === 'declined' ? 'edit declined' : 'edit offered'
+    return m.outcome
+  }
   switch (s.kind) {
     case 'replace':
     case 'insert': return s.state === 'pending' ? 'not applied' : s.state
@@ -82,6 +87,7 @@ export function fromChatMessage(m: AiChatMessage): BubbleMessage {
     id: uuid(), role: m.role, content: m.content, createdAt: m.createdAt,
     ...(m.action ? { action: m.action } : {}),
     ...(m.meta ? { meta: m.meta } : {}),
+    ...(m.outcome ? { outcome: m.outcome } : {}),
     ...(m.vaultFacts ? { vaultFacts: m.vaultFacts } : {}),
     ...(m.sources ? { sources: m.sources } : {}),
   }
@@ -98,6 +104,8 @@ export function chatRecord(params: {
   attachedChatIds?: string[]
   createdAt: string
   now?: string
+  /** Overrides the generated title. */
+  title?: string
 }): AiChatRecord | null {
   const messages = toChatMessages(params.messages)
   const first = messages.find((m) => m.role === 'user')
@@ -105,7 +113,7 @@ export function chatRecord(params: {
   return {
     id: params.id,
     surface: params.surface,
-    title: params.surface === 'bubble' ? bubbleChatTitle(params.source?.title ?? '') : globalChatTitle(first.content),
+    title: params.title ?? (params.surface === 'bubble' ? bubbleChatTitle(params.source?.title ?? '') : globalChatTitle(first.content)),
     source: params.source,
     attachedChatIds: params.attachedChatIds ?? [],
     provider: params.provider,

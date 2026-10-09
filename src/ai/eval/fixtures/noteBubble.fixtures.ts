@@ -82,6 +82,8 @@ export const INTENT_CASES: Array<{ message: string; hasSelection: boolean; expec
   { message: 'tighten this up', hasSelection: true, expected: 'rewrite' },
   { message: 'fix the grammar', hasSelection: true, expected: 'rewrite' },
   { message: 'make it sound more professional', hasSelection: true, expected: 'rewrite' },
+  { message: 'can you improve the format, make it more simple', hasSelection: false, expected: 'rewrite' },
+  { message: 'clean up this note', hasSelection: false, expected: 'rewrite' },
   { message: 'keep writing from here', hasSelection: false, expected: 'continue' },
   { message: 'what should I call this note?', hasSelection: false, expected: 'suggest_title' },
   { message: 'suggest some tags', hasSelection: false, expected: 'suggest_tags' },

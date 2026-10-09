@@ -33,11 +33,11 @@ export function AttachChatsButton({ attached, onChange, excludeId }: Props) {
         <IconButton
           icon="paperclip"
           label={attached.length ? `Context: ${attached.length} conversation${attached.length === 1 ? '' : 's'} attached` : 'Add context from earlier conversations'}
-          size="md"
+          size="sm"
           onClick={() => { setPicked(attached); setOpen(true) }}
         />
         {attached.length > 0 && (
-          <span className="pointer-events-none absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[9px] font-semibold text-accent-fg">
+          <span className="pointer-events-none absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[9px] font-semibold text-accent-fg">
             {attached.length}
           </span>
         )}

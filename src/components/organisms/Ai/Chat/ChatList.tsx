@@ -17,7 +17,7 @@ function Row({ chat, active, onOpen, onDelete }: { chat: AiChatRecord; active: b
     <li className={`group flex items-center gap-1 rounded-md pr-1 ${active ? 'bg-surface2' : 'hover:bg-surface2/60'}`}>
       <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left">
         <Icon
-          name={chat.surface === 'global' ? 'sparkles' : chat.source?.kind === 'board' ? 'square-kanban' : 'file-text'}
+          name={!chat.source ? 'sparkles' : chat.source.kind === 'board' ? 'square-kanban' : 'file-text'}
           size={13}
           className="shrink-0 text-text3"
         />
@@ -34,7 +34,7 @@ function Row({ chat, active, onOpen, onDelete }: { chat: AiChatRecord; active: b
   )
 }
 
-/** Global threads first, then saved bubble conversations (read-only). */
+/** Chats first, then bubble conversations (open one to continue it here). */
 export function ChatList({ chats, activeId, onOpen, onNew, onDelete }: Props) {
   const global = chats.filter((c) => c.surface === 'global')
   const bubble = chats.filter((c) => c.surface === 'bubble')
@@ -51,7 +51,7 @@ export function ChatList({ chats, activeId, onOpen, onNew, onDelete }: Props) {
           : <ul className="pb-2">{global.map((c) => <Row key={c.id} chat={c} active={c.id === activeId} onOpen={() => onOpen(c.id)} onDelete={() => onDelete(c)} />)}</ul>}
         <SectionLabel className="px-2 pb-1 pt-2">From page bubbles</SectionLabel>
         {bubble.length === 0
-          ? <p className="px-2 text-[12px] text-text3">Bubble conversations appear here when you close a bubble.</p>
+          ? <p className="px-2 text-[12px] text-text3">Bubble conversations appear here when you close a bubble. Open one to continue it.</p>
           : <ul>{bubble.map((c) => <Row key={c.id} chat={c} active={c.id === activeId} onOpen={() => onOpen(c.id)} onDelete={() => onDelete(c)} />)}</ul>}
       </div>
     </div>

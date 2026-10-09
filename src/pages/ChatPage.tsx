@@ -10,7 +10,6 @@ import { EmptyState } from '../components/molecules/EmptyState'
 import { IconButton } from '../components/atoms/IconButton'
 import { ChatList } from '../components/organisms/Ai/Chat/ChatList'
 import { GlobalThread } from '../components/organisms/Ai/Chat/GlobalThread'
-import { BubbleThread } from '../components/organisms/Ai/Chat/BubbleThread'
 import type { AiChatRecord } from '../types'
 
 function emptyThread(id: string, attach: string[]): AiChatRecord {
@@ -18,13 +17,17 @@ function emptyThread(id: string, attach: string[]): AiChatRecord {
   return { id, surface: 'global', title: 'New chat', source: null, attachedChatIds: attach, provider: null, messages: [], createdAt: now, updatedAt: now }
 }
 
-/** Mounts one thread with the record as it was when opened; later saves don't reset it. */
+/**
+ * Mounts one thread with the record as it was when opened; later saves don't
+ * reset it. A saved bubble chat opens here too and carries on as a thread
+ * about its page.
+ */
 function ThreadHost({ loaded, id, attach, onSaved }: { loaded: AiChatRecord | null; id: string; attach: string[]; onSaved: (r: AiChatRecord) => void }) {
   const [initial] = useState(() => loaded ?? emptyThread(id, attach))
-  return initial.surface === 'bubble' ? <BubbleThread record={initial} /> : <GlobalThread record={initial} onSaved={onSaved} />
+  return <GlobalThread record={initial} onSaved={onSaved} />
 }
 
-/** The global chat: persistent threads over the whole vault, plus saved bubble conversations. */
+/** The global chat: persistent threads over the whole vault, plus bubble conversations to continue. */
 export function ChatPage(): JSX.Element {
   const { chatId } = useParams<{ chatId?: string }>()
   const navigate = useNavigate()

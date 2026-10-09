@@ -28,19 +28,7 @@ export const NOTE_TOOLS = {
   extract_tasks: { name: 'extract_tasks', description: 'Turn the note\'s action items into kanban cards.', parameters: { type: 'object', properties: {} } },
 } satisfies Record<string, ToolDef>
 
-export function decideMessages(instruction: string, hasSelection: boolean): Msg[] {
-  return [
-    {
-      role: 'system',
-      content: [
-        'You are the assistant in a note-taking app, working on the one note the user has open.',
-        'Decide how to handle the user\'s message: call exactly one tool when they want the note changed or one of those actions; call no tool when they ask a question, want an explanation, or want to talk about the note — that is answered in the chat.',
-        hasSelection ? 'The user has text selected in the note.' : 'No text is selected.',
-      ].join('\n'),
-    },
-    { role: 'user', content: instruction },
-  ]
-}
+// Deciding what to do moved to noteDecide.v2.ts.
 
 const SYSTEM = [
   'You are the writing assistant inside Kairos, a notes app.',

@@ -43,6 +43,25 @@ export type BubbleSuggestion =
   | { kind: 'title'; options: string[]; applied: string | null }
   | { kind: 'tags'; options: string[]; applied: string[] | null }
 
+/**
+ * The bubble answered a request to change the note instead of editing it: it
+ * offers the edit, and runs it only once the user allows it. The edit is then
+ * previewed and still needs Accept.
+ */
+export interface EditOffer {
+  /** The user's own words — what the edit will do. */
+  instruction: string
+  /** The selection at the time (when there was one), else the whole note. */
+  target: 'selection' | 'note'
+  state: 'pending' | 'granted' | 'declined'
+}
+
+/** What the user can do with an edit offer. `always` allows edits for the rest of the chat. */
+export interface EditOfferHandlers {
+  grant: (id: string, always: boolean) => void
+  decline: (id: string) => void
+}
+
 export interface BubbleMessage {
   id: string
   role: 'user' | 'assistant' | 'error' | 'notice'
@@ -66,6 +85,10 @@ export interface BubbleMessage {
   usage?: TokenUsage
   /** Shown above the content, e.g. "1,240 words · edited 2 days ago". */
   meta?: string
+  /** Note bubble: an edit the model offered, waiting for the user's permission. */
+  editOffer?: EditOffer
+  /** A reopened saved chat: what happened to a suggestion or plan ("accepted"). */
+  outcome?: string
 }
 
 /** The note as the bubble sees it: the live draft, not the last save. */
@@ -115,6 +138,8 @@ export interface BubbleEnv extends BubbleBaseEnv {
   /** Tag names already used in the vault, offered to "suggest tags". */
   vocabulary: string[]
   bridge: NoteEditorBridge
+  /** True once the user chose "Always allow" for edits in this chat. */
+  editsAllowed?: () => boolean
 }
 
 /** Runs one bubble action with a provider; `userText` is echoed as the user's turn. */
