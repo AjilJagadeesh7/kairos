@@ -18,7 +18,7 @@ function Body({ message }: { message: BubbleMessage }) {
   if (s?.kind === 'replace' && s.proposed && !message.streaming && s.state !== 'rejected') {
     return (
       <>
-        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-text3">{REWRITE_STYLES[s.style].label}</p>
+        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-text3">{s.style ? REWRITE_STYLES[s.style].label : 'Edit'}</p>
         <DiffView before={s.original} after={s.proposed} />
       </>
     )

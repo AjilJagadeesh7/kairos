@@ -40,7 +40,7 @@ export type {
   AiSurface, AiDebugTurn, AiUsageMonth,
 } from './ai.types'
 export type {
-  RewriteStyle, NoteBubbleAction, GlobalChatAction, BubbleAction, NoteIntent, SuggestionState, BubbleSuggestion, BubbleMessage,
+  RewriteStyle, BubblePrompt, NoteBubbleAction, GlobalChatAction, BubbleAction, NoteIntent, SuggestionState, BubbleSuggestion, BubbleMessage,
   NoteSnapshot, BubbleSink, Condensed, BubbleBaseEnv, BubbleEnv, BubbleRun, UseNoteBubbleParams, SuggestionHandlers,
   AiChatMessage, AiChatSource, AiChatRecord, EditorRange, EditorSelectionSnapshot, NoteEditorBridge,
 } from './aiChat.types'

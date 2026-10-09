@@ -12,7 +12,7 @@ import { evalAdapter, evalType } from './evalAdapter'
 import { checkProviderUrl } from '../net/urlPolicy'
 import { runSuggestTags, runSuggestTitle, runSummarize } from '../agent/noteActions'
 import { runContinue, runRewrite } from '../agent/noteWriting'
-import { routeNoteIntent } from '../agent/noteIntent'
+import { decideMessages, NOTE_TOOLS } from '../prompts/noteAgent.v1'
 import { fakeBridge, fakeEnv, longNote } from '../agent/__fixtures__/fakes'
 import { NOTE_BUBBLE_PROMPT_VERSION } from '../prompts/noteBubble.v1'
 import {
@@ -130,12 +130,18 @@ describe.skipIf(!baseUrl || !model)(`note bubble eval (${NOTE_BUBBLE_PROMPT_VERS
     return fails
   }))
 
-  it('routes free-text messages to the right intent', () => evalCase(`intent routing ×${INTENT_CASES.length}`, async () => {
+  it('picks the right action for free-form instructions', () => evalCase(`action choice ×${INTENT_CASES.length}`, async () => {
     const p = provider()
     const wrong: string[] = []
+    // The old intent names → the tool the instruction-driven bubble should call (none = answer).
+    const TOOL: Record<string, string> = {
+      summarize: 'summarize', rewrite: 'edit_text', continue: 'insert_text', suggest_title: 'suggest_title',
+      suggest_tags: 'suggest_tags', extract_tasks: 'extract_tasks', question: 'answer',
+    }
     for (const c of INTENT_CASES) {
-      const got = await routeNoteIntent(p, c.message, c.hasSelection)
-      if (got.kind !== c.expected) wrong.push(`"${c.message}" → ${got.kind}`)
+      const [call] = await p.callTools(decideMessages(c.message, c.hasSelection), Object.values(NOTE_TOOLS), { maxTokens: 200, temperature: 0, thinking: false })
+      const got = call?.name ?? 'answer'
+      if (got !== TOOL[c.expected]) wrong.push(`"${c.message}" → ${got}`)
     }
     // ≥ 80% correct passes; the misses are still listed.
     return wrong.length > INTENT_CASES.length * 0.2 ? wrong : []

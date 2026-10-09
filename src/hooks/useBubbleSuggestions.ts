@@ -1,6 +1,7 @@
 import { useCallback, type MutableRefObject } from 'react'
 import { newMessage } from '../ai/agent/bubbleEnv'
 import { runContinue, runRewrite } from '../ai/agent/noteWriting'
+import { runEdit, runInsert } from '../ai/agent/noteEdit'
 import { summaryCallout } from '../ai/agent/noteActions'
 import type { BubbleMessage, BubbleRun, BubbleSuggestion, UseNoteBubbleParams } from '../types'
 
@@ -58,10 +59,12 @@ export function useBubbleSuggestions({ paramsRef, messagesRef, add, patch, run }
         add(newMessage({ role: 'notice', content: 'Select the text to rewrite again, then press Retry.' }))
         return
       }
-      void run(null, (env) => runRewrite(env, s.style, target, true))
+      const { instruction, style } = s
+      void run(null, (env) => (instruction ? runEdit(env, instruction, target, true) : runRewrite(env, style ?? 'shorter', target, true)))
     } else if (s?.kind === 'insert') {
       const pos = (s.state === 'pending' ? bridge.previewRange()?.from : undefined) ?? s.pos
-      void run(null, (env) => runContinue(env, pos))
+      const { instruction } = s
+      void run(null, (env) => (instruction ? runInsert(env, instruction, 'cursor', pos) : runContinue(env, pos)))
     }
   }, [add, find, paramsRef, run])
 

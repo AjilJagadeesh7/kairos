@@ -12,6 +12,8 @@ export type Inline =
   | { t: 'code'; v: string }
   | { t: 'link'; href: string; c: Inline[] }
   | { t: 'cite'; n: number }
+  /** A checklist marker at the start of a list item (`- [ ]` / `- [x]`). */
+  | { t: 'check'; done: boolean }
 
 export type Block =
   | { t: 'p'; c: Inline[] }
@@ -77,7 +79,9 @@ export function parseMarkdown(src: string): Block[] {
       endPara()
       const kind = ul ? 'ul' : 'ol'
       const last = blocks.at(-1)
-      const item = parseInline((ul ? ul[1] : ol![2]).trim())
+      const raw = (ul ? ul[1] : ol![2]).trim()
+      const box = raw.match(/^\[( |x|X)\]\s+/)
+      const item: Inline[] = box ? [{ t: 'check', done: box[1] !== ' ' }, ...parseInline(raw.slice(box[0].length))] : parseInline(raw)
       if (last && last.t === kind) last.items.push(item)
       else blocks.push(kind === 'ul' ? { t: 'ul', items: [item] } : { t: 'ol', items: [item], start: Number(ol![1]) })
       continue

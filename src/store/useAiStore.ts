@@ -6,7 +6,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { v4 as uuid } from 'uuid'
-import type { AiProviderConfig, AiSurface, AiUsageMonth, ChatRetention, IndexSource, TokenUsage } from '../types'
+import type { AiProviderConfig, AiSurface, AiUsageMonth, BubblePrompt, ChatRetention, IndexSource, TokenUsage } from '../types'
 
 /** Consent is per provider *and* destination: pointing a provider at a
  *  different host asks again. */
@@ -40,6 +40,8 @@ interface AiState {
   monthlyTokenLimit: number | null
   /** The month the threshold warning was last shown. */
   usageWarnedMonth: string | null
+  /** The user's own prompts in the note bubble's prompt menu. */
+  bubblePrompts: BubblePrompt[]
 
   setEnabled: (enabled: boolean) => void
   /** `id` lets the editor pre-allocate one (consent is recorded per id before saving). */
@@ -57,6 +59,8 @@ interface AiState {
   recordUsage: (usage: TokenUsage, now?: Date) => void
   setMonthlyTokenLimit: (limit: number | null) => void
   markUsageWarned: (month: string) => void
+  addBubblePrompt: (label: string, instruction: string) => void
+  removeBubblePrompt: (id: string) => void
 }
 
 /** YYYY-MM in local time. */
@@ -79,6 +83,7 @@ export const useAiStore = create<AiState>()(
       usage: null,
       monthlyTokenLimit: null,
       usageWarnedMonth: null,
+      bubblePrompts: [],
 
       setEnabled: (enabled) => set({ enabled }),
 
@@ -131,6 +136,10 @@ export const useAiStore = create<AiState>()(
       }),
       setMonthlyTokenLimit: (monthlyTokenLimit) => set({ monthlyTokenLimit: monthlyTokenLimit && monthlyTokenLimit > 0 ? Math.round(monthlyTokenLimit) : null }),
       markUsageWarned: (usageWarnedMonth) => set({ usageWarnedMonth }),
+      addBubblePrompt: (label, instruction) => set((s) => ({
+        bubblePrompts: [...s.bubblePrompts, { id: uuid(), label: label.trim() || instruction.trim().slice(0, 40), instruction: instruction.trim() }],
+      })),
+      removeBubblePrompt: (id) => set((s) => ({ bubblePrompts: s.bubblePrompts.filter((p) => p.id !== id) })),
     }),
     { name: 'kairos-ai' },
   ),

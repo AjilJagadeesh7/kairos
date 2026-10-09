@@ -2,15 +2,15 @@ import { useMemo, type MutableRefObject } from 'react'
 import type { Crepe } from '@milkdown/crepe'
 import { BubblePanelShell } from '../Bubble/BubblePanelShell'
 import { BubbleMessageView } from './BubbleMessageView'
-import { BubbleQuickActions } from './BubbleQuickActions'
+import { PromptMenu } from './PromptMenu'
 import { useNoteBubble } from '../../../../hooks/useNoteBubble'
 import { createNoteEditorBridge } from '../../Editor/aiEditorBridge'
-import { notice } from '../../../../ai/agent/bubbleEnv'
-import { runContinue, runRewrite } from '../../../../ai/agent/noteWriting'
 import { runExtractTasks } from '../../../../ai/agent/noteTasks'
-import { runMessage, runSuggestTags, runSuggestTitle, runSummarize } from '../../../../ai/agent/noteActions'
-import { REWRITE_STYLES } from '../../../../ai/prompts/noteBubble.v1'
-import type { NoteSnapshot, RewriteStyle } from '../../../../types'
+import { runQuestion, runSuggestTags, runSuggestTitle, runSummarize } from '../../../../ai/agent/noteActions'
+import { editNote, runNoteInstruction } from '../../../../ai/agent/noteAgent'
+import { runInsert } from '../../../../ai/agent/noteEdit'
+import type { NotePreset } from './notePresets'
+import type { BubbleEnv, NoteSnapshot } from '../../../../types'
 
 interface NoteBubblePanelProps {
   getNote: () => NoteSnapshot
@@ -34,20 +34,32 @@ export default function NoteBubblePanel({ getNote, editorRef, vocabulary, onAppl
   }), [getNote, bridge, vocabulary, onApplyTitle, onApplyTags])
   const bubble = useNoteBubble(params)
 
-  function rewrite(style: RewriteStyle) {
-    const selection = bridge.selection()
-    void bubble.run(REWRITE_STYLES[style].label, async (env) => {
-      if (selection) await runRewrite(env, style, selection)
-      else notice(env, 'Select some text in the note first, then pick a rewrite style.')
-    })
+  /** A preset runs directly — no decision step. Edits apply to the selection, or the whole note. */
+  function runPreset(p: NotePreset) {
+    const r = p.run
+    const job = (env: BubbleEnv): Promise<void> => {
+      switch (r.kind) {
+        case 'summary': return runSummarize(env)
+        case 'title': return runSuggestTitle(env)
+        case 'tags': return runSuggestTags(env)
+        case 'tasks': return runExtractTasks(env)
+        case 'edit': return editNote(env, r.instruction)
+        case 'insert': return runInsert(env, r.instruction, r.at)
+        case 'ask': {
+          const sel = env.bridge.selection()
+          return runQuestion(env, sel ? `${r.prompt}\n\nAbout this part of the note:\n"""\n${sel.markdown}\n"""` : r.prompt)
+        }
+      }
+    }
+    void bubble.run(p.label, job)
   }
 
   return (
     <BubblePanelShell
       title="Ask AI · this note"
       ariaLabel="AI assistant for this note"
-      placeholder="Ask about this note…"
-      intro="Works on this note only. Every change is previewed in the note and needs your Accept."
+      placeholder="Ask or tell me anything about this note — e.g. “turn the budget into a table”"
+      intro="Works on this note only. Ask questions, or ask for any change — it's previewed in the note and needs your Accept. Select text first to work on just that part."
       config={bubble.config}
       messages={bubble.messages}
       busy={bubble.busy}
@@ -58,17 +70,13 @@ export default function NoteBubblePanel({ getNote, editorRef, vocabulary, onAppl
         <BubbleMessageView key={m.id} message={m} busy={bubble.busy} handlers={bubble} taskHandlers={bubble.tasks} onSwitchProvider={openSettings} />
       )}
       quickActions={
-        <BubbleQuickActions
+        <PromptMenu
           disabled={bubble.busy}
-          onSummarize={() => void bubble.run('Summarize this note', runSummarize)}
-          onContinue={() => void bubble.run('Continue writing', (env) => runContinue(env))}
-          onTitle={() => void bubble.run('Suggest a title', runSuggestTitle)}
-          onTags={() => void bubble.run('Suggest tags', runSuggestTags)}
-          onTasks={() => void bubble.run('Turn this into tasks', runExtractTasks)}
-          onRewrite={rewrite}
+          onPreset={runPreset}
+          onPrompt={(p) => void bubble.run(p.label, (env) => runNoteInstruction(env, p.instruction))}
         />
       }
-      onSend={(text) => void bubble.run(text, (env) => runMessage(env, text))}
+      onSend={(text) => void bubble.run(text, (env) => runNoteInstruction(env, text))}
       onStop={bubble.stop}
       onClear={bubble.clear}
       onClose={onClose}

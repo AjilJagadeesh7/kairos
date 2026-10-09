@@ -15,6 +15,14 @@ export type GlobalChatAction = 'pending' | 'review' | 'query' | 'chitchat' | 'gl
 
 export type BubbleAction = NoteBubbleAction | BoardBubbleAction | GlobalChatAction
 
+/** A prompt the user saved for the note bubble's prompt menu. */
+export interface BubblePrompt {
+  id: string
+  label: string
+  /** Sent as the user's instruction, like a typed message. */
+  instruction: string
+}
+
 /** Router output for a free-text message in the note bubble. */
 export type NoteIntent =
   | { kind: 'summarize' }
@@ -28,8 +36,9 @@ export type NoteIntent =
 export type SuggestionState = 'pending' | 'accepted' | 'rejected' | 'stale'
 
 export type BubbleSuggestion =
-  | { kind: 'replace'; style: RewriteStyle; original: string; originalText: string; proposed: string; state: SuggestionState }
-  | { kind: 'insert'; pos: number; proposed: string; state: SuggestionState }
+  /** `style` for the preset rewrites; `instruction` for a free-form edit ("make this a table"). */
+  | { kind: 'replace'; style: RewriteStyle | null; instruction?: string; original: string; originalText: string; proposed: string; state: SuggestionState }
+  | { kind: 'insert'; pos: number; instruction?: string; proposed: string; state: SuggestionState }
   | { kind: 'summary'; inserted: boolean }
   | { kind: 'title'; options: string[]; applied: string | null }
   | { kind: 'tags'; options: string[]; applied: string[] | null }
@@ -186,6 +195,10 @@ export interface NoteEditorBridge {
   /** Where "continue" inserts (end of the cursor's block, or `pos` when given)
    *  and the markdown before it. */
   continuePoint(pos?: number): { pos: number; before: string } | null
+  /** The whole document as an edit target (free-form edits of the note). */
+  document(): EditorSelectionSnapshot | null
+  /** An insert point at the top or end of the note, with the markdown before it. */
+  edgePoint(at: 'top' | 'end'): { pos: number; before: string } | null
   /** Strikes `range` and shows `proposed` after it, until cleared. */
   showPreview(range: EditorRange, originalText: string, proposed: string): void
   clearPreview(): void

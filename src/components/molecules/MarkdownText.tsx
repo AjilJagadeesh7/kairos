@@ -10,6 +10,7 @@ function inline(nodes: Inline[], key = ''): ReactNode[] {
       case 'strong': return <strong key={k} className="font-semibold">{inline(n.c, `${k}.`)}</strong>
       case 'em': return <em key={k}>{inline(n.c, `${k}.`)}</em>
       case 'code': return <code key={k} className="rounded bg-surface2 px-1 py-px font-mono text-[12px]">{n.v}</code>
+      case 'check': return <span key={k} aria-label={n.done ? 'done' : 'to do'} className="mr-1 font-mono text-text3">{n.done ? '☑' : '☐'}</span>
       case 'cite': return <sup key={k} className="mx-px rounded bg-surface2 px-1 font-mono text-[10px] text-text3">{n.n}</sup>
       case 'link': return (
         <a key={k} href={n.href} onClick={(e) => { e.preventDefault(); void openExternal(n.href) }} className="text-accent underline-offset-2 hover:underline">

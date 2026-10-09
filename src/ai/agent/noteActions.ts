@@ -1,12 +1,9 @@
 /**
  * Note-bubble actions that read the whole page: summarize, suggest a title or
- * tags, answer a question — plus routing a free-text message to one of them.
+ * tags, answer a question. Free-text messages are handled by noteAgent.ts.
  */
 import { computeNoteFacts, factsHeader, factsJSON } from './noteFacts'
 import { fitTurns, messagesTokens, usableBudget } from './budget'
-import { routeNoteIntent } from './noteIntent'
-import { runContinue, runRewrite } from './noteWriting'
-import { runExtractTasks } from './noteTasks'
 import {
   questionMessages, summarizeMessages, tagsMessages, titleMessages,
 } from '../prompts/noteBubble.v1'
@@ -110,22 +107,4 @@ export async function runQuestion(env: BubbleEnv, question: string): Promise<voi
   const { stopped } = await streamInto(env, msg.id,
     questionMessages(note.title, page.text, page.condensed, factsText, history, question, attached), GEN.question)
   if (stopped) env.sink.patch(msg.id, (m) => ({ ...m, meta: m.meta ? `${m.meta} · Stopped` : 'Stopped' }))
-}
-
-/** A free-text message: the model picks the intent from the message alone. */
-export async function runMessage(env: BubbleEnv, text: string): Promise<void> {
-  const selection = env.bridge.selection()
-  const intent = await routeNoteIntent(env.provider, text, selection !== null)
-  if (env.isStopped()) return
-  switch (intent.kind) {
-    case 'summarize': return runSummarize(env)
-    case 'continue': return runContinue(env)
-    case 'suggest_title': return runSuggestTitle(env)
-    case 'suggest_tags': return runSuggestTags(env)
-    case 'rewrite':
-      if (!selection) { notice(env, 'Select the text you want rewritten in the note, then ask again.'); return }
-      return runRewrite(env, intent.style, selection)
-    case 'extract_tasks': return runExtractTasks(env)
-    case 'question': return runQuestion(env, text)
-  }
 }

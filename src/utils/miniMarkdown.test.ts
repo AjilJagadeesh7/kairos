@@ -18,6 +18,13 @@ describe('miniMarkdown', () => {
     expect(parseInline('[x](javascript:alert(1))')).toEqual([{ t: 'text', v: 'x' }, { t: 'text', v: ')' }])
   })
 
+  it('parses checklist items', () => {
+    expect(parseMarkdown('- [ ] Compare index funds\n- [x] Pay rent')[0]).toEqual({ t: 'ul', items: [
+      [{ t: 'check', done: false }, { t: 'text', v: 'Compare index funds' }],
+      [{ t: 'check', done: true }, { t: 'text', v: 'Pay rent' }],
+    ] })
+  })
+
   it('leaves unclosed markers as text while streaming', () => {
     expect(parseInline('half **bold')).toEqual([{ t: 'text', v: 'half **bold' }])
     expect(parseInline('snake_case_name')).toEqual([{ t: 'text', v: 'snake_case_name' }])

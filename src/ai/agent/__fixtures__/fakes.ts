@@ -50,6 +50,8 @@ export function fakeBridge(selection: { markdown: string; from?: number; to?: nu
       markdown: selection.markdown, text: selection.markdown,
     },
     continuePoint: (pos) => ({ pos: pos ?? 500, before: 'Earlier text of the note.' }),
+    document: () => ({ from: 0, to: 900, markdown: '# Whole note\n\nAll of it.', text: 'Whole note All of it.' }),
+    edgePoint: (at) => (at === 'top' ? { pos: 0, before: '' } : { pos: 900, before: 'Earlier text of the note.' }),
     showPreview: (range, originalText, proposed) => { state.preview = { range, originalText, proposed } },
     clearPreview: () => { state.preview = null },
     previewRange: () => state.preview?.range ?? null,

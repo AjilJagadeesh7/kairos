@@ -83,6 +83,18 @@ export function createNoteEditorBridge(crepeRef: { readonly current: Crepe | nul
       return { pos: at, before: at > 0 ? getMarkdown({ from: 0, to: at })(ctx).trim() : '' }
     }),
 
+    document: () => withView(null, (view, ctx) => {
+      const to = view.state.doc.content.size
+      const text = textOf(view, 0, to)
+      if (!text.trim()) return null
+      return { from: 0, to, text, markdown: getMarkdown()(ctx).trim() }
+    }),
+
+    edgePoint: (at) => withView(null, (view, ctx) => {
+      const end = view.state.doc.content.size
+      return at === 'top' ? { pos: 0, before: '' } : { pos: end, before: getMarkdown()(ctx).trim() }
+    }),
+
     showPreview: (range, originalText, proposed) => withView(undefined, (view) => {
       dispatchMeta(view, { type: 'show', preview: { id: Date.now(), ...range, originalText, proposed } })
       revealPreview(view)

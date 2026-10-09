@@ -535,6 +535,74 @@ P8 decisions:
 - **Native release**: `MainActivity` (the flavor hook) and the Gradle flavors changed, and Full
   adds native plugins. The release that ships this must bump `otaMinNative`.
 
+### On-device fixes after first use (2026-10-09)
+
+- **Missing BOS token**: this was the cause of the 1B model looping ("the, the, the…",
+  "Facts computed from the note…" repeated).
+  - MiniCPM5's GGUF template starts with `{{ bos_token }}`, but its tokenizer doesn't flag
+    `add_bos`, and llama.cpp's built-in ChatML template doesn't emit it.
+  - Both runtimes (`local_llm.rs`, `kairos_llm.cpp`) now prepend BOS when the model's own
+    template asks for it.
+  - Checked with the user's 1B file, in debug and release builds.
+- **Thinking off means off**: when `GenOpts.thinking` is false, the prompt ends with an empty
+  `<think></think>`, which is what the model's template does for `enable_thinking=false`.
+  Thinking no longer eats summary token budgets.
+- **Loop guard**:
+  - Plain text (no grammar) uses llama.cpp's DRY sampler (0.8 / 1.75 / 2) and a 1.05 token
+    penalty.
+  - A strong token penalty (1.15) made the 1B model count ("0, 1, 2, 3…") instead.
+  - Grammar-constrained JSON gets no penalties.
+- **Model capability**: 1B answers are now coherent but shallow, and it sometimes copies
+  examples from the prompt. The 2B model or an API model does much better.
+
+## AI redesign (2026-10-09): open-ended, not fixed modes
+
+The P1–P7 design routed every message into one of a few fixed modes. Trying it, the user
+found that far too limiting, even with a strong model. Both surfaces are now open-ended.
+The safety rules are unchanged.
+
+**Global chat = agent** (`agent/agentRun.ts`, prompts `agent.v1`):
+- **No router.** The model gets the message, a small deterministic overview (boards and
+  columns, the cards that fit, the 15 most recently edited notes) and a toolbox. It
+  decides what to do over up to 6 steps, then answers in its own words, streamed.
+- **Tools**, 7 at most (PRD: ≤ 10):
+  - `search_notes`, `read_note`, `list_cards`, and `vault_facts` (exact pending/review
+    counts, still shown as the facts card);
+  - `web_search` and `fetch_url`, only when web access is on, each with approval;
+  - `propose_changes`, a single write tool with up to 20 changes.
+- **Changes**: `propose_changes` goes through the same validator and plan card as P5.
+  Only cards and notes the agent was shown may be named, and nothing is written until
+  Apply. If anything read addresses an AI, the plan is flagged and starts with nothing
+  selected.
+- **Citations**: every note, journal day and web page read gets a number. The answer
+  cites `[n]`, chips show what it cited, and replies render markdown
+  (`molecules/MarkdownText`, a small React renderer with no HTML injection and no new
+  dependency).
+- **Quick buttons** (pending, daily and weekly review) stay deterministic.
+- **Removed**: the router (`globalIntent`), `runQuery`, `runChitchat`, the separate
+  P5 plan runner and P7 web runner, and the `globalPlan.v1` / `web.v1` prompts.
+  `agent.eval.ts` replaces their evals.
+- **Model choice**: per surface (Use for), with no automatic capability gating. That is
+  the user's choice.
+
+**Page bubble = instructions** (`agent/noteAgent.ts`, `agent/noteEdit.ts`, prompts
+`noteAgent.v1`):
+- Type anything about the note.
+  - A small decision call picks one action: edit the selection or the whole note, insert
+    at the cursor / top / end, summarize, title, tags, tasks — or no tool, which means
+    answer in the chat.
+  - That call sees only the instruction and whether text is selected, never the note
+    (PRD: only the user's message decides intent).
+  - The user's own words then drive a streamed edit or insert, with the note as data.
+  - Every edit is previewed as a diff in the editor with Accept / Reject / Retry.
+- **Prompt menu**:
+  - 18 presets in Ask / Write / Edit / Organize, including explain, key points, gaps,
+    brainstorm, outline, next steps, tighten, expand, simplify, formal, casual, grammar,
+    bullets, table, translate, title, tags and tasks.
+  - **My prompts**: user-saved instructions, stored device-local in `useAiStore`.
+  - Edit presets apply to the selection, or to the whole note when nothing is selected.
+- **Removed**: the bubble router (`noteIntent`) and the fixed quick-action strip.
+
 ## Fixed contradictions in the PRD
 
 1. **CI builds Lite only.** PRD Phase 0's "CI produces Full and Lite builds"
